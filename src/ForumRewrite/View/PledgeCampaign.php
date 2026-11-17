@@ -8,6 +8,7 @@ use ForumRewrite\Support\FilledDirective;
 use ForumRewrite\Support\GoalDirective;
 use ForumRewrite\Support\PledgeAmount;
 use ForumRewrite\Support\PledgeDirective;
+use ForumRewrite\Support\PledgeLines;
 use ForumRewrite\Support\ReviewDirective;
 use ForumRewrite\Support\WithdrawDirective;
 
@@ -58,8 +59,10 @@ final class PledgeCampaign
      *     withdrawals: array<string, array{effective: bool, note: string}>,
      *     filled: string, confirmed: string,
      *     fills: array<string, array{effective: bool, note: string}>,
-     *     reviews: array<string, array{effective: bool, note: string}>
-     * }|null null when the thread is not a campaign; `withdrawals`, `fills` and `reviews` are keyed by the reply's post ID.
+     *     reviews: array<string, array{effective: bool, note: string}>,
+     *     used_lines: array<string, string>
+     * }|null null when the thread is not a campaign; `withdrawals`, `fills` and `reviews` are keyed by the reply's post ID;
+     *     `used_lines` maps a post ID to the kind of pledge line its card or the totals block already shows.
      *     A pledge with a fill that counts also carries `filled` and `fill_list` (post_id, by, role, amount). A pledger's
      *     fill that was confirmed or disputed also carries `review`, `review_by` and `review_post_id`; a disputed one is
      *     listed but not counted.
@@ -135,6 +138,22 @@ final class PledgeCampaign
 
         $scale = max($goal['amount'], $sum);
 
+        // The line each post's card or the totals block already shows, so the thread page can leave
+        // it out of the text. A line that did not count stays, beside its reason.
+        $usedLines = [$rootPostId => PledgeLines::GOAL];
+        foreach ($pledges as $postId => $pledge) {
+            if ($pledge['state'] !== self::UNREADABLE) {
+                $usedLines[$postId] = PledgeLines::PLEDGE;
+            }
+        }
+        foreach ([PledgeLines::WITHDRAW => $withdrawals, PledgeLines::FILLED => $fills, PledgeLines::REVIEW => $reviews] as $kind => $records) {
+            foreach ($records as $postId => $record) {
+                if ($record['effective']) {
+                    $usedLines[$postId] = $kind;
+                }
+            }
+        }
+
         return [
             'author' => $campaignAuthor,
             'goal' => PledgeAmount::format($goal['amount']),
@@ -159,6 +178,7 @@ final class PledgeCampaign
             'confirmed' => PledgeAmount::format($confirmedSum),
             'fills' => $fills,
             'reviews' => $reviews,
+            'used_lines' => $usedLines,
         ];
     }
 

@@ -186,7 +186,9 @@ try {
     assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="unnamed"]').textContent()).trim(), '12.5 coffees · Not counted: no name');
     assert.equal((await plain.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged Goal reached');
   }
-  assert.equal(await plain.page.getByText('pledge: 12.5').first().isVisible(), true);
+  // The card shows the amount, so the thread page leaves the written line out; the note stays.
+  assert.equal(await plain.page.getByText('pledge: 12.5').count(), 0);
+  assert.equal(await plain.page.getByText('Decaf, then.').first().isVisible(), true);
   // A line that is not a number stays a reply and says why.
   await plain.page.locator('[data-compose-kind="reply"] textarea[name="body"]').fill('pledge: a few');
   await plain.page.locator('[data-compose-kind="reply"] .compose-form-actions > button[type="submit"]').click();

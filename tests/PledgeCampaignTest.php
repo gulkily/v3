@@ -12,6 +12,7 @@ use ForumRewrite\Support\FilledDirective;
 use ForumRewrite\Support\GoalDirective;
 use ForumRewrite\Support\PledgeAmount;
 use ForumRewrite\Support\PledgeDirective;
+use ForumRewrite\Support\PledgeLines;
 use ForumRewrite\Support\ReviewDirective;
 use ForumRewrite\Support\WithdrawDirective;
 use ForumRewrite\View\PledgeCampaign;
@@ -173,8 +174,12 @@ final class PledgeCampaignTest
         } finally {
             putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED');
         }
-        // The lines stay in the posts as written.
-        pledgeAssertContains('goal: 1000 coffees', $on);
+        // The thread page leaves out the lines its totals and cards already show; an unread line stays.
+        pledgeAssertNotContains('goal: 1000 coffees', $on);
+        pledgeAssertContains('We need coffee.', $on);
+        pledgeAssertNotContains('pledge: 300', $on);
+        pledgeAssertContains('I&#039;ll order these myself.', $on);
+        pledgeAssertNotContains('pledge: 250', $on);
         pledgeAssertContains('pledge: a few', $on);
         // A pledge line outside a campaign is an ordinary reply.
         pledgeAssertNotContains('pledge-totals', $other);
@@ -546,10 +551,14 @@ final class PledgeCampaignTest
             pledgeAssertContains('data-pledge-state="fill-capped"><span class="meta">Counted 300 of 500</span>', $on);
             pledgeAssertContains('data-pledge-state="fill-uncounted"><span class="meta">Not counted: no name</span>', $on);
             pledgeAssertSame(true, $nameless !== '');
-            // The bare fill folds into its pledge; fills with an amount or a reason stay.
+            // A fill that is only its line folds into its pledge, with or without an amount; one
+            // counted in part, or not counted, stays for its reason.
             pledgeAssertNotContains('data-post-id="' . $delivered . '"', $on);
-            pledgeAssertContains('data-post-id="' . $filled . '"', $on);
+            pledgeAssertNotContains('data-post-id="' . $filled . '"', $on);
+            pledgeAssertContains('data-post-id="' . $over . '"', $on);
             pledgeAssertContains('data-post-id="' . $nameless . '"', $on);
+            // The post's own page keeps the line as written.
+            pledgeAssertContains('pledge: 300', $this->render(new Application(dirname(__DIR__), $root, $database), '/posts/' . rawurlencode($own)));
         } finally {
             putenv('FORUM_PLEDGES_ENABLED');
             putenv('FORUM_PLEDGES_COUNT_UNNAMED_ENABLED');
@@ -947,6 +956,45 @@ final class PledgeCampaignTest
         pledgeAssertContains('1 pledge · 30 delivered</p>', $part);
         pledgeAssertContains('<span class="pledge-status" data-role="pledge-status">Complete</span>', $complete);
         pledgeAssertContains('1 pledge · 120 delivered</p>', $complete);
+    }
+
+    public function testPledgeLinesLeaveOutOnlyTheLineTheReaderUsed(): void
+    {
+        pledgeAssertSame("I'll order these myself.", PledgeLines::hide("pledge: 300\n\nI'll order these myself.", PledgeLines::PLEDGE));
+        pledgeAssertSame("We need coffee.\nPledge any number.", PledgeLines::hide("We need coffee.\ngoal: 1000 coffees\nPledge any number.", PledgeLines::GOAL));
+        pledgeAssertSame("Three days.\n\nPledge any number.", PledgeLines::hide("Three days.\n\ngoal: 1000 coffees\n\nPledge any number.", PledgeLines::GOAL));
+        // A quoted line is never the one removed, as the readers skip it too.
+        pledgeAssertSame("> pledge: 50\nAgreed.", PledgeLines::hide("> pledge: 50\npledge: 20\nAgreed.", PledgeLines::PLEDGE));
+        // Only the first match goes; a body with no such line is unchanged.
+        pledgeAssertSame("filled: 5", PledgeLines::hide("filled\nfilled: 5", PledgeLines::FILLED));
+        pledgeAssertSame("Just talking.", PledgeLines::hide("Just talking.", PledgeLines::PLEDGE));
+        pledgeAssertSame(true, PledgeLines::isOnlyLine("filled: 5", PledgeLines::FILLED));
+        pledgeAssertSame(true, PledgeLines::isOnlyLine("\nconfirm\n", PledgeLines::REVIEW));
+        pledgeAssertSame(false, PledgeLines::isOnlyLine("filled\n\nArrived Tuesday.", PledgeLines::FILLED));
+        pledgeAssertSame(false, PledgeLines::isOnlyLine("", PledgeLines::WITHDRAW));
+    }
+
+    public function testThreadPageKeepsTheLinesThatDidNotCount(): void
+    {
+        [$root, $database, $service] = $this->environment();
+        $thread = $this->thread($service, 'Kept lines', 'goal: 100 coffees');
+        $pledge = $this->reply($service, $thread, 'pledge: 30');
+        $quiet = $this->reply($service, $thread, 'pledge: 20');
+        // Text after a withdraw or review line stops it counting, so the line and its reason stay.
+        $this->replyTo($service, $thread, $pledge, 'withdraw: 10');
+        $this->replyTo($service, $thread, $pledge, 'confirm: yes');
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        try {
+            $on = $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/' . rawurlencode($thread));
+        } finally {
+            putenv('FORUM_PLEDGES_ENABLED');
+        }
+        pledgeAssertContains('withdraw: 10', $on);
+        pledgeAssertContains('confirm: yes', $on);
+        // A pledge with no note shows its amount and no empty text box.
+        pledgeAssertNotContains('pledge: 20', $on);
+        $card = substr($on, (int) strpos($on, 'data-post-id="' . $quiet . '"'), 1500);
+        pledgeAssertNotContains('<div class="body"></div>', $card);
     }
 
     private function environment(): array

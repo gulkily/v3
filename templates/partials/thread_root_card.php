@@ -119,6 +119,12 @@ if (!$metaVisible) {
 <?php if ($isRetracted): ?>
 <?= $indent($partial('partials/retracted_post_notice.php'), 1) ?>
 <?php else: ?>
+<?php
+// A campaign's goal line is shown by the totals block above, so it is left out of the text.
+if (isset($pledgeCampaign['used_lines'][(string) $post['post_id']])) {
+    $postBodyDisplay = \ForumRewrite\Support\PledgeLines::hide((string) $postBodyDisplay, \ForumRewrite\Support\PledgeLines::GOAL);
+}
+?>
   <div class="body<?= $isMarkdownPost($post) ? ' post-markdown' : '' ?>"><?= $renderPostBody($post, (string) $postBodyDisplay) ?></div>
 <?php endif; ?>
 <?php endif; ?>
