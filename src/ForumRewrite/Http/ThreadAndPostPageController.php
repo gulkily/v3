@@ -117,7 +117,7 @@ final class ThreadAndPostPageController
             ? $this->viewerPostTagsForPosts(array_column($posts, 'post_id'), 'like', (string) $viewerProfile['identity_id'])
             : [];
         $signalActors = SignalActors::load($this->routeServices->pdo(), $threadId, array_values(array_unique([$threadId, ...array_map('strval', array_column($posts, 'post_id'))])));
-        $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $viewerCanSeePostAnalysis = RouteServices::signedInApproved($viewerProfile);
         $viewerCanRequestAgentReply = $viewerCanSeePostAnalysis && $service->agentResponseRequestsEnabled();
         $createdPostId = $this->createdPostIdForThread($threadId, $createdPostId);
         $postAnalysesForWork = $service->fetchPostAnalysesForPosts($posts);
@@ -328,7 +328,7 @@ final class ThreadAndPostPageController
             ? $this->viewerPostTagsForPosts([$post['post_id']], 'like', (string) $viewerProfile['identity_id'])
             : [];
         $signalActors = SignalActors::load($this->routeServices->pdo(), (string) $post['thread_id'], [(string) $post['post_id']]);
-        $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $viewerCanSeePostAnalysis = RouteServices::signedInApproved($viewerProfile);
         $viewerCanRequestAgentReply = $viewerCanSeePostAnalysis && $service->agentResponseRequestsEnabled();
         $posts = [$post];
         $postAnalysesForWork = $service->fetchPostAnalysesForPosts($posts);

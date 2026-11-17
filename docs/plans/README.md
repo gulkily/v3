@@ -549,3 +549,5 @@ and repair its navigation and affected references. See the
 - [Local start PR integration repair](local_start_import_pr_fix/local_start_import_pr_fix_one_shot.md) — one-shot repair of open PR #284.
 
 - [Local start and import MVP](local_start_import/local_start_import_one_shot.md) — one-shot.
+
+- [Session member gates](session_member_gates/session_member_gates_one_shot.md) — one-shot: member-only agent, analysis and LLM Exchanges gates require a signed-in session, not the hint cookie.

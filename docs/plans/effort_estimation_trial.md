@@ -2286,3 +2286,11 @@ Canonical checkpoints: [record](local_start_import_pr_fix/local_start_import_pr_
 Relationship: integration follow-up to v3/local_start_import on open PR #284, not a separate product outcome
 2026-11-17: Intake and execution entry: Codex single exposed rater, baseline 936c6357 / original PR dee4c41c, prior source/history exposure disclosed. Pristine intake missing. No numeric score, independent rating, measured effort or accepted-count increment.
 2026-11-17 closeout for v3/local_start_import_pr_fix: projection/retrospective remain unavailable; v1/R1/P2 preserved. Smoke plus affected import, task, tour and cache checks: 522/526; the four failures reproduced on unchanged 936c6357. Fresh-start browser check passed. Feedback collision reconciled with local-start intake PF-20261117-F01, preserving main PF-20261116-F01 cancellation record. No new product outcome, measured labor or accepted-count increment.
+
+## Cycle v3/session_member_gates
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/session_member_gates` | One-shot technically complete; push, PR, merge and maintainer acceptance pending | v1 / R1 / P2 | 0.15 (intake 0.15; execution entry 0.15; retrospective 0.25) | [One-shot record](./session_member_gates/session_member_gates_one_shot.md#study-history) | Security audit finding; acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot authorized by the maintainer in chat ("Yes, that's exactly what I want") after the audit. Intake **0.15** after the audit and call-site inspection (no pristine intake), execution entry reaffirmed, retrospective **0.25**: two pre-existing test defects were fixed on the way (parallel isolation in `WriteApiSmokeTest`; a browser test stale since the retraction simplification). Baseline `ed22daed919795ec499def3a324d7d9b99c2c965`; branch `fix/member-gates-need-session`; planning commit `633944c`. Single exposed rater Claude (claude-fable-5-2). R1 hashes not re-verified this session. No measured effort, independent rating or accepted-count increment.
