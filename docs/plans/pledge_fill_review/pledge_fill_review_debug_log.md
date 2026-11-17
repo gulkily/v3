@@ -55,3 +55,23 @@
 **Uncertain assessments**
 - Step 2 named "before Step 3" as the time to validate two risks with tests. Code reading settled them; the tests are planned in Stages 1 and 3 ahead of dependent work. RAILSPIKE.md does not say whether reading counts as validation.
 - R1 reference hashes were not re-verified this session.
+
+## 2026-11-17T06:45Z — Step 4
+
+**Necessary/useful instructions**
+- `step4_implementation_before.md` planning-commit gate: plans moved and committed alone; the ledger and summary waited for Stage 1, as in cycle 3. Retain.
+- `step3_development_plan_do.md` "Resolve each material risk before dependent work": the fold and reading-order tests landed in Stages 1 and 3 before the buttons; both passed first time, as the Step 3 code reading predicted. Retain.
+- Stage 3's "run unchanged first" for the browser check: it separated a baseline pass from the new assertions, so the two failures that followed were plainly in the new lines (wrong expected totals; a locator made ambiguous). Retain.
+- `implementation_standards.md` final diff review: found an out-of-order import and a now-redundant operator cache, recorded rather than silently left. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- "Replay each reported failure": no failure reported.
+
+**Uncertain assessments**
+- Step 3 planned a 375-pixel look in Stage 2, but the state it needed (a reviewed fill on a served page) only existed after Stage 3. It was moved to Stage 3 and recorded; Railspike has no rule for a check that depends on a later stage.
+- The browser check ran with a preinstalled `playwright-core` 1.63.0, while `package.json` declares 1.58.1. Recorded as an environment difference, not a dependency change.
+- A summary test count was wrong at the Stage 3 commit (26 for 25) and was corrected in Stage 4's commit, not by amending.
+- R1 reference hashes were not re-verified this session.
