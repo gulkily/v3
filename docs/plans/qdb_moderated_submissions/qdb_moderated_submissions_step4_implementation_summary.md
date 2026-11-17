@@ -40,3 +40,27 @@ Branch `feat/qdb-moderated-submissions` from `6bfe1243`; planning commit `3b34a3
 - Estimate details: original scope as planned; no revision. Retrospective matches: the main extra was the performance fix.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 2 - Public queue page
+
+**Original estimate: 0.12**
+
+**Retrospective: 0.10**
+
+- Changes:
+  - `QdbPage::page` gains a `queue` section: newest first, the score rule alone plus `QdbModeration::queueSql`.
+  - `ScoreVisibility::scoreSql` split out of `listedSql`, so the Queue page can keep flagged quotes hidden while listing pending ones.
+  - `QdbExperience` routes `/queue`, `/queue/N` and `/?queue`; `BoardPageController` renders them through the existing board template, quote card and empty state, titled "Queue".
+  - `QdbPresentation::navigation` shows Queue between Random and Add Quote, only while the queue runs.
+  - `theme-nav-icons.css`: an hourglass in the pixel-art and smooth-line sets.
+  - `Application` lists `/queue` and `/queue/N` with the other qdb routes.
+- Verification:
+  - `./v3 test QdbModerationTest QdbExperienceRoutingTest NavIconSetsTest QdbPageTest`: 17 passed. Full suite not run.
+  - New `QdbModerationTest::testQueuePageListsOnlyWaitingQuotes` and `QdbExperienceRoutingTest::testQueueRoutesExistOnlyWhileTheQueueRuns`. With the queue off, `/queue` paths return 404 and `/?queue` stays the welcome page, as any unknown flag did before.
+  - Icons rendered with headless Chrome in Word97, Chicago, Midnight, Gloss, Gloss Dark and Engagify; each shows the hourglass beside Random and Add Quote.
+- Notes:
+  - `QdbModeration::current()` now recomputes when the site profile changes, so tests that switch `FORUM_SITE_ID` in one process see the right state.
+  - The Queue page is not prebuilt by `StaticArtifactBuilder`; it is served live, which keeps it current between rebuilds.
+- Estimate details: original scope as planned; no revision. Retrospective slightly lower: the board template and empty state fitted without changes.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

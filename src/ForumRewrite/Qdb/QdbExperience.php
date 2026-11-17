@@ -14,7 +14,7 @@ use PDO;
 
 final class QdbExperience
 {
-    private const QUERY_KEYS = ['latest', 'top', 'leetness', 'add', 'random', 'search'];
+    private const QUERY_KEYS = ['latest', 'top', 'leetness', 'add', 'random', 'search', 'queue'];
 
     public function __construct(
         private readonly BoardPageController $boardPages,
@@ -66,6 +66,16 @@ final class QdbExperience
             $page = $leetnessPageMatch ? (int) $leetnessPathMatches[1] : (int) ($query['leetness'] ?? 1);
 
             return QdbExperienceRouteResult::page($this->boardPages->board('all', 'leetness', 'leetness', max(1, $page), $this->boardPolicy));
+        }
+
+        $queuePageMatch = preg_match('#^/queue/(\d+)/?$#', $path, $queuePathMatches) === 1;
+        if ($path === '/queue' || $queuePageMatch || array_key_exists('queue', $query)) {
+            if (!QdbModeration::current()->isActive()) {
+                return null;
+            }
+            $page = $queuePageMatch ? (int) $queuePathMatches[1] : (int) ($query['queue'] ?? 1);
+
+            return QdbExperienceRouteResult::page($this->boardPages->board('all', 'newest', 'queue', max(1, $page), $this->boardPolicy));
         }
 
         if ($path === '/add' || array_key_exists('add', $query)) {
@@ -232,7 +242,7 @@ final class QdbExperience
 
     private function isPrimaryRoutePath(string $path): bool
     {
-        return $path === '/' || $path === '' || in_array($path, ['/latest', '/top', '/leetness', '/add', '/random', '/search'], true)
-            || preg_match('#^/(?:latest|top|leetness)/(\d+)/?$#', $path) === 1;
+        return $path === '/' || $path === '' || in_array($path, ['/latest', '/top', '/leetness', '/queue', '/add', '/random', '/search'], true)
+            || preg_match('#^/(?:latest|top|leetness|queue)/(\d+)/?$#', $path) === 1;
     }
 }

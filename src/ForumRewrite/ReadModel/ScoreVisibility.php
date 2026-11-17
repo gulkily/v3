@@ -15,6 +15,12 @@ final class ScoreVisibility
 {
     public static function listedSql(string $postsAlias = 'posts'): string
     {
-        return "COALESCE($postsAlias.post_score_total, 0) >= 0" . \ForumRewrite\Qdb\QdbModeration::current()->listedSqlSuffix($postsAlias);
+        return self::scoreSql($postsAlias) . \ForumRewrite\Qdb\QdbModeration::current()->listedSqlSuffix($postsAlias);
+    }
+
+    /** The score rule alone, for the qdb Queue page, which lists pending quotes on purpose. */
+    public static function scoreSql(string $postsAlias = 'posts'): string
+    {
+        return "COALESCE($postsAlias.post_score_total, 0) >= 0";
     }
 }

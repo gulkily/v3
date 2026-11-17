@@ -26,6 +26,8 @@ final class QdbModeration
 
     private static ?string $repositoryRoot = null;
     private static ?self $current = null;
+    private static ?string $currentSite = null;
+    private static bool $overridden = false;
 
     /** @param list<string> $operatorIds */
     public function __construct(
@@ -52,12 +54,15 @@ final class QdbModeration
     public static function override(?self $moderation): void
     {
         self::$current = $moderation;
+        self::$overridden = $moderation !== null;
     }
 
     public static function current(): self
     {
-        if (self::$current === null) {
+        $site = SiteProfileRegistry::active()['name'];
+        if (self::$current === null || (!self::$overridden && self::$currentSite !== $site)) {
             self::$current = self::$repositoryRoot === null ? self::inactive() : self::forRepository(self::$repositoryRoot);
+            self::$currentSite = $site;
         }
 
         return self::$current;

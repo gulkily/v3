@@ -83,6 +83,21 @@ final class QdbModerationTest
         }
     }
 
+    public function testQueuePageListsOnlyWaitingQuotes(): void
+    {
+        [$pdo, $ids] = $this->fixture();
+        QdbModeration::override(self::active());
+        try {
+            $queue = QdbPage::page($pdo, 'queue', 1);
+            assertSame(['anonymous', 'selfapproved', 'visitor'], self::names($ids, $queue['threads']));
+            assertSame(3, $queue['count']);
+            QdbModeration::override(QdbModeration::inactive());
+            assertSame(0, QdbPage::page($pdo, 'queue', 1)['count']);
+        } finally {
+            QdbModeration::override(null);
+        }
+    }
+
     public function testStateOfEachQuote(): void
     {
         [$pdo, $ids] = $this->fixture();
