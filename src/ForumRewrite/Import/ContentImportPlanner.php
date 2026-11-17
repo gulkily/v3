@@ -25,7 +25,8 @@ final class ContentImportPlanner
      * receipts. They stay inert until a key that wrote them is approved here, so
      * local seeds remain the only authority. Seeds and other authority stay excluded.
      */
-    public function __construct(private readonly bool $withApprovals = false) {}
+    /** $progress, when given, receives `Progress: plan <done>/<total>` lines while source files are read. */
+    public function __construct(private readonly bool $withApprovals = false, private readonly ?\Closure $progress = null) {}
 
     /** @internal Test hook: diagnostic work counter; enables deterministic complexity regression checks. */
     public function dependencyVisits(): int { return $this->dependencyVisits; }
@@ -49,8 +50,20 @@ final class ContentImportPlanner
 
     public function plan(string $source, string $destination): array
     {
+        // Progress counts two passes over the local records plus one over the source's.
+        $localFiles = self::files($destination);
+        $sourceFiles = self::files($source);
+        $work = 2 * count($localFiles) + count($sourceFiles);
+        $worked = 0;
+        $tick = function () use (&$worked, $work): void {
+            if (++$worked % 250 === 0) {
+                $this->progress?->__invoke('Progress: plan ' . $worked . '/' . $work);
+            }
+        };
+        $this->progress?->__invoke('Progress: plan 0/' . $work);
         // Local limit violations must fail before tolerant identity/removal discovery.
-        foreach (self::files($destination) as $localPath) {
+        foreach ($localFiles as $localPath) {
+            $tick();
             if (ArchiveRecordCatalog::isRecordPath($localPath) || ArchiveRecordCatalog::isSignaturePath($localPath)) {
                 RecordLimits::assertFile($destination . '/' . $localPath);
             }
@@ -58,7 +71,8 @@ final class ContentImportPlanner
         $removals = \ForumRewrite\Canonical\AcceptedRemoval::all($destination);
         $reactionRemovals = \ForumRewrite\Canonical\AcceptedRemoval::reactions($destination);
         $target = [];
-        foreach (self::files($destination) as $path) {
+        foreach ($localFiles as $path) {
+            $tick();
             $key = ArchiveRecordCatalog::identityKey($destination, $path);
             if ($key !== null) {
                 $target[$key][] = $path;
@@ -67,7 +81,8 @@ final class ContentImportPlanner
         foreach ($removals as $id => $removal) if ($removal['operation'] === 'delete') $target['post:' . $id] = [];
         $entries = [];
         $byKey = [];
-        foreach (self::files($source) as $path) {
+        foreach ($sourceFiles as $path) {
+            $tick();
             $entry = $this->describe($source, $path, $destination);
             $entry['hash'] = hash_file('sha256', $source . '/' . $path);
             $postPath = preg_replace('/\.(?:asc|sig)$/D', '', $path);

@@ -41,6 +41,11 @@ final class InstanceImportTaskTest
         assertTrue(is_file($target . '/records/posts/queued-thread.txt'));
         $progress = array_column($store->recentTaskProgress(200), 'message');
         assertTrue(in_array('Import result: complete', $progress, true), implode("\n", $progress));
+        $key = (string) $store->findById($queued['task_id'])['deduplication_key'];
+        $seconds = \ForumRewrite\Import\ImportProgressView::decodeDurations((string) ($task->request($key)['Step-Seconds'] ?? ''));
+        assertSame(['download', 'extract', 'plan', 'install', 'commit', 'publish', 'images'], array_keys($seconds));
+        assertSame($seconds, $task->previousStepSeconds());
+        assertSame([], $task->previousStepSeconds($key));
         $log = $task->log((string) $store->findById($queued['task_id'])['deduplication_key']);
         assertStringContains('Import result: complete', (string) $log);
     }

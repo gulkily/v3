@@ -15,6 +15,20 @@ file_put_contents($testGitConfig, "[user]\n\tname = Forum Rewrite Tests\n\temail
 putenv('GIT_CONFIG_GLOBAL=' . $testGitConfig);
 register_shutdown_function(static fn () => @unlink($testGitConfig));
 
+// Tests must not see the checkout's own task queue: `./v3 start` keeps its worker heartbeat
+// fresh, which changes how pages recover the read model. Tests that need a queue set their own.
+if (getenv('FORUM_TASK_QUEUE_DATABASE_PATH') === false) {
+    $testQueueDirectory = sys_get_temp_dir() . '/v3-test-queue-' . getmypid();
+    putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $testQueueDirectory . '/internal_tasks.sqlite3');
+    register_shutdown_function(static function () use ($testQueueDirectory): void {
+        if (getmypid() !== (int) substr($testQueueDirectory, strrpos($testQueueDirectory, '-') + 1)) return;
+        foreach (glob($testQueueDirectory . '/{,.}*', GLOB_BRACE) ?: [] as $file) {
+            if (is_file($file)) @unlink($file);
+        }
+        @rmdir($testQueueDirectory);
+    });
+}
+
 $testFiles = [
     __DIR__ . '/DeleteRecordCommandTest.php',
     __DIR__ . '/DeleteThreadCommandTest.php',
@@ -116,6 +130,8 @@ $testFiles = [
     __DIR__ . '/ImportInstanceCommandTest.php',
     __DIR__ . '/InstanceImportTaskTest.php',
     __DIR__ . '/ImportPageTest.php',
+    __DIR__ . '/DevServerWorkerTest.php',
+    __DIR__ . '/ImportProgressViewTest.php',
     __DIR__ . '/LocalDevelopmentImportTest.php',
     __DIR__ . '/ImportedContentPublicationTest.php',
     __DIR__ . '/ContentImportRecoveryTest.php',

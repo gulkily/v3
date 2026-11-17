@@ -103,8 +103,11 @@ try {
         }
         $archive = $workspace . '/repository.tar.gz';
         $progress('Downloading repository archive...');
+        $progress('Progress: download 0/?');
         $bytes = (new InstanceArchiveDownloader(progress: $progress))->download($source, $archive);
+        $progress('Progress: download ' . $bytes . '/' . $bytes);
         $progress('Downloaded ' . $bytes . ' bytes; validating and extracting archive...');
+        $progress('Progress: extract');
         $extracted = (new RepositoryArchive(progress: $progress))->extract($archive, $workspace . '/source');
         $root = $extracted['root'];
         $progress('Recovered legacy creation timestamps: ' . $extracted['recovered_legacy_timestamps']);
@@ -134,6 +137,7 @@ try {
     }
     // A resumed import fetches images from the source saved with the interrupted run.
     $imageSource = $source ?? (($result['source'] ?? '') !== '' ? $result['source'] : null);
+    $progress('Progress: images');
     try {
         $imageImport = new \ForumRewrite\Import\InstanceImageImport($repository, $database);
         $planned = $result['preview'] && $root !== null ? \ForumRewrite\Import\InstanceImageImport::plannedReferences($root, $result['entries']) : [];
@@ -174,6 +178,7 @@ try {
     foreach (importApprovalGuidance($result, $options) as $line) {
         $progress($line);
     }
+    $progress('Progress: done');
     $exitCode = $result['status'] === 'complete' && $images['status'] === 'complete' ? 0 : 2;
 } catch (Throwable $error) {
     fwrite(STDERR, 'Import failed: ' . importTerminalText($error->getMessage()) . "\n");

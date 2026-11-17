@@ -12,6 +12,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — pushed on `fix/duplicate-post-submissions`, not merged into `main`. Review it, confirm the anonymous post ID format, then merge. Remove this entry once merged.
 
+[Import without a worker](import_without_worker/import_without_worker_step1_solution_assessment.md) — Tools → Import starts a worker when none runs, `./v3 start` runs one by default, and the page shows steps, elapsed time and time left.
+
 [Import review summary one-shot](import_review_summary/import_review_summary_one_shot.md) — Tools → Import groups review causes by state and reason instead of listing every path.
 
 [Import-instance GUI](import_instance_gui/import_instance_gui_step1_solution_assessment.md) — root-only Tools → Import page: import from a remembered or typed source, watch progress, resume or cancel, read the result.

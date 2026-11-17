@@ -672,3 +672,47 @@ form.feature-flag-control,
   font-size: 0.9em;
   overflow-wrap: anywhere;
 }
+
+.import-steps {
+  margin: 1rem 0 0.5rem;
+  padding-left: 0;
+  list-style: none;
+}
+
+.import-steps li {
+  padding: 0.15rem 0 0.15rem 1.5rem;
+  position: relative;
+}
+
+.import-steps li::before {
+  position: absolute;
+  left: 0.2rem;
+  content: "○";
+  opacity: 0.5;
+}
+
+.import-steps li.is-done::before {
+  content: "✓";
+  opacity: 0.8;
+}
+
+.import-steps li.is-current {
+  font-weight: bold;
+}
+
+.import-steps li.is-current::before {
+  content: "▸";
+  opacity: 1;
+}
+
+.import-log {
+  margin-top: 0.5rem;
+}
+
+.import-log summary {
+  cursor: pointer;
+}
+
+.import-actions[hidden] {
+  display: none;
+}
