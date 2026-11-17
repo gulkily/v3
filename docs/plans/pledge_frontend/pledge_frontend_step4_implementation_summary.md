@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/pledge_frontend`; [host ledger](../effort
 
 Extended estimates: enabled
 
-Status: Steps 1 (Option C), 2 and 3 approved by the maintainer 2026-11-17. Step 4 in progress on `feat/pledge-frontend`, cut from `origin/main` at `f381052a`.
+Status: Steps 1 (Option C), 2 and 3 approved by the maintainer 2026-11-17. Step 4 complete on `feat/pledge-frontend`, cut from `origin/main` at `f381052a`. Release check on zenmemes.com from the maintainer's iPhone SE pending.
 
 **Cycle estimate: 0.75**
 
@@ -111,5 +111,40 @@ Status: Steps 1 (Option C), 2 and 3 approved by the maintainer 2026-11-17. Step 
   - Refinement within scope, found in the screenshots: the composer's Options row (Markdown, theme) pushed the pitch below the first screen and means nothing for a pledge, so the placement leaves it out. This adds one switch to the shared composer.
   - While a signed pledge posts, the composer's "Posting…" card appears briefly above the pledge form, inside the totals block, until the page moves to the new reply. It is the composer's usual behaviour and was left alone.
   - Estimate details: original scope as in Step 3; no revision. Retrospective slightly lower: the composer already worked per form, so only one lookup changed.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 5 - Themes, replay at the reported size, documentation and closeout
+
+**Original estimate: 0.08**
+
+**Retrospective: 0.08**
+
+- Changes:
+  - [Pledge campaign](../../concepts/pledge_campaign.md) concept: the scenario uses the pledge form; a "Pledge form" entry replaces "Amount field"; a "Thread page" entry for the block, the statuses and hidden lines; the fold covers `filled: 100`; the replan's cuts replace "Not yet"; a source link for `PledgeLines`.
+  - [Shared composer](../../concepts/shared_composer.md) concept: the pledge placement, its draft scope and the Options switch.
+  - [Spec](../pledges_spec.md) Pages line, [checklist](../pledges_checklist.md), ledger closeout and this summary.
+- Verification:
+  - Passed: the browser check in all 17 themes at 375 and 1280 pixels on the final code (Stage 4's last run, after the last code change), and the `--count-unnamed` run.
+  - Passed: a local replay of the demo thread's posts (goal 50; pledges 20, 15, 10, 30 and "a few"; a withdrawal, a full fill and `filled: 5`) at 375 by 667 pixels, the iPhone SE screen, with and without JavaScript. The first screen holds the title, "60 of 50 coffees pledged", Goal reached, the bar and the pledge form. No `goal:`, `pledge:`, `filled:` or `withdraw:` line shows; the cards read "Part delivered: 5 of 20", "Delivered" and "Open"; the withdrawal and fills are folded. The replay script was kept outside the repository.
+  - Passed: `./v3 test --smoke PledgeCampaignTest WithdrawLeafFilterTest OfflineOutboxComposeTest ThreadActivityTest` (512 tests). The full suite was not run.
+  - Passed: `git diff --check` over the cycle; concept, spec and checklist links resolve.
+  - Final diff review: 25 files from `f381052a`. No schema, flag or dependency change. One new support class (`PledgeLines`), one composer switch, one Outbox lookup. Leftover: the fold no longer calls the directives' `isBare()`; their own tests still use them, so they stay.
+  - Pending: the release check on zenmemes.com from the maintainer's iPhone SE (read the first screen; post and withdraw a pledge from the new form). The headless replay does not satisfy it.
+  - Not exercised: an offline pledge through the Outbox; the paned layouts.
+- Notes:
+  - Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Cycle retrospective
+
+**Retrospective scope assessment: 0.70**
+
+- Delivered scope: as approved in Steps 2 and 3, with four refinements inside it: the bar drawn in the ink on the card; the blank-line collapse; the unreadable reason under its line; the pledge form without Options. Correction to Step 2: there is no thread `.txt` view to check, so the post's own page stands in for it.
+- Starting revision `f381052a`; planning commit `f0657102`; five stage commits. Stage retrospectives 0.14, 0.12, 0.08, 0.18, 0.08, not summed.
+- Corrective work inside the cycle: two extra theme runs for the bar colours; browser expectations reworded for the new wording; one leftover "Post reply" press. No new requests.
+- Maintainer comfortable-fit judgment: pending. Release check: pending.
+- Single exposed rater Claude (claude-opus-5-5), 2026-11-17 UTC; R1 hashes not re-verified.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
