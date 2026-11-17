@@ -1,5 +1,8 @@
 # Effort estimation trial ledger
 
+## Cycle v3/bookmarklet_host_prefix
+
+2026-11-16T19:05Z — v3/bookmarklet_host_prefix one-shot (standing P2 enrollment, no parent): [record](./bookmarklet_host_prefix/bookmarklet_host_prefix_one_shot.md#study-history). Every bookmarklet's address starts `javascript:/*<host>*/` so a bookmark editor shows its server; also fixed the pre-existing `bookmarklet_copy_ui.mjs` Auto-theme wait. Intake **0.05** after source inspection (no pristine intake), retrospective 0.07, single exposed Claude rater. Baseline `f13ed676`; maintainer fit judgment pending; no accepted-count change.
 ## Cycle v3/prompt_plain_text_and_revise
 
 2026-11-16T10:35Z — v3/prompt_plain_text_and_revise **backlogged** at the maintainer's request, incomplete: Step 1 approved, Step 2 (scope v2) unapproved, nothing implemented. Artifacts in [backlog](./backlog/prompt_plain_text_and_revise_step2_feature_description.md). No outcome score.
