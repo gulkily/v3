@@ -7710,6 +7710,27 @@ NODE;
         assertSame($recordsAfterFirst, $recordsAfterSecond);
     }
 
+    public function testCreateThreadReadsSeparatedTagsAndReportsWhatItStored(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath, $artifactRoot);
+
+        // The request ChatGPT sent on 2026-11-16 (PF-20261116-B01): commas ran the tags together.
+        $commas = $this->renderMethod($application, 'POST', '/api/create_thread?board_tags=prompt,community,accessibility&subject=Newcomer&body=Explore');
+        $hashes = $this->renderMethod($application, 'POST', '/api/create_thread?board_tags=' . rawurlencode('#Prompt; coding prompt') . '&subject=Hashes&body=Explore');
+        $threadId = $this->extractValue($commas, 'thread_id');
+
+        assertStringContains("author=guest\nsigned=no\nboard_tags=prompt community accessibility\nauthor_notice=Posted as guest.", $commas);
+        assertStringContains("board_tags=prompt coding\n", $hashes);
+        assertStringContains("Author: guest\nBoard-Tags: prompt community accessibility\nRetracted: no", $this->renderMethod($application, 'GET', '/api/get_post?post_id=' . $threadId));
+        assertStringContains('Newcomer', $this->renderMethod($application, 'GET', '/agent/'));
+
+        $reply = $this->renderMethod($application, 'POST', '/api/create_reply?thread_id=' . $threadId . '&parent_id=' . $threadId . '&body=Reply');
+        assertStringContains("author=guest\nsigned=no\nauthor_notice=", $reply);
+        assertStringNotContains('board_tags=', $reply);
+        assertStringNotContains('Board-Tags:', $this->renderMethod($application, 'GET', '/api/get_post?post_id=' . $this->extractValue($reply, 'post_id')));
+    }
+
     public function testApplyPostTagApiRejectsAnonymousViewerAndUnknownTag(): void
     {
         [$repositoryRoot, $databasePath, $artifactRoot] = $this->createTempEnvironment();
@@ -7720,7 +7741,7 @@ NODE;
         $unknownTag = $this->renderMethod($application, 'POST', '/api/apply_post_tag?post_id=reply-001&tag=bug');
         $_COOKIE = [];
 
-        assertStringContains('error=You must set an identity hint before applying a tag.', $anonymous);
+        assertStringContains('error=You must set an identity hint before applying a tag. From a script: send a Cookie header identity_hint=', $anonymous);
         assertStringContains('error=tag must be one of: like, flag', $unknownTag);
     }
 
@@ -7820,7 +7841,7 @@ NODE;
         $unknownTag = $this->renderMethod($application, 'POST', '/api/apply_thread_tag?thread_id=root-001&tag=bug');
         $_COOKIE = [];
 
-        assertStringContains('error=You must set an identity hint before applying a tag.', $anonymous);
+        assertStringContains('error=You must set an identity hint before applying a tag. From a script: send a Cookie header identity_hint=', $anonymous);
         assertStringContains('error=tag must be one of: like, flag', $unknownTag);
     }
 

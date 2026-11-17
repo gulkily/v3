@@ -193,6 +193,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Prompt copy icon](prompt_copy_icon/prompt_copy_icon_one_shot.md) — one-shot: the Copy button on /agent/ prompt fields moves to the top right and shows only its icon.
 - [Prompt copy button, quiet in Gloss and Bubblegum](prompt_copy_quiet/prompt_copy_quiet_one_shot.md) — one-shot: the icon-only Copy button drops its theme button chrome in Gloss, Gloss Dark, Engagify and Bubblegum.
 - [Prompts as plain text](prompt_plain_text/prompt_plain_text_one_shot.md) — one-shot: /agent/ prompts are selectable text with Copy in the corner; long ones cut off with Show all.
+- [Agent write read-back](agent_write_readback/agent_write_readback_one_shot.md) — one-shot: comma-separated `board_tags` read as separate tags; create responses and `get_post` show the stored author and tags; `/llms.txt` covers guest fallback, tags and repair.
 - [Bookmarklet host prefix](bookmarklet_host_prefix/bookmarklet_host_prefix_one_shot.md) — one-shot: every bookmarklet's address starts with the server host (`javascript:/*zenmemes.com*/…`), so a bookmark editor shows where it posts.
 
 - [Reply title directive](reply_title_directive/reply_title_directive_step3_development_plan.md) — `title:` reply line retitles a thread with authority, two feature flags, and a visible likes/flags/title signals line on cards; in progress.

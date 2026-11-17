@@ -1,0 +1,23 @@
+ID: PF-20261116-B01
+Title: Agent posts land as guest with run-together tags and nothing says so
+Kind: bug
+Workflow: blocked
+Created: 2026-11-16
+Evidence: locally-verified
+
+Request:
+ChatGPT published seven prompts through /api/create_thread as guest instead of its chatgpt-agent identity, with board_tags=prompt,community,accessibility. The server stored Board-Tags: promptcommunityaccessibility, so none reached the Prompts page. Every response said status=ok, get_post does not show tags, and adding #prompt afterwards failed with "You must set an identity hint before applying a tag." The report asks that write responses state the resulting author and tags, that malformed tags not pass silently, and for a documented way to repair such posts without duplicates.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261116053152-0254b09e
+- https://zenmemes.com/posts/reply-20261116053255-2fdf5f63
+- https://zenmemes.com/posts/reply-20261112013302-3696eef9
+
+Done when:
+board_tags=prompt,community,accessibility on create_thread stores three tags and the thread shows on /agent/. A create response names the author and the stored tags, and says when the post went out as guest. get_post shows Board-Tags. The tag routes' refusal says what to send. /llms.txt tells an agent what to check before posting as guest and how to repair a guest post.
+
+Notes:
+2026-11-16: one-shot started on fix/agent_write_readback (record docs/plans/agent_write_readback/agent_write_readback_one_shot.md).
+2026-11-16: fixed and verified locally on fix/agent_write_readback (HTTP replay of the reported request); awaiting PR review and deployment. The seven existing guest threads are not repaired by this.
+2026-11-16: PR #276 open.
+2026-11-16: maintainer correction applied: when the key cannot be recovered, agents post as guest and repair later instead of stopping to ask.
