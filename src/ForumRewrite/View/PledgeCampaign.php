@@ -43,12 +43,17 @@ final class PledgeCampaign
     public const UNREADABLE = 'unreadable';
     public const WITHDRAWN = 'withdrawn';
 
+    public const STATUS_OPEN = 'open';
+    public const STATUS_GOAL_REACHED = 'goal_reached';
+    public const STATUS_COMPLETE = 'complete';
+
     /**
      * @param array<int, array<string, mixed>> $posts thread rows, root included
      * @param bool $countUnnamed count pledges whose post names no author
      * @param (callable(string): bool)|null $isOperator whether a key is an operator now; null means none is
      * @return array{
      *     author: string, goal: string, unit: string, pledged: string, count: int, fill_percent: float, goal_percent: ?float,
+     *     delivered_percent: float, status: string,
      *     pledges: array<string, array{state: string, amount: ?string, note: string, withdrawn_by?: string, withdrawn_at?: string}>,
      *     withdrawals: array<string, array{effective: bool, note: string}>,
      *     filled: string, confirmed: string,
@@ -139,6 +144,15 @@ final class PledgeCampaign
             'fill_percent' => round($sum / $scale * 100, 1),
             // The goal mark appears once pledges pass the goal; before that the bar's end is the goal.
             'goal_percent' => $sum > $goal['amount'] ? round($goal['amount'] / $scale * 100, 1) : null,
+            // The delivered part of the bar, drawn over the pledged part.
+            'delivered_percent' => round(min($filledSum, $scale) / $scale * 100, 1),
+            // Derived each time the thread is read: complete once fills reach the goal,
+            // goal_reached once pledges do, open before that.
+            'status' => match (true) {
+                $filledSum >= $goal['amount'] => self::STATUS_COMPLETE,
+                $sum >= $goal['amount'] => self::STATUS_GOAL_REACHED,
+                default => self::STATUS_OPEN,
+            },
             'pledges' => $pledges,
             'withdrawals' => $withdrawals,
             'filled' => PledgeAmount::format($filledSum),

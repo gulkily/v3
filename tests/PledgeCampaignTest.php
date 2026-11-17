@@ -535,7 +535,7 @@ final class PledgeCampaignTest
             // The reply drops the baked page, so the next build carries the new totals.
             pledgeAssertSame(false, is_file($path));
             pledgeAssertSame(true, $builder->buildSingleRoute('/threads/' . $thread));
-            pledgeAssertContains('2 pledges · 700 filled · 400 confirmed</p>', (string) file_get_contents($path));
+            pledgeAssertContains('2 pledges · 700 delivered (400 confirmed)</p>', (string) file_get_contents($path));
 
             $on = $page();
             pledgeAssertContains('data-pledge-state="fill"><a href="/posts/' . $delivered . '">Delivered by ', $on);
@@ -853,7 +853,7 @@ final class PledgeCampaignTest
         putenv('FORUM_PLEDGES_ENABLED=1');
         try {
             $html = $page();
-            pledgeAssertContains('2 pledges · 300 filled</p>', $html);
+            pledgeAssertContains('2 pledges · 300 delivered</p>', $html);
             pledgeAssertContains('data-pledge-state="fill"><a href="/posts/rv-kept">Delivered by ', $html);
             pledgeAssertContains(' · <a href="/posts/rv-confirm">confirmed by ', $html);
             pledgeAssertContains('data-pledge-state="fill-disputed"><s><a href="/posts/rv-lost">Delivered by ', $html);
@@ -912,6 +912,41 @@ final class PledgeCampaignTest
             $_COOKIE = $oldCookies;
             putenv('FORUM_PLEDGES_ENABLED');
         }
+    }
+
+    public function testTotalsSitUnderTheTitleWithAStatusOnceTheGoalIsReached(): void
+    {
+        [$root, $database, $service] = $this->environment();
+        $thread = $this->thread($service, 'Coffee for the hack weekend', "We need coffee.\ngoal: 100 coffees");
+        $page = fn (): string => $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/' . rawurlencode($thread));
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        try {
+            $open = $page();
+            $pledge = $this->reply($service, $thread, 'pledge: 120');
+            $reached = $page();
+            $this->replyTo($service, $thread, $pledge, 'filled: 30');
+            $part = $page();
+            $this->replyTo($service, $thread, $pledge, 'filled');
+            $complete = $page();
+        } finally {
+            putenv('FORUM_PLEDGES_ENABLED');
+        }
+        // The block comes before the pitch, straight after the title.
+        $title = strpos($open, 'Coffee for the hack weekend</h1>');
+        $totals = strpos($open, 'data-pledge-totals');
+        $pitch = strpos($open, 'We need coffee.');
+        pledgeAssertSame(true, $title !== false && $totals !== false && $pitch !== false && $title < $totals && $totals < $pitch);
+        pledgeAssertContains('data-pledge-status="open"', $open);
+        pledgeAssertNotContains('data-role="pledge-status"', $open);
+        pledgeAssertNotContains('pledge-bar__delivered', $open);
+        pledgeAssertContains('data-pledge-status="goal_reached"', $reached);
+        pledgeAssertContains('<span class="pledge-status" data-role="pledge-status">Goal reached</span>', $reached);
+        pledgeAssertContains('<span class="pledge-bar__delivered" style="width: 25%"></span>', $part);
+        pledgeAssertContains('aria-label="120 of 100 coffees pledged, 30 delivered"', $part);
+        // The author filled it, so delivered and confirmed are equal and "confirmed" is not repeated.
+        pledgeAssertContains('1 pledge · 30 delivered</p>', $part);
+        pledgeAssertContains('<span class="pledge-status" data-role="pledge-status">Complete</span>', $complete);
+        pledgeAssertContains('1 pledge · 120 delivered</p>', $complete);
     }
 
     private function environment(): array

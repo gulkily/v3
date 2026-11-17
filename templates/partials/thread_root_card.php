@@ -113,6 +113,8 @@ if (!$metaVisible) {
 <?php if (($eventState ?? null) !== null): ?>
   <p class="meta event-state" data-event-state="<?= $e($eventState) ?>">Event: <?= $e($eventState) ?></p>
 <?php endif; ?>
+<?php // A campaign's totals come straight after the title, so the first screen shows them. ?>
+<?= $partial('partials/pledge_totals.php') ?>
 <?= $bareMediaEmbedWarmBeacon ?>
 <?php if ($isRetracted): ?>
 <?= $indent($partial('partials/retracted_post_notice.php'), 1) ?>
@@ -121,7 +123,9 @@ if (!$metaVisible) {
 <?php endif; ?>
 <?php endif; ?>
 <?= $partial('partials/event_block.php') ?>
+<?php if ($isQdbQuoteRoot): ?>
 <?= $partial('partials/pledge_totals.php') ?>
+<?php endif; ?>
 <?php if ($metaVisible && !$isQdbQuoteRoot): ?>
   <p class="meta" data-post-byline><?= $contentMeta($post, 'created_at', '') ?><?php if ($rootTakesState): ?> <span class="post-resolution-state" data-role="post-state-label"<?= $postStateLabel === '' ? ' hidden' : '' ?>><?= $e($postStateLabel) ?></span><?php endif; ?><?php if ($thread['thread_labels'] !== []): ?> · Labels: <?= $renderLabels($thread['thread_labels']) ?><?php endif; ?><?php if ($isAgentPost): ?> · <span class="agent-label">Agent-authored reply</span><?php endif; ?><?php $trueReplyCount = (int) ($trueReplyCount ?? 0); if ($trueReplyCount > 0): ?> · <?= $trueReplyCount ?> <?= $trueReplyCount === 1 ? 'reply' : 'replies' ?><?php endif; ?></p>
 <?php endif; ?>
