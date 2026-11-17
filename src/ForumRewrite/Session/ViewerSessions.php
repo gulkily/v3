@@ -98,6 +98,16 @@ final class ViewerSessions
         return true;
     }
 
+    /** Undoes markKeyBootstrapped() after a bootstrap that did not commit. */
+    public function clearKeyBootstrapped(): void
+    {
+        $token = $this->token();
+        if ($token !== '') {
+            $this->store()->clearKeyBootstrapped($token);
+        }
+        $this->resolved = false;
+    }
+
     /** The Lobby identity's profile is gone; stop offering it. */
     public function forgetLobbyIdentity(): void
     {

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/TestViewerSession.php';
 
 use ForumRewrite\Application;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
@@ -167,6 +168,144 @@ final class KeyBootstrapTest
             assertSame(true, $retry['recovered']);
             assertSame($first['commit_sha'], $retry['commit_sha']);
         });
+    }
+
+    private const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1';
+
+    public function testSignedInIphoneThatLostItsKeyGetsAnApprovedKeyOnce(): void
+    {
+        $this->withApi(function (string $root, string $db, Application $app, callable $api): void {
+            $writer = $this->writer($root, $db, dirname($db) . '/public');
+            $lost = $this->link($app, 'lena');
+            $writer->approveUser($this->approvalInput(self::ROOT_IDENTITY, $lost));
+            TestViewerSession::signIn($lost['identity_id'], 'safari/ios/mobile');
+
+            $status = $api('GET', '/api/key_bootstrap_status');
+            assertSame(['status' => 'eligible', 'from_identity_id' => $lost['identity_id'], 'username' => 'lena', 'device_match' => true], $status);
+            $replacement = $this->link($app, 'lena');
+            $result = $this->bootstrapOverApi($api, $replacement);
+            assertSame('ok', $result['status']);
+            assertSame(1, (int) $this->profile($db, $replacement['identity_id'])['is_approved']);
+
+            // The same session never mints a second key, and a repeat of the accepted request still answers.
+            assertSame(['status' => 'refused', 'reason' => 'used'], $api('GET', '/api/key_bootstrap_status'));
+            $another = $this->link($app, 'lena');
+            assertSame(['status' => 'refused', 'reason' => 'used'], $api('POST', '/api/prepare_key_bootstrap', ['identity_id' => $another['identity_id']]));
+            assertSame(true, $api('POST', '/api/finalize_key_bootstrap', $this->lastFinalize)['recovered']);
+        });
+    }
+
+    public function testEveryRefusalLeavesTheKeyPendingOrUntouched(): void
+    {
+        $this->withApi(function (string $root, string $db, Application $app, callable $api): void {
+            $writer = $this->writer($root, $db, dirname($db) . '/public');
+            $lost = $this->link($app, 'rafa');
+            $writer->approveUser($this->approvalInput(self::ROOT_IDENTITY, $lost));
+            $replacement = $this->link($app, 'rafa');
+
+            // Another browser than the one that signed in: the manual step.
+            TestViewerSession::signIn($lost['identity_id'], 'chrome/android/mobile');
+            assertSame(false, $api('GET', '/api/key_bootstrap_status')['device_match']);
+            assertSame(['status' => 'pending', 'reason' => 'device'], $api('POST', '/api/prepare_key_bootstrap', ['identity_id' => $replacement['identity_id']]));
+            // A session that never recorded a browser counts as a mismatch.
+            TestViewerSession::signIn($lost['identity_id']);
+            assertSame(['status' => 'pending', 'reason' => 'device'], $api('POST', '/api/prepare_key_bootstrap', ['identity_id' => $replacement['identity_id']]));
+
+            TestViewerSession::signIn($lost['identity_id'], 'safari/ios/mobile');
+            // Plain HTTP needs its own flag.
+            assertSame(['status' => 'refused', 'reason' => 'http'], $api('GET', '/api/key_bootstrap_status', [], false));
+            putenv('FORUM_SESSION_KEY_BOOTSTRAP_HTTP_ENABLED=1');
+            assertSame('eligible', $api('GET', '/api/key_bootstrap_status', [], false)['status']);
+            putenv('FORUM_SESSION_KEY_BOOTSTRAP_HTTP_ENABLED');
+            // The feature flag off.
+            putenv('FORUM_SESSION_KEY_BOOTSTRAP_ENABLED=0');
+            assertSame(['status' => 'refused', 'reason' => 'off'], $api('GET', '/api/key_bootstrap_status'));
+            putenv('FORUM_SESSION_KEY_BOOTSTRAP_ENABLED=1');
+            // Another site cannot post on this session's behalf.
+            assertSame(403, $this->lastStatus($api('POST', '/api/prepare_key_bootstrap', ['identity_id' => $replacement['identity_id']], true, 'https://evil.example')));
+            // Signed out ("Remove this key" signs out first): nothing to vouch with.
+            TestViewerSession::lobbyOnly($lost['identity_id']);
+            assertSame(['status' => 'refused', 'reason' => 'signed_out'], $api('GET', '/api/key_bootstrap_status'));
+            assertSame(0, (int) $this->profile($db, $replacement['identity_id'])['is_approved']);
+        });
+    }
+
+    public function testRetiredSessionKeyCannotVouch(): void
+    {
+        $this->withApi(function (string $root, string $db, Application $app, callable $api): void {
+            $writer = $this->writer($root, $db, dirname($db) . '/public');
+            $lost = $this->link($app, 'emil');
+            $writer->approveUser($this->approvalInput(self::ROOT_IDENTITY, $lost));
+            $kept = $this->link($app, 'emil');
+            $writer->approveUser($this->approvalInput(self::ROOT_IDENTITY, $kept));
+            $prepared = $writer->prepareKeyRetirement(['actor_identity_id' => $kept['identity_id'], 'target_identity_id' => $lost['identity_id']]);
+            $writer->finalizePreparedKeyRetirement(['prepare_token' => $prepared['prepare_token'], 'canonical_record' => $prepared['canonical_record'],
+                'detached_signature' => $this->sign($kept['home'], $prepared['canonical_record'])]);
+            TestViewerSession::signIn($lost['identity_id'], 'safari/ios/mobile');
+            assertSame(['status' => 'refused', 'reason' => 'not_member'], $api('GET', '/api/key_bootstrap_status'));
+        });
+    }
+
+    /** @var array<string, string> */
+    private array $lastFinalize = [];
+
+    /** @return array<string, mixed> */
+    private function bootstrapOverApi(callable $api, array $replacement): array
+    {
+        $prepared = $api('POST', '/api/prepare_key_bootstrap', ['identity_id' => $replacement['identity_id']]);
+        if (($prepared['status'] ?? '') !== 'ok') throw new RuntimeException('prepare_key_bootstrap: ' . json_encode($prepared));
+        $this->lastFinalize = $this->finalizeInput($prepared, $replacement['identity_id'], $this->sign($replacement['home'], $prepared['canonical_record']));
+        return $api('POST', '/api/finalize_key_bootstrap', $this->lastFinalize);
+    }
+
+    private function lastStatus(array $response): int
+    {
+        return (int) ($response['_http_status'] ?? 0);
+    }
+
+    /** Runs a test against the HTTP API with the flag on, from an iPhone over HTTPS. */
+    private function withApi(callable $test): void
+    {
+        $saved = $_SERVER;
+        putenv('FORUM_SESSION_KEY_BOOTSTRAP_ENABLED=1');
+        try {
+            $this->withRepository(function (string $root, string $db, string $artifacts, Application $app) use ($test): void {
+                $api = function (string $method, string $path, array $post = [], bool $https = true, ?string $origin = null) use ($root, $db, $artifacts): array {
+                    $_SERVER['HTTPS'] = $https ? 'on' : 'off';
+                    $_SERVER['HTTP_HOST'] = 'board.example';
+                    $_SERVER['HTTP_ORIGIN'] = $origin ?? (($https ? 'https://' : 'http://') . 'board.example');
+                    $_SERVER['HTTP_USER_AGENT'] = self::IPHONE;
+                    $_SERVER['REQUEST_METHOD'] = $method;
+                    // The session cookie follows the scheme, as in a browser.
+                    [$name, $token] = TestViewerSession::cookie();
+                    $cookies = $_COOKIE;
+                    if ($token === '') {
+                        foreach ([\ForumRewrite\Session\ViewerSessionCookie::HTTPS_NAME, \ForumRewrite\Session\ViewerSessionCookie::HTTP_NAME] as $candidate) {
+                            if (($_COOKIE[$candidate] ?? '') !== '') $token = $_COOKIE[$candidate];
+                        }
+                    }
+                    unset($_COOKIE[\ForumRewrite\Session\ViewerSessionCookie::HTTPS_NAME], $_COOKIE[\ForumRewrite\Session\ViewerSessionCookie::HTTP_NAME]);
+                    if ($token !== '') $_COOKIE[\ForumRewrite\Session\ViewerSessionCookie::name($https)] = $token;
+                    $_POST = $post;
+                    http_response_code(200);
+                    ob_start();
+                    (new Application(dirname(__DIR__), $root, $db, $artifacts))->handle($method, $path);
+                    $body = (string) ob_get_clean();
+                    $_POST = [];
+                    $code = http_response_code();
+                    $_COOKIE = $cookies;
+                    $decoded = json_decode($body, true);
+                    if (!is_array($decoded)) throw new RuntimeException($path . ': ' . $body);
+                    return $code === 403 ? $decoded + ['_http_status' => 403] : $decoded;
+                };
+                $test($root, $db, $app, $api);
+            });
+        } finally {
+            $_SERVER = $saved;
+            putenv('FORUM_SESSION_KEY_BOOTSTRAP_ENABLED');
+            putenv('FORUM_SESSION_KEY_BOOTSTRAP_HTTP_ENABLED');
+            TestViewerSession::reset();
+        }
     }
 
     /** @return array<string, mixed> */

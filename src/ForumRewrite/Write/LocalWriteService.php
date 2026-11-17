@@ -2674,16 +2674,19 @@ class LocalWriteService
      * Accepts a prepared bootstrap record signed by the new key and commits it with a
      * `session` receipt. A retry of an accepted record returns the accepted result.
      *
+     * With $recoveryOnly, nothing new is accepted: only a repeat of an accepted record returns.
+     *
      * @param array<string, mixed> $input prepare_token, post_id, record_path, author_identity_id, canonical_record, detached_signature
      * @return array<string, mixed>
      */
-    public function finalizeKeyBootstrap(array $input): array
+    public function finalizeKeyBootstrap(array $input, bool $recoveryOnly = false): array
     {
-        return $this->withTimedWriteLock(function () use ($input): array {
+        return $this->withTimedWriteLock(function () use ($input, $recoveryOnly): array {
             $this->assertWritableRepository();
             $token = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
             $recovered = $this->recoverAcceptedApproval($input, 'session');
             if ($recovered !== null) return $recovered;
+            if ($recoveryOnly) throw new RuntimeException('This session already added a key.');
             $prepared = $this->loadPreparedPost($token);
             if (($prepared['kind'] ?? '') !== 'key-bootstrap' || strtotime((string) $prepared['expires_at']) < time()) {
                 throw new RuntimeException('Key bootstrap expired. Reload the page to try again.');

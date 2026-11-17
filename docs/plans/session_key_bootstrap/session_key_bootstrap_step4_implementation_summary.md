@@ -76,3 +76,25 @@ PR #274 was still open at Step 4 entry. This branch starts from `main` and rebas
 **Retrospective stage work: 0.24**
 
 *— Claude · 2026-11-16 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Bootstrap endpoint
+
+**Original estimate: 0.12**
+
+- Changes:
+  - `KeyBootstrapApiController.php` (new): `GET /api/key_bootstrap_status`, `POST /api/prepare_key_bootstrap`, `POST /api/finalize_key_bootstrap`. Each checks the flag, the scheme (HTTPS, or HTTP with its flag), a signed-in session, one bootstrap per session, an approved and unretired session key, and the browser description. POSTs must carry this site's `Origin`.
+  - A mismatch answers `pending` with reason `device`; nothing is written, and the new key stays pending for the existing approval tools.
+  - The session is marked before the commit, so two requests cannot both mint a key; a failed commit clears the mark. A repeat of an accepted finalize returns the accepted result through a recovery-only writer call, so a second prepared record can never ride in as a "retry".
+  - `ViewerSessionStore.php`, `ViewerSessions.php`: `clearKeyBootstrapped`.
+  - `Application.php`: routes; `ApiRouteCatalog.php`: three entries.
+  - `tests/Support/TestViewerSession.php`: `signIn` takes an optional browser description.
+- Verification:
+  - Passed: `KeyBootstrapTest` (8 tests). New cases: an iPhone session gets an approved key; the second call, status and prepare refuse with `used`; a repeat finalize recovers. Mismatch and no recorded description give `pending`; HTTP is refused without its flag and allowed with it; flag off gives `off`; another origin gets 403; a signed-out session ("Remove this key") gives `signed_out`; a retired session key gives `not_member`.
+  - Passed: `./v3 test --smoke KeyBootstrapTest ViewerSessionStoreTest ApiRouteCatalogTest WebServerRoutingTest AuthNavigationTest PrivateSiteAuthTest` (479 of 479). The full suite was not run.
+- Notes:
+  - Found and closed during review: a retry check based only on the record path would have let a second prepared record through. The writer's recovery-only mode prevents it, and the test repeats an accepted finalize.
+  - Members-only sites need no route exception: the session's key is approved, and identity creation routes are already open.
+
+**Retrospective stage work: 0.13**
+
+*— Claude · 2026-11-16 UTC · Model: claude-opus-5-5*

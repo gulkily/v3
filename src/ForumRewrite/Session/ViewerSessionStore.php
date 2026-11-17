@@ -200,6 +200,15 @@ final class ViewerSessionStore
         $this->pdo->prepare('DELETE FROM viewer_auth_challenges WHERE expires_at < :now')->execute(['now' => $now]);
     }
 
+    /** Undoes markKeyBootstrapped() when the bootstrap it allowed did not commit. */
+    public function clearKeyBootstrapped(string $token): void
+    {
+        $hash = $this->currentHash($token);
+        if ($hash !== null) {
+            $this->pdo->prepare('UPDATE viewer_sessions SET key_bootstrapped_at = 0 WHERE token_hash = :hash')->execute(['hash' => $hash]);
+        }
+    }
+
     /** @param array<string, mixed> $row */
     private static function session(string $token, array $row): ViewerSession
     {

@@ -294,6 +294,16 @@ final class Application
             return;
         }
 
+        if (in_array($path, ['/api/key_bootstrap_status', '/api/prepare_key_bootstrap', '/api/finalize_key_bootstrap'], true)) {
+            $controller = new \ForumRewrite\Http\KeyBootstrapApiController($this->routeServices());
+            match ($path) {
+                '/api/key_bootstrap_status' => $controller->status($method),
+                '/api/prepare_key_bootstrap' => $controller->prepare($method, $query),
+                default => $controller->finalize($method, $query),
+            };
+            return;
+        }
+
         if (str_starts_with($path, '/api/private_messages/history_sync/')) {
             (new \ForumRewrite\Http\PrivateMessageHistorySyncController($this->routeServices(), $this->authenticatedViewerProfile(...), function () {
                 $config=PrivateConfig::load($this->projectRoot);
@@ -2467,6 +2477,7 @@ final class Application
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username', '/api/get_username_claim_cta',
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
+            '/api/key_bootstrap_status', '/api/prepare_key_bootstrap', '/api/finalize_key_bootstrap',
             '/api/prepare_thread', '/api/prepare_quote', '/api/prepare_identity', '/api/create_reply',
             '/api/prepare_reply', '/api/create_prepared_post', '/api/create_signed_post', '/api/prepare_retraction', '/api/create_prepared_retraction', '/api/prepare_post_format', '/api/create_prepared_post_format', '/api/create_identity',
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/scripture_reply_status', '/api/expand_agent_reply', '/api/agent_expansion_status',
