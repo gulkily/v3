@@ -104,6 +104,6 @@ Diff: two CSS rules (one per file) reusing the existing phone no-tab-bar and sta
 
 ## Commit/merge/publication status
 
-Implementation commit: pending at time of writing; pushed with this record. Not merged or deployed.
+Implementation commit `4ec3aed0`; PR #307 open. Not merged or deployed.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
