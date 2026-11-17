@@ -12,6 +12,10 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — pushed on `fix/duplicate-post-submissions`, not merged into `main`. Review it, confirm the anonymous post ID format, then merge. Remove this entry once merged.
 
+[Import review summary one-shot](import_review_summary/import_review_summary_one_shot.md) — Tools → Import groups review causes by state and reason instead of listing every path.
+
+[Import-instance GUI](import_instance_gui/import_instance_gui_step1_solution_assessment.md) — root-only Tools → Import page: import from a remembered or typed source, watch progress, resume or cancel, read the result.
+
 [Import cancel one-shot](import_cancel/import_cancel_one_shot.md) — `./v3 import-instance --cancel` discards an interrupted import that has not committed its content; prerequisite for the import-instance GUI.
 
 [Pledge count unnamed](pledge_count_unnamed/pledge_count_unnamed_one_shot.md) — a flag that lets pledges with no name count toward a campaign's sum.
@@ -537,5 +541,6 @@ and repair its navigation and affected references. See the
 - [Live feature tour](live_feature_tour/live_feature_tour_one_shot.md) — one-shot: unlinked page of live, scaled-down frames of the main ZenMemes pages.
 - [Live feature tour, quiet](live_feature_tour_quiet/live_feature_tour_quiet_one_shot.md) — one-shot: no intro copy and no new tabs on the tour page.
 - [Offline card extra line](offline_card_extra_line/offline_card_extra_line_one_shot.md) — one-shot: offline board cards show one more line of the post body.
+- [Tour snapshots](tour_snapshots/tour_snapshots_step1_solution_assessment.md) — staged: the feature tour as one row per feature with essays, served from pre-rendered HTML snapshots refreshed by deploy, cron or Tools → Operations.
 - [Approval root suggestions](approval_suggest_roots/approval_suggest_roots_one_shot.md) — one-shot: read-only `./v3 approval suggest-roots` that finds which keys to seed as roots after importing a site without its approval seeds.
 - [Import with approvals](import_with_approvals/import_with_approvals_one_shot.md) — one-shot: `import-instance --with-approvals` imports approval/invitation posts and receipts (never seeds) and points to `./v3 approval suggest-roots`.

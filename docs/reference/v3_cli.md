@@ -1202,6 +1202,17 @@ Do not silently downgrade pending verified requests to unverified generation.
 
 Scripture writer override: `SCRIPTURE_RESPONSE_MODEL` is blank by default (inherits `LLM_MODEL`). OpenAI scripture requests and Expand may select `gpt-5-mini` or `gpt-5.6-sol`; other response modes and structured moderation retain the shared model. Sol explicit reasoning is currently restricted to the evaluated `low` setting. This prepares isolated comparison; it does not activate verified guidance or establish release acceptance.
 
+## Tour snapshots
+
+`./v3 tour refresh|status [--json]` manages the tour at `/assets/tour/`.
+`refresh` renders each page listed in `resources/tour.txt` as a logged-out
+snapshot through the isolated tour worker and rebuilds the tour page; a page
+that fails keeps its previous snapshot, a page that is not found is left out,
+and a second refresh while one runs exits 2 with "already running". `status`
+shows the last refresh, per-page results and whether a refresh is due. Deploys,
+the high-traffic cron and Tools → Operations start a refresh automatically when
+one is due. See [tour snapshots](tour_snapshots.md).
+
 ## High-traffic mode
 
 `./v3 high-traffic enable|disable|status|restore|purge|refresh [/route/]`

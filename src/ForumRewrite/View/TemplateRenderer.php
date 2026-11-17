@@ -52,6 +52,7 @@ final class TemplateRenderer
         'feature_flags.php' => ['/assets/tool-details.css'],
         'operations.php' => ['/assets/tool-details.css'],
         'deploy.php' => ['/assets/tool-details.css'],
+        'tools_import.php' => ['/assets/tool-details.css'],
         'feature_flag_change.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
         'offline_health.php' => ['/assets/tool-details.css'],
@@ -744,14 +745,18 @@ final class TemplateRenderer
             'tagUnlocksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED),
             'mediaEmbedsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED),
         ], $data);
-        // Drop tools whose pages are off: Agent Prompts opens /agent/, and the
-        // usage tools exist only while the "Usage reports" flag is on.
+        // Drop tools whose pages are off: Agent Prompts opens /agent/, the
+        // usage tools exist only while the "Usage reports" flag is on, and
+        // Import only while the "Import page" flag is on.
         $hiddenTools = [];
         if (!$data['agentPageEnabled']) {
             $hiddenTools[] = 'agent-prompts';
         }
         if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED)) {
             array_push($hiddenTools, 'usage-log', 'usage-reports');
+        }
+        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::INSTANCE_IMPORT_PAGE_ENABLED)) {
+            $hiddenTools[] = 'import';
         }
         if ($hiddenTools !== []) {
             foreach (['toolPages', 'toolNavOptions'] as $toolListKey) {

@@ -3,8 +3,29 @@
 Use `./v3 import-instance` to download a public instance's repository archive,
 merge its supported forum content into this instance, and refresh the local
 read model and applicable offline snapshots. Import does not render pages or
-fingerprint/copy presentation assets. This is an on-demand command;
-there is no schedule or web UI in this release.
+fingerprint/copy presentation assets. This is an on-demand command with no
+schedule; root-approved operators can also run it from Tools → Import (see
+[Browser entry](#browser-entry)).
+
+## Browser entry
+
+With the "Import page" flag (`FORUM_INSTANCE_IMPORT_PAGE_ENABLED`) on, Tools →
+Import lets a signed-in root-approved operator import from a typed or
+remembered source, then resume or cancel an interrupted import. The page queues
+an `instance_import` task. The task worker runs this same command with its own
+destination paths, so limits, locks, exclusions and conflict rules are
+unchanged. The worker must be running; the page says when it is not. One
+request runs at a time.
+
+Each request is a private `Key: value` file beside the task queue database
+(`state/private/instance_import/` by default), with the command's full output
+in a `.log` file next to it. Remembered sources (up to 20) live in `sources.txt`
+in the same directory. None of these enter the content repository or public
+downloads. The page shows progress lines while the task runs, then the last
+result: counts, image status and grouped review causes, with per-file entries
+under Advanced (first 500; the rest stay in the saved `report.json`). Preview
+(`--dry-run`), named sources from `--sources` and path overrides stay
+command-line only.
 
 ## Run an import
 
