@@ -575,3 +575,5 @@ and repair its navigation and affected references. See the
 - [High-traffic coverage](high_traffic_coverage/high_traffic_coverage_one_shot.md) — one-shot, documentation-only: checklist of what still reaches PHP while high-traffic mode is on.
 
 - [Invite QR pitch](invite_qr_pitch/invite_qr_pitch_one_shot.md) — one-shot: the invite QR shows a short pitch for the person scanning it, and the code is smaller.
+
+- [Import planning speed](import_planning_speed/import_planning_speed_step3_development_plan.md) — staged: import planning reuses saved signature checks and one GPG session per signer key.
