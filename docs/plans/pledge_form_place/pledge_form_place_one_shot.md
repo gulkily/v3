@@ -7,7 +7,8 @@ Extended estimates: enabled (no alternatives or stages, so only the cycle estima
 
 **Cycle estimate: 0.15**
 
-Status: planned; next permitted action: implement after the planning commit.
+Status: technically complete and committed; next permitted action: push and open the PR (authorized).
+Debug report: [log](pledge_form_place_debug_log.md)
 
 ## Original request
 
@@ -52,14 +53,38 @@ Existing `pledge_totals.php` partial and `reply_form.php` pledge placement; exis
 `PledgeCampaignTest` position check (title < totals < essay < form); `tests/browser/pledge_campaign.mjs` in all 17 themes at 375 and 1280 pixels, with screenshots looked at. Smoke set plus `PledgeCampaignTest`. Full suite not run, per `AGENTS.md`.
 
 Starting revisions and branch: `feat/pledge-form-place` from `cc9f7d0a`.
-Planning commit: pending.
+Planning commit: `6df322ab` (plan and index link only; confirmed with `git log`).
 
 ## Dated execution history
 
 - 2026-11-17: plan written.
+- 2026-11-17: `pledge_totals.php` takes `$pledgePart` (`totals` by default, or `form`); the root card renders the form after the body and event block, before the byline. QDB roots render totals then form after the quote. `.pledge-form` has a 1px `var(--line)` border, `var(--panel)` background and 0.75rem padding.
+- 2026-11-17: tests moved with the form: the PHP position check now also requires the form after the pitch and outside the totals; the browser check expects the form outside `[data-pledge-totals]`, and in every theme checks it starts below the opening post's text and has a border on all four sides.
 
 ## Study history
 
 - Intake: **0.15**, exposed rater Claude (claude-opus-5-5), after reading `pledge_totals.php`, `thread_root_card.php`, the `.pledge-form` CSS and the tests that find the form (no pristine intake).
+
+- Execution entry: reaffirmed 0.15.
+- Closeout retrospective: **0.15**. No surprises; not hours or measured labor; maintainer acceptance pending.
+
+## Outcome
+
+Delivered as bounded. A campaign thread reads: title, totals, the opening post's text, then the pledge form in a bordered panel, then the byline and the pledge rows. Posting from the form works as before.
+
+Limitations: the panel border uses `--line`, which is faint in some light themes by design; Word97 draws the essay in its own sunken box, so the form panel sits under a second box there. The fixed phone bar can cover the Post pledge button until the reader scrolls, as before.
+
+## Verification
+
+- `tests/browser/pledge_campaign.mjs` (Chrome headless): whole flow, and every one of 17 themes at 375 and 1280 pixels, with the new position and border checks. Screenshots of light, dark, Word97, Arena, Bubblegum and Console looked at by the agent.
+- `./v3 test --smoke PledgeCampaignTest`: 506 run, 506 passed. Full suite not run, per `AGENTS.md`. Not checked: a real iPhone, production after deploy.
+
+## Final review
+
+Diff checked: two templates, one CSS rule, two tests, the concept entry, the checklist, this record, its debug log, the plans index and the cycle ledger. No new partial or duplicated form markup: the same partial renders both parts. Touched concept [Pledge campaign](../../concepts/pledge_campaign.md) updated for the form's place.
+
+## Commit/merge/publication status
+
+Completion commit: pending at writing. Not pushed, merged or deployed at writing.
 
 *— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*

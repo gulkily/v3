@@ -1,15 +1,18 @@
 <?php
 /**
- * A campaign's totals, under the thread title: the pledged sum against the goal, one status
- * word once the goal is reached, a bar with the delivered part drawn over the pledged part,
- * the count line, and the pledge form: the reply composer with an amount field, posting a reply
- * to the opening post. The same for every reader, so thread pages stay static.
+ * A campaign's block, in two parts. 'totals', under the thread title: the pledged sum against
+ * the goal, one status word once the goal is reached, a bar with the delivered part drawn over
+ * the pledged part, and the count line. 'form', below the opening post: the reply composer with
+ * an amount field, posting a reply to the opening post, in a framed panel. The same for every
+ * reader, so thread pages stay static.
  *
  * @var array<string, mixed>|null $pledgeCampaign from ForumRewrite\View\PledgeCampaign::fromPosts()
+ * @var string|null $pledgePart 'totals' (default) or 'form'
  */
 $pledgeCampaign ??= null;
+$pledgePart = ($pledgePart ?? 'totals') === 'form' ? 'form' : 'totals';
 ?>
-<?php if (is_array($pledgeCampaign)): ?>
+<?php if (is_array($pledgeCampaign) && $pledgePart === 'totals'): ?>
 <?php
 $pledgeUnitSuffix = $pledgeCampaign['unit'] !== '' ? ' ' . $pledgeCampaign['unit'] : '';
 $pledgeStatus = (string) ($pledgeCampaign['status'] ?? \ForumRewrite\View\PledgeCampaign::STATUS_OPEN);
@@ -36,9 +39,10 @@ $pledgeCount = (int) $pledgeCampaign['count'];
 <?php endif; ?>
   </div>
   <p class="meta pledge-totals__count"><?= $pledgeCount ?> <?= $pledgeCount === 1 ? 'pledge' : 'pledges' ?><?php if ($pledgeDelivered !== '0'): ?> · <?= $e($pledgeDelivered) ?> delivered<?php if ($pledgeConfirmed !== '0' && $pledgeConfirmed !== $pledgeDelivered): ?> (<?= $e($pledgeConfirmed) ?> confirmed)<?php endif; ?><?php endif; ?></p>
-<?php if (isset($thread['root_post_id'])): ?>
-  <div class="pledge-form" data-compose-root data-unicode-authored-text="<?= ($unicodeAuthoredTextEnabled ?? false) ? '1' : '0' ?>" data-emoji-authored-text="<?= ($emojiAuthoredTextEnabled ?? false) ? '1' : '0' ?>">
-    <p class="meta inline-reply-identity-status" data-role="compose-identity-status" hidden></p>
+</div>
+<?php elseif (is_array($pledgeCampaign) && isset($thread['root_post_id'])): ?>
+<div class="pledge-form" data-compose-root data-unicode-authored-text="<?= ($unicodeAuthoredTextEnabled ?? false) ? '1' : '0' ?>" data-emoji-authored-text="<?= ($emojiAuthoredTextEnabled ?? false) ? '1' : '0' ?>">
+  <p class="meta inline-reply-identity-status" data-role="compose-identity-status" hidden></p>
 <?= $indent($partial('partials/reply_form.php', [
     'threadId' => $thread['root_post_id'],
     'parentId' => $thread['root_post_id'],
@@ -50,8 +54,6 @@ $pledgeCount = (int) $pledgeCampaign['count'];
     'showBodyLabel' => false,
     'phoneReplyEnabled' => false,
     'pledgePlacement' => true,
-]), 2) ?>
-  </div>
-<?php endif; ?>
+]), 1) ?>
 </div>
 <?php endif; ?>

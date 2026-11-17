@@ -2338,7 +2338,8 @@ pre {
 .post-more > .post-card-actions { margin-top: 0.4rem; }
 .post-more form.pledge-withdraw { display: inline-flex; margin: 0; }
 .pledge-withdraw { margin: 0.3rem 0 0; }
-.pledge-form { margin: 0.9rem 0 0; }
+.pledge-form { margin: 1rem 0; padding: 0.75rem; border: 1px solid var(--line); background: var(--panel); }
+.pledge-form form { margin: 0; }
 .pledge-field { display: flex; align-items: center; gap: 0.5rem; }
 .pledge-field input { flex: 0 1 8rem; min-width: 0; width: 8rem; }
 .pledge-field__unit { color: var(--ink-soft); overflow-wrap: anywhere; }
