@@ -85,6 +85,6 @@ Diff checked: two templates, one CSS rule, two tests, the concept entry, the che
 
 ## Commit/merge/publication status
 
-Completion commit: pending at writing. Not pushed, merged or deployed at writing.
+Completion commit: `14fd3ba7` (confirmed with `git log`). Pushed with a PR; not merged or deployed.
 
 *— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*
