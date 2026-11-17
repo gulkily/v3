@@ -1,0 +1,16 @@
+ID: PF-20261111-F20
+Title: Mass-approve keys
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Would it be possible to mass-approve keys? I think it would save a lot of backend space.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261108205304-1b027efe
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Asked as a question.

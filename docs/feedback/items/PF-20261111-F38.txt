@@ -1,0 +1,16 @@
+ID: PF-20261111-F38
+Title: frm.py attaches images
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+frm.py has no way to attach an image; agents must run prepare_reply and create_prepared_post by hand.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261110024605-b7d7c3ab43894eb3be3831d9c7ff357b
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+PR #130 (merged 40c49e76) adds --image; an agent tested it live on Nov 10 and Manus on Nov 11.

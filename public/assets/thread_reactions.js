@@ -215,6 +215,48 @@
     details.textContent = technicalDetails;
   }
 
+  // Feedback line -> reactions on it that are waiting in the Outbox. Each entry's finish()
+  // shows the result once the Outbox retry loop sees the item accepted or refused.
+  const outboxNotices = new Map();
+
+  function addOutboxNotice(node, itemId, text, finish) {
+    if (!node || !itemId) return;
+    const notices = (outboxNotices.get(node) || []).filter((notice) => notice.itemId !== itemId);
+    notices.push({ itemId, text, finish });
+    outboxNotices.set(node, notices);
+  }
+
+  function outboxNoticeLabel(button, tag) {
+    const label = String(button.textContent || "").trim() || (tag.charAt(0).toUpperCase() + tag.slice(1));
+    return `${label} is saved in your Outbox and will be sent automatically.`;
+  }
+
+  // Called after each Outbox pass: an accepted reaction item is removed from storage,
+  // a refused one is kept as rejected.
+  async function settleOutboxNotices(results) {
+    if (!outboxNotices.size || !outboxAvailable()) return;
+    let stored = [];
+    try { stored = await window.forumOutboxStorage.list(); } catch (ignored) { return; }
+    const byId = new Map(stored.map((item) => [item.id, item]));
+    const resultById = new Map((results || []).filter(Boolean).map((item) => [item.id, item]));
+    outboxNotices.forEach((notices, node) => {
+      const remaining = [];
+      const finished = [];
+      notices.forEach((notice) => {
+        const item = byId.get(notice.itemId);
+        if (!item || item.state === "accepted") {
+          finished.push([notice, true, resultById.get(notice.itemId) || item || null]);
+        } else if (["rejected", "conflicted", "cancelled", "needs_attention"].indexOf(item.state) !== -1) {
+          finished.push([notice, false, item]);
+        } else {
+          remaining.push(notice);
+        }
+      });
+      if (remaining.length) outboxNotices.set(node, remaining); else outboxNotices.delete(node);
+      finished.forEach(([notice, accepted, item]) => notice.finish(accepted, item));
+    });
+  }
+
   function setFeedback(node, message, kind) {
     const technicalDetails = arguments.length > 3 && arguments[3] && typeof arguments[3].technicalDetails === "string"
       ? arguments[3].technicalDetails.trim()
@@ -223,7 +265,10 @@
       return;
     }
 
-    node.textContent = message;
+    // A reaction waiting in the Outbox keeps saying so until the Outbox resends it.
+    const notices = (outboxNotices.get(node) || []).map((notice) => notice.text)
+      .filter((text) => message.indexOf(text) === -1);
+    node.textContent = notices.length ? `${message} ${notices.join(" ")}` : message;
     node.setAttribute("data-kind", kind);
     node.hidden = false;
     renderTechnicalFeedback(node, technicalDetails);
@@ -597,6 +642,11 @@
 
   function formatThreadScoreText(scoreNode, scoreTotal, voteCount) {
     const format = threadScoreFormat(scoreNode);
+    if (format === "likes") {
+      // The Prompts page's count: "1 like", "2 likes", nothing at zero.
+      const likes = Math.max(0, Number(scoreTotal) || 0);
+      return likes === 0 ? "" : `${likes} ${likes === 1 ? "like" : "likes"}`;
+    }
     if (format === "bare-ratio" && voteCount !== undefined && voteCount !== "") {
       return `(${scoreTotal}/${voteCount})`;
     }
@@ -640,6 +690,11 @@
     }
 
     const format = threadScoreFormat(scoreNode);
+    if (format === "likes") {
+      const text = String(scoreNode.textContent || "").trim();
+      const likes = text.match(/^(\d+) likes?$/);
+      return text === "" ? 0 : (likes ? Number(likes[1]) : null);
+    }
     const pattern = format === "bare-ratio"
       ? /^\((-?\d+)\/\d+\)$/
       : format === "bare"
@@ -838,6 +893,7 @@
     outboxRetryTimer = setTimeout(async () => {
       outboxRetryTimer = null;
       const results = await processOutbox();
+      await settleOutboxNotices(results);
       if (results.some((item) => item && item.state === "waiting_for_connection")) {
         scheduleOutboxRetry();
       } else {
@@ -857,10 +913,40 @@
       threadId: parseResponseValue(result.text, "thread_id"),
       postId: parseResponseValue(result.text, "post_id"),
       commitSha: parseResponseValue(result.text, "commit_sha"),
+      viewerIsApproved: parseResponseValue(result.text, "viewer_is_approved") === "yes",
     };
   }
 
-  async function submitReaction(kind, target, tag) {
+  // The server writes one record at a time, so the page sends one reaction at a time, in
+  // click order: a second click waits here instead of waiting on the server's write lock.
+  let reactionSendChain = Promise.resolve();
+  function submitReaction(kind, target, tag) {
+    const run = reactionSendChain.then(() => submitReactionNow(kind, target, tag));
+    reactionSendChain = run.catch(() => {});
+    return run;
+  }
+
+  // Record times have whole seconds, and a post's latest state mark wins, so two marks
+  // on one target in the same second would tie. The next one waits for a new second.
+  const lastReactionSecond = new Map();
+  async function waitForNewSecond(key) {
+    const last = lastReactionSecond.get(key);
+    if (last === undefined || typeof setTimeout !== "function") return;
+    const wait = (last + 1) * 1000 - Date.now();
+    if (wait > 0) await new Promise((done) => setTimeout(done, wait + 5));
+  }
+
+  async function submitReactionNow(kind, target, tag) {
+    const targetKey = `${kind}:${target}`;
+    await waitForNewSecond(targetKey);
+    try {
+      return await sendReactionNow(kind, target, tag);
+    } finally {
+      lastReactionSecond.set(targetKey, Math.floor(Date.now() / 1000));
+    }
+  }
+
+  async function sendReactionNow(kind, target, tag) {
     const fields = { [kind === "thread" ? "thread_id" : "post_id"]: target, tag,
       ...await signedReactionFields(kind, target, tag) };
     const send = async () => {
@@ -1022,6 +1108,7 @@
       const tag = button.getAttribute("data-tag") || "";
       const appliedLabel = button.getAttribute("data-applied-label") || "Applied";
       const operationKey = reactionOperationKey("thread", threadId, tag);
+      const noticeText = outboxNoticeLabel(button, tag);
       const timing = startActionTiming("apply_thread_tag");
       if (!beginPendingReaction(operationKey)) {
         completeActionTiming(timing, "ignored_pending");
@@ -1103,6 +1190,17 @@
           "error",
           { technicalDetails: feedback.technicalDetails }
         );
+        if (queued) {
+          addOutboxNotice(feedbackNode, outboxItem.id, noticeText, function (accepted, item) {
+            if (!accepted) {
+              restoreThreadReactionState(button, scoreNode, previousState);
+              setFeedback(feedbackNode, outboxRefusal(item), "error");
+              return;
+            }
+            setFeedback(feedbackNode, appliedMessageText(button.getAttribute("data-applied-message"), appliedLabel), "ok");
+            notifyReactionApplied();
+          });
+        }
         if (error && error.accountCreationFailure) {
           offerReactionRetry(feedbackNode, button);
         }
@@ -1158,6 +1256,16 @@
     }
   }
 
+  function stateMarkMessage(tag, appliedLabel, approved) {
+    if (!approved) return "Saved. Only approved members' marks change a reply's state.";
+    if (tag === "open") return `${appliedLabel === "Unclaim" ? "Unclaimed" : "Reopened"}.`;
+    return tag === "claimed" ? "Claimed. Others will see you're on it." : `${appliedLabel}.`;
+  }
+
+  function outboxRefusal(item) {
+    return (item && item.outcome && item.outcome.message) || "Unable to apply tag.";
+  }
+
   function bindPostReactions(root) {
     if (boundPostRoots.has(root)) {
       return;
@@ -1183,6 +1291,7 @@
       const tag = button.getAttribute("data-tag") || "";
       const appliedLabel = button.getAttribute("data-applied-label") || "Applied";
       const operationKey = reactionOperationKey("post", postId, tag);
+      const noticeText = outboxNoticeLabel(button, tag);
       const timing = startActionTiming("apply_post_tag");
       if (!beginPendingReaction(operationKey)) {
         completeActionTiming(timing, "ignored_pending");
@@ -1224,9 +1333,7 @@
           if (approved) {
             applyPostResolution(root, tag);
           }
-          setFeedback(feedbackNode, approved
-            ? (tag === "open" ? `${appliedLabel === "Unclaim" ? "Unclaimed" : "Reopened"}.` : (tag === "claimed" ? "Claimed. Others will see you're on it." : `${appliedLabel}.`))
-            : "Saved. Only approved members' marks change a reply's state.", "ok");
+          setFeedback(feedbackNode, stateMarkMessage(tag, appliedLabel, approved), "ok");
           notifyReactionApplied();
           markActionTiming(timing, "forum_reconcile_complete");
           completeActionTiming(timing, "ok");
@@ -1274,6 +1381,25 @@
           "error",
           { technicalDetails: feedback.technicalDetails }
         );
+        if (queued) {
+          addOutboxNotice(feedbackNode, outboxItem.id, noticeText, function (accepted, item) {
+            if (!accepted) {
+              if (!isStateButton(button)) restorePostReactionState(root, button, previousState);
+              setFeedback(feedbackNode, outboxRefusal(item), "error");
+              return;
+            }
+            const result = item && item.outcome && typeof item.outcome.viewerIsApproved === "boolean" ? item.outcome : null;
+            if (!isStateButton(button)) {
+              setFeedback(feedbackNode, postReactionMessage(appliedLabel, true, button.getAttribute("data-applied-message")), "ok");
+            } else if (result) {
+              if (result.viewerIsApproved) applyPostResolution(root, tag);
+              setFeedback(feedbackNode, stateMarkMessage(tag, appliedLabel, result.viewerIsApproved), "ok");
+            } else {
+              setFeedback(feedbackNode, "Sent from your Outbox. Reload to see the change.", "ok");
+            }
+            notifyReactionApplied();
+          });
+        }
         if (error && error.accountCreationFailure) {
           offerReactionRetry(feedbackNode, button);
         }
@@ -1311,7 +1437,7 @@
 
   if (typeof window !== "undefined") {
     window.ForumThreadReactions = { bindWithin: bindWithin, hydrateRememberedReactions: hydrateRememberedReactions, reactionRecord: reactionRecord, submitSavedReaction: submitSavedReaction };
-    if (typeof window.addEventListener === "function") window.addEventListener("online", () => { processOutbox(); });
+    if (typeof window.addEventListener === "function") window.addEventListener("online", () => { processOutbox().then(settleOutboxNotices); });
   }
 
   document.addEventListener("DOMContentLoaded", function () {

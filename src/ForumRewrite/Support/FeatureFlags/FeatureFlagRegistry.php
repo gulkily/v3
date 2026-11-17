@@ -21,14 +21,17 @@ final class FeatureFlagRegistry
     public const APP_VERSION_NOTIFICATION = 'FORUM_APP_VERSION_NOTIFICATION';
     public const THREAD_DENSITY_TOGGLE_ENABLED = 'FORUM_THREAD_DENSITY_TOGGLE_ENABLED';
     public const READING_MARGINS_ENABLED = 'FORUM_READING_MARGINS_ENABLED';
+    public const DRAGGABLE_WINDOWS_ENABLED = 'FORUM_DRAGGABLE_WINDOWS_ENABLED';
     public const GUESTBOOK_ENABLED = 'FORUM_GUESTBOOK_ENABLED';
     public const TITLE_DIRECTIVE_ENABLED = 'FORUM_TITLE_DIRECTIVE_ENABLED';
     public const TITLE_DIRECTIVE_APPROVED_MEMBERS = 'FORUM_TITLE_DIRECTIVE_APPROVED_MEMBERS';
     public const INBOX_ENABLED = 'FORUM_INBOX_ENABLED';
     public const TAG_UNLOCKS_ENABLED = 'FORUM_TAG_UNLOCKS_ENABLED';
     public const DEPLOY_HEADER_PROMPT_ENABLED = 'FORUM_DEPLOY_HEADER_PROMPT_ENABLED';
+    public const INSTANCE_IMPORT_PAGE_ENABLED = 'FORUM_INSTANCE_IMPORT_PAGE_ENABLED';
     public const AGENT_PROMPT_ENABLED = 'FORUM_AGENT_PROMPT_ENABLED';
     public const ENGAGIFY_PASSWORD_NEWSLETTER = 'FORUM_ENGAGIFY_PASSWORD_NEWSLETTER';
+    public const ZALGO_THEME_ENABLED = 'FORUM_ZALGO_THEME_ENABLED';
     public const MEDIA_EMBEDS_ENABLED = 'FORUM_MEDIA_EMBEDS_ENABLED';
     public const MEDIA_EMBEDS_INLINE_PLAYER_ENABLED = 'FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED';
     public const TAG_LINKS_ENABLED = 'FORUM_TAG_LINKS_ENABLED';
@@ -51,22 +54,32 @@ final class FeatureFlagRegistry
     public const POST_RECORDS_ENABLED = 'FORUM_POST_RECORDS_ENABLED';
     public const PENDING_CHIP_APPROVAL_ENABLED = 'FORUM_PENDING_CHIP_APPROVAL_ENABLED';
     public const USAGE_REPORTS_ENABLED = 'FORUM_USAGE_REPORTS_ENABLED';
+    public const THREAD_ACTIVITY_DRAWER_ENABLED = 'FORUM_THREAD_ACTIVITY_DRAWER_ENABLED';
+    public const PLEDGES_ENABLED = 'FORUM_PLEDGES_ENABLED';
+    public const PLEDGES_COUNT_UNNAMED_ENABLED = 'FORUM_PLEDGES_COUNT_UNNAMED_ENABLED';
+    public const SESSION_KEY_BOOTSTRAP_ENABLED = 'FORUM_SESSION_KEY_BOOTSTRAP_ENABLED';
+    public const SESSION_KEY_BOOTSTRAP_HTTP_ENABLED = 'FORUM_SESSION_KEY_BOOTSTRAP_HTTP_ENABLED';
+    public const FAST_NAVIGATION_ENABLED = 'FORUM_FAST_NAVIGATION_ENABLED';
+    public const NAV_CACHED_COPY_ENABLED = 'FORUM_NAV_CACHED_COPY_ENABLED';
 
     /** Stable UI order, independent of definition insertion order. See CONTRIBUTING.md. */
     public const PRESENTATION_ORDER = [
         'ACCESS' => [self::PRIVATE_MESSAGES_ENABLED, self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
             self::APPROVED_MEMBERS_ONLY, self::AUTOMATIC_GUEST_KEYPAIR_ENABLED, self::USERNAME_CHANGES_ENABLED,
-            self::VERIFIED_ATTRIBUTION],
+            self::VERIFIED_ATTRIBUTION, self::SESSION_KEY_BOOTSTRAP_ENABLED, self::SESSION_KEY_BOOTSTRAP_HTTP_ENABLED],
         'AUTHORING' => [self::IMAGE_CONTENT_ENABLED, self::LIST_THUMBNAILS_ENABLED, self::IMAGE_GALLERY_ENABLED, self::UNICODE_AUTHORED_TEXT,
             self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED, self::EVENT_WHEN_ENABLED],
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
             self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED,
-            self::DEPLOY_HEADER_PROMPT_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER, self::PRIVATE_MESSAGE_CACHE_ENABLED,
+            self::DEPLOY_HEADER_PROMPT_ENABLED, self::INSTANCE_IMPORT_PAGE_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER,
+            self::ZALGO_THEME_ENABLED, self::PRIVATE_MESSAGE_CACHE_ENABLED,
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
-            self::READING_MARGINS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
-            self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED],
+            self::READING_MARGINS_ENABLED, self::DRAGGABLE_WINDOWS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
+            self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED, self::PLEDGES_COUNT_UNNAMED_ENABLED,
+            self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
-            self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED],
+            self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
+            self::THREAD_ACTIVITY_DRAWER_ENABLED],
         'BACKUP' => [self::IMAGE_BACKUP_ENABLED, self::TEXT_BACKUP_ENABLED],
         'FASTMOD' => [self::FAST_SCORING_ENABLED, self::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED,
             self::FASTMOD_AUTOMATIC_TAGGING_ENABLED],
@@ -216,6 +229,25 @@ final class FeatureFlagRegistry
                 group: 'ACCESS',
             ),
             new FeatureFlagDefinition(
+                self::SESSION_KEY_BOOTSTRAP_ENABLED,
+                'Session key bootstrap',
+                'A browser that lost its key but is still signed in gets a new key under the same name. It is approved when the browser matches the one that signed in, and waits for approval otherwise.',
+                false,
+                self::SESSION_KEY_BOOTSTRAP_ENABLED,
+                siteMutable: true,
+                group: 'ACCESS',
+            ),
+            new FeatureFlagDefinition(
+                self::SESSION_KEY_BOOTSTRAP_HTTP_ENABLED,
+                'Session key bootstrap over HTTP',
+                'Let sessions over plain HTTP bootstrap keys too. A cookie sent over HTTP can be copied on the network.',
+                false,
+                self::SESSION_KEY_BOOTSTRAP_HTTP_ENABLED,
+                siteMutable: true,
+                requiresEnabledFlag: self::SESSION_KEY_BOOTSTRAP_ENABLED,
+                group: 'ACCESS',
+            ),
+            new FeatureFlagDefinition(
                 self::UNICODE_AUTHORED_TEXT,
                 'Unicode authored text',
                 'Allow visible UTF-8 prose in human-authored post subject and body fields.',
@@ -327,6 +359,15 @@ final class FeatureFlagRegistry
                 group: 'EXPERIENCE',
             ),
             new FeatureFlagDefinition(
+                self::INSTANCE_IMPORT_PAGE_ENABLED,
+                'Import page',
+                'Offer Tools → Import, where a root-approved operator imports another instance\'s public content, watches it run in the task worker, and resumes or cancels an interrupted import. Same merge rules as ./v3 import-instance.',
+                false,
+                self::INSTANCE_IMPORT_PAGE_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
                 self::PRIVATE_MESSAGE_CACHE_ENABLED,
                 'Saved message copies',
                 'Keep copies of private messages this browser has already read, encrypted with a key the browser cannot export, so conversations open without decrypting them again. Removing the browser identity deletes the copies. Turning this off stops using them; existing copies stay until the identity is removed.',
@@ -345,6 +386,15 @@ final class FeatureFlagRegistry
                 group: 'EXPERIENCE',
             ),
             new FeatureFlagDefinition(
+                self::DRAGGABLE_WINDOWS_ENABLED,
+                'Draggable windows',
+                'In the Bubblegum theme, give every window a working collapse button, keep a post collapsed after a reload once a reader collapses it, and let desktop readers turn on Float mode to drag windows around. Readers can turn it off in Preferences.',
+                false,
+                self::DRAGGABLE_WINDOWS_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
                 self::GUESTBOOK_ENABLED,
                 'Guestbook',
                 "Show the site's guestbook thread as a paper book at /guestbook/, with a Sign the book form on the last page. Needs a guestbook thread in the site profile; the thread itself always stays available.",
@@ -359,6 +409,15 @@ final class FeatureFlagRegistry
                 "In the Engagify theme, the newsletter's email box hides what you type like a password, and Ava's chat panel opens over it. Off by default; Ava then waits until the popup is closed.",
                 false,
                 self::ENGAGIFY_PASSWORD_NEWSLETTER,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::ZALGO_THEME_ENABLED,
+                'Zalgo theme',
+                'Offer the Zalgo theme: dark, with headings and borders that look like the page is being corrupted. Off by default; while it is off, anyone who chose Zalgo sees the site default.',
+                false,
+                self::ZALGO_THEME_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
             ),
@@ -396,6 +455,8 @@ final class FeatureFlagRegistry
                 "Clicking a Pending chip beside an author's name opens a short summary of them with their newest posts, and approved members can approve them there. Off, the chip is a plain label.",
                 true,
                 self::PENDING_CHIP_APPROVAL_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
             ),
             new FeatureFlagDefinition(
                 self::USAGE_REPORTS_ENABLED,
@@ -403,6 +464,43 @@ final class FeatureFlagRegistry
                 'Offer Tools → Usage log, where visitors can record their own page views and clicks in their browser and upload them, and Tools → Usage reports, where root operators see click counts and journeys that could be shorter. Reports are kept in a private file outside exports.',
                 false,
                 self::USAGE_REPORTS_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::PLEDGES_ENABLED,
+                'Pledges',
+                'A thread whose opening post has a line "goal: 1000 coffees" shows a running total, and replies with a line "pledge: 300" add to it. No money moves through the site. Off leaves the lines as plain text.',
+                false,
+                self::PLEDGES_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::PLEDGES_COUNT_UNNAMED_ENABLED,
+                'Count pledges with no name',
+                'Count a pledge whose post names no author, which includes every pledge posted without JavaScript. Off shows the amount with "Not counted: no name". Nobody can be asked to deliver a pledge with no name, and anyone can post one.',
+                false,
+                self::PLEDGES_COUNT_UNNAMED_ENABLED,
+                siteMutable: true,
+                requiresEnabledFlag: self::PLEDGES_ENABLED,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::FAST_NAVIGATION_ENABLED,
+                'Fast navigation',
+                'Pages start loading as soon as a finger or pointer touches a navbar link, the tapped item highlights at once, and the offline helper lets page requests start while it wakes up. Off waits for the click and a full start-up, as before.',
+                true,
+                self::FAST_NAVIGATION_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::NAV_CACHED_COPY_ENABLED,
+                'Navbar pages from last copy',
+                'A navbar page this browser has opened before appears at once from the copy kept last time, while a fresh copy loads in the background for the next visit. If the content changed, the new-version notice offers Reload. The page on screen is never swapped. Off loads every navbar page from the server.',
+                false,
+                self::NAV_CACHED_COPY_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
             ),
@@ -421,6 +519,15 @@ final class FeatureFlagRegistry
                 'Link hashtags in post bodies to their tag pages.',
                 true,
                 self::TAG_LINKS_ENABLED,
+                siteMutable: true,
+                group: 'RENDERING',
+            ),
+            new FeatureFlagDefinition(
+                self::THREAD_ACTIVITY_DRAWER_ENABLED,
+                'Thread activity drawer',
+                'On thread pages, move replies that are only hashtags out of the conversation and list them, with each post\'s likes and flags, in a collapsed Activity drawer above the reply box.',
+                false,
+                self::THREAD_ACTIVITY_DRAWER_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',
             ),

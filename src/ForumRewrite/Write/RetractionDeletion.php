@@ -25,6 +25,11 @@ final class RetractionDeletion
                     || trim(LabelRemoval::git($root, ['ls-tree', '--name-only', 'HEAD', '--', $path])) !== '') $remove[] = $path;
             }
         }
+        // An acceptance receipt belongs to its grant post (today only a retracted key bootstrap record has one).
+        foreach (\ForumRewrite\Security\ApprovalAcceptance::existingPaths($root, $record['post_id']) as $path) {
+            if (is_link($root . '/' . $path)) throw new RuntimeException('Cannot retract a symlink.');
+            $remove[] = $path;
+        }
         $paths = array_merge(array_keys($files), $remove);
         $before = [];
         foreach ($paths as $path) {

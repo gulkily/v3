@@ -226,7 +226,10 @@ try {
   }
 
   // Other pages: the same ruler, and a saved column applies there on first paint.
-  const listings = ['/', '/threads/?view=all', '/tags/bug/', '/recent/', '/search?q=hello', '/users/', '/unread',
+  // The board is /?view=liked (its default view): under ./v3 start a bare / is the
+  // local development page (LocalDevelopmentImport::isEntry).
+  const board = '/?view=liked';
+  const listings = [board, '/threads/?view=all', '/tags/bug/', '/recent/', '/search?q=hello', '/users/', '/unread',
     '/messages/', '/about/', '/tools/', '/tools/bookmarklets', '/docs/', '/docs/reference/agent_api.md'];
   for (const theme of themes) {
     await page.evaluate(([themeKey, theme, marginsKey]) => {
@@ -238,7 +241,7 @@ try {
       assert.ok(await fits(-1, 4), `${theme} ${listing}: column between the checked radios`);
       await finalOnFirstPaint(`${theme} ${listing}`);
       await inStep(`${theme} ${listing}`, null);
-      if (shots && listing === '/') await page.screenshot({ path: join(shots, `${theme}-board.png`) });
+      if (shots && listing === board) await page.screenshot({ path: join(shots, `${theme}-board.png`) });
     }
   }
 

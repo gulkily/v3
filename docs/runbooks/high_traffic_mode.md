@@ -26,8 +26,9 @@ uses `PHP_BINDIR/php`; set `FORUM_PHP_CLI` to the absolute CLI PHP executable if
 needed. Never point it at an HTTP handler or untrusted executable.
 
 The shipped `public/.htaccess` already starts with the managed high-traffic
-section. Its rules only match when the `.high-traffic` symlink exists, so enabling
-and disabling switch the symlink and leave the tracked file unedited. When the
+section. Its rules only match when the `.high-traffic` and `.high-traffic-assets`
+symlinks exist, so enabling and disabling switch the symlinks and leave the tracked
+file unedited. When the
 served root's `.htaccess` lacks the current section (a separate document root, or
 routing written by an older release), enabling prepends it and preserves the normal
 rules, requiring the existing front-controller layout. Back up custom hosting
@@ -49,23 +50,33 @@ application checkout with the same environment as PHP:
 
 The operator UI uses the existing approved root-operator signing flow. Mode state
 is instance-local, not a replicated site feature flag. Status includes the applied
-mode, change reason and generation. The public-root `.high-traffic` symlink is
-managed; do not replace it with a directory. Cache files live outside the public
-root. Their direct storage URLs are blocked.
+mode, change reason and generation. The public-root `.high-traffic` and
+`.high-traffic-assets` symlinks are managed; do not replace them with directories.
+Cache files live outside the public root. Their direct storage URLs are blocked.
+
+While the mode is on, Apache also serves the fingerprinted assets those pages
+reference (`/assets/<name>.<12-hex hash>.<ext>` for css, js, images and fonts) from
+the cache's retained copies, through `.high-traffic-assets`. They carry
+`X-V3-High-Traffic: hit`, a one-year immutable `Cache-Control` and `nosniff`. An
+asset with no retained copy, a query string or `Authorization` goes to PHP as
+before. Plain files directly in `assets/` with those extensions skip PHP in both
+modes.
 
 Initially eligible canonical routes are `/`, `/threads/`, `/about/`, and
 `/threads/{visible-thread-id}`. Containers end in a slash; a thread page does not,
 matching every internal link, so ordinary navigation never redirects. An alias
 differing only by a trailing slash redirects once to its canonical path while the
 mode is active. Running `./v3 high-traffic enable` while the mode is already on
-rewrites routing written by an older release and keeps cached pages; do this after
-deploying a release that changes the routing rules. The first miss generates within global/per-page limits.
+rewrites routing written by an older release, refreshes the saved normal rules,
+creates a missing asset link and keeps cached pages. Do this after every deploy
+that changes `public/.htaccess`. The first miss generates within global/per-page limits.
 Open an eligible page twice, including with a session cookie, and verify a warm
 response contains `X-V3-High-Traffic: hit` and revalidating Cache-Control. HEAD must
 return no body. Confirm the second HTML request avoids PHP in the host's PHP
 request logs/instrumentation; access logs alone do not establish that. Query and
-Authorization requests should lack the hit header; direct `/.high-traffic/` URLs
-must not disclose files. Check existing authenticated actions from the cached
+Authorization requests should lack the hit header; direct `/.high-traffic/` and
+`/.high-traffic-assets/` URLs must not disclose files. Request one stylesheet the
+warm page references and verify it carries the hit header. Check existing authenticated actions from the cached
 page. If these checks fail, disable and correct host configuration before use.
 
 ## Automatic on and off
@@ -201,7 +212,7 @@ local acceptance evidence, not a production throughput guarantee.
 ./v3 high-traffic restore
 ```
 
-Disable removes the serving pointer, which returns every request to normal PHP
+Disable removes both serving pointers, which returns every request to normal PHP
 routing, and fences work already rendering. The managed rules stay in `.htaccess`
 and match nothing while the pointer is absent. Restore reinstalls the managed
 section followed by the saved normal `.htaccess` for its original public root; it
@@ -209,7 +220,7 @@ can recover damaged mode state or managed rules.
 The CLI must use that same repository/public-root configuration. If no saved
 routing exists, restore the application's normal `public/.htaccess` from the
 matching package while preserving reviewed host-specific rules, and ensure the
-`.high-traffic` serving symlink is absent. Never delete the symlink target by
+`.high-traffic` and `.high-traffic-assets` serving symlinks are absent. Never delete the symlink target by
 following the link.
 
 On a failed switch, check the reported error and actual status; partial failures

@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 export async function checkUnreadIndicators(page, context, base, artifacts) {
   await page.getByRole('link', { name: 'Messages', exact: true }).click();
-  await page.waitForFunction(() => document.querySelector('[data-role="list-status"]').textContent.includes('25 conversations'));
+  await page.waitForFunction(() => document.querySelector('[data-role="list-status"]')?.textContent.includes('25 conversations'));
   while (await page.getByRole('button', { name: 'Load more', exact: true }).isVisible()) {
     await page.getByRole('button', { name: 'Load more', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('[data-role="rows"]').getAttribute('aria-busy') === 'false');
@@ -40,6 +40,10 @@ export async function checkUnreadIndicators(page, context, base, artifacts) {
   const dimensions = await page.evaluate(() => ({ width: innerWidth, content: document.documentElement.scrollWidth, x: scrollX }));
   const wide = await page.evaluate(() => Array.from(document.querySelectorAll('body *')).filter(node => node.scrollWidth > node.clientWidth + 2).slice(0, 12).map(node => ({ tag: node.tagName, class: node.className, role: node.dataset.role, width: node.clientWidth, content: node.scrollWidth })));
   assert.ok(dimensions.content <= dimensions.width, JSON.stringify({ dimensions, overflow, wide }));
+  // On phones Messages is a tab only once earned by use (nav_slots.js); save that choice, as a frequent member's browser has.
+  await page.evaluate(() => localStorage.setItem('forum_nav_slots', JSON.stringify({ v: 2, slots: ['messages'] })));
+  await page.reload();
+  await page.waitForFunction(() => document.querySelector('[data-private-message-unread]').dataset.unreadState === 'ready');
   await nav.focus();
   assert.equal(await nav.evaluate(node => node === document.activeElement), true);
   await page.screenshot({ path: join(artifacts, 'unread-mobile.png') });

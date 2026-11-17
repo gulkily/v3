@@ -161,6 +161,11 @@ final class ComposeAndAccountKeyController
         $timings['request_data'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
         $threadId = (string) ($input['thread_id'] ?? '');
         $parentId = (string) ($input['parent_id'] ?? '');
+        // The pledge field on a campaign's reply form: without JavaScript the amount arrives beside the body.
+        if ((string) ($input['pledge_amount'] ?? '') !== ''
+            && $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PLEDGES_ENABLED)) {
+            $input['body'] = \ForumRewrite\Support\PledgeDirective::withAmount((string) ($input['body'] ?? ''), (string) $input['pledge_amount']);
+        }
 
         try {
             $result = $this->routeServices->writer()->createReply($input);

@@ -23,7 +23,19 @@ final class RetractedPosts
         }
 
         return ($retraction->classification !== 'operator' || $retraction->operatorAccepted)
-            && array_intersect($post->boardTags, self::AUTHORITY_TAGS) === [];
+            && self::retractable($post, $retraction->classification === 'operator');
+    }
+
+    /**
+     * Identity, approval and invitation records are never retracted, with one exception:
+     * an operator may retract a key bootstrap record, which withdraws its session-vouched approval.
+     */
+    public static function retractable(PostRecord $post, bool $byOperator): bool
+    {
+        if (!self::isAuthorityPost($post)) {
+            return true;
+        }
+        return $byOperator && in_array(\ForumRewrite\Security\KeyBootstrapReplay::TAG, $post->boardTags, true);
     }
 
     public static function isAuthorityPost(PostRecord $post): bool

@@ -1,0 +1,16 @@
+ID: PF-20261111-F22
+Title: Highlight up to date on Deploy
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+On Deploy, the "up to date" part should be highlighted when it's true so I can easily spot it.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261108230028-1c7c26be
+- https://zenmemes.com/posts/reply-20261108230046-ca94ec5f
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

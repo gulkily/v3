@@ -4,7 +4,7 @@ Cycle: `v3/reading_margins_home_stops`; Mode: one-shot; Record/index: this file,
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/reading_margins_home_stops`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment.
+Effort study: `railspike-effort` / `v3/reading_margins_home_stops`; [cycle ledger](../effort_ledger/reading_margins_home_stops.md). Standing P2 enrollment.
 
 Extended estimates: enabled
 

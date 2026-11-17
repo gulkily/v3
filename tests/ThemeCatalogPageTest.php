@@ -36,9 +36,9 @@ CSS;
 
     public function testEveryPermittedThemeHasPreviewColours(): void
     {
-        $entries = ThemeCatalog::entries(dirname(__DIR__));
+        $entries = ThemeCatalog::entries(dirname(__DIR__), new \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator());
         $expected = array_values(array_filter(
-            array_column(ThemeRegistry::permitted(\ForumRewrite\SiteProfileRegistry::active()['permittedThemes']), 'name'),
+            array_column(ThemeRegistry::permitted(\ForumRewrite\SiteProfileRegistry::active()['permittedThemes'], new \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator()), 'name'),
             static fn (string $name): bool => $name !== 'auto',
         ));
 
@@ -54,7 +54,7 @@ CSS;
     {
         $html = $this->render('/themes');
 
-        foreach (ThemeCatalog::entries(dirname(__DIR__)) as $entry) {
+        foreach (ThemeCatalog::entries(dirname(__DIR__), new \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator()) as $entry) {
             themeCatalogAssertContains('data-theme-card="' . $entry['name'] . '"', $html);
             themeCatalogAssertContains('data-theme-catalog-select="' . $entry['name'] . '"', $html);
             themeCatalogAssertContains('theme: ' . $entry['name'], $html);

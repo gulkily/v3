@@ -1,0 +1,14 @@
+ID: PF-20261116-O01
+Title: Claude's installed posting skill uses Quill
+Kind: other
+Workflow: untriaged
+Created: 2026-11-16
+
+Request:
+After the Quill rename is deployed, install the updated text of docs/agents/claude_zenmemes_skill.md as Claude's zenmemes-posting skill. Until then the installed skill keeps downloading /frm.py, which still works.
+
+Sources:
+- Session: Claude session, 2026-11-16, Quill rename one-shot (docs/plans/quill_rename/quill_rename_one_shot.md)
+
+Notes:
+2026-11-16: the repository copy changed in the quill_rename one-shot. The installed copy lives in the maintainer's claude.ai account and changes through a skill proposal, not a commit.

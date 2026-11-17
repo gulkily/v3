@@ -117,11 +117,20 @@ final class ThreadAndPostPageController
             ? $this->viewerPostTagsForPosts(array_column($posts, 'post_id'), 'like', (string) $viewerProfile['identity_id'])
             : [];
         $signalActors = SignalActors::load($this->routeServices->pdo(), $threadId, array_values(array_unique([$threadId, ...array_map('strval', array_column($posts, 'post_id'))])));
-        $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $viewerCanSeePostAnalysis = RouteServices::signedInApproved($viewerProfile);
         $viewerCanRequestAgentReply = $viewerCanSeePostAnalysis && $service->agentResponseRequestsEnabled();
         $createdPostId = $this->createdPostIdForThread($threadId, $createdPostId);
         $postAnalysesForWork = $service->fetchPostAnalysesForPosts($posts);
         $agentRepliesByPostId = $service->fetchAgentReplyGenerationsForPosts($posts);
+
+        $pledgeCampaign = $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PLEDGES_ENABLED)
+            ? \ForumRewrite\View\PledgeCampaign::fromPosts(
+                $posts,
+                $threadId,
+                $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PLEDGES_COUNT_UNNAMED_ENABLED),
+                fn (string $identityId): bool => \ForumRewrite\Security\ApprovalPolicy::isActiveOperator($this->routeServices->repositoryRoot(), $identityId),
+            )
+            : null;
 
         return $this->routeServices->renderPageTemplate(
             'thread.php',
@@ -129,12 +138,19 @@ final class ThreadAndPostPageController
                 'collapseSameAuthorPostsEnabled' => $this->routeServices->featureFlags()->isEnabled(
                     \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED
                 ),
+                'threadActivityDrawerEnabled' => $this->routeServices->featureFlags()->isEnabled(
+                    \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::THREAD_ACTIVITY_DRAWER_ENABLED
+                ),
+                'postRecordsEnabled' => $this->routeServices->featureFlags()->isEnabled(
+                    \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::POST_RECORDS_ENABLED
+                ),
                 'thread' => $threadRow,
                 'eventState' => ((string) ($threadRow['event_date'] ?? '')) !== ''
                     && $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::EVENT_SUPPORT_ENABLED)
                     ? \ForumRewrite\Calendar\EventStatus::forThread($this->routeServices->pdo(), $this->repositoryRoot, $threadId)
                     : null,
                 'threadTheme' => \ForumRewrite\View\ThreadTheme::forThread($this->routeServices->pdo(), $this->repositoryRoot, $threadId),
+                'pledgeCampaign' => $pledgeCampaign,
                 'posts' => $posts,
                 'title' => $title,
                 'viewerProfile' => $viewerProfile,
@@ -174,6 +190,7 @@ final class ThreadAndPostPageController
                 '/assets/post_retraction.js',
                 '/assets/post_analysis.js',
                 '/assets/private_site_auth.js',
+                ...($pledgeCampaign !== null ? ['/assets/pledge_field.js', '/assets/pledge_withdraw.js'] : []),
             ]),
         );
     }
@@ -311,7 +328,7 @@ final class ThreadAndPostPageController
             ? $this->viewerPostTagsForPosts([$post['post_id']], 'like', (string) $viewerProfile['identity_id'])
             : [];
         $signalActors = SignalActors::load($this->routeServices->pdo(), (string) $post['thread_id'], [(string) $post['post_id']]);
-        $viewerCanSeePostAnalysis = $viewerProfile !== null && ((int) ($viewerProfile['is_approved'] ?? 0)) === 1;
+        $viewerCanSeePostAnalysis = RouteServices::signedInApproved($viewerProfile);
         $viewerCanRequestAgentReply = $viewerCanSeePostAnalysis && $service->agentResponseRequestsEnabled();
         $posts = [$post];
         $postAnalysesForWork = $service->fetchPostAnalysesForPosts($posts);
@@ -337,6 +354,7 @@ final class ThreadAndPostPageController
                 'scriptureExpansionsByPostId' => $service->scriptureExpansionsForPosts($posts),
                 'llmExchangesByPostId' => $llmExchangesByPostId,
                 'fastScore' => ($this->latestFastScoreForPost)($post),
+                'localScore' => $this->routeServices->latestLocalScoreForPost($post),
                 'postRecords' => $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::POST_RECORDS_ENABLED)
                     ? \ForumRewrite\Canonical\PostRecordList::forPost($this->repositoryRoot, (string) $post['post_id'], (string) $post['thread_id'] === (string) $post['post_id'])
                     : null,

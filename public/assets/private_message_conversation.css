@@ -73,6 +73,8 @@
 @media (max-width: 639px) {
   [data-shell="app"][data-tabbar-page="none"] .private-conversation { flex: 1 0 auto; display: flex; flex-direction: column; }
   [data-shell="app"][data-tabbar-page="none"] .private-conversation > [data-role="private-message-transcript"] { flex: 1 0 auto; }
+  /* The card runs off the bottom edge, so the sticky composer doesn't ride up by the card's padding at the end of scrolling. */
+  [data-shell="app"][data-tabbar-page="none"] .private-conversation { padding-bottom: 0; border-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 }
 .private-conversation [data-private-message-form] { gap: .35rem; }
 /* One line until you type more; script grows it to the same cap as before. */

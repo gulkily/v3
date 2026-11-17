@@ -6,6 +6,8 @@ namespace ForumRewrite\View;
 
 use ForumRewrite\Security\RetractionAuthority;
 use ForumRewrite\SiteProfileRegistry;
+use ForumRewrite\Support\DeploymentSettings;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\ThemeDirective;
 use PDO;
 
@@ -43,7 +45,7 @@ final class ThreadTheme
              ORDER BY posts.created_at ASC, posts.sequence_number ASC"
         );
         $stmt->execute(['thread_id' => $threadId]);
-        $permitted = self::permittedNames();
+        $permitted = self::permittedNames(FeatureFlagEvaluator::forApplication($repositoryRoot, DeploymentSettings::projectRoot()));
         $theme = null;
         $operators = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -78,10 +80,10 @@ final class ThreadTheme
      *
      * @return list<array{name: string, label: string}>
      */
-    public static function choices(): array
+    public static function choices(FeatureFlagEvaluator $flags): array
     {
         $choices = [];
-        foreach (ThemeRegistry::permitted(SiteProfileRegistry::active()['permittedThemes']) as $theme) {
+        foreach (ThemeRegistry::permitted(SiteProfileRegistry::active()['permittedThemes'], $flags) as $theme) {
             if (ThemeRegistry::isExplicitName($theme['name'])) {
                 $choices[] = ['name' => $theme['name'], 'label' => $theme['label']];
             }
@@ -93,10 +95,10 @@ final class ThreadTheme
     /**
      * @return list<string> explicit themes this site permits
      */
-    public static function permittedNames(): array
+    public static function permittedNames(FeatureFlagEvaluator $flags): array
     {
         return array_values(array_filter(
-            array_column(ThemeRegistry::permitted(SiteProfileRegistry::active()['permittedThemes']), 'name'),
+            array_column(ThemeRegistry::permitted(SiteProfileRegistry::active()['permittedThemes'], $flags), 'name'),
             static fn (string $name): bool => ThemeRegistry::isExplicitName($name),
         ));
     }

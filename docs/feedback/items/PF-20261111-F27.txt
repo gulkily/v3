@@ -1,0 +1,16 @@
+ID: PF-20261111-F27
+Title: Large type for short posts
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Show off the large font for short text.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261108235042-9bd90610
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Related to B10 in this run.

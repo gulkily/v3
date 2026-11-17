@@ -12,10 +12,13 @@ final class SqliteTaskQueueStore
     public const REBUILD_READ_MODEL = 'rebuild_read_model';
     public const RETRACTION_SWEEP = 'retraction_sweep';
     public const FAST_SCORE_SWEEP = 'fast_score_sweep';
+    public const LOCAL_SCORE_SWEEP = 'local_score_sweep';
+    public const LOCAL_META_TRAIN = 'local_meta_train';
     public const PUBLISH_OFFLINE_SNAPSHOT = 'publish_offline_snapshot';
     public const AGENT_REPLY = 'agent_reply';
     /** Operator-requested application deploy; claimed ahead of all other queued work. */
     public const APP_UPDATE = 'app_update';
+    public const INSTANCE_IMPORT = 'instance_import';
     public const EXECUTOR_HEARTBEAT_FRESHNESS_SECONDS = 120;
     public const READ_MODEL_SCHEMA_RECOVERY_REASON = 'read_model_schema';
     public const TERMINAL_TASK_HISTORY_LIMIT = 100;
@@ -211,6 +214,27 @@ final class SqliteTaskQueueStore
         $event = $stmt->fetch();
 
         return $event === false ? null : $event;
+    }
+
+    /**
+     * One task's newest progress lines, oldest first.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function taskProgress(int $taskId, int $limit = 40): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, task_id, message, created_at
+             FROM task_queue_progress_events
+             WHERE task_id = :task_id
+             ORDER BY id DESC
+             LIMIT :limit'
+        );
+        $stmt->bindValue('task_id', $taskId, PDO::PARAM_INT);
+        $stmt->bindValue('limit', max(1, $limit), PDO::PARAM_INT);
+        $stmt->execute();
+
+        return array_reverse($stmt->fetchAll());
     }
 
     /** @return list<array<string, mixed>> */
@@ -828,7 +852,7 @@ final class SqliteTaskQueueStore
 
     private function assertAllowedType(string $type): void
     {
-        if (!in_array($type, [self::RETRACTION_SWEEP, self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP, self::PUBLISH_OFFLINE_SNAPSHOT, self::AGENT_REPLY, self::APP_UPDATE], true)) {
+        if (!in_array($type, [self::RETRACTION_SWEEP, self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP, self::LOCAL_SCORE_SWEEP, self::LOCAL_META_TRAIN, self::PUBLISH_OFFLINE_SNAPSHOT, self::AGENT_REPLY, self::APP_UPDATE, self::INSTANCE_IMPORT], true)) {
             throw new InvalidArgumentException('Unsupported internal task type: ' . $type);
         }
     }

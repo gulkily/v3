@@ -27,6 +27,7 @@ Standing rules for every PR in this review; followed so far, so they stay untick
   - `templates/`, for classes and values used only from a template.
   - `public/assets/*.PROVENANCE` and code comments, for things kept on purpose (the OpenPGP source map).
   - `git log -S<name>`, to see whether a caller was removed on purpose and when.
+- [ ] **Before rating something as removable, list its test callers too.** A member only tests use may be a test seam (fixture helper, reference algorithm, single-page entry point) rather than dead code. Search without a display limit and include reflection strings.
 - [ ] **Check that new tests run.** `tests/run.php` lists test files explicitly; `TestFileRegistrationTest` now fails when a `*Test.php` file is missing from it.
 - [ ] Start from the earlier audit, `docs/plans/codebase_cleanup_audit_findings_v1.md`. It already resolved some false leads, including the OpenPGP pair.
 - [ ] **Intentional-duplicate rule.** If something looks unused or duplicated but is kept on purpose, the reason has to be visible *at the file*, not just in a plan doc:
@@ -41,7 +42,7 @@ Standing rules for every PR in this review; followed so far, so they stay untick
 ### 1.1 PHP classes and methods
 - [x] List classes in `src/` with no reference outside their own file and tests. None found by the PHPStan dead-code pass. The naive scan's one candidate was a false positive:
   - `Activity/AccessHistoryPresenter` — **false positive**, used from templates (`access_history_event.php`, `paned_activity_item_row.php`). Scans must include `templates/`.
-- [~] Classes referenced **only by tests** (code kept alive by its own tests). Members listed in findings §3; test hooks marked `@internal` (#148); the rest wait on a decision.
+- [x] Classes and members referenced **only by tests**. Rated, then removed or kept per the maintainer (#223, #227); `buildSingleRoute` and `PresentationSlotRegistry::all` are held as likely test hooks. See findings, Decisions and outcomes.
 - [x] Public methods never called outside their class (needs a real tool — see "Tooling" below). Removed in #146.
 - [x] Private methods / private properties never used. Methods removed in #146; unread constructor properties listed for review in findings §2.
 - [x] Constants and enum cases never read. Two `SIZE` constants removed in #146; no dead enum cases.
@@ -90,7 +91,7 @@ Standing rules for every PR in this review; followed so far, so they stay untick
 
 ### 2.2 Duplication
 - [~] Copy-pasted logic between subsystems (signature checks, path building, timestamp formatting, HTML escaping, JSON response helpers). jscpd: 0.88% overall. Script helpers shared in #151; card partials and LLM providers left for their own cycles; toggle JS kept on purpose (findings §5).
-- [ ] Server/browser rule pairs that must agree (e.g. `UnicodeTextPolicy` ↔ compose-time JS validator): are they generated from one source or hand-synced?
+- [~] Server/browser rule pairs that must agree (e.g. `UnicodeTextPolicy` ↔ compose-time JS validator): are they generated from one source or hand-synced? Text rules: hand-synced; ASCII control gap fixed and `UnicodeTextRuleParityTest` added; Unicode version drift waits on a decision (findings, "Server and browser text rules"). Incremental updater vs full rebuild not started.
 - [ ] Near-duplicate JS: `outbox_*` (6 files), `private_message_*` (11 files), `key_backup*` (3) — check for repeated helpers that belong in one module.
 - [ ] The `Sqlite*Store` classes: shared connection/busy-timeout/transaction boilerplate.
 

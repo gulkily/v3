@@ -59,7 +59,7 @@
         remove(key);
       }
     });
-    [keys.density, keys.margins, keys.gallerySize, keys.navSlots, keys.welcome].forEach(remove);
+    [keys.density, keys.margins, keys.windowControls, keys.collapsedWindows, keys.gallerySize, keys.navSlots, keys.welcome].forEach(remove);
     keys.tableSizes.forEach(remove);
     window.location.reload();
   }
@@ -73,6 +73,16 @@
       try { localStorage.setItem(keys.density, control.value); } catch (error) {}
       if (control.value === 'compact') root.setAttribute('data-thread-density', 'compact');
       else root.removeAttribute('data-thread-density');
+    } else if (name === 'window-controls') {
+      // Bubblegum's window controls (theme-bubblegum.js) read the same key and
+      // attribute as layout.php's head script; restart applies the change now.
+      try {
+        if (control.value === 'off') localStorage.setItem(keys.windowControls, 'off');
+        else localStorage.removeItem(keys.windowControls);
+      } catch (error) {}
+      if (control.value === 'off') root.removeAttribute('data-window-controls');
+      else root.setAttribute('data-window-controls', 'on');
+      if (window.forumWindowControls) window.forumWindowControls.restart();
     }
   });
 

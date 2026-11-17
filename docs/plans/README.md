@@ -12,6 +12,36 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — pushed on `fix/duplicate-post-submissions`, not merged into `main`. Review it, confirm the anonymous post ID format, then merge. Remove this entry once merged.
 
+[Quill rename](quill_rename/quill_rename_one_shot.md) — the posting client `frm.py` becomes `quill.py` (old URL kept), sends its version on every request, and gets an update notice when it is out of date.
+
+[Draggable windows](draggable_windows/draggable_windows_step3_development_plan.md) — in Bubblegum, every window gets a working collapse button, collapsed posts stay collapsed after a reload, and a desktop Float mode lets you drag windows and Reset them; behind `FORUM_DRAGGABLE_WINDOWS_ENABLED`, with a Preferences row.
+
+[Nav speed checklist](nav_speed_checklist.md) — cutting click-to-done time on navbar links, in five cycles. Cycle 2: [nav quick wins](nav_quick_wins/nav_quick_wins_one_shot.md) — navigation preload, an early fetch on tap, and an immediate highlight. Cycle 3: [nav cached copy](nav_cached_copy/nav_cached_copy_one_shot.md) — navbar pages from the last copy, refreshed in the background.
+
+[New instance home quickfix](new_instance_home/new_instance_home_quickfix.md) — the board opens on All until something is liked, with a link to a new Getting started page (`/start/`) that offers browsing and import choices; first try of the experimental quickfix category.
+[Known instances one-shot](known_instances/known_instances_one_shot.md) — a shipped list of public instances (ZenMemes for now) offered as import sources, never including the site's own address.
+[Worker before the read model one-shot](worker_before_read_model/worker_before_read_model_one_shot.md) — the task worker's first run on a fresh `./v3 start` no longer logs "unable to open database file".
+
+[Import without a worker](import_without_worker/import_without_worker_step1_solution_assessment.md) — Tools → Import starts a worker when none runs, `./v3 start` runs one by default, and the page shows steps, elapsed time and time left.
+
+[Import review summary one-shot](import_review_summary/import_review_summary_one_shot.md) — Tools → Import groups review causes by state and reason instead of listing every path.
+
+[Import-instance GUI](import_instance_gui/import_instance_gui_step1_solution_assessment.md) — root-only Tools → Import page: import from a remembered or typed source, watch progress, resume or cancel, read the result.
+
+[Import cancel one-shot](import_cancel/import_cancel_one_shot.md) — `./v3 import-instance --cancel` discards an interrupted import that has not committed its content; prerequisite for the import-instance GUI.
+
+[Pledge count unnamed](pledge_count_unnamed/pledge_count_unnamed_one_shot.md) — a flag that lets pledges with no name count toward a campaign's sum.
+
+[Pledge frontend](pledge_frontend/pledge_frontend_step3_development_plan.md) — the campaign thread looks right on a phone: totals under the title, a pledge form beside them, used lines hidden and one status per pledge.
+
+[Pledge fill review](pledge_fill_review/pledge_fill_review_step3_development_plan.md) — the campaign author or an operator answers a pledger's fill with `confirm` or `dispute`; a disputed fill stops counting and both stay visible.
+
+[Pledge fills](pledge_fills/pledge_fills_step3_development_plan.md) — the pledger, the campaign author or an operator marks a pledge delivered or filled with a `filled` reply; partial fills add up and the block shows what arrived.
+
+[Pledge withdraw](pledge_withdraw/pledge_withdraw_step3_development_plan.md) — a pledger takes a pledge back with a `withdraw` reply; the pledge stays visible, marked withdrawn, and leaves the sum.
+
+[Pledges checklist](pledges_checklist.md) — pledge campaigns in eight cycles, with the [spec](pledges_spec.md). Cycle 1: [pledge campaigns](pledge_campaigns/pledge_campaigns_step3_development_plan.md) — a thread with a `goal:` line shows a totals block, and replies with a `pledge:` line add to it.
+
 [Guestbook](guestbook/guestbook_step3_development_plan.md) — a `/guestbook/` page shows the guestbook thread's top-level replies as a paper book with numbered pages and a "Sign the book" form; the thread stays available as an ordinary thread.
 
 [Tag unlocks](tag_unlocks/tag_unlocks_step3_development_plan.md) — a thread's tag unlocks extra tags on its replies; first use: Resolved and Closed on replies in `#meta` threads, which fold to one line.
@@ -40,6 +70,11 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Railspike for every commit one-shot](railspike_for_every_commit/railspike_for_every_commit_one_shot.md) — AGENTS.md runs every committed change as a Railspike cycle (one-shot by default) and asks the agent to name the mode in its first reply.
 
+[Test-only member cleanup one-shot](test_only_member_cleanup/test_only_member_cleanup_one_shot.md) — removes the 13 lowest-rated test-only members and the two single-implementation store interfaces from the code quality review; marks the five test hooks kept on purpose.
+
+[Test-only member cleanup, round 2 one-shot](test_only_member_cleanup_round2/test_only_member_cleanup_round2_one_shot.md) — follow-up: removes markSeenThrough, cachedBytes, FastScoreResult::scored and two unread properties; keeps setFeatureFlag, rendersMarkdown and isSignedIn with notes.
+
+[Quality review decisions record one-shot](quality_review_decisions_record/quality_review_decisions_record_one_shot.md) — records how each code quality review decision ended, which items are still open, and the lessons for the next pass.
 [Fix the #217 merge parse error one-shot](merge_217_fix/merge_217_fix_one_shot.md) — `main` parses again: one EXPERIENCE flag list with both new flags.
 
 [Spearmint theme one-shot](spearmint_theme/spearmint_theme_one_shot.md) — a light mint sibling of Bubblegum with its own shapes: rounded soft-shadow cards, a wavy header line, lifting buttons and coral accents.
@@ -49,9 +84,19 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Bubblegum You menu and Tools captions one-shot](bubblegum_menu_labels/bubblegum_menu_labels_one_shot.md) — in Bubblegum, desktop You menu pills get the small icon with a gap, and Tools captions never break mid-word.
 
+[Deploy page buttons one-shot](deploy_buttons/deploy_buttons_one_shot.md) — deploy buttons share one row, with Deploy now as the main action in every theme.
+
 [Bubblegum open More tab one-shot](bubblegum_more_tab_open/bubblegum_more_tab_open_one_shot.md) — in Bubblegum on phones, the open More tab gets the selected look instead of a white label on a pale bar.
 
+[Reaction send order one-shot](reaction_send_order/reaction_send_order_one_shot.md) — the page sends reaction clicks one at a time, so Close then Resolve both land, and an Outbox notice stays up until the resend finishes.
+
 [Scoped post reaction update one-shot](scoped_post_reaction_update/scoped_post_reaction_update_one_shot.md) — a like or state mark reads only that post's reaction files, so quick successive clicks no longer hit "server is busy".
+
+[Code quality review handoff one-shot](quality_review_handoff/quality_review_handoff_one_shot.md) — adds [the review handoff](code_quality_review_handoff.md): state, open items, and how to rerun the analysis tools.
+
+[Register FastNavigationLayoutTest one-shot](register_fast_navigation_test/register_fast_navigation_test_one_shot.md) — registers a test file that never ran; caught by TestFileRegistrationTest.
+
+[DM composer flush on phones one-shot](dm_composer_flush/dm_composer_flush_one_shot.md) — in a phone conversation the sticky composer stays flush with the bottom edge through the end of scrolling.
 
 [Tools bar at the bottom one-shot](tools_nav_bottom/tools_nav_bottom_one_shot.md) — every /tools/* page shows the tool first and the Tools bar last, under a plain "Tools" card heading.
 
@@ -75,6 +120,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Rebuild triggers checklist](rebuild_triggers_checklist.md) — every remaining write or command that still runs a full read-model rebuild, most frequent first, to remove one at a time.
 
+[Browsing tree checklist](browsing_tree_checklist.md) — three cycles for tree history, tree bookmarks and a filmstrip of recent screens: `nav_tree`, `tree_history`, `filmstrip`. Written in the [browsing tree checklist one-shot](browsing_tree_checklist/browsing_tree_checklist_one_shot.md).
+
 ## Production feedback
 
 [Retraction simplification handoff](retraction_simplification_handoff.md) — current user direction, canceled sweep diagnostics plan, and coordination with registration and high-traffic work.
@@ -91,6 +138,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Session key bootstrap](session_key_bootstrap/session_key_bootstrap_step3_development_plan.md) — a browser with a live session but no key (iPhone Safari's storage wipe) gets a new approved key from the session, with a coarse fingerprint as tie-breaker; the lost key shows a Replaced pill and waits in a queue; behind two flags; Stages 1–6 committed, iPhone Safari replay (Stage 7) pending deploy.
+- [Thread activity drawer](thread_activity_drawer/thread_activity_drawer_step3_development_plan.md) — tag-only reply leaves move out of the conversation into a collapsed "Activity (N)" drawer on the thread page, which also lists likes and flags by post; follows Pollyanna's `#notext`; behind a new flag; Step 4 complete, release pending.
 - [Usage reports UI](usage_reports_ui/usage_reports_ui_step3_development_plan.md) — readable page and control names, phone-first Usage Reports with shortcut-idea cards, and a readable Usage Log with the exact upload text behind a disclosure; follow-up to the local usage log; Step 4 in progress.
 - [Local usage log](local_telemetry/local_telemetry_step3_development_plan.md) — opt-in, browser-only log of page views and clicks that a visitor reviews and uploads to a private report store kept out of exports; a root-only summary shows click counts and multi-click journeys that could be one click; behind a flag; Step 4 in progress.
 - [Post records](post_records/post_records_step3_development_plan.md) — a post's Records section lists every record that targets it, each with its own `/records/<Record-ID>` page, and members (or operators) can retract likes through the existing signed retraction with `Target-ID`; behind a flag; Step 4 complete, release pending.
@@ -132,6 +181,13 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Reading margins: home stops](reading_margins_home_stops/reading_margins_home_stops_one_shot.md) — one-shot: checked radios on the normal column's edges, more stops on a grid anchored there, a drawn ruler, and the header follows a chosen column.
 - [Preferences page](preferences_page/preferences_page_one_shot.md) — one-shot: Tools → Preferences lists the settings this browser keeps (theme, thread view, reading margins, phone tabs, page themes, welcome note, usage log) with their current values, to change or reset in one place.
 - [Prompt library](prompt_library/prompt_library_one_shot.md) — one-shot: /agent/ becomes a prompt library of approved `#prompt` threads with copy, search, categories and sharing, linked from the main nav as Prompts.
+- [Prompt library: #notprompt](prompt_library_notprompt/prompt_library_notprompt_one_shot.md) — one-shot: an approved member's `#notprompt` label takes a thread out of the /agent/ library.
+- [Prompt card byline corner](prompt_card_meta_corner/prompt_card_meta_corner_one_shot.md) — one-shot: each /agent/ prompt's author/date/likes/Discuss line moves to the card's bottom right.
+- [Prompt card Like](prompt_card_like/prompt_card_like_one_shot.md) — one-shot: a Like button on each /agent/ prompt card, reusing the thread page's Like.
+- [Prompt copy icon](prompt_copy_icon/prompt_copy_icon_one_shot.md) — one-shot: the Copy button on /agent/ prompt fields moves to the top right and shows only its icon.
+- [Prompt copy button, quiet in Gloss and Bubblegum](prompt_copy_quiet/prompt_copy_quiet_one_shot.md) — one-shot: the icon-only Copy button drops its theme button chrome in Gloss, Gloss Dark, Engagify and Bubblegum.
+- [Prompts as plain text](prompt_plain_text/prompt_plain_text_one_shot.md) — one-shot: /agent/ prompts are selectable text with Copy in the corner; long ones cut off with Show all.
+- [Bookmarklet host prefix](bookmarklet_host_prefix/bookmarklet_host_prefix_one_shot.md) — one-shot: every bookmarklet's address starts with the server host (`javascript:/*zenmemes.com*/…`), so a bookmark editor shows where it posts.
 
 - [Reply title directive](reply_title_directive/reply_title_directive_step3_development_plan.md) — `title:` reply line retitles a thread with authority, two feature flags, and a visible likes/flags/title signals line on cards; in progress.
 - [Markdown in post bodies](post_markdown/post_markdown_step3_development_plan.md) — per-post `Body-Format` (Markdown by default for new posts, opt-out), post-safe rendering, plain previews; in progress.
@@ -181,6 +237,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [UI messages](ui_messages/)
 - [UI tools launcher](ui_tools_launcher/)
 - [Compose keyboard fit](compose_keyboard_fit/)
+- [No-JavaScript basic access](nojs_basic_access/nojs_basic_access_step3_development_plan.md) — reading and anonymous posting with scripts off; resumed 2026-11-16, in progress. Prerequisite for [Windows ME compatibility](windows_me_compat_step1_solution_assessment.md).
 
 - [Absent retraction snapshot publication](absent_retraction_snapshot/)
 
@@ -476,6 +533,7 @@ and repair its navigation and affected references. See the
 - [Railspike feature gating](./railspike_feature_gating/railspike_feature_gating_step1_solution_assessment.md) — default-off workflow flag and polling only on visible Railspike threads; locally implemented, production acceptance pending.
 
 - [Fastmod score transfer](./fastmod_score_transfer/fastmod_score_transfer_step4_implementation_summary.md) — automatic score export/import; locally complete, review pending.
+- [Fastmod Bayes meta](fastmod_bayes_meta/fastmod_bayes_meta_step1_solution_assessment.md) — a local word-count model scores the meta rubric from production's stored labels, with no LLM call.
 
 - [Agent response text](agent_response_text/agent_response_text_step4_implementation_summary.md) — F05; implemented and verified, maintainer acceptance pending.
 - [Private-message idle synchronization](private_message_sync_idle/private_message_sync_idle_step1_solution_assessment.md) — account history gate and combined work check.
@@ -502,7 +560,9 @@ and repair its navigation and affected references. See the
 
 - [DM instant load](dm_instant_load/dm_instant_load_step3_development_plan.md) — conversations show read messages on first paint from an encrypted per-browser cache behind `FORUM_PRIVATE_MESSAGE_CACHE_ENABLED`, including Messages list previews; complete and accepted on iPhone ([Step 4](dm_instant_load/dm_instant_load_step4_implementation_summary.md)).
 
-- [DM conversation tab bar](dm_conversation_tabbar/dm_conversation_tabbar_step3_development_plan.md) — phone conversations show no bottom tab bar; the back arrow is the way out; Steps 1–3 approved.
+- [DM conversation tab bar](dm_conversation_tabbar/dm_conversation_tabbar_step3_development_plan.md) — phone conversations show no bottom tab bar; the back arrow is the way out; complete and accepted on iPhone ([Step 4](dm_conversation_tabbar/dm_conversation_tabbar_step4_implementation_summary.md)).
+
+- [Manual merge feature flags](manual_merge_feature_flags/manual_merge_feature_flags_one_shot.md) — restore the site after the registry merge parse error.
 
 - [Gallery zoom](gallery_zoom/gallery_zoom_one_shot.md) — one-shot: Smaller / Larger buttons and phone pinch resize Gallery tiles, remembered per browser and resettable on Preferences.
 - [Gallery compact captions](gallery_compact_captions/gallery_compact_captions_one_shot.md) — one-shot: Gallery tile captions hide when zoomed far out.
@@ -510,6 +570,30 @@ and repair its navigation and affected references. See the
 - [Gallery caption zoom](gallery_caption_zoom/gallery_caption_zoom_one_shot.md) — one-shot: Gallery caption text scales with the gallery zoom.
 
 - [Deploy celebration](deploy_celebration/deploy_celebration_one_shot.md) — one-shot: confetti and a Deployed banner on the page that loads after a deploy that changed the code.
+
+- [One ledger file per cycle](per_cycle_effort_ledger/per_cycle_effort_ledger_one_shot.md) — one-shot: effort-study entries go in `effort_ledger/<cycle>.md`, so open PRs stop conflicting on the shared ledger.
 - [Live feature tour](live_feature_tour/live_feature_tour_one_shot.md) — one-shot: unlinked page of live, scaled-down frames of the main ZenMemes pages.
 - [Live feature tour, quiet](live_feature_tour_quiet/live_feature_tour_quiet_one_shot.md) — one-shot: no intro copy and no new tabs on the tour page.
 - [Offline card extra line](offline_card_extra_line/offline_card_extra_line_one_shot.md) — one-shot: offline board cards show one more line of the post body.
+- [Zalgo theme](zalgo_theme/zalgo_theme_one_shot.md) — one-shot (from staged Step 1): a dark "quietly corrupted" theme, offered only while its feature flag is on.
+
+- [Tour snapshots](tour_snapshots/tour_snapshots_step1_solution_assessment.md) — staged: the feature tour as one row per feature with essays, served from pre-rendered HTML snapshots refreshed by deploy, cron or Tools → Operations.
+- [Approval root suggestions](approval_suggest_roots/approval_suggest_roots_one_shot.md) — one-shot: read-only `./v3 approval suggest-roots` that finds which keys to seed as roots after importing a site without its approval seeds.
+- [Asset bypass](asset_bypass/asset_bypass_step1_solution_assessment.md) — staged: high-traffic mode serves its verified asset copies through Apache; fix the broken /assets/ bypass condition.
+
+- [Import with approvals](import_with_approvals/import_with_approvals_one_shot.md) — one-shot: `import-instance --with-approvals` imports approval/invitation posts and receipts (never seeds) and points to `./v3 approval suggest-roots`.
+
+- [Local start PR integration repair](local_start_import_pr_fix/local_start_import_pr_fix_one_shot.md) — one-shot repair of open PR #284.
+
+- [Local start and import MVP](local_start_import/local_start_import_one_shot.md) — one-shot.
+
+- [Session member gates](session_member_gates/session_member_gates_one_shot.md) — one-shot: member-only agent, analysis and LLM Exchanges gates require a signed-in session, not the hint cookie.
+
+- [High-traffic coverage](high_traffic_coverage/high_traffic_coverage_one_shot.md) — one-shot, documentation-only: checklist of what still reaches PHP while high-traffic mode is on.
+
+- [Unicode text rule parity](unicode_text_rule_parity/unicode_text_rule_parity_one_shot.md) — one-shot: checks that the server `UnicodeTextPolicy` and the browser compose validator accept and reject the same text.
+- [Invite QR pitch](invite_qr_pitch/invite_qr_pitch_one_shot.md) — one-shot: the invite QR shows a short pitch for the person scanning it, and the code is smaller.
+
+- [Import planning speed](import_planning_speed/import_planning_speed_step3_development_plan.md) — staged: import planning reuses saved signature checks and one GPG session per signer key.
+
+- [Import output noise](import_output_noise/import_output_noise_one_shot.md) — one-shot: import-instance prints a short log by default; per-file causes move to --verbose.

@@ -1,0 +1,15 @@
+ID: PF-20261111-F06
+Title: Call the Markdown switch Formatted
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+The Markdown checkbox should be called "formatted" or "formatted text" for users who don't know what Markdown is.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261104155114-ddad088b
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

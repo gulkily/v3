@@ -13,6 +13,17 @@ final class PromptLibraryTest
         assertSame(['unapproved-author', 'labeled-by-retired', 'unsigned-claim'], $this->ids($library['waiting']));
     }
 
+    public function testAnApprovedMembersNotpromptLabelTakesAThreadOut(): void
+    {
+        $library = PromptLibrary::load($this->fixture());
+        $listed = array_merge($this->ids($library['approved']), $this->ids($library['waiting']));
+        assertSame(false, in_array('removed-by-approved', $listed, true));
+        assertSame(false, in_array('removed-waiting', $listed, true));
+        // A newcomer's #notprompt, or an approved member's retracted one, removes nothing.
+        assertSame(true, in_array('by-approved', $listed, true));
+        assertSame(true, in_array('labeled-by-approved', $listed, true));
+    }
+
     public function testTopSortsByScoreAndNewByDate(): void
     {
         $pdo = $this->fixture();
@@ -48,8 +59,9 @@ final class PromptLibraryTest
         $label = $pdo->prepare("INSERT INTO viewer_tags (record_family,target_id,author_identity_id,tag) VALUES ('thread-labels',?,?,?)");
         // id, date, author, signed, board tags, labels, score, post score, retracted, labelers
         $rows = [
-            ['by-approved', '2026-11-01', 'approved', 1, '["prompt","coding","general"]', '["like","review"]', 5, 0, null, []],
-            ['labeled-by-approved', '2026-11-02', 'newcomer', 1, '["prompt"]', '["prompt"]', 2, 0, null, ['approved']],
+            // by-approved: a newcomer's #notprompt does not count; labeled-by-approved: a retracted #notprompt (row kept, label gone) does not either.
+            ['by-approved', '2026-11-01', 'approved', 1, '["prompt","coding","general"]', '["like","notprompt","review"]', 5, 0, null, ['newcomer:notprompt']],
+            ['labeled-by-approved', '2026-11-02', 'newcomer', 1, '["prompt"]', '["prompt"]', 2, 0, null, ['approved', 'approved:notprompt']],
             ['tagged-by-label', '2026-11-03', 'newcomer', 1, '["general"]', '["prompt"]', 0, 0, null, ['approved']],
             ['unapproved-author', '2026-11-04', 'newcomer', 1, '["prompt"]', '[]', 9, 0, null, []],
             ['labeled-by-retired', '2026-11-05', 'newcomer', 1, '["prompt"]', '["prompt"]', 1, 0, null, ['retired']],
@@ -58,13 +70,18 @@ final class PromptLibraryTest
             ['retracted', '2026-11-07', 'approved', 1, '["prompt"]', '[]', 0, 0, '2026-11-08', []],
             ['flagged', '2026-11-08', 'approved', 1, '["prompt"]', '[]', 0, -100, null, []],
             ['label-retracted', '2026-11-09', 'newcomer', 1, '["general"]', '[]', 0, 0, null, ['approved']],
+            ['removed-by-approved', '2026-11-11', 'approved', 1, '["prompt"]', '["notprompt","prompt"]', 3, 0, null, ['approved', 'approved:notprompt']],
+            ['removed-waiting', '2026-11-12', 'newcomer', 1, '["prompt"]', '["notprompt"]', 0, 0, null, ['approved:notprompt']],
             ['not-a-prompt', '2026-11-10', 'approved', 1, '["general"]', '[]', 0, 0, null, []],
         ];
         foreach ($rows as $index => [$id, $date, $author, $signed, $tags, $labels, $score, $postScore, $retracted, $labelers]) {
             $body = $id === 'by-approved' ? 'Review this diff carefully.' : 'Prompt ' . $id;
             $post->execute([$id, $date, $id, 'Title ' . $id, $body, $tags, 'id-' . $author, $author, $author, $signed, $index, $postScore]);
             $thread->execute([$id, $date, $date, 'Title ' . $id, $body, $id, $tags, $labels, $score, $retracted]);
-            foreach ($labelers as $labeler) $label->execute([$id, 'id-' . $labeler, 'prompt']);
+            foreach ($labelers as $labeler) {
+                [$who, $tag] = array_pad(explode(':', $labeler, 2), 2, 'prompt');
+                $label->execute([$id, 'id-' . $who, $tag]);
+            }
         }
 
         return $pdo;
