@@ -455,6 +455,7 @@ final class FeatureFlagRegistry
                 "Clicking a Pending chip beside an author's name opens a short summary of them with their newest posts, and approved members can approve them there. Off, the chip is a plain label.",
                 true,
                 self::PENDING_CHIP_APPROVAL_ENABLED,
+                siteMutable: true,
                 group: 'EXPERIENCE',
             ),
             new FeatureFlagDefinition(

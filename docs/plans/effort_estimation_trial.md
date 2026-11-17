@@ -2032,6 +2032,16 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 2026-11-14: standing P2 enrollment, one-shot. Intake **0.10** recorded before implementation (not pristine: same rater wrote the predecessor), execution entry reaffirmed, retrospective **0.10**. Baseline `b2c8bf8`; branch `feat/reading_margins_last_two`; planning commit `7a0b857`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
 
 
+## Cycle v3/manual_merge_feature_flags
+
+Status: Live outage repaired and verified; PR handoff pending; maintainer acceptance pending.
+Scope: v1; R1/P2; standing enrollment; follow-up to merged PR 217.
+Projection: Intake and execution entry 0.06; retrospective 0.10. Source/log exposure preceded intake; no pristine estimate.
+Record: [One-shot repair record](manual_merge_feature_flags/manual_merge_feature_flags_one_shot.md).
+Rater: Codex, single exposed rater; R1 hashes verified; no measured effort or independent rating.
+Outcome: Registry parse error fixed, both flag contracts retained, live HTTP recovery verified. Isolated smoke plus affected tests: 468/470; two failures reproduced before the merge. Full suite not run. No accepted-outcome increment.
+Attribution: Codex, 2026-11-14 UTC.
+
 ## Cycle v3/reading_margins_nearest_edge
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
