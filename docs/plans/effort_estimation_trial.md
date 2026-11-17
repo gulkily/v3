@@ -1,5 +1,6 @@
 # Effort estimation trial ledger
 
+> **2026-11-15: new entries go in [`effort_ledger/`](effort_ledger/README.md), one file per cycle.** This file is frozen for appends: its protocol text and every entry below stay as they are. A cycle with a section here continues in its own file, which links back. Reason: every open PR appended here, so any two conflicted.
 ## Cycle v3/bookmarklet_host_prefix
 
 2026-11-16T19:05Z — v3/bookmarklet_host_prefix one-shot (standing P2 enrollment, no parent): [record](./bookmarklet_host_prefix/bookmarklet_host_prefix_one_shot.md#study-history). Every bookmarklet's address starts `javascript:/*<host>*/` so a bookmark editor shows its server; also fixed the pre-existing `bookmarklet_copy_ui.mjs` Auto-theme wait. Intake **0.05** after source inspection (no pristine intake), retrospective 0.07, single exposed Claude rater. Baseline `f13ed676`; maintainer fit judgment pending; no accepted-count change.
@@ -670,6 +671,8 @@ Maintainer request: “I want every future railspike to be part of the same data
 - Keep projections, retrospective scope assessment, verification and maintainer comfortable-fit/acceptance separate. Record stage counts, corrections versus new requests, omissions, revisions/diffs and splits. Unknown active work and absent independent ratings remain unknown. Technical completion does not increment accepted outcomes.
 - Six accepted outcomes now trigger a review checkpoint, not the end of collection or a size quota. Freeze R1 until an explicit reference revision; protocol P2 changes enrollment only. Retain every scope/version and related child cycle; no extra independent outcomes from cloned files or split children.
 - This checkout's ledger and artifacts are local copies of one dataset. Integrate updates through normal Git review; merge by stable cycle ID/checkpoint and retain conflicting snapshots, rather than overwriting or summing checkouts. Collection is local; no automatic upload is authorized. Repair source paths by recorded content hash/Git revision, never by silently changing references.
+
+2026-11-15 amendment: the ledger index row and dated lines described above now go in the cycle's own file under [`effort_ledger/`](effort_ledger/README.md), not in this file. Everything else in P2 is unchanged.
 
 ### Enrollment index after P2
 
@@ -2383,6 +2386,11 @@ Relationship: integration follow-up to v3/local_start_import on open PR #284, no
 
 2026-11-17: one-shot high-traffic coverage checklist; baseline `f83c0b0d`. Intake 0.08, recorded after route inspection; closeout retrospective 0.08. Single exposed rater Claude (claude-opus-5-5). No measured effort or accepted-count increment.
 
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/unicode_text_rule_parity` | Technically complete; PR open; acceptance pending | v1 / R1 / P2 | 0.25 (intake 0.25; entry 0.25; retrospective 0.20) | [One-shot record](./unicode_text_rule_parity/unicode_text_rule_parity_one_shot.md#study-history) | Code quality review, checklist §2.2; acceptance pending |
+
+2026-11-17: standing P2 enrollment, one-shot; baseline `6bdc52d7`. Intake 0.25 recorded before inspecting either rule set; execution entry reaffirmed; retrospective scope assessment 0.20. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. No measured effort or accepted-count increment.
 ## Cycle v3/dm_composer_flush
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
