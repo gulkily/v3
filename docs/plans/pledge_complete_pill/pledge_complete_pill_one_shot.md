@@ -87,6 +87,6 @@ Diff checked: one CSS rule and its comment, the browser check, this record, its 
 
 ## Commit/merge/publication status
 
-Completion commit: pending at writing; reported in the handoff. Not merged or deployed.
+Completion commit: `20f71e86` (confirmed with `git log`). Pushed with [PR #321](https://github.com/gulkily/v3/pull/321); not merged or deployed.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
