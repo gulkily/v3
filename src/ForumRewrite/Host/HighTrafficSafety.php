@@ -77,11 +77,14 @@ final class HighTrafficSafety
     {
         if (is_dir($cacheRoot) && @file_put_contents($cacheRoot . '/withdrawn', gmdate('c') . "\n") === false) throw new \RuntimeException('Cannot mark high-traffic cache withdrawn; write aborted.');
     }
+    /** Removes both serving links: the cached pages and their asset copies. */
     public static function detach(string $publicRoot): void
     {
-        $link = $publicRoot . '/.high-traffic';
-        if (is_link($link)) {
-            if (!unlink($link)) throw new \RuntimeException('Cannot withdraw high-traffic cache; write aborted.');
-        } elseif (file_exists($link)) throw new \RuntimeException('High-traffic serving path must be a managed symlink.');
+        foreach (['.high-traffic', HighTrafficMode::ASSET_LINK] as $name) {
+            $link = $publicRoot . '/' . $name;
+            if (is_link($link)) {
+                if (!unlink($link)) throw new \RuntimeException('Cannot withdraw high-traffic cache; write aborted.');
+            } elseif (file_exists($link)) throw new \RuntimeException('High-traffic serving path must be a managed symlink.');
+        }
     }
 }

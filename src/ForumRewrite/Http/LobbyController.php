@@ -53,9 +53,15 @@ final class LobbyController
             return $this->routeServices->renderMessagePage('Invitation required', 'Invitation required', 'Only authenticated approved members can generate invitations.', 'account');
         }
 
+        $profile = \ForumRewrite\SiteProfileRegistry::active();
+
         return $this->routeServices->renderPageTemplate(
             'invites.php',
-            ['destination' => trim((string) ($query['destination'] ?? ''))],
+            [
+                'destination' => trim((string) ($query['destination'] ?? '')),
+                'invitationSiteName' => (string) $profile['displayName'],
+                'invitationReasons' => \ForumRewrite\ProfilePresentationContent::invitationReasons($profile),
+            ],
             'Generate invite',
             'invite',
             $this->identityScripts(['/assets/private_site_auth.js', '/assets/qrcode-generator.js', '/assets/private_message_history_crypto.js', '/assets/invite_issuance.js']),

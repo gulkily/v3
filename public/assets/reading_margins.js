@@ -1,11 +1,13 @@
 (function () {
-  // Reading margins: one row of evenly spaced radios above a page. The text
-  // column spans the last two radios clicked. Each click on an unchecked radio
-  // moves the column at once by replacing the edge clicked longer ago, which
-  // is outlined so the reader can see which edge moves next. Clicking a
-  // checked radio returns to the site's normal column. layout.php restores the
-  // saved pair before paint and reading_margins.php checks and outlines the
-  // radios; this script handles clicks.
+  // Reading margins: one row of evenly spaced radios above a page; two checked
+  // radios are the text column's edges. Clicking an unchecked radio moves the
+  // nearer edge to it at once, so a click outside the column moves the edge on
+  // that side and the edges never cross. A click exactly midway between the
+  // edges moves the one clicked longer ago; when such a midway stop exists,
+  // that edge is outlined. Clicking a checked radio returns to the site's
+  // normal column. layout.php restores the saved pair before paint and
+  // reading_margins.php checks and outlines the radios; this script handles
+  // clicks.
   var runtime = window.forumBrowserRuntime || null;
   var ruler = document.querySelector("[data-role='reading-margins']");
   if (!ruler) {
@@ -17,7 +19,8 @@
   var stops = Array.prototype.slice.call(ruler.querySelectorAll("[data-reading-margin-stop]"));
   var positions = stops.map(function (stop) { return stop.value; });
 
-  // The column's edges in click order, [older, newer], or null for the normal column.
+  // The column's edges in click order, [older, newer], or null for the normal
+  // column. Click order only decides ties.
   var order = (function () {
     var saved = (root.getAttribute("data-reading-margins") || "").split(" ");
     return saved.length === 2 && saved[0] !== saved[1]
@@ -40,11 +43,21 @@
     }, null);
   }
 
+  function index(position) {
+    return positions.indexOf(position);
+  }
+
+  // A tie is possible only when a stop sits exactly midway between the edges.
+  function tiePossible(pair) {
+    return (index(pair[1]) - index(pair[0])) % 2 === 0;
+  }
+
   function apply(next) {
     order = next;
+    var outlined = order && tiePossible(order) ? order[0] : null;
     stops.forEach(function (stop) {
       stop.checked = !!order && order.indexOf(stop.value) !== -1;
-      stop.toggleAttribute("data-reading-margin-next", !!order && stop.value === order[0]);
+      stop.toggleAttribute("data-reading-margin-next", stop.value === outlined);
     });
     if (order) {
       root.setAttribute("data-reading-margins", order.join(" "));
@@ -79,7 +92,10 @@
     if (order && order.indexOf(position) !== -1) {
       apply(null);
     } else if (order) {
-      apply([order[1], position]);
+      var toOlder = Math.abs(index(position) - index(order[0]));
+      var toNewer = Math.abs(index(position) - index(order[1]));
+      var kept = toNewer < toOlder ? order[0] : order[1];
+      apply([kept, position]);
     } else {
       var other = oppositeStop(position);
       apply(other === null ? null : [other, position]);

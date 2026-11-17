@@ -143,7 +143,7 @@
           item.result = {postId:item.delivery.prepared.postId};
         } else {
           if (!item.delivery) {
-            item.delivery = await api.prepare(item.fields, attachment, item.description);
+            item.delivery = await api.prepare(item.fields, attachment, item.description, item.photoLines || []);
             if (item.delivery.fields.imageFile) {
               unsavedImages.set(item.id, item.delivery.fields.imageFile);
               await attachmentStore(item.id, item.delivery.fields.imageFile);
@@ -203,9 +203,10 @@
       try { const item = JSON.parse(event.newValue); if (matches(item)) render(item); } catch { /* Ignore unrelated malformed storage. */ }
     });
     return {
-      send(fields, attachment, description) {
+      send(fields, attachment, description, photoLines) {
         lastCreatedAt = Math.max(Date.now(), lastCreatedAt + 1);
-        const item = {id:crypto.randomUUID(), fields, hasImage:Boolean(attachment), description, state:'pending', createdAt:lastCreatedAt};
+        // Photo lines are kept as signed text: the stored attachment is the prepared file, which carries no metadata.
+        const item = {id:crypto.randomUUID(), fields, hasImage:Boolean(attachment), description, photoLines:photoLines || [], state:'pending', createdAt:lastCreatedAt};
         save(item);
         if (attachment) unsavedImages.set(item.id, attachment);
         const editorTop = body.getBoundingClientRect().top;

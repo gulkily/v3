@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-auto-light-theme="<?= $e($autoThemes['light']) ?>" data-auto-dark-theme="<?= $e($autoThemes['dark']) ?>"<?php if ($pageTheme !== null): ?> data-page-theme="<?= $e($pageTheme) ?>" data-page-path="<?= $e($pagePath) ?>"<?php endif; ?> data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>"<?php if (($navSlotCount ?? 0) > 0 && ($navSlotDefaults ?? []) !== []): ?> data-nav-slots="<?= $e(implode(' ', $navSlotDefaults)) ?>"<?php endif; ?><?php if ($usageReportsEnabled ?? false): ?><?php if (($usagePageKind ?? null) !== null): ?> data-usage-page="<?= $e($usagePageKind) ?>"<?php endif; ?> data-usage-words="<?= $e($usagePageWords) ?>"<?php endif; ?>>
+<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-auto-light-theme="<?= $e($autoThemes['light']) ?>" data-auto-dark-theme="<?= $e($autoThemes['dark']) ?>"<?php if ($pageTheme !== null): ?> data-page-theme="<?= $e($pageTheme) ?>" data-page-path="<?= $e($pagePath) ?>"<?php endif; ?> data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>" data-fast-navigation="<?= ($fastNavigationScriptPath ?? null) !== null ? '1' : '0' ?>" data-nav-cached-copy="<?= ($navCachedCopyScriptPath ?? null) !== null ? '1' : '0' ?>"<?php if (($navSlotCount ?? 0) > 0 && ($navSlotDefaults ?? []) !== []): ?> data-nav-slots="<?= $e(implode(' ', $navSlotDefaults)) ?>"<?php endif; ?><?php if ($usageReportsEnabled ?? false): ?><?php if (($usagePageKind ?? null) !== null): ?> data-usage-page="<?= $e($usagePageKind) ?>"<?php endif; ?> data-usage-words="<?= $e($usagePageWords) ?>"<?php endif; ?>>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -50,6 +50,10 @@
         var galleryZoom = parseFloat(localStorage.getItem('gallery-zoom'));
         if (galleryZoom >= 0.5 && galleryZoom <= 2) {
           document.documentElement.style.setProperty('--gallery-zoom', String(galleryZoom));
+          // Far zoomed out, tiles show images only; same threshold as the gallery script.
+          if (galleryZoom < 0.7) {
+            document.documentElement.setAttribute('data-gallery-compact', '');
+          }
         }
       } catch (error) {}
 <?php if ($navSlotCount > 0): ?>
@@ -199,6 +203,30 @@
       } catch (error) {
       }
 <?php endif; ?>
+<?php if ($draggableWindowsEnabled ?? false): ?>
+      try {
+        // Window controls (theme-bubblegum.js) are on unless this browser turned them off in Preferences.
+        if (localStorage.getItem(browserRuntime.windowControlsStorageKey) !== 'off') {
+          document.documentElement.setAttribute('data-window-controls', 'on');
+          // Posts collapsed in this browser show collapsed from the first frame. The rules
+          // match theme-bubblegum.css's [data-window-collapsed]; the script removes this
+          // style once it has marked the posts itself.
+          var collapsedPosts = (localStorage.getItem(browserRuntime.collapsedWindowsStorageKey) || '').split(' ')
+            .filter(function (id) { return /^[A-Za-z0-9_.:-]+$/.test(id); });
+          if (collapsedPosts.length > 0) {
+            var collapsedCards = collapsedPosts.map(function (id) {
+              return ':root[data-theme="bubblegum"][data-window-controls] .card[data-post-id="' + id + '"]';
+            });
+            var collapsedStyle = document.createElement('style');
+            collapsedStyle.id = 'window-controls-collapsed';
+            collapsedStyle.textContent = collapsedCards.join(',') + '{padding-top:1.5rem;padding-bottom:0;min-height:0}'
+              + collapsedCards.map(function (card) { return card + '>:not([data-window-titlebar]):not([data-visitor-intro-hide])'; }).join(',') + '{display:none!important}';
+            document.head.appendChild(collapsedStyle);
+          }
+        }
+      } catch (error) {
+      }
+<?php endif; ?>
     })();
   </script>
 <?php if ($appVersionNotificationEnabled): ?>
@@ -257,6 +285,9 @@
 <?php if ($navigationSlot === 'app' && ($deployPromptScriptPath ?? null) !== null): ?>
   <script src="<?= $e($deployPromptScriptPath) ?>" defer></script>
 <?php endif; ?>
+<?php if (($keyBootstrapScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($keyBootstrapScriptPath) ?>" data-identity-scripts="<?= $e(implode(' ', $keyBootstrapIdentityScriptPaths ?? [])) ?>" defer></script>
+<?php endif; ?>
 <?php if (($deployCelebrateScriptPath ?? null) !== null): ?>
   <script src="<?= $e($deployCelebrateScriptPath) ?>" defer></script>
 <?php endif; ?>
@@ -267,6 +298,12 @@
 <?php endif; ?>
 <?php if ($usageReportsEnabled ?? false): ?>
   <script src="<?= $e($usageLogScriptPath) ?>" defer></script>
+<?php endif; ?>
+<?php if (($fastNavigationScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($fastNavigationScriptPath) ?>" defer></script>
+<?php endif; ?>
+<?php if (($navCachedCopyScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($navCachedCopyScriptPath) ?>" defer></script>
 <?php endif; ?>
 <?php if ($appVersionNotificationEnabled): ?>
   <script src="<?= $e($versionCheckScriptPath) ?>" defer></script>

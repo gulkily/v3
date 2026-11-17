@@ -1,0 +1,16 @@
+ID: PF-20261111-B32
+Title: Posting with an image is too slow
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Posting something with an image is way too slow.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261110165319-fcb0f9f7
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Same post re-reports the wrong-controls state; that part is attached to PF-20261104-B22.

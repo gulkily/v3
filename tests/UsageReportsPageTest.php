@@ -29,7 +29,14 @@ $log = page($application(), 'GET', '/tools/usage-log/');
 expect(http_response_code() === 200, 'flag on: usage log status ' . var_export(http_response_code(), true));
 expect(str_contains($log, '<h1>Usage log</h1>') && str_contains($log, 'data-role="usage-log-recording"'), 'flag on: usage log page');
 expect(str_contains($log, '/assets/usage_log_page.'), 'flag on: page script missing');
-expect(str_contains($log, 'It never holds anything you type.'), 'flag on: what is recorded is not explained');
+expect(str_contains($log, 'never what you type.'), 'flag on: what is recorded is not explained');
+expect(str_contains($log, '<summary>Show exact text (what Upload sends)</summary>') && !str_contains($log, '<details class="usage-log-exact" open'), 'flag on: exact text behind a closed disclosure');
+expect(str_contains($log, 'anonymously (you are not signed in)'), 'signed out: uploads attributed anonymously');
+expect(str_contains($log, 'data-usage-names="{&quot;pages&quot;:{&quot;/&quot;:&quot;Board&quot;'), 'flag on: names table published');
+TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
+$signedIn = page($application(), 'GET', '/tools/usage-log/');
+expect(preg_match('#Uploads go to this site.s operators as <strong>[^<]+</strong>\.#', $signedIn) === 1, 'signed in: uploads attributed to the username');
+$_COOKIE = [];
 $tools = page($application(), 'GET', '/tools/');
 expect(str_contains($tools, 'href="/tools/usage-log/"') && str_contains($tools, 'href="/tools/usage-reports/"'), 'flag on: tools launcher entries');
 
@@ -68,7 +75,7 @@ putenv('FORUM_APPROVED_MEMBERS_ONLY');
 PHP);
     }
 
-    public function testRootSeesJourneysAndShortcutCandidatesOthersGet403(): void
+    public function testRootSeesShortcutIdeasInWordsOthersGet403(): void
     {
         $this->runScript(<<<'PHP'
 $threeClicks = "usage-log v1\nview\t0\t/threads/*\nclick\t40\t/threads/*\tmenu\ttab:account\t-\nclick\t2\t/threads/*\tmenu\tProfile\t/profiles/*\nview\t1\t/profiles/*\nclick\t3\t/profiles/*\tmain\tKeys <b>\t/tools/user-access/profiles/*\nview\t1\t/tools/user-access/profiles/*\n";
@@ -80,19 +87,24 @@ putenv('FORUM_USAGE_REPORTS_ENABLED=1');
 http_response_code(200);
 $denied = page($application(), 'GET', '/tools/usage-reports/');
 expect(http_response_code() === 403 && str_contains($denied, 'root-approved identity'), 'signed out: 403 ' . var_export(http_response_code(), true));
-expect(!str_contains($denied, 'Shortcut candidate'), 'signed out: summary leaked');
+expect(!str_contains($denied, 'data-shortcut-idea') && !str_contains($denied, 'usage-steps'), 'signed out: summary leaked');
 
 TestViewerSession::signIn('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
 http_response_code(200);
 $all = page($application(), 'GET', '/tools/usage-reports/');
 expect(http_response_code() === 200, 'root: status ' . var_export(http_response_code(), true));
 expect(str_contains($all, '<dt>Reports</dt><dd>2</dd>'), 'root: report count');
-expect(str_contains($all, 'tab:account → Profile → Keys &lt;b&gt;') && str_contains($all, '<strong>Shortcut candidate</strong>'), 'root: three-click journey as a shortcut candidate, escaped');
-expect(substr_count($all, 'data-shortcut-candidate') === 1, 'root: one candidate row');
-expect(str_contains($all, '<option value="anonymous">Anonymous (1)</option>') && str_contains($all, '<option value="ilyag">ilyag (1)</option>'), 'root: uploader filter');
+expect(str_contains($all, '<span title="/threads/*">Thread</span> → <span title="/tools/user-access/profiles/*">User Access profile</span>'), 'root: journey heading in words with raw forms on hover');
+expect(str_contains($all, '<li title="tab:account">You menu</li>') && str_contains($all, '<li title="Keys &lt;b&gt;">Keys &lt;b&gt;</li>'), 'root: steps in words, labels escaped');
+expect(substr_count($all, 'data-shortcut-idea') === 1 && str_contains($all, 'never in one click'), 'root: one shortcut idea');
+expect(str_contains($all, '<div class="usage-tile--ideas"><dt>Shortcut ideas</dt><dd>1</dd></div>'), 'root: shortcut ideas tile');
+expect(str_contains($all, '<a class="usage-pill" href="/tools/usage-reports/" aria-current="page">Everyone</a>'), 'root: Everyone pill current');
+expect(str_contains($all, '<a class="usage-pill" href="/tools/usage-reports/?uploader=anonymous">Anonymous · 1</a>') && str_contains($all, '<a class="usage-pill" href="/tools/usage-reports/?uploader=ilyag">ilyag · 1</a>'), 'root: uploader pills');
+expect(str_contains($all, '<strong>You menu</strong> <span class="meta">menu, on Thread</span>'), 'root: most clicked in words');
+expect(str_contains($all, '/assets/tools.'), 'root: page stylesheet loaded');
 
 $mine = page($application(), 'GET', '/tools/usage-reports/?uploader=ilyag');
-expect(str_contains($mine, '<dt>Reports</dt><dd>1</dd>') && str_contains($mine, '<option value="ilyag" selected>'), 'root: filter by uploader');
+expect(str_contains($mine, '<dt>Reports</dt><dd>1</dd>') && str_contains($mine, '<a class="usage-pill" href="/tools/usage-reports/?uploader=ilyag" aria-current="page">ilyag · 1</a>'), 'root: filter by uploader');
 $unknown = page($application(), 'GET', '/tools/usage-reports/?uploader=nobody');
 expect(str_contains($unknown, '<dt>Reports</dt><dd>2</dd>'), 'root: unknown uploader falls back to everyone');
 

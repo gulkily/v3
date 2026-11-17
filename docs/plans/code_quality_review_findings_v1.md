@@ -8,6 +8,11 @@ The earlier [cleanup audit findings](codebase_cleanup_audit_findings_v1.md) were
 
 ## Summary
 
+Current state and how to rerun the tools: [handoff](code_quality_review_handoff.md).
+
+This is the first pass, 2026-11-10. What happened afterwards, decision by decision, is under [Decisions and outcomes](#decisions-and-outcomes-2026-11-14), and the mistakes to avoid next time are under [Lessons for the next pass](#lessons-for-the-next-pass).
+
+
 - **1 real bug:** `DedalusPostAnalyzer` throws a class that doesn't exist.
 - **~25 dead methods, properties, and constants in `src/`**, plus 1 dead template. All checked by hand for string-based and dynamic uses.
 - **~30 methods in `src/` reached only by tests.** Some are test hooks (keep); others are leftover API (review).
@@ -134,7 +139,7 @@ Longest methods in `src/`:
 ## 8. Needs maintainer input
 
 - **Feature flags permanently on everywhere:** **keep**. Flags exist to switch off a buggy feature and to let future instances leave a feature out, so "on everywhere" is not a reason to remove one (Ilya, 2026-11-10). All 36 are read by code.
-- **Interface-only methods** (`FastScoreStore`, `AgentReplyGenerationStore`): keep the interfaces?
+- **Interface-only methods** (`FastScoreStore`, `AgentReplyGenerationStore`): **delete** and use the classes directly (Ilya, 2026-11-14); done in #223.
 
 ## Suggested next PRs
 
@@ -201,4 +206,40 @@ Page numbers go through `PageNavigation::pageNumber`, which accepts at most 6 di
 - `ReadModelStaleMarker::mark()` ignores a failed write. Every caller has just made a commit the read model hasn't seen, and `ensureReadModel` also rebuilds on a repository head mismatch, so a lost marker still leads to a rebuild.
 
 Not covered: read-side `false`/`null` returns. Most are deliberate `(string)` casts with a default, so a useful scan needs a type checker (a higher PHPStan level), not grep.
+
+## Decisions and outcomes (2026-11-14)
+
+Each decision was posted and answered in the [ZenMemes review thread](https://zenmemes.com/threads/thread-20261111012557-b02a1583). Merge states were checked on 2026-11-14.
+
+| # | Decision | Outcome | PR |
+|---|---|---|---|
+| 1 | Feature flags that are on everywhere | **Keep all.** A flag switches off a buggy feature and lets a future instance leave a feature out. | records: #153 |
+| 2 | Methods only tests call | 13 rated 0.3 or lower removed; 5 test hooks kept and marked `@internal`. Of the middle eight, 3 removed, 3 kept with notes, 2 held (below). | #223, #227 (open) |
+| 3 | Interfaces with one implementation | **Deleted**; callers use `SqliteFastScoreStore` and `SqliteAgentReplyGenerationStore`. | #223 (open) |
+| 4 | Constructor values nothing reads | `$featureFlags` and `$sections` removed. Every `$repositoryRoot` **kept** ("it may come in handy"). | #227 (open) |
+| 5 | Markdown audit scripts | **Keep.** They're live tools while the renderer is still being extended. | #156 |
+| 6 | Scripts in three languages | **Keep and document;** more sets are planned. | #153 |
+| 7 | OpenPGP source map | **Keep serving it.** It was added on purpose to stop a DevTools 404. | #158 |
+| 8 | Root notes and one-time scripts | Notes moved into `docs/plans/`, `todo.txt` stays at the root. The three "one-time" scripts are live `./v3` commands and stay. | #156, #158, #159 |
+
+Decision 2, middle eight, final calls:
+
+- **Kept, with a note:** `LocalWriteService::setFeatureFlag` (the fallback for when records can't be signed), `PostRecord::rendersMarkdown`, `ViewerSession::isSignedIn`.
+- **Removed:** `PrivateMessageStore::markSeenThrough`, `ImageBackup::cachedBytes`, `FastScoreResult::scored`.
+- **Held, waiting on the maintainer:** `StaticArtifactBuilder::buildSingleRoute` and `PresentationSlotRegistry::all`. The maintainer approved removing both on a re-rating that missed their test use. `buildSingleRoute` renders one static page for 9 test files and fixtures, and is the entry point for a path-safety test. `all()` drives a test that checks every slot definition. The recommendation is now to keep both as `@internal` test hooks.
+
+Bugs found and fixed across the review, all merged: the missing `RuntimeException` import (#143), high-traffic mode not refreshing a thread after a reply (#147), `GpgAvailabilityTest` never running because it wasn't registered (#158), and history purge ignoring failed journal writes (#162).
+
+Baseline failures seen on `main` during this work, not caused by the review: `WriteApiSmokeTest::testLlmExchangeLinksAppearOnlyOnTheirPostDetailPages` and `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv` (failing on `9122adf0`, 2026-11-14). Both pass on `main` as of `96462cfd` (2026-11-17).
+
+## Lessons for the next pass
+
+These caused real mistakes during this review.
+
+1. **List test callers before rating a member.** The decision 2 ratings counted only production callers. Four "remove" calls turned out to be test seams: `limitPreview` (a reference algorithm) and `copyTree` (a fixture helper) moved to `tests/Support/`, and `buildSingleRoute` and `PresentationSlotRegistry::all` are held. For each candidate, ask what its tests use it for, not just whether production calls it.
+2. **Run deletion searches without a display limit, and include strings.** One search cut off its own output and missed a test caller. Another missed a method named in a `ReflectionMethod` string. Both surfaced only as test failures.
+3. **Search every place a reference can live.** The first pass skipped `docs/plans/`, the `./v3` launcher's `${ROOT}/scripts/...` paths and provenance notes, and nearly removed live tools. These are now covered: [the checklist's search rule](code_quality_review_checklist.md), `scripts/README.md` and `ScriptsIndexTest`.
+4. **Check that a new test actually runs.** `tests/run.php` lists test files explicitly; `GpgAvailabilityTest` was reported as passing without ever running. `TestFileRegistrationTest` now catches this.
+5. **Check a PR's merge state before pushing to its branch.** Twice, commits went to a branch whose PR had already merged and were stranded (restored in #160 and #163). Start a new branch from `origin/main` instead.
+6. **Replay a test failure on `main` before calling it pre-existing, then look at why.** The five "pre-existing" HighTraffic failures turned out to be a production bug (#147).
 

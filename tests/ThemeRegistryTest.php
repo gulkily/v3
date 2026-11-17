@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 require __DIR__ . '/../autoload.php';
 
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\View\ThemeRegistry;
 
 final class ThemeRegistryTest
@@ -43,11 +45,27 @@ final class ThemeRegistryTest
 
     public function testPermittedThemesKeepRegistryOrderAndExcludeUnknownNames(): void
     {
-        $themes = ThemeRegistry::permitted(['qdb', 'auto', 'light', 'unknown']);
+        $themes = ThemeRegistry::permitted(['qdb', 'auto', 'light', 'unknown'], new FeatureFlagEvaluator());
 
         assertSame(['auto', 'light', 'qdb'], array_column($themes, 'name'));
         assertSame(true, ThemeRegistry::isKnownName('qdb'));
         assertSame(false, ThemeRegistry::isKnownName('unknown'));
+    }
+
+    public function testZalgoIsOfferedOnlyWhileItsFlagIsOn(): void
+    {
+        $names = ['auto', 'dark', 'zalgo'];
+        $off = new FeatureFlagEvaluator();
+        $on = new FeatureFlagEvaluator(siteValues: [FeatureFlagRegistry::ZALGO_THEME_ENABLED => true]);
+
+        assertSame(['auto', 'dark'], array_column(ThemeRegistry::permitted($names, $off), 'name'));
+        assertSame(['auto', 'dark', 'zalgo'], array_column(ThemeRegistry::permitted($names, $on), 'name'));
+        // Every profile that offers Bubblegum offers Zalgo too, once the flag is on.
+        foreach (\ForumRewrite\SiteProfileRegistry::all() as $profile) {
+            if (in_array('bubblegum', $profile['permittedThemes'], true)) {
+                assertSame(true, in_array('zalgo', $profile['permittedThemes'], true));
+            }
+        }
     }
 
     public function testExplicitThemeAssetsAndHintCookieHaveCanonicalContracts(): void
@@ -260,6 +278,7 @@ final class ThemeRegistryTest
         assertSame([
             ['chicago', 'vapor'],
             ['bubblegum', 'forge'],
+            ['spearmint', 'zalgo'],
             ['engagify', 'chouse'],
             ['qdb', 'mitrapclub'],
         ], self::layoutNames($layout, 'unpaired'));
@@ -267,7 +286,7 @@ final class ThemeRegistryTest
 
     public function testMenuLayoutKeepsListOrderAndSkipsMissingCounterparts(): void
     {
-        $layout = ThemeRegistry::menuLayout(ThemeRegistry::permitted(['auto', 'dark', 'light', 'midnight', 'chicago']));
+        $layout = ThemeRegistry::menuLayout(ThemeRegistry::permitted(['auto', 'dark', 'light', 'midnight', 'chicago'], new FeatureFlagEvaluator()));
 
         assertSame([['light', 'dark']], self::layoutNames($layout));
         assertSame([['chicago', 'midnight']], self::layoutNames($layout, 'unpaired'));
@@ -277,7 +296,7 @@ final class ThemeRegistryTest
 
     public function testMenuLayoutKeepsSingleListWhenAllThemesShareAMode(): void
     {
-        $layout = ThemeRegistry::menuLayout(ThemeRegistry::permitted(['auto', 'light', 'gloss', 'qdb']));
+        $layout = ThemeRegistry::menuLayout(ThemeRegistry::permitted(['auto', 'light', 'gloss', 'qdb'], new FeatureFlagEvaluator()));
 
         assertSame(false, $layout['columns']);
         assertSame([], $layout['rows']);

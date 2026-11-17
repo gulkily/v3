@@ -82,7 +82,7 @@ final class ApprovalAcceptance
         $context = $data['context'] ?? null;
         if (($data['version'] ?? null) !== 1 || ($data['post_id'] ?? null) !== $post->postId
             || ($data['record_sha256'] ?? null) !== hash('sha256', $contents)
-            || !in_array($data['kind'] ?? '', ['direct', 'invitation'], true) || !is_array($context)
+            || !in_array($data['kind'] ?? '', ['direct', 'invitation', 'session'], true) || !is_array($context)
             || !is_string($data['accepted_at'] ?? null)
             || !is_int($context['existing_key_count'] ?? null) || $context['existing_key_count'] < 0
             || !is_bool($context['actor_is_operator'] ?? null) || !is_bool($context['cross_account_allowed'] ?? null)
@@ -115,6 +115,14 @@ final class ApprovalAcceptance
             if (preg_match('/^Approval-Context-SHA256: ([a-f0-9]{64})$/m', $post->body, $digest)
                 && $digest[1] !== hash('sha256', json_encode($context, JSON_THROW_ON_ERROR))) {
                 throw new RuntimeException('Acceptance does not match signed review.');
+            }
+        } elseif ($data['kind'] === 'session') {
+            // The new key signed the record; the session's key authorized it, for its own name only.
+            if ($post->authorIdentityId !== $context['target_identity_id']
+                || !in_array('identity', $post->boardTags, true) || !in_array(KeyBootstrapReplay::TAG, $post->boardTags, true)
+                || KeyBootstrapReplay::fromIdentityId($post->body) !== $context['actor_identity_id']
+                || $context['classification'] !== 'own_account_key') {
+                throw new RuntimeException('Acceptance does not match key bootstrap.');
             }
         } elseif ($post->authorIdentityId !== $context['target_identity_id']
             || !in_array('invitation', $post->boardTags, true) || !str_contains($post->body, "Invitation-Action: redeem\n")) {

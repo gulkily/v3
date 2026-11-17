@@ -1,0 +1,16 @@
+ID: PF-20261111-F59
+Title: Show that posts live in Git
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Readers can't see from a post that it is a file in a Git repo; add source and history links.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261111144551-78c8c205
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Agent-filed (Claude).

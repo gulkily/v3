@@ -59,3 +59,17 @@
 
 **Uncertain assessments**
 - Whether hiding the account menu inside conversations needs a replacement; left as accepted in Step 1.
+
+## 2026-11-17T05:54Z — Stage 4 acceptance and closeout
+
+**Necessary/useful instructions**
+- Stage 4 as maintainer-only acceptance: emulated 375×667 checks already passed, but Safari's toolbar and safe area could only be confirmed on a device; retain.
+
+**Redundant/unnecessary instructions**
+- None new.
+
+**Inapplicable instructions**
+- Runtime checks for this closeout: documentation only.
+
+**Uncertain assessments**
+- None.

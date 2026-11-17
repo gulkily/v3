@@ -7,7 +7,6 @@ namespace ForumRewrite\Agent;
 use ForumRewrite\Analysis\ProviderRequestException;
 use ForumRewrite\Analysis\PostAnalysisStore;
 use ForumRewrite\Analysis\PostAnalysisService;
-use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Write\LocalWriteService;
 use RuntimeException;
 
@@ -20,12 +19,11 @@ final class AgentReplyFulfillmentService
      * @param null|callable(array<string, mixed>): array<string, mixed> $generationForContext
      */
     public function __construct(
-        private readonly AgentReplyGenerationStore $generationStore,
+        private readonly SqliteAgentReplyGenerationStore $generationStore,
         private readonly PostAnalysisStore $analysisStore,
         private readonly PostAnalysisService $analysisService,
         private readonly AgentIdentityService $identityService,
         private readonly LocalWriteService $writer,
-        private readonly FeatureFlagEvaluator $featureFlags,
         private readonly mixed $postForId,
         private readonly mixed $contextForPost,
         private readonly mixed $gateFailureForPost,

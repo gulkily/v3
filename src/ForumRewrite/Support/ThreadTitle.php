@@ -26,8 +26,7 @@ final class ThreadTitle
             $image = null;
         }
         if ($image !== null) {
-            $imageLine = ImageReference::line($image);
-            $body = implode("\n", array_filter(explode("\n", $body), static fn (string $line): bool => $line !== $imageLine));
+            $body = ImageReference::withoutReference($body);
         }
 
         $excerpt = self::bodyExcerpt($body, $limit);

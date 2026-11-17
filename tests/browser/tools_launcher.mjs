@@ -22,7 +22,7 @@ const themes = !process.argv[3] || process.argv[3] === 'all' ? permitted : proce
 const registry = php('ForumRewrite\\Tools\\ToolsPageSupport::registry()');
 const groups = php('ForumRewrite\\Tools\\ToolsPageSupport::groups()');
 const themeKey = php(`ForumRewrite\\BrowserRuntimeProfile::fromProfile(ForumRewrite\\SiteProfileRegistry::all()['${site}'])['themeStorageKey']`);
-const iconThemes = ['word97', 'chicago', 'midnight', 'gloss', 'engagify', 'bubblegum'];
+const iconThemes = ['word97', 'chicago', 'midnight', 'gloss', 'engagify', 'bubblegum', 'spearmint'];
 // Tool pages that render their Tools bar for a visitor who isn't signed in.
 const barPages = registry.filter(tool => !tool.standalone && !['user-access', 'visitor-statistics', 'llm-exchanges', 'usage-reports'].includes(tool.key));
 if (shots) await mkdir(shots, { recursive: true });
@@ -31,8 +31,8 @@ runInThisContext(readFileSync(join(project, 'public/assets/openpgp.min.js'), 'ut
 const keys = await globalThis.openpgp.generateKey({ type: 'ecc', curve: 'ed25519', userIDs: [{ name: 'alice' }], format: 'armored' });
 const fingerprint = (await globalThis.openpgp.readKey({ armoredKey: keys.publicKey })).getFingerprint();
 const root = await mkdtemp(join(tmpdir(), 'tools-launcher-'));
-// Usage reports on, so every registry tool is listed (the tools are hidden while the flag is off).
-const env = { ...process.env, FORUM_SECRETS_PATH: join(root, 'unused-secrets.php'), FORUM_USAGE_REPORTS_ENABLED: '1' };
+// Usage reports and the Import page on, so every registry tool is listed (they are hidden while their flags are off).
+const env = { ...process.env, FORUM_SECRETS_PATH: join(root, 'unused-secrets.php'), FORUM_USAGE_REPORTS_ENABLED: '1', FORUM_INSTANCE_IMPORT_PAGE_ENABLED: '1' };
 const seeded = spawnSync('php', [join(project, 'tests/Support/private_message_browser_fixture.php'), root], {
   input: JSON.stringify({ profiles: [{ name: 'alice', fingerprint, publicKey: keys.publicKey }], incoming: 'unused', outgoing: 'unused' }), encoding: 'utf8', env,
 });

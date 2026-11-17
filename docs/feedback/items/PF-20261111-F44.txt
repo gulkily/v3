@@ -1,0 +1,16 @@
+ID: PF-20261111-F44
+Title: One shared table component with zoom
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Every table (visitor statistics, admin and tools pages, Markdown in posts) should render through one component with the same zoom controls.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261111022842-fe7b25eb
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Maintainer's request written up by Claude.
