@@ -56,9 +56,9 @@ The rest of the reply is an optional note ("I'll order these from the roaster my
 - By the pledger: "Delivered (reported by mara)". It counts toward the filled total immediately.
 - By the campaign author or an operator: "Filled (confirmed by ilyag)".
 
-**Confirm.** The author's record on a pledger-reported fill. It changes the label to confirmed and nothing else.
+**Confirm.** The author's (or an operator's) record on a pledger-reported fill: a reply to the fill with the line `confirm`. It changes the label to confirmed and moves the fill into the confirmed share. (Reworded 2026-11-17 with [pledge_fill_review](./pledge_fill_review/pledge_fill_review_step3_development_plan.md): an operator may confirm too, and confirmed is a share of filled.)
 
-**Dispute.** The author's (or an operator's) record on a pledger-reported fill, saying it did not arrive. The fill stops counting. The fill and the dispute both stay visible. A dispute can itself be retracted.
+**Dispute.** The author's (or an operator's) record on a pledger-reported fill, saying it did not arrive: a reply to the fill with the line `dispute`. The fill stops counting and that part of the pledge is open again. The fill and the dispute both stay visible. A dispute can itself be retracted, and a later confirm replaces it. Fills by the author or an operator cannot be reviewed. (Reply line decided 2026-11-17.)
 
 The pledger is the one who knows whether they delivered, so an author who goes quiet cannot freeze a campaign. The label always says who made the claim, so a reader can tell a campaign that is complete and confirmed from one that is complete on self-reports.
 
@@ -110,7 +110,7 @@ Same unit as the goal. With no cushion line, the Cushioned stage is skipped.
 1. **Nothing is rejected.** A pledge line that can't be read as a number ("pledge: a few") is kept as an ordinary reply and the pledger sees a note that it was not counted. A pledge posted in a non-campaign thread is also just a reply.
 2. **Records add up; they don't overwrite.** Changing a pledge means withdrawing it and posting a new one. A second fill on the same pledge adds to the first, up to the pledge amount.
 3. **A fill can be undone** by retracting the fill record, the same way any record is retracted.
-4. **Withdrawing a filled pledge** only withdraws the unfilled part. What was delivered stays counted.
+4. **Withdrawing a filled pledge** only withdraws the unfilled part. What was delivered stays counted. A fully filled pledge cannot be withdrawn. Fills are read before withdrawals, so reply order does not change the result. (Added 2026-11-16 with [pledge_fills](./pledge_fills/pledge_fills_step3_development_plan.md).)
 5. **Who may pledge:** anyone who may reply in the thread.
 6. **Who may fill:** the pledger, for their own pledge; the campaign author and operators, for any pledge. Only the author and operators may confirm or dispute.
 7. **The goal line can't be silently changed.** A changed goal is a new visible record in the thread, so pledgers can see what they signed up for.

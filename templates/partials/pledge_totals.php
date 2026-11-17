@@ -15,6 +15,6 @@ $pledgeBarLabel = $pledgeCampaign['pledged'] . ' of ' . $pledgeCampaign['goal'] 
     <span class="pledge-bar__goal" style="left: <?= $e((string) $pledgeCampaign['goal_percent']) ?>%" title="Goal: <?= $e($pledgeCampaign['goal']) ?>"></span>
 <?php endif; ?>
   </div>
-  <p class="meta pledge-totals__count"><?= (int) $pledgeCampaign['count'] ?> <?= (int) $pledgeCampaign['count'] === 1 ? 'pledge' : 'pledges' ?></p>
+  <p class="meta pledge-totals__count"><?= (int) $pledgeCampaign['count'] ?> <?= (int) $pledgeCampaign['count'] === 1 ? 'pledge' : 'pledges' ?><?php if (($pledgeCampaign['filled'] ?? '0') !== '0'): ?> · <?= $e($pledgeCampaign['filled']) ?> filled<?= $pledgeCampaign['confirmed'] !== $pledgeCampaign['filled'] ? ' · ' . $e($pledgeCampaign['confirmed']) . ' confirmed' : '' ?><?php endif; ?></p>
 </div>
 <?php endif; ?>

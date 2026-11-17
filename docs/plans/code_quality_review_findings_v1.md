@@ -8,6 +8,8 @@ The earlier [cleanup audit findings](codebase_cleanup_audit_findings_v1.md) were
 
 ## Summary
 
+Current state and how to rerun the tools: [handoff](code_quality_review_handoff.md).
+
 This is the first pass, 2026-11-10. What happened afterwards, decision by decision, is under [Decisions and outcomes](#decisions-and-outcomes-2026-11-14), and the mistakes to avoid next time are under [Lessons for the next pass](#lessons-for-the-next-pass).
 
 
@@ -228,7 +230,17 @@ Decision 2, middle eight, final calls:
 
 Bugs found and fixed across the review, all merged: the missing `RuntimeException` import (#143), high-traffic mode not refreshing a thread after a reply (#147), `GpgAvailabilityTest` never running because it wasn't registered (#158), and history purge ignoring failed journal writes (#162).
 
-Baseline failures seen on `main` during this work, not caused by the review: `WriteApiSmokeTest::testLlmExchangeLinksAppearOnlyOnTheirPostDetailPages` and `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv` (both failing on `9122adf0`, 2026-11-14).
+Baseline failures seen on `main` during this work, not caused by the review: `WriteApiSmokeTest::testLlmExchangeLinksAppearOnlyOnTheirPostDetailPages` and `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv` (failing on `9122adf0`, 2026-11-14). Both pass on `main` as of `96462cfd` (2026-11-17).
+
+## Server and browser text rules (2026-11-17)
+
+Checklist §2.2, first pair. Cycle record: [unicode_text_rule_parity](unicode_text_rule_parity/unicode_text_rule_parity_one_shot.md).
+
+`UnicodeTextPolicy` and `isAllowedVisibleUnicodeCharacter` in `browser_signing.js` are hand-synced twins with the same checks in the same order. A scan ran every code point through both sides in ASCII, Unicode and emoji modes. The browser was never stricter than the server, and the server accepts every text the browser rewrites.
+
+- **Fixed:** in ASCII mode the browser let 30 control characters through (C0 apart from tab, LF and CR, plus DEL), which the server then rejected. Pasted IRC colour and bold codes hit this. The browser now uses the server's range. `UnicodeTextRuleParityTest` runs one corpus through both sides in all three modes, and fails if they drift apart again.
+- **Decision for the maintainer: Unicode version drift.** The server's PCRE2 10.42 knows Unicode 14; current browsers know Unicode 16 or 17. About 15,000 newer characters, including emoji such as 🫨 and 🪿, pass the browser and are then rejected by the server as "control or format characters". The code agrees; the runtimes don't.
+- **Left alone:** the server trims outer `U+0000` and `U+000B` and the browser does not, and a server without `intl` rejects every combining mark.
 
 ## Lessons for the next pass
 

@@ -145,6 +145,30 @@ try {
   await reader.context.close();
   assert.deepEqual(writer.seen, { dialogs: [], errors: [] });
 
+  // Fill: the pledger marks the 300 pledge delivered with one press; a failed first press says so.
+  const fillForms = writer.page.locator('[data-role="pledge-line"]');
+  assert.equal(await fillForms.count(), 2, 'each open pledge has Mark delivered for its pledger');
+  const fillForm = fillForms.first();
+  const fillCards = await writer.page.locator('article.post-card').count();
+  await writer.page.route('**/api/prepare_reply', route => route.abort(), { times: 1 });
+  await fillForm.getByRole('button', { name: 'Mark delivered' }).click();
+  const fillFailure = fillForm.locator('[data-role="pledge-withdraw-feedback"]');
+  await fillFailure.waitFor({ state: 'visible' });
+  assert.match((await fillFailure.textContent()).trim(), /^Marking failed\. Try again\./);
+  assert.equal(await fillForm.getByRole('button', { name: 'Mark delivered' }).isEnabled(), true);
+  const filledReply = writer.page.waitForResponse(r => /\/api\/create_prepared_post$/.test(r.url()), { timeout: 60000 });
+  await fillForm.getByRole('button', { name: 'Mark delivered' }).click();
+  assert.equal((await filledReply).status(), 200);
+  await writer.page.locator('.pledge-amount[data-pledge-state="fill"]').waitFor({ timeout: 30000 });
+  await settled(writer.page);
+  assert.match((await writer.page.locator('.pledge-amount[data-pledge-state="fill"]').textContent()).trim(), /^Delivered by \S+$/);
+  assert.equal((await writer.page.locator('.pledge-totals__count').textContent()).trim(), '2 pledges · 300 filled · 0 confirmed');
+  assert.equal((await writer.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged');
+  assert.equal(await writer.page.locator('article.post-card').count(), fillCards, 'the bare fill adds no card');
+  assert.equal(await writer.page.locator('[data-role="pledge-line"]').count(), 1, 'a filled pledge has no fill button');
+  assert.equal(await writer.page.locator('[data-role="pledge-withdraw"]').count(), 1, 'a filled pledge cannot be withdrawn');
+  assert.deepEqual(writer.seen, { dialogs: [], errors: [] });
+
   // Without JavaScript the server writes the line. The post has no name, so it counts only with --count-unnamed.
   const plain = await open(false);
   await plain.page.goto(base + '/threads/' + threadId);
@@ -157,7 +181,7 @@ try {
     assert.equal(await plain.page.locator('.pledge-amount[data-pledge-state="unnamed"]').count(), 0);
     assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="counted"]').last().textContent()).trim(), '12.5 coffees');
     assert.equal((await plain.page.locator('.pledge-totals__sum').textContent()).trim(), '1312.5 of 1000 coffees pledged');
-    assert.equal((await plain.page.locator('.pledge-totals__count').textContent()).trim(), '3 pledges');
+    assert.equal((await plain.page.locator('.pledge-totals__count').textContent()).trim(), '3 pledges · 300 filled · 0 confirmed');
   } else {
     assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="unnamed"]').textContent()).trim(), '12.5 coffees · Not counted: no name');
     assert.equal((await plain.page.locator('.pledge-totals__sum').textContent()).trim(), '1300 of 1000 coffees pledged');
@@ -170,6 +194,69 @@ try {
   await plain.page.goto(base + '/threads/' + threadId);
   assert.equal((await plain.page.locator('.pledge-amount[data-pledge-state="unreadable"]').textContent()).trim(), 'Not counted: “a few” is not a number');
   await plain.context.close();
+
+  // Review: a second visitor pledges twice and marks both delivered; the author confirms one, after a
+  // failed first press, and disputes the other. The dispute stays in the conversation.
+  const pledger = await open(true);
+  await pledger.page.goto(base + '/threads/' + threadId);
+  await settled(pledger.page);
+  for (const n of ['20', '30']) {
+    await pledger.page.locator('[data-compose-kind="reply"] [data-role="pledge-amount"]').fill(n);
+    const posted = pledger.page.waitForResponse(r => /\/api\/(create_prepared_post|create_reply)$/.test(r.url()), { timeout: 60000 });
+    await pledger.page.locator('[data-compose-kind="reply"]').getByRole('button', { name: 'Post reply' }).click();
+    assert.equal((await posted).status(), 200);
+    await settled(pledger.page);
+    await pledger.page.goto(base + '/threads/' + threadId);
+    await settled(pledger.page);
+  }
+  for (let i = 0; i < 2; i++) {
+    const mark = pledger.page.locator('[data-role="pledge-line"]').filter({ has: pledger.page.getByRole('button', { name: 'Mark delivered' }) }).first();
+    const marked = pledger.page.waitForResponse(r => /\/api\/create_prepared_post$/.test(r.url()), { timeout: 60000 });
+    await mark.getByRole('button', { name: 'Mark delivered' }).click();
+    assert.equal((await marked).status(), 200);
+    await pledger.page.waitForLoadState('load');
+    await settled(pledger.page);
+  }
+  assert.equal(await pledger.page.locator('[data-role="pledge-line"] input[name="body"][value="confirm"]').count(), 0, 'the pledger cannot review their own fill');
+  assert.deepEqual(pledger.seen, { dialogs: [], errors: [] });
+  await pledger.context.close();
+
+  await writer.page.goto(base + '/threads/' + threadId);
+  await settled(writer.page);
+  assert.match((await writer.page.locator('.pledge-totals__count').textContent()).trim(), / · 350 filled · 0 confirmed$/);
+  const confirmForms = writer.page.locator('[data-role="pledge-line"]').filter({ has: writer.page.locator('input[name="body"][value="confirm"]') });
+  assert.equal(await confirmForms.count(), 2, 'each unreviewed delivery has Confirm for the author');
+  const confirmForm = confirmForms.first();
+  await writer.page.route('**/api/prepare_reply', route => route.abort(), { times: 1 });
+  await confirmForm.getByRole('button', { name: 'Confirm' }).click();
+  const reviewFailure = confirmForm.locator('[data-role="pledge-withdraw-feedback"]');
+  await reviewFailure.waitFor({ state: 'visible' });
+  assert.match((await reviewFailure.textContent()).trim(), /^Review failed\. Try again\./);
+  assert.equal(await confirmForm.getByRole('button', { name: 'Confirm' }).isEnabled(), true);
+  const confirmed = writer.page.waitForResponse(r => /\/api\/create_prepared_post$/.test(r.url()), { timeout: 60000 });
+  await confirmForm.getByRole('button', { name: 'Confirm' }).click();
+  assert.equal((await confirmed).status(), 200);
+  await writer.page.waitForLoadState('load');
+  await settled(writer.page);
+  assert.match((await writer.page.locator('.pledge-totals__count').textContent()).trim(), / · 350 filled · 20 confirmed$/);
+  assert.match((await writer.page.locator('.pledge-amount[data-pledge-state="fill"]', { hasText: 'confirmed by' }).textContent()).trim(), /^Delivered by \S+ · confirmed by \S+$/);
+  const reviewCards = await writer.page.locator('article.post-card').count();
+
+  const disputeForm = writer.page.locator('[data-role="pledge-line"]').filter({ has: writer.page.locator('input[name="body"][value="dispute"]') });
+  assert.equal(await disputeForm.count(), 1, 'a confirmed delivery has no review buttons');
+  const disputed = writer.page.waitForResponse(r => /\/api\/create_prepared_post$/.test(r.url()), { timeout: 60000 });
+  await disputeForm.getByRole('button', { name: 'Dispute' }).click();
+  assert.equal((await disputed).status(), 200);
+  await writer.page.waitForLoadState('load');
+  await settled(writer.page);
+  assert.match((await writer.page.locator('.pledge-totals__count').textContent()).trim(), / · 320 filled · 20 confirmed$/);
+  const struck = writer.page.locator('.pledge-amount[data-pledge-state="fill-disputed"]');
+  assert.match((await struck.textContent()).trim(), /^Delivered by \S+ · disputed by \S+$/);
+  assert.equal(await struck.locator('s').evaluate(e => getComputedStyle(e).textDecorationLine), 'line-through');
+  // The dispute and the fill it answers both show as cards.
+  assert.equal(await writer.page.locator('article.post-card').count(), reviewCards + 2, 'the dispute and its fill stay in the conversation');
+  assert.equal(await writer.page.locator('[data-role="pledge-line"] input[name="body"][value="confirm"]').count(), 0);
+  assert.deepEqual(writer.seen, { dialogs: [], errors: [] });
 
   // Every theme: nothing overflows, and the sum, bar and field are on the page.
   for (const theme of countUnnamed ? [] : ['light', 'dark', 'gloss', 'glossdark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'bubblegum', 'spearmint']) {
@@ -191,6 +278,10 @@ try {
       assert.equal(await view.page.locator('[data-role="pledge-amount"]').count(), 1);
       const mark = await view.page.locator('.pledge-amount[data-pledge-state="withdrawn"] a').boundingBox();
       assert.ok(mark && mark.width > 20 && mark.height > 8, `${theme} ${width}px: the Withdrawn label is drawn`);
+      const fillMark = await view.page.locator('.pledge-amount[data-pledge-state="fill"] a').first().boundingBox();
+      assert.ok(fillMark && fillMark.width > 40 && fillMark.height > 8, `${theme} ${width}px: the Delivered label is drawn`);
+      const disputedMark = await view.page.locator('.pledge-amount[data-pledge-state="fill-disputed"] s').boundingBox();
+      assert.ok(disputedMark && disputedMark.width > 40 && disputedMark.height > 8, `${theme} ${width}px: the disputed delivery is drawn`);
       if (shots) {
         await mkdir(shots, { recursive: true });
         await view.page.locator('[data-pledge-totals]').scrollIntoViewIfNeeded();
@@ -201,6 +292,6 @@ try {
     }
   }
   await writer.context.close();
-  console.log('PASS pledge campaign: goal line, totals, amount field both ways, signed pledge, goal mark, withdraw with a failed first press, no-JavaScript pledge, uncounted reason, themes');
+  console.log('PASS pledge campaign: goal line, totals, amount field both ways, signed pledge, goal mark, withdraw with a failed first press, fill with a failed first press, confirm with a failed first press, dispute, no-JavaScript pledge, uncounted reason, themes');
 } catch (error) { console.error(serverLog.slice(-3000)); throw error; }
 finally { await browser.close(); server.kill(); }

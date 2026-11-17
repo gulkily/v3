@@ -1,6 +1,7 @@
 <?php
 // The board's filter, sort ▾ and Tags controls, shared by the list board and /tags/.
 // On /tags/ ($tagsCurrent) Tags is the current page and no filter or sort option is.
+// $gettingStarted adds a Getting started link (a board that fell back to All on a new instance).
 $tagsCurrent = (bool) ($tagsCurrent ?? false);
 $isCurrent = static fn (array $option): bool => !$tagsCurrent && $option['is_active'];
 ?>
@@ -14,5 +15,8 @@ $isCurrent = static fn (array $option): bool => !$tagsCurrent && $option['is_act
     'sortOptions' => array_map(static fn (array $option): array => ['is_active' => $isCurrent($option)] + $option, $sortOptions),
     'sortLabel' => $sortLabel,
 ]), 1) ?>
+<?php if (!empty($gettingStarted)): ?>
+  <a class="nav-link" href="/start/">Getting started</a>
+<?php endif; ?>
   <a class="nav-link board-tags-link<?= $tagsCurrent ? ' is-active' : '' ?>" href="/tags/"<?= $tagsCurrent ? ' aria-current="page"' : '' ?>>Tags</a>
 </div>

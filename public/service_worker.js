@@ -215,9 +215,98 @@ async function offlineComposePage(url) {
   return new Response(html, { status: cached.status, statusText: cached.statusText, headers: cached.headers });
 }
 
-async function networkFirstNavigation(request) {
+// Fast navigation: a page asks for a navbar destination as a finger or pointer goes down
+// on it, and the navigation that follows within EARLY_FETCH_MS is answered with that
+// response. Pages send nothing while the "Fast navigation" flag is off.
+const EARLY_FETCH_MS = 10000;
+const earlyFetches = new Map();
+
+function startEarlyFetch(href) {
+  let url;
+  try { url = new URL(href, self.location.origin); } catch (error) { return; }
+  if (url.origin !== self.location.origin) return;
+  url.hash = "";
+  const known = earlyFetches.get(url.href);
+  if (known && Date.now() - known.at < EARLY_FETCH_MS) return;
+  for (const [key, entry] of earlyFetches) if (Date.now() - entry.at >= EARLY_FETCH_MS) earlyFetches.delete(key);
+  const response = fetch(url.href, { credentials: "same-origin", headers: { Accept: "text/html" } }).catch(() => null);
+  earlyFetches.set(url.href, { at: Date.now(), response });
+  return response;
+}
+
+// A redirected or failed response cannot answer the navigation; the caller falls back.
+async function takeEarlyFetch(request) {
+  if (request.method !== "GET") return null;
+  const key = new URL(request.url);
+  key.hash = "";
+  const entry = earlyFetches.get(key.href);
+  if (!entry) return null;
+  earlyFetches.delete(key.href);
+  if (Date.now() - entry.at >= EARLY_FETCH_MS) return null;
+  const response = await entry.response;
+  return response && response.ok && !response.redirected && response.type === "basic" ? response : null;
+}
+
+// Navbar pages from last copy: pages with the flag on write the navbar paths into this
+// cache; pages with it off delete the cache. A listed page opened before is answered from
+// its copy, and a fresh copy is fetched in the background for the next visit. The page on
+// screen is never changed; it learns the fresh copy's version through "nav-copy-status".
+const NAV_COPY_CACHE = CACHE_PREFIX + "nav-copy";
+const NAV_COPY_PATHS_KEY = "/__nav_copy_paths__";
+const navCopyRefreshes = new Map();
+
+async function navCopyTarget(request) {
+  if (request.method !== "GET" || self.navigator.onLine === false) return null;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin || url.search) return null;
+  if (!(await caches.has(NAV_COPY_CACHE))) return null;
+  const cache = await caches.open(NAV_COPY_CACHE);
+  const listed = await cache.match(cacheKey(NAV_COPY_PATHS_KEY));
+  if (!listed) return null;
+  const paths = (await listed.text()).split("\n");
+  if (!paths.includes(url.pathname)) return null;
+  url.hash = "";
+  return { cache, key: url.href, path: url.pathname };
+}
+
+function keepable(response) {
+  return Boolean(response) && response.ok && !response.redirected && response.type === "basic"
+    && !/no-store/i.test(response.headers.get("Cache-Control") || "");
+}
+
+async function pageVersion(response) {
+  const match = (await response.clone().text()).match(/<meta name="app-version" content="([^"]*)">/);
+  return match ? match[1] : null;
+}
+
+async function networkFirstNavigation(event) {
+  const request = event.request;
+  // Settle the preload even when another response answers, so the browser does not cancel it noisily.
+  const preload = event.preloadResponse ? Promise.resolve(event.preloadResponse).catch(() => undefined) : Promise.resolve(undefined);
+  event.waitUntil(preload);
   try {
-    return await fetch(request);
+    const earlyFetch = takeEarlyFetch(request);
+    const target = await navCopyTarget(request).catch(() => null);
+    const kept = target ? await target.cache.match(target.key) : null;
+    if (kept) {
+      const refresh = (async () => {
+        let fresh = (await earlyFetch) || (await preload);
+        if (!fresh) fresh = await fetch(target.key, { credentials: "same-origin", headers: { Accept: "text/html" } });
+        if (!keepable(fresh)) return null;
+        await target.cache.put(target.key, fresh.clone());
+        return pageVersion(fresh);
+      })().catch(() => null);
+      navCopyRefreshes.set(target.path, refresh);
+      event.waitUntil(refresh.then(() => new Promise((done) => setTimeout(done, 30000))).then(() => {
+        if (navCopyRefreshes.get(target.path) === refresh) navCopyRefreshes.delete(target.path);
+      }));
+      return kept;
+    }
+    // This page comes from the network, so an older background refresh says nothing about it.
+    if (target) navCopyRefreshes.delete(target.path);
+    const response = (await earlyFetch) || (await preload) || (await fetch(request));
+    if (target && keepable(response)) event.waitUntil(target.cache.put(target.key, response.clone()).catch(() => {}));
+    return response;
   } catch (error) {
     const url = new URL(request.url);
     if (request.method === "GET" && composePageFor(url)) {
@@ -238,6 +327,19 @@ async function networkFirstNavigation(request) {
 }
 
 self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "nav-copy-status" && typeof event.data.path === "string" && event.ports[0]) {
+    const port = event.ports[0];
+    const refresh = navCopyRefreshes.get(event.data.path);
+    if (!refresh) { port.postMessage({ type: "nav-copy-status", version: null }); return; }
+    event.waitUntil(refresh.then((version) => port.postMessage({ type: "nav-copy-status", version: version || null })));
+    return;
+  }
+  if (event.data && event.data.type === "early-fetch" && typeof event.data.url === "string") {
+    const started = startEarlyFetch(event.data.url);
+    // Keep the worker alive until the response arrives; the navigation picks it up.
+    if (started) event.waitUntil(started);
+    return;
+  }
   if (event.data && event.data.type === "refresh-offline-reader") {
     event.waitUntil((async () => {
       try {
@@ -257,7 +359,7 @@ self.addEventListener("message", (event) => {
 });
 self.addEventListener("fetch", (event) => {
   if (event.request.mode === "navigate") {
-    event.respondWith(networkFirstNavigation(event.request));
+    event.respondWith(networkFirstNavigation(event));
     return;
   }
   if (!cacheableRequest(event.request)) return;

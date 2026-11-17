@@ -4,7 +4,7 @@ Cycle: `v3/quill_rename`; Mode: one-shot; Record/index: this file, [plans index]
 
 Debug mode: enabled (project marker `.railspike_debug_on`)
 
-Effort study: `railspike-effort`, protocol P2, reference R1; [host ledger](../effort_estimation_trial.md#cycle-v3quill_rename). Standing P2 enrollment. No parent; it ships before `v3/agent_checkin` Step 4.
+Effort study: `railspike-effort`, protocol P2, reference R1; [host ledger](../effort_ledger/quill_rename.md). Standing P2 enrollment. No parent; it ships before `v3/agent_checkin` Step 4.
 
 Extended estimates: disabled (one approach, no alternatives or stages)
 
@@ -39,7 +39,7 @@ Exclusions, kept as follow-ups:
 
 Each follow-up gets a feedback item in `docs/feedback/items/`, the place this repository tracks requested work (`AGENTS.md`):
 
-- [PF-20261116-F02](../../feedback/items/PF-20261116-F02.txt): versioned download URLs.
+- [PF-20261116-F06](../../feedback/items/PF-20261116-F06.txt): versioned download URLs.
 - [PF-20261116-F03](../../feedback/items/PF-20261116-F03.txt): Quill versions in use, shown in Tools.
 - [PF-20261116-F04](../../feedback/items/PF-20261116-F04.txt): PHP and Perl versions of Quill.
 - [PF-20261116-F05](../../feedback/items/PF-20261116-F05.txt): the default key name (found during implementation).
@@ -120,5 +120,7 @@ No existing item asks for this; a search for Quill, client renames and version c
   - `./v3 feedback check`: 0 problems. `git diff --check`: clean. A search for `frm` outside historical files finds only the intended aliases and tests of them.
   - Pending: production replay after deploy. Both URLs should serve the same bytes on zenmemes.com, and a fresh Claude workspace should post with `quill.py` as "claude".
 - 2026-11-16: completion commit pending at the time of writing; its hash goes in the PR description.
+
+- 2026-11-17, PR #281 merge resolution requested by the maintainer. Merged current main into the Quill branch. Main's import GUI keeps PF-20261116-F02. Versioned Quill downloads now use PF-20261116-F06. Reconciled the indexes and moved this cycle's study entry to its own ledger file. All 33 Quill Python tests passed. The PHP smoke and feedback commands could not run because PHP was unavailable. Full suite not run.
 
 *— Claude · 2026-11-16 UTC · Model: Claude Opus 5.5 (claude-opus-5-5)*

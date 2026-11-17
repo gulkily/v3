@@ -14,6 +14,7 @@ Run by: a `./v3` command, another script or class, or "you" (run it by hand).
 | `inject_approval.php` | `./v3 approve`, `./v3 approval seed`, `./v3 approval approve` | Seed or grant key approval from the server ([approval](../docs/concepts/approval_acceptance.md)) |
 | `approval_receipts.php` | `./v3 approval receipts` | Inspect or convert approval receipts |
 | `audit_approvals.php` | `./v3 approval audit` | Audit who approved whom |
+| `suggest_approval_roots.php` | `./v3 approval suggest-roots` | Suggest which keys to seed as roots after an import without seeds |
 | `archive_thread.php` | `./v3 archive-thread` | Archive one thread out of the live repository |
 | `bake_legacy_timestamps.php` | `./v3 bake-timestamps` | Write explicit timestamps into legacy records |
 | `build_static_artifacts.php` | `./v3 build-static` | Build static HTML pages |
@@ -26,6 +27,7 @@ Run by: a `./v3` command, another script or class, or "you" (run it by hand).
 | `fast_score.php` | `./v3 fast-score` | Fast post scoring status, audit and maintenance |
 | `feedback.php` | `./v3 feedback` | Check and index feedback items ([feedback items](../docs/concepts/feedback_items.md)) |
 | `high_traffic.php` | `./v3 high-traffic` | Enable, inspect and refresh high-traffic mode |
+| `tour.php` | `./v3 tour` | Refresh and inspect the tour page snapshots |
 | `restore_images.php` | `./v3 images` | Verify or restore an image backup |
 | `import_instance.php` | `./v3 import-instance` | Import content from another instance |
 | `import_repository_archive.php` | `./v3 import-repository` | Import a repository archive |
@@ -56,6 +58,7 @@ Run by: a `./v3` command, another script or class, or "you" (run it by hand).
 | `php_setup_guidance.sh` | `local_server_dependencies.sh` | Prints PHP install guidance when PHP is missing or too old |
 | `dev_server.php` | `local_server_start.sh`, `public/router.php` | PHP built-in server with a readable request log |
 | `high_traffic_render.php` | `Host/HighTrafficCache` | Worker that renders one cached page in a separate process |
+| `tour_render.php` | `Tour/TourSnapshots` | Worker that renders one tour snapshot in a separate process |
 | `terminal_operator_ui_lib.sh` | `terminal_operator_ui.sh` | Shared helpers for the terminal menu |
 | `terminal_dialog.php` | `terminal_operator_ui_lib.sh` | Dialog prompts for the terminal menu |
 | `terminal_llm_editor.php` | `terminal_operator_ui.sh` | LLM settings editor in the terminal menu |

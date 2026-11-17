@@ -1,0 +1,6 @@
+# High-traffic mode
+
+Purpose: Keep a busy public instance up by letting Apache answer the most visited pages, and the assets they load, without PHP.
+Scenario: The operator turns the mode on (Tools → Operations, `./v3 high-traffic enable`, or automatically on a PHP request spike). Cached copies of `/`, `/threads/`, `/about/` and thread pages are rendered in the background, together with copies of every fingerprinted asset they reference. Apache serves both through two managed symlinks, `.high-traffic` and `.high-traffic-assets`. A miss, a query string or an `Authorization` header goes to PHP. Turning off, a withdrawal (access or feature change, removal) or `restore` removes both symlinks, and every request returns to PHP.
+Sources: [mode](../../src/ForumRewrite/Host/HighTrafficMode.php), [safety](../../src/ForumRewrite/Host/HighTrafficSafety.php), [cache](../../src/ForumRewrite/Host/HighTrafficCache.php), [routing](../../public/.htaccess), [runbook](../runbooks/high_traffic_mode.md).
+Related: private instances never enable it. Its managed rules ship in the tracked `public/.htaccess`, so a [deploy](application_update.md) keeps a server's own edits unless they touch the same lines. A [tour snapshot](tour_snapshot.md) uses the same render but is never served at its page's URL.

@@ -116,6 +116,25 @@ NODE);
         assertSame(2, substr_count($template, '<article class="card">'));
     }
 
+    public function testInviteQrShowsAPitchForThePersonScanning(): void
+    {
+        $template = file_get_contents(__DIR__ . '/../templates/pages/invites.php');
+        $qrBlock = substr($template, strpos($template, 'data-role="invitation-qr"'));
+
+        assertStringContains('class="invitation-qr-pitch"', $qrBlock);
+        assertStringContains("You're invited to <?= \$e(\$invitationSiteName) ?>", $qrBlock);
+        assertStringContains('<?= $e($siteDescription) ?>', $qrBlock);
+        assertStringContains('foreach ($invitationReasons as $reason)', $qrBlock);
+
+        $profile = \ForumRewrite\SiteProfileRegistry::all()['zenmemes'];
+        assertSame(3, count(\ForumRewrite\ProfilePresentationContent::invitationReasons($profile)));
+        assertSame([], \ForumRewrite\ProfilePresentationContent::invitationReasons(\ForumRewrite\SiteProfileRegistry::all()['qdb']));
+
+        $styles = file_get_contents(__DIR__ . '/../public/assets/invitations.css');
+        assertStringContains('.invitation-qr:not([hidden]) {', $styles);
+        assertStringContains('width: 11rem;', $styles);
+    }
+
     public function testInlineDestinationChooserUsesEqualInputInsets(): void
     {
         $styles = file_get_contents(__DIR__ . '/../public/assets/invitations.css');

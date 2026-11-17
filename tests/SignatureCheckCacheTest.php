@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/ImportTestWorkspace.php';
 
 use ForumRewrite\Application;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Import\ContentImportRunner;
 use ForumRewrite\ReadModel\IncrementalReadModelUpdater;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\Security\ReactionSignature;
@@ -99,6 +101,36 @@ final class SignatureCheckCacheTest
                 assertSame('verified', $this->status($root, 'records/posts/signed-test.txt'));
                 assertSame(true, is_file($directory . '/signature_checks.sqlite3'));
             }
+        } finally {
+            $this->cleanup($root, $cacheDir);
+        }
+    }
+
+    public function testImportPlanningReusesChecksBesideTheDestinationDatabase(): void
+    {
+        [$root, $cacheDir, $log] = $this->workspace();
+        $w = new ImportTestWorkspace();
+        try {
+            $source = $w->repository('source', true);
+            $w->signedLabel($source);
+            $target = $w->repository('target');
+            $w->git($target);
+            // An explicit database path keeps the cache beside that file only.
+            mkdir($w->root . '/explicit');
+            $database = $w->root . '/explicit/index.sqlite3';
+            $preview = static fn (): array => (new ContentImportRunner($target, $database))->run($source, static fn () => null, true);
+
+            assertSame(11, $preview()['counts']['import']);
+            assertSame(true, $this->gpgRuns($log) > 0);
+            assertSame(true, is_file($w->root . '/explicit/signature_checks.sqlite3'));
+            assertSame(false, is_file($cacheDir . '/signature_checks.sqlite3'));
+
+            // A later import, in a new process, needs no GPG for the same signature.
+            $before = $this->gpgRuns($log);
+            $this->forgetMemory();
+            SignatureCheckCache::disable();
+            $preview();
+            assertSame($before, $this->gpgRuns($log));
         } finally {
             $this->cleanup($root, $cacheDir);
         }

@@ -1,8 +1,18 @@
 # Effort estimation trial ledger
 
-## Cycle v3/quill_rename
+> **2026-11-15: new entries go in [`effort_ledger/`](effort_ledger/README.md), one file per cycle.** This file is frozen for appends: its protocol text and every entry below stay as they are. A cycle with a section here continues in its own file, which links back. Reason: every open PR appended here, so any two conflicted.
+## Cycle v3/bookmarklet_host_prefix
 
-2026-11-16T10:40Z — v3/quill_rename one-shot (standing P2 enrollment; no parent; ships before v3/agent_checkin Step 4): [record](./quill_rename/quill_rename_one_shot.md#study-history). `frm.py` becomes `quill.py` (`/frm.py` kept); Quill sends its version on every request, and an outdated copy gets an `X-Quill-Update` header on every response. Intake **0.30** after source inspection (no pristine intake), retrospective 0.30, single exposed Claude rater. Baseline `c98b522`; maintainer fit judgment pending; no accepted-count change.
+2026-11-16T19:05Z — v3/bookmarklet_host_prefix one-shot (standing P2 enrollment, no parent): [record](./bookmarklet_host_prefix/bookmarklet_host_prefix_one_shot.md#study-history). Every bookmarklet's address starts `javascript:/*<host>*/` so a bookmark editor shows its server; also fixed the pre-existing `bookmarklet_copy_ui.mjs` Auto-theme wait. Intake **0.05** after source inspection (no pristine intake), retrospective 0.07, single exposed Claude rater. Baseline `f13ed676`; maintainer fit judgment pending; no accepted-count change.
+## Cycle v3/prompt_plain_text_and_revise
+
+2026-11-16T10:35Z — v3/prompt_plain_text_and_revise **backlogged** at the maintainer's request, incomplete: Step 1 approved, Step 2 (scope v2) unapproved, nothing implemented. Artifacts in [backlog](./backlog/prompt_plain_text_and_revise_step2_feature_description.md). No outcome score.
+
+2026-11-16T09:50Z — scope v2 (maintainer split): the listing display moved to one-shot v3/prompt_plain_text; versions and Edit remain. Step 2 revised, projected total **0.4**.
+
+2026-11-16T09:45Z — Step 1 approved (Option B; author's version; "Show all"). Step 2 projected total **0.55**, same rater.
+
+2026-11-16T09:30Z — staged (standing P2 enrollment; follows v3/prompt_copy_quiet): [Step 1](./backlog/prompt_plain_text_and_revise_step1_solution_assessment.md). Prompts shown as plain text with Copy; Edit on a prompt version opens the reply form filled in. Intake **0.5** after reading the prompt library record and thread templates (no pristine intake); Step 1 projected total for recommended Option B **0.5** (A 0.3, C 0.45), single exposed Claude rater. Baseline `65b98d0`.
 
 ## Cycle v3/prompt_plain_text
 
@@ -662,6 +672,8 @@ Maintainer request: “I want every future railspike to be part of the same data
 - Six accepted outcomes now trigger a review checkpoint, not the end of collection or a size quota. Freeze R1 until an explicit reference revision; protocol P2 changes enrollment only. Retain every scope/version and related child cycle; no extra independent outcomes from cloned files or split children.
 - This checkout's ledger and artifacts are local copies of one dataset. Integrate updates through normal Git review; merge by stable cycle ID/checkpoint and retain conflicting snapshots, rather than overwriting or summing checkouts. Collection is local; no automatic upload is authorized. Repair source paths by recorded content hash/Git revision, never by silently changing references.
 
+2026-11-15 amendment: the ledger index row and dated lines described above now go in the cycle's own file under [`effort_ledger/`](effort_ledger/README.md), not in this file. Everything else in P2 is unchanged.
+
 ### Enrollment index after P2
 
 | Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Relationship / acceptance |
@@ -671,7 +683,11 @@ Maintainer request: “I want every future railspike to be part of the same data
 | `v3/test_only_member_cleanup` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.35 | [One-shot record](./test_only_member_cleanup/test_only_member_cleanup_one_shot.md#study-history) | Follow-up to the code quality review (decisions 2 and 3); acceptance pending |
 | `v3/test_only_member_cleanup_round2` | Locally complete; two items held for maintainer; acceptance pending | v1 / R1 / P2 | 0.15 | [One-shot record](./test_only_member_cleanup_round2/test_only_member_cleanup_round2_one_shot.md#study-history) | Follow-up child of `v3/test_only_member_cleanup` (PR #223); acceptance pending |
 | `v3/quality_review_decisions_record` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.10 | [One-shot record](./quality_review_decisions_record/quality_review_decisions_record_one_shot.md#study-history) | Documentation follow-up to the code quality review; acceptance pending |
+| `v3/quality_review_handoff` | Complete; merged by request | v1 / R1 / P2 | 0.05 | [One-shot record](./quality_review_handoff/quality_review_handoff_one_shot.md#study-history) | Handoff doc for the code quality review |
+| `v3/register_fast_navigation_test` | Complete; merged by request | v1 / R1 / P2 | 0.02 | [One-shot record](./register_fast_navigation_test/register_fast_navigation_test_one_shot.md#study-history) | Pre-existing failure found while closing out the quality review |
 | `v3/image_backup_zip` | Locally complete; maintainer acceptance pending | v1 / R1 / P2 | 0.40 | [Intake and Step 2](./image_backup_zip/image_backup_zip_step2_feature_description.md#study-snapshots-and-approval); [Step 3](./image_backup_zip/image_backup_zip_step3_development_plan.md#checkpoint-and-approval) | Format/recovery follow-up to archive README and Backup UI; acceptance pending |
+| `v3/approval_suggest_roots` | Locally complete; not pushed; acceptance pending | v1 / R1 / P2 | 0.25 | [One-shot record](./approval_suggest_roots/approval_suggest_roots_one_shot.md#study-history) | New cycle; acceptance pending |
+| `v3/import_with_approvals` | Complete; PR open; acceptance pending | v1 / R1 / P2 | 0.30 | [One-shot record](./import_with_approvals/import_with_approvals_one_shot.md#study-history) | New cycle; acceptance pending |
 
 2026-10-26T00:56:13Z: image ZIP Step 2 approved. Step 3 **0.40 whole-cycle projection reaffirmed**, same scope v1/original baseline/R1/P2, verified R1 hashes and Codex single exposed rater. Extended stage-work originals: S1 0.18 bounded ZIP recovery, S2 0.12 ZIP export/routes, S3 0.08 ordinary-flow verification/docs; independent annotations, not summed. Reuse existing PHP ZIP support with no dependency addition. No implementation, measurement or accepted outcome; awaiting Approved Step 3.
 
@@ -691,6 +707,7 @@ Maintainer request: “I want every future railspike to be part of the same data
 | Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
 | `v3/dm_instant_load` | Complete; accepted on iPhone Safari | v1 / R1 / P2 | 0.70 | [Step 1](./dm_instant_load/dm_instant_load_step1_solution_assessment.md#study-snapshots); [Step 2](./dm_instant_load/dm_instant_load_step2_feature_description.md#study-snapshots); [Step 3](./dm_instant_load/dm_instant_load_step3_development_plan.md#study-snapshots) | New cycle; no implementation |
+| `v3/dm_conversation_tabbar` | Complete; accepted on iPhone Safari | v1 / R1 / P2 | 0.30 | [Step 1](./dm_conversation_tabbar/dm_conversation_tabbar_step1_solution_assessment.md#study-snapshots); [Step 2](./dm_conversation_tabbar/dm_conversation_tabbar_step2_feature_description.md#study-snapshots); [Step 3](./dm_conversation_tabbar/dm_conversation_tabbar_step3_development_plan.md#study-snapshots); [Step 4](./dm_conversation_tabbar/dm_conversation_tabbar_step4_implementation_summary.md#study-snapshots) | New cycle; no implementation |
 
 2026-11-11: standing P2 enrollment for DM instant load; baseline `6d0f9da1`. Intake (after inspection) and Step 1 handoff both 0.70 for Option B built on Option A; Claude single exposed rater; R1 hashes not re-verified this session. Extended estimates enabled (A 0.30, B 0.70, C 0.40; not summed). Awaiting Approved Step 1.
 
@@ -719,6 +736,8 @@ Maintainer request: “I want every future railspike to be part of the same data
 2026-11-14: `v3/dm_conversation_tabbar` Step 3 approved; Step 4 entry 0.30 reaffirmed.
 
 2026-11-14: `v3/dm_conversation_tabbar` Stages 1–3 complete (retrospective stage work 0.10, 0.05, 0.05); Stage 4 iPhone Safari acceptance and whole-cycle retrospective pending maintainer.
+
+2026-11-17: `v3/dm_conversation_tabbar` Stage 4 accepted on iPhone Safari by the maintainer (stage retrospective 0.05). Whole-cycle retrospective 0.25 against the 0.30 projection. Complete.
 
 E01–E06: proposed, no feature-cycle checkpoints. E07: reduced v3 technically complete, projected 0.85, retrospective 0.90, maintainer acceptance pending. These counts are unchanged by P2. Append each new cycle here with links to its canonical snapshots; keep unsuccessful/incomplete cycles visible. The historical “0 / 6” is accepted outcomes toward the first review checkpoint, not the number of collected records.
 
@@ -2152,6 +2171,15 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 2026-11-15: standing P2 enrollment, one-shot authorized by the maintainer ("Yes, don't change the schema") after the diagnosis. Intake **0.25** after the diagnosis and code inspection (no pristine intake), execution entry reaffirmed, retrospective **0.25**; the viewer-tag scan found mid-work is a correction within the same outcome. Also fixed a stale `WriteApiSmokeTest` assertion that failed on the base revision. Baseline `8314fae95ea2b33e16a2e6a1d6e2ca512ef52c4d`; branch `fix/scoped-post-reaction-update`; planning commit `e09103d3`. Single exposed rater Claude (claude-opus-5-5). No measured effort, independent rating or accepted-count increment.
 
+## Cycle v3/tour_snapshots
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/tour_snapshots` | Technically complete; maintainer acceptance pending | v1 / R1 / P2 | 0.6 (Step 1 0.45; Step 2 0.6; Step 3 0.6; retrospective 0.75) | [Step 1](./tour_snapshots/tour_snapshots_step1_solution_assessment.md) · [Step 2](./tour_snapshots/tour_snapshots_step2_feature_description.md) · [Step 3](./tour_snapshots/tour_snapshots_step3_development_plan.md) · [Step 4](./tour_snapshots/tour_snapshots_step4_implementation_summary.md) | Follows `v3/live_feature_tour_quiet` (PR #256, merged); acceptance pending |
+
+2026-11-15: standing P2 enrollment, staged. Step 1 0.45 (recommended Option A); Step 2 0.6 after the maintainer's two conditions (automatic creation, Tools trigger); Step 3 0.6 (stage work 0.08 / 0.12 / 0.12 / 0.1 / 0.08 / 0.06, not summed). Baseline `ed22daed919795ec499def3a324d7d9b99c2c965`; branch `feat/tour_snapshots`. Single exposed rater Claude (claude-opus-5-5).
+
+2026-11-15 closeout: retrospective scope assessment **0.75** (production serving path, extra triggers and a scope fix beyond plan). No measured effort, independent rating or accepted-count increment.
 ## Cycle v3/prompt_library_notprompt
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
@@ -2167,6 +2195,38 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/pledge_count_unnamed` | Technically complete; release check and maintainer acceptance pending | v1 / R1 / P2 | 0.08 (intake 0.08; entry 0.08; retrospective 0.07) | [One-shot record](./pledge_count_unnamed/pledge_count_unnamed_one_shot.md#study-history) | Follow-up to `v3/pledge_campaigns` (merged in PR #268); one-shot |
 
 2026-11-16T04:30Z: standing P2 enrollment, one-shot. Intake and execution entry **0.08**; retrospective scope assessment **0.07**; no revisions. Baseline `9bdd4b39`. Single exposed rater Claude (claude-fable-5-2), who wrote the parent cycle; R1 hashes not re-verified. Maintainer comfortable-fit judgment pending.
+
+## Cycle v3/pledge_fill_review
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/pledge_fill_review` | Technically complete; release check and maintainer acceptance pending (every step approved by the maintainer) | v1 / R1 / P2 | 0.40 (intake 0.40; Step 1 0.40; Step 2 0.40; Step 3 0.40; entry 0.40; retrospective 0.40) | [Intake and Step 1](./pledge_fill_review/pledge_fill_review_step1_solution_assessment.md#study-snapshots); [Step 2](./pledge_fill_review/pledge_fill_review_step2_feature_description.md#study-snapshots); [Step 3](./pledge_fill_review/pledge_fill_review_step3_development_plan.md#study-checkpoint); [Step 4](./pledge_fill_review/pledge_fill_review_step4_implementation_summary.md#cycle-retrospective) | Parent `v3/pledge_fills`; cycle 8 in [pledges checklist](./pledges_checklist.md); acceptance pending |
+
+2026-11-17T06:40Z: Step 4 closeout for `v3/pledge_fill_review`: four stages complete on `feat/pledge-fill-review` from `6bdc52d7` (planning commit `52787a55`). Entry projection 0.40 reaffirmed; no revisions. Retrospective scope assessment **0.40**; stage retrospectives 0.10, 0.08, 0.14, 0.05, not summed. Release check on zenmemes.com pending. Maintainer comfortable-fit judgment pending. Same R1/P2, single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified.
+
+2026-11-17T06:05Z: Step 4 entry for `v3/pledge_fill_review`: Step 3 approved by the maintainer; planning commit `52787a55` on `feat/pledge-fill-review` from `6bdc52d7`. Entry projection **0.40** reaffirmed. [Summary](./pledge_fill_review/pledge_fill_review_step4_implementation_summary.md).
+
+2026-11-17T05:50Z: Step 3 handoff for `v3/pledge_fill_review`: **0.40** reaffirmed. Step 2 approved by the maintainer. Stage work 0.12, 0.06, 0.12, 0.06, not summed. Baseline `4a6c8bd0` (unrelated changes only since `f13ed676`). Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. No implementation.
+
+2026-11-16T16:10Z: Step 2 handoff for `v3/pledge_fill_review`: **0.40** reaffirmed. Step 1 approved by the maintainer (Option A); Released dropped, which the Step 1 recommendation had already left out, so scope v1 is unchanged. Baseline `f13ed676`, R1/P2. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. No implementation.
+
+2026-11-16T15:55Z: standing P2 enrollment for pledge fill review, staged. Intake **0.40** for Option A (`confirm` and `dispute` reply lines) after reading cycle 3's reader, fold and button script and the reaction-set code; no pristine intake. Step 1 handoff **0.40**; option estimates A 0.40, B 0.70, C 0.30, D 0.55, not summed. Baseline `f13ed676`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. No implementation.
+
+## Cycle v3/pledge_fills
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/pledge_fills` | Technically complete; release check and maintainer acceptance pending (every step approved by the maintainer) | v1 / R1 / P2 | 0.50 (intake 0.50; Step 1 0.50; Step 2 0.50; Step 3 0.50; entry 0.50; retrospective 0.45) | [Intake and Step 1](./pledge_fills/pledge_fills_step1_solution_assessment.md#study-snapshots); [Step 2](./pledge_fills/pledge_fills_step2_feature_description.md#study-snapshots); [Step 3](./pledge_fills/pledge_fills_step3_development_plan.md#study-checkpoint); [Step 4](./pledge_fills/pledge_fills_step4_implementation_summary.md#cycle-retrospective) | Parent `v3/pledge_withdraw`; acceptance pending |
+
+2026-11-16T11:32Z: Step 4 closeout for `v3/pledge_fills`: five stages complete on `feat/pledge-fills` from `c98b5221` (planning commit `c7c6d6c`). Entry projection 0.50 reaffirmed; no revisions. Retrospective scope assessment **0.45**; stage retrospectives 0.12, 0.08, 0.04, 0.10, 0.07, not summed. Release check on zenmemes.com pending. Maintainer comfortable-fit judgment pending. Same R1/P2, single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified.
+
+2026-11-16T11:25Z: Step 4 entry for `v3/pledge_fills`: Step 3 approved by the maintainer; planning commit `c7c6d6c` on `feat/pledge-fills` from `c98b5221`. Entry projection **0.50** reaffirmed. [Summary](./pledge_fills/pledge_fills_step4_implementation_summary.md).
+
+2026-11-16T10:05Z: Step 3 handoff for `v3/pledge_fills`: **0.50** reaffirmed. Step 2 approved by the maintainer. Stage work 0.14, 0.08, 0.05, 0.12, 0.06, not summed. Baseline `c98b5221` after a local rebase (unrelated changes only). Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. No implementation.
+
+2026-11-16T09:45Z: Step 2 handoff for `v3/pledge_fills`: **0.50** reaffirmed. Step 1 approved by the maintainer (Option B). Same scope v1, baseline `66856253`, R1/P2. Single exposed rater Claude, now on claude-opus-5-5 (Step 1 on claude-fable-5-2); R1 hashes not re-verified. No implementation.
+
+2026-11-16T09:31Z: standing P2 enrollment for pledge fills, staged. Intake **0.50** for Option B after cycle 2's code and a read of the spec's fill rules and the tagset state code; no pristine intake. Step 1 handoff **0.50**; option estimates A 0.85, B 0.50, C 0.70, D 0.35, not summed. Baseline `66856253`. Single exposed rater Claude (claude-fable-5-2); R1 hashes not re-verified. No implementation.
 
 ## Cycle v3/pledge_withdraw
 
@@ -2207,3 +2267,167 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 2026-11-16 UTC Step 4 entry and closeout: Approved Step 3 received. Branch `feat/nojs-basic-access` from `32f884b1`; planning `58eefd2c`; stages `19c2930c` / `15d5d529` / final stage commit with this ledger. **0.35 reaffirmed at entry; 0.40 retrospective scope assessment.** That covers more than projected: a new Like/Flag finding, the Lynx replay attempts, and partial diagnosis of the baseline `board_compose_focus` timeout. All three stages complete. Verification: new no-script journey check PASS; `composers.mjs` PASS; `image_content_browser.mjs` PASS; smoke 159/162 with three tracked long-standing failures; 13-theme sweep scripts on and off. Lynx posting was verified through Lynx's own form submission and redirect; scripted keyboard discovery was not achieved (blocked by script-button clutter, which belongs to Windows ME). Merge, deployment and maintainer fit pending; no dependency added; no measured labor or accepted-count increment.
 
 2026-11-16 UTC merge for `v3/nojs_basic_access`: the user said "merge into main and push". Merged into current `main` as `c7bdd707`, with integration fix `d0bb6986` (visitor intro Hide button). Combined tree: no-script check PASS, smoke 168/168. `composers.mjs` and `image_content_browser.mjs` failures reproduce on plain `origin/main`. Pushed. Study comfortable-fit judgment and acceptance pending; scores and accepted-count unchanged.
+
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/zalgo_theme` | Implemented; PR pending | v2 (one-shot) / R1 / P2 | 0.45 | [Step 1](./zalgo_theme/zalgo_theme_step1_solution_assessment.md#study-snapshots-and-approval), [one-shot record](./zalgo_theme/zalgo_theme_one_shot.md#study-history) | New cycle; maintainer acceptance pending |
+
+2026-11-15: standing P2 enrollment for the Zalgo theme, staged; Step 1 handoff 0.40 for Option B (A 0.35, B 0.40, C 0.65; not summed). 2026-11-16: the maintainer briefly asked for an operator theme panel first (`v3/operator_theme_choice`, Step 1 written, uncommitted, shelved), then asked for Zalgo behind an on/off flag. Transitioned to one-shot: execution entry 0.45 (Option A plus flag gate), closeout retrospective 0.45. Claude single exposed rater; R1 hashes not re-verified.
+
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/import_cancel` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.25 | [One-shot record](./import_cancel/import_cancel_one_shot.md) | Prerequisite of `v3/import_instance_gui`; acceptance pending |
+
+2026-11-16: one-shot import cancel; baseline `c95e22b3`. Intake after inspection and closeout retrospective both 0.25; Claude single exposed rater; R1 hashes not re-verified.
+
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/import_instance_gui` | Locally complete; acceptance pending | v3 / R1 / P2 | 0.65 | [Step 1](./import_instance_gui/import_instance_gui_step1_solution_assessment.md#study-snapshots); [Step 2](./import_instance_gui/import_instance_gui_step2_feature_description.md#study-snapshots); [Step 3](./import_instance_gui/import_instance_gui_step3_development_plan.md#study-checkpoint); [Step 4](./import_instance_gui/import_instance_gui_step4_implementation_summary.md#study-closeout) | New cycle; prerequisite one-shot `v3/import_cancel`; acceptance pending |
+
+2026-11-13: standing P2 enrollment for the import-instance GUI (thread-20261113042243-1cbe8b8a); baseline `6bfe1243`. Intake (after inspection) and Step 1 handoff both 0.70 for Option A with C's status view; Claude single exposed rater; R1 hashes not re-verified. Extended estimates enabled (A 0.70, B 0.50, C 0.25; not summed). Awaiting Approved Step 1.
+
+2026-11-16: import-instance GUI Step 1 approved. Step 2 projection 0.60 (revised from 0.70): scope v2 moves Preview to a later cycle and adds remembered sources; user-level import split out as a separate cycle. Baseline `c98b5221`; Claude single exposed rater. Awaiting Approved Step 2.
+
+2026-11-16: import-instance GUI Step 2 approved; prerequisite cancel command split out as one-shot `v3/import_cancel` (PR #285). Step 3 projection 0.65 (from 0.60), scope v3 adds a page Cancel action. Extended stage-work originals: S1 0.18, S2 0.06, S3 0.14, S4 0.14, S5 0.08, S6 0.07; not summed. Awaiting Approved Step 3.
+
+2026-11-16: import-instance GUI Step 3 approved; Step 4 entry 0.65 reaffirmed, scope v3. Closeout: six stages done on `feat/import_instance_gui`; retrospective scope assessment 0.70 (stage retrospectives S1 0.18, S2 0.05, S3 0.16, S4 0.14, S5 0.08, S6 0.09; not summed). Claude single exposed rater; R1 hashes not re-verified; no measured time. Maintainer comfortable-fit judgment and acceptance pending.
+
+## Cycle v3/asset_bypass
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/asset_bypass` | Technically complete; production release and maintainer acceptance pending | v1 / R1 / P2 | 0.4 (Step 1 0.35; Step 2 0.4; Step 3 0.4; Step 4 entry 0.4; retrospective 0.45) | [Step 1](./asset_bypass/asset_bypass_step1_solution_assessment.md) · [Step 2](./asset_bypass/asset_bypass_step2_feature_description.md) · [Step 3](./asset_bypass/asset_bypass_step3_development_plan.md) · [Step 4](./asset_bypass/asset_bypass_step4_implementation_summary.md) | Found during `v3/tour_snapshots`; acceptance pending |
+
+2026-11-16: standing P2 enrollment, staged. Step 1 0.35 (Option A; B 0.4; C 0.05). Baseline `34d87c86`; branch `feat/asset_bypass`. Single exposed rater Claude (claude-opus-5-5).
+
+2026-11-17 Step 2: 0.4, up from 0.35. New understanding, same Option A: turn-on while already on must also create the asset link and refresh the saved rules; plain files need PHP's 300-second header from Apache; a refusal rule for the new link path. Scope v1 unchanged; same single exposed rater.
+
+2026-11-17 Step 3: 0.4 reaffirmed (stage work 0.08 / 0.1 / 0.12 / 0.08, not summed). Scope v1 unchanged; same single exposed rater.
+
+2026-11-17 Step 4: entry 0.4 reaffirmed. Closeout: retrospective scope assessment **0.45** (Apache-test triage on the base commit; a deploy-conflict fix found by the planned replay). Retrospective stage work 0.1 / 0.08 / 0.14 / 0.1. Approved scope delivered. No measured effort, independent rating or accepted-count increment; maintainer judgment pending.
+
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/import_review_summary` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.08 | [One-shot record](./import_review_summary/import_review_summary_one_shot.md) | Follow-up to `v3/import_instance_gui`; acceptance pending |
+
+2026-11-17: one-shot import review summary; baseline `34d87c86`. Intake after inspection and closeout retrospective both 0.08; Claude single exposed rater; R1 hashes not re-verified.
+
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/import_without_worker` | Locally complete; acceptance pending | v2 / R1 / P2 | 0.46 | [Step 1](./import_without_worker/import_without_worker_step1_solution_assessment.md#study-snapshots); [Step 2](./import_without_worker/import_without_worker_step2_feature_description.md#study-snapshots); [Step 3](./import_without_worker/import_without_worker_step3_development_plan.md#study-checkpoint); [Step 4](./import_without_worker/import_without_worker_step4_implementation_summary.md#study-closeout) | Follow-up to `v3/import_instance_gui`; acceptance pending |
+
+2026-11-17: import without a worker; baseline `34d87c86`. Intake after inspection and Step 1 handoff both 0.45 for A + C + D; extended estimates A 0.12, B 0.10, C 0.08, D 0.20, E 0.05 (not summed). Claude single exposed rater; R1 hashes not re-verified. Awaiting Approved Step 1.
+
+2026-11-17: import without a worker Step 1 approved with answers (launch without the emergency variable; dev-server worker on by default). Step 2 projection 0.45 unchanged, scope v2. Awaiting Approved Step 2.
+
+2026-11-17: import without a worker Step 2 approved. Step 3 projection 0.46; stage originals S1 0.07, S2 0.08, S3 0.10, S4 0.15, S5 0.06 (not summed). Awaiting Approved Step 3.
+
+2026-11-17: import without a worker Step 3 approved; Step 4 entry 0.46 reaffirmed. Closeout: five stages on `feat/import_without_worker`; retrospective scope assessment 0.55 (S1 0.06, S2 0.12, S3 0.11, S4 0.17, S5 0.09; not summed). Claude single exposed rater; R1 hashes not re-verified; no measured time. Maintainer acceptance pending.
+
+## Cycle v3/local_start_import
+
+Cycle ID: v3/local_start_import
+Mode: one-shot; standing enrollment under P2
+Scope/reference: v1 / R1 / P2
+Status: locally verified MVP; PR #284 open; thread reply unavailable; merge, deployment and maintainer acceptance pending
+Projection: unavailable; frozen external calibration sources were not recovered
+Canonical checkpoints: [record](local_start_import/local_start_import_one_shot.md)
+Relationship: new local-start outcome; related PF-20261111-F09 speed and PF-20261104-B14 availability remain separate
+2026-11-16: Codex, single exposed rater; intake and execution-entry snapshot record prior source exposure and missing pristine intake. Closeout retains unavailable numeric projection/retrospective; no reconstructed score, measured labor or accepted-count increment. Fresh checkout/native browser flow passed; smoke 482/486 with the four failures reproduced on untouched origin/main. Full suite not run.
+
+## Cycle v3/local_start_import_pr_fix
+
+Cycle ID: v3/local_start_import_pr_fix
+Mode: one-shot; standing enrollment under P2
+Scope/reference: v1 / R1 / P2
+Status: conflicts resolved and integration verified; updating existing PR #284
+Projection: unavailable; frozen external R1 sources not recovered
+Canonical checkpoints: [record](local_start_import_pr_fix/local_start_import_pr_fix_one_shot.md)
+Relationship: integration follow-up to v3/local_start_import on open PR #284, not a separate product outcome
+2026-11-17: Intake and execution entry: Codex single exposed rater, baseline 936c6357 / original PR dee4c41c, prior source/history exposure disclosed. Pristine intake missing. No numeric score, independent rating, measured effort or accepted-count increment.
+2026-11-17 closeout for v3/local_start_import_pr_fix: projection/retrospective remain unavailable; v1/R1/P2 preserved. Smoke plus affected import, task, tour and cache checks: 522/526; the four failures reproduced on unchanged 936c6357. Fresh-start browser check passed. Feedback collision reconciled with local-start intake PF-20261117-F01, preserving main PF-20261116-F01 cancellation record. No new product outcome, measured labor or accepted-count increment.
+
+## Cycle v3/session_member_gates
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/session_member_gates` | One-shot technically complete; push, PR, merge and maintainer acceptance pending | v1 / R1 / P2 | 0.15 (intake 0.15; execution entry 0.15; retrospective 0.25) | [One-shot record](./session_member_gates/session_member_gates_one_shot.md#study-history) | Security audit finding; acceptance pending |
+
+2026-11-15: standing P2 enrollment, one-shot authorized by the maintainer in chat ("Yes, that's exactly what I want") after the audit. Intake **0.15** after the audit and call-site inspection (no pristine intake), execution entry reaffirmed, retrospective **0.25**: two pre-existing test defects were fixed on the way (parallel isolation in `WriteApiSmokeTest`; a browser test stale since the retraction simplification). Baseline `ed22daed919795ec499def3a324d7d9b99c2c965`; branch `fix/member-gates-need-session`; planning commit `633944c`. Single exposed rater Claude (claude-fable-5-2). R1 hashes not re-verified this session. No measured effort, independent rating or accepted-count increment.
+
+
+## Cycle v3/nav_quick_wins
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/nav_quick_wins` | Technically complete; release check and maintainer acceptance pending | v1 / R1 / P2 | 0.30 (intake 0.30; entry 0.30; retrospective 0.25) | [One-shot record](./nav_quick_wins/nav_quick_wins_one_shot.md#study-history) | Nav speed checklist cycle 2; one-shot |
+
+2026-11-17T05:00Z: standing P2 enrollment, one-shot. Intake and execution entry **0.30**; retrospective scope assessment **0.25**; no revisions. Baseline `c010efca`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. Maintainer comfortable-fit judgment pending.
+
+## Cycle v3/nav_cached_copy
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/nav_cached_copy` | Technically complete; release check and maintainer acceptance pending | v1 / R1 / P2 | 0.40 (intake 0.40; entry 0.40; retrospective 0.40) | [One-shot record](./nav_cached_copy/nav_cached_copy_one_shot.md#study-history) | Predecessor `v3/nav_quick_wins` (unmerged); one-shot |
+
+2026-11-17T06:00Z: standing P2 enrollment, one-shot. Intake and execution entry **0.40**; retrospective scope assessment **0.40**; no revisions. Baseline `e7babc06`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. Maintainer comfortable-fit judgment pending.
+
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/known_instances` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.10 | [One-shot record](./known_instances/known_instances_one_shot.md) | Follow-up to `v3/import_instance_gui`; acceptance pending |
+| `v3/new_instance_home` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.15 | [Quickfix record](./new_instance_home/new_instance_home_quickfix.md) | Experimental quickfix (single commit); builds on `v3/known_instances` and the local start page |
+
+2026-11-17: one-shot known instances; baseline `96462cfd`. Intake and closeout retrospective both 0.10; Claude single exposed rater; R1 hashes not re-verified.
+| `v3/worker_before_read_model` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.05 | [One-shot record](./worker_before_read_model/worker_before_read_model_one_shot.md) | Follow-up to `v3/import_without_worker`; acceptance pending |
+
+2026-11-17: one-shot worker before the read model; baseline `96462cfd`. Intake 0.05 after reproduction; closeout retrospective 0.06; Claude single exposed rater; R1 hashes not re-verified.
+
+| `v3/high_traffic_coverage` | Complete (documentation-only); acceptance pending | v1 / R1 / P2 | 0.08 | [One-shot record](./high_traffic_coverage/high_traffic_coverage_one_shot.md) | Follows `v3/asset_bypass` (PR #293, merged); acceptance pending |
+
+2026-11-17: one-shot high-traffic coverage checklist; baseline `f83c0b0d`. Intake 0.08, recorded after route inspection; closeout retrospective 0.08. Single exposed rater Claude (claude-opus-5-5). No measured effort or accepted-count increment.
+
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/unicode_text_rule_parity` | Technically complete; PR open; acceptance pending | v1 / R1 / P2 | 0.25 (intake 0.25; entry 0.25; retrospective 0.20) | [One-shot record](./unicode_text_rule_parity/unicode_text_rule_parity_one_shot.md#study-history) | Code quality review, checklist §2.2; acceptance pending |
+
+2026-11-17: standing P2 enrollment, one-shot; baseline `6bdc52d7`. Intake 0.25 recorded before inspecting either rule set; execution entry reaffirmed; retrospective scope assessment 0.20. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. No measured effort or accepted-count increment.
+## Cycle v3/dm_composer_flush
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/dm_composer_flush` | Technically complete; merge, deploy and iPhone acceptance pending | v2 / R1 / P2 | 0.25 (intake 0.10; entry 0.10; revision 0.25; retrospective 0.25) | [One-shot record](./dm_composer_flush/dm_composer_flush_one_shot.md#study-history) | Follow-up to `v3/dm_conversation_tabbar` and #232; one-shot |
+
+2026-11-17T06:11Z: standing P2 enrollment, one-shot. Intake and execution entry **0.10** (intake recorded after inspection); revised to **0.25** when baseline browser-test fixes were added under the maintainer's standing rule; retrospective scope assessment **0.25**. Baseline `6bdc52d7`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. Maintainer comfortable-fit judgment pending.
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/invite_qr_pitch` | Implemented; PR open | v1 (one-shot) / R1 / P2 | 0.20 | [One-shot record](./invite_qr_pitch/invite_qr_pitch_one_shot.md#study-history) | New cycle; maintainer acceptance pending |
+
+2026-11-17: one-shot invite QR pitch; baseline `6bdc52d7`. Intake and execution entry 0.20; closeout retrospective 0.20. Single exposed rater Claude (claude-opus-5-5). No measured effort or accepted-count increment.
+
+## Cycle v3/draggable_windows
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/draggable_windows` | Technically complete; release check and maintainer acceptance pending (every step approved by the maintainer) | v2 / R1 / P2 | 0.70 (intake 0.60, exposed; Step 1 0.60; Step 2 0.65, then 0.70 at approval; Step 3 0.70; entry 0.70; retrospective 0.75) | [Intake and Step 1](./draggable_windows/draggable_windows_step1_solution_assessment.md#study-snapshots); [Step 2](./draggable_windows/draggable_windows_step2_feature_description.md#study-snapshots); [Step 3](./draggable_windows/draggable_windows_step3_development_plan.md#study-snapshots); [Step 4](./draggable_windows/draggable_windows_step4_implementation_summary.md#cycle-retrospective) | New cycle from the #draggable thread; acceptance pending |
+
+2026-11-17T09:00Z: Step 4 closeout for `v3/draggable_windows`: six stages complete on `feat/draggable_windows`. Entry projection 0.70 reaffirmed; no revisions. Retrospective scope assessment **0.75**; stage retrospectives 0.12, 0.20, 0.08, 0.20, 0.06, 0.10, not summed. Two existing bugs fixed on the way (Bubblegum title bars on run-starting posts; the reading margins browser test). Release check on zenmemes.com pending. Maintainer comfortable-fit judgment pending. Same R1/P2, single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified.
+
+2026-11-17T06:00Z: standing P2 enrollment for draggable windows, staged. Intake **0.60** was given in chat on 2026-11-15 before the code was read (exposed, not pristine). Step 1 handoff 0.60 for Option A (Bubblegum theme script with Float mode); options A 0.60, B 0.95, C 0.40, not summed. Step 2 0.65 (new understanding: every window gets buttons, the title bar is redrawn as real buttons), then 0.70 at approval (changed scope, v2: a Preferences row). Step 3 0.70 reaffirmed; stage work 0.12, 0.18, 0.07, 0.20, 0.06, 0.07, not summed. Step 4 entry 0.70 reaffirmed on `feat/draggable_windows` from `4a6c8bd`, planning commit `44dd8b3`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. This row was planned for the planning commit but lands with Stage 1, since Step 4's gate keeps the ledger out of the planning commit.
+
+## Cycle v3/import_planning_speed
+
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/import_planning_speed` | Step 4: Stages 1-3 done; Stage 4 (WSL) pending | v1 / R1 / P2 | 0.55 | [Step 1](./import_planning_speed/import_planning_speed_step1_solution_assessment.md#study-snapshots); [Step 2](./import_planning_speed/import_planning_speed_step2_feature_description.md#study-snapshots); [Step 3](./import_planning_speed/import_planning_speed_step3_development_plan.md#study-snapshots); [Step 4](./import_planning_speed/import_planning_speed_step4_implementation_summary.md) | Branch `feat/import_planning_speed` |
+
+2026-11-13: standing P2 enrollment for import planning speed; baseline `05486f22`. Intake (after profiling) and Step 1 handoff both 0.55 for Option A then B; Claude single exposed rater; R1 hashes not re-verified this session. Extended estimates enabled (A 0.15, B 0.45, C 1.20; not summed). Awaiting Approved Step 1.
+
+2026-11-13: import planning speed Step 1 approved (Option A then B). Step 2 0.55 reaffirmed, scope v1. Awaiting Approved Step 2.
+
+2026-11-13: import planning speed Step 2 approved. Step 3 0.55 reaffirmed, scope v1; stage work S1 0.15, S2 0.30, S3 0.08, S4 0.03 (not summed). Awaiting Approved Step 3.
+
+2026-11-17: import planning speed Step 3 approved; planning commit `5fd337c3` (first made as `4bc38c64` on `main` `f9d61535`, rebased onto `fc368349` before the PR; reference drift from `05486f22` recorded in Step 4). Step 4 entry 0.55 reaffirmed. Stage 1 retrospective 0.10 (original 0.15).
+
+2026-11-17: import planning speed Stage 2 retrospective 0.35 (original 0.30); killed-process cleanup found in verification.
+
+2026-11-17: import planning speed Stage 3 retrospective 0.10 (original 0.08). Stage 4 pending maintainer WSL replay.

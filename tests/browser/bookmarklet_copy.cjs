@@ -44,12 +44,12 @@ function execute(script, kind, mode) {
   const {links, copied} = setup();
   for (let i = 0; i < links.length; i++) {
     const link = links[i], href = link.getAttribute('href');
-    assert(href.startsWith('javascript:'));
+    assert(href.startsWith('javascript:/*forum.test*/('), 'host leads the link');
     assert(!/[\r\n\u2028\u2029]/.test(href));
     execute(decodeURIComponent(href.slice('javascript:'.length)), ...variants[i]);
     await link.button.click();
     // Copy is unencoded one-line JavaScript (valid for qutebrowser :jseval), not the percent-encoded link.
-    assert(copied[i].startsWith('javascript:'));
+    assert(copied[i].startsWith('javascript:/*forum.test*/('), 'host leads the copy');
     assert(!/[\r\n\u2028\u2029]/.test(copied[i]));
     assert(!/%[0-9A-Fa-f]{2}/.test(copied[i]));
     assert(!copied[i].includes(';;'));
