@@ -71,6 +71,7 @@ $testFiles = [
     __DIR__ . '/InvocationSupervisorTest.php',
     __DIR__ . '/SignatureBudgetTest.php',
     __DIR__ . '/SignatureCheckCacheTest.php',
+    __DIR__ . '/OpenPgpKeyReuseTest.php',
     __DIR__ . '/ImportAdmissionTest.php',
     __DIR__ . '/CanonicalTextBoundsTest.php',
     __DIR__ . '/BoundedProcessTest.php',

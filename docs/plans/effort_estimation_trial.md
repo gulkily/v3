@@ -2405,3 +2405,21 @@ Relationship: integration follow-up to v3/local_start_import on open PR #284, no
 2026-11-17T09:00Z: Step 4 closeout for `v3/draggable_windows`: six stages complete on `feat/draggable_windows`. Entry projection 0.70 reaffirmed; no revisions. Retrospective scope assessment **0.75**; stage retrospectives 0.12, 0.20, 0.08, 0.20, 0.06, 0.10, not summed. Two existing bugs fixed on the way (Bubblegum title bars on run-starting posts; the reading margins browser test). Release check on zenmemes.com pending. Maintainer comfortable-fit judgment pending. Same R1/P2, single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified.
 
 2026-11-17T06:00Z: standing P2 enrollment for draggable windows, staged. Intake **0.60** was given in chat on 2026-11-15 before the code was read (exposed, not pristine). Step 1 handoff 0.60 for Option A (Bubblegum theme script with Float mode); options A 0.60, B 0.95, C 0.40, not summed. Step 2 0.65 (new understanding: every window gets buttons, the title bar is redrawn as real buttons), then 0.70 at approval (changed scope, v2: a Preferences row). Step 3 0.70 reaffirmed; stage work 0.12, 0.18, 0.07, 0.20, 0.06, 0.07, not summed. Step 4 entry 0.70 reaffirmed on `feat/draggable_windows` from `4a6c8bd`, planning commit `44dd8b3`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. This row was planned for the planning commit but lands with Stage 1, since Step 4's gate keeps the ledger out of the planning commit.
+
+## Cycle v3/import_planning_speed
+
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/import_planning_speed` | Step 4: Stages 1-3 done; Stage 4 (WSL) pending | v1 / R1 / P2 | 0.55 | [Step 1](./import_planning_speed/import_planning_speed_step1_solution_assessment.md#study-snapshots); [Step 2](./import_planning_speed/import_planning_speed_step2_feature_description.md#study-snapshots); [Step 3](./import_planning_speed/import_planning_speed_step3_development_plan.md#study-snapshots); [Step 4](./import_planning_speed/import_planning_speed_step4_implementation_summary.md) | Branch `feat/import_planning_speed` |
+
+2026-11-13: standing P2 enrollment for import planning speed; baseline `05486f22`. Intake (after profiling) and Step 1 handoff both 0.55 for Option A then B; Claude single exposed rater; R1 hashes not re-verified this session. Extended estimates enabled (A 0.15, B 0.45, C 1.20; not summed). Awaiting Approved Step 1.
+
+2026-11-13: import planning speed Step 1 approved (Option A then B). Step 2 0.55 reaffirmed, scope v1. Awaiting Approved Step 2.
+
+2026-11-13: import planning speed Step 2 approved. Step 3 0.55 reaffirmed, scope v1; stage work S1 0.15, S2 0.30, S3 0.08, S4 0.03 (not summed). Awaiting Approved Step 3.
+
+2026-11-17: import planning speed Step 3 approved; planning commit `5fd337c3` (first made as `4bc38c64` on `main` `f9d61535`, rebased onto `fc368349` before the PR; reference drift from `05486f22` recorded in Step 4). Step 4 entry 0.55 reaffirmed. Stage 1 retrospective 0.10 (original 0.15).
+
+2026-11-17: import planning speed Stage 2 retrospective 0.35 (original 0.30); killed-process cleanup found in verification.
+
+2026-11-17: import planning speed Stage 3 retrospective 0.10 (original 0.08). Stage 4 pending maintainer WSL replay.

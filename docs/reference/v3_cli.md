@@ -648,7 +648,8 @@ and retained as hash-bound metadata without changing signed post bytes. See the
 - `--dry-run` — download and validate the archive, then report proposed imports,
   duplicates, conflicts, and exclusions without changing destination records,
   commits, the read model, or published views. Temporary downloads and lock files
-  may be created. Score eligibility is reported without creating private score
+  may be created, and successful signature checks are saved in
+  `signature_checks.sqlite3` beside the database so later runs skip them. Score eligibility is reported without creating private score
   state. Cannot be combined with `--resume`.
 - `--time-limit=SECONDS` — positive finite whole-invocation budget (default 300),
   including lock waits/publication, with up to five seconds process cleanup.

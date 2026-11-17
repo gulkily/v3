@@ -397,6 +397,9 @@ pending forum import; it does not retry docs publication.
 
 Use the application's supported Linux/WSL PHP runtime with SQLite, zlib,
 HTTPS/OpenSSL, PCNTL and POSIX, plus Git, gzip, GPG and `/usr/bin/setsid`.
+Successful signature checks are saved in `signature_checks.sqlite3` beside the
+database, so a repeat import of the same instance plans without rerunning GPG;
+deleting that file is safe and only makes the next run slower.
 Unavailable supervision fails before import writes; this command does not install
 runtime components. Records and `.git` must share a filesystem for atomic installs.
 The source needs its existing public download endpoint; no schema migration is needed.
