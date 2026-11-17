@@ -63,8 +63,12 @@
       // Focus inside a window that is about to hide moves to its button.
       if (card.contains(document.activeElement) && document.activeElement !== button) button.focus();
       card.setAttribute("data-window-collapsed", "");
-    } else {
+    } else if (card.hasAttribute("data-window-collapsed")) {
       card.removeAttribute("data-window-collapsed");
+      // A short pop as the window opens; theme-bubblegum.css skips it for reduced motion.
+      card.removeAttribute("data-window-pop");
+      void card.offsetWidth;
+      card.setAttribute("data-window-pop", "");
     }
     button.setAttribute("aria-expanded", collapsed ? "false" : "true");
     var id = postId(card);
@@ -108,6 +112,16 @@
     });
   }
 
+  // The window the reader is in: clicked, tapped or tabbed into. The others fade.
+  function activate(card) {
+    if (!card || card.hasAttribute("data-window-active")) return;
+    Array.prototype.forEach.call(document.querySelectorAll("[data-window-active]"), function (each) {
+      each.removeAttribute("data-window-active");
+    });
+    card.setAttribute("data-window-active", "");
+    root.setAttribute("data-window-has-active", "");
+  }
+
   function cardOf(node) {
     var card = node && node.closest ? node.closest(".card") : null;
     return card && titlebarOf(card) ? card : null;
@@ -138,6 +152,12 @@
       if (card) setCollapsed(card, !card.hasAttribute("data-window-collapsed"), true);
     });
 
+    listen(document, "pointerdown", function (event) { activate(cardOf(event.target)); });
+    listen(document, "focusin", function (event) { activate(cardOf(event.target)); });
+    listen(document, "animationend", function (event) {
+      if (event.target.hasAttribute && event.target.hasAttribute("data-window-pop")) event.target.removeAttribute("data-window-pop");
+    });
+
     // Windows added later (a posted reply, a disclosed composer) get a title bar too.
     var observer = new MutationObserver(function (records) {
       records.forEach(function (record) {
@@ -161,7 +181,10 @@
     Array.prototype.forEach.call(document.querySelectorAll("[data-window]"), function (card) {
       card.removeAttribute("data-window");
       card.removeAttribute("data-window-collapsed");
+      card.removeAttribute("data-window-active");
+      card.removeAttribute("data-window-pop");
     });
+    root.removeAttribute("data-window-has-active");
     session = null;
   }
 

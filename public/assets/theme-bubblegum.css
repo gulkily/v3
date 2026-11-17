@@ -160,6 +160,36 @@
   visibility: visible;
 }
 
+/* Once the reader is in a window, the other title bars fade to a pale pink;
+   a collapsed window's label turns berry there so it stays readable. */
+:root[data-theme="bubblegum"][data-window-has-active] .card[data-window]:not([data-window-active])::before {
+  background:
+    repeating-linear-gradient(180deg, transparent 0 2px, rgba(255, 255, 255, 0.85) 2px 4px) left 0.5rem center / 3.5rem 0.75rem no-repeat,
+    #f6b4d3;
+}
+
+:root[data-theme="bubblegum"][data-window-has-active] .card[data-window]:not([data-window-active]) [data-window-label] {
+  color: var(--bubblegum-berry);
+  text-shadow: none;
+}
+
+/* A short pop as a collapsed window opens. */
+@keyframes bubblegum-window-pop {
+  0% { transform: scale(0.97); }
+  60% { transform: scale(1.015); }
+  100% { transform: scale(1); }
+}
+
+:root[data-theme="bubblegum"] .card[data-window-pop] {
+  animation: bubblegum-window-pop 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="bubblegum"] .card[data-window-pop] {
+    animation: none;
+  }
+}
+
 /* A white box with a pixel underscore (collapse), or an outlined window
    (expand) once collapsed. The invisible ::after makes a 44px touch target. */
 /* `.card >` outranks the chunky-button hover and press rules further down. */

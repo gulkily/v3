@@ -65,8 +65,19 @@ Ledger note: Step 3 said this cycle's ledger row would go into the planning comm
 ## Stage 3 - Active window and pop
 
 **Original estimate: 0.07**
+**Retrospective stage work: 0.08**
 
-- Status: not started.
+- Status: complete.
+- Changes:
+  - `theme-bubblegum.js`: pointerdown or focusin inside a window marks it `data-window-active` and sets `data-window-has-active` on the root. Expanding a collapsed window sets `data-window-pop`, cleared on `animationend`. Stop clears all three.
+  - `theme-bubblegum.css`: once a window is active, the other title bars fade to `#f6b4d3`; a collapsed, inactive window's label turns berry. A 180ms `bubblegum-window-pop` scale on expand, off under `prefers-reduced-motion: reduce`.
+  - `tests/browser/draggable_windows.mjs` extended.
+- Verification:
+  - `node tests/browser/draggable_windows.mjs`: passes. Clicking a window activates only it; the active bar stays `rgb(228, 91, 156)` and the others fade; tabbing in activates; a faded label keeps at least 4.5:1 contrast; expanding starts `bubblegum-window-pop` once, and reduced motion starts none.
+  - Screenshot of active and faded title bars at 1280px checked by eye.
+- Notes:
+  - Found while testing: a post that starts a run shows its byline while something inside it has focus (`content-interactions.css`). Moving focus out of it by pointer shrinks it, so a button just below can move between pointerdown and pointerup and the click lands on the card instead. This applies to every button below such a post, not only ours. Not changed here, since it's outside this cycle's scope; the test uses the keyboard for those steps. Worth its own fix.
+- Estimate details: original scope as Step 3; retrospective 0.08, a little over for tracking down the lost click. No revisions.
 
 ## Stage 4 - Float mode, dragging and Reset
 

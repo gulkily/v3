@@ -15,6 +15,8 @@ import { chromium } from 'playwright-core';
 // on the title bar); a post's collapse is saved and shows its author; a
 // composer keeps its draft; switching theme removes every button and switching
 // back restores them; with the flag off the script isn't even loaded.
+// Clicking or tabbing into a window makes it active and fades the other title
+// bars (labels stay readable); a window pops open unless motion is reduced.
 // Usage: node tests/browser/draggable_windows.mjs [screenshot-dir]
 const project = resolve(new URL('../..', import.meta.url).pathname);
 const shots = process.argv[2] || null;
@@ -128,6 +130,46 @@ try {
   assert.ok(await height(replyId) < 40, 'Enter collapses');
   await page.keyboard.press('Space');
   assert.ok(await height(replyId) > 60, 'Space expands');
+
+  // Active window: clicking or tabbing into a window fades the other title bars.
+  const barColour = id => page.locator(`.card[data-post-id="${id}"]`).first().evaluate(c => getComputedStyle(c, '::before').backgroundColor);
+  const activeColour = 'rgb(228, 91, 156)'; // --bubblegum-bar
+  await page.locator(`.card[data-post-id="${replyId}"] .body, .card[data-post-id="${replyId}"] p`).first().click();
+  assert.equal(await page.locator('[data-window-active]').count(), 1, 'one active window');
+  assert.equal(await page.locator(`.card[data-post-id="${replyId}"]`).first().getAttribute('data-window-active'), '', 'clicked window is active');
+  assert.equal(await barColour(replyId), activeColour, 'active title bar keeps its colour');
+  assert.notEqual(await barColour(rootId), activeColour, 'other title bars fade');
+  await button(rootId).focus();
+  assert.equal(await page.locator(`.card[data-post-id="${rootId}"]`).first().getAttribute('data-window-active'), '', 'tabbing in activates');
+  // A collapsed, inactive window's label keeps 4.5:1 contrast on the faded bar.
+  // (Keyboard here: the root post shows its byline while focused, so moving focus
+  // out of it by pointer shifts the reply mid-click. That's existing behaviour.)
+  await button(replyId).focus();
+  await page.keyboard.press('Enter');
+  assert.ok(await height(replyId) < 40, 'reply collapsed');
+  await button(rootId).focus();
+  const contrast = await page.locator(`.card[data-post-id="${replyId}"]`).first().evaluate(card => {
+    const rgb = value => value.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number);
+    const lum = ([r, g, b]) => { const f = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+    const a = lum(rgb(getComputedStyle(card.querySelector('[data-window-label]')).color));
+    const b = lum(rgb(getComputedStyle(card, '::before').backgroundColor));
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  });
+  assert.ok(contrast >= 4.5, `faded label contrast ${contrast.toFixed(2)}`);
+  if (shots) await page.screenshot({ path: join(shots, 'bubblegum-active-window.png') });
+  // Pop on expand.
+  // Animations started on the window, recorded as they start (the pop lasts 180ms).
+  await page.evaluate(() => { window.__pops = []; document.addEventListener('animationstart', e => window.__pops.push(e.animationName)); });
+  await button(replyId).focus();
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(300);
+  assert.deepEqual(await page.evaluate(() => window.__pops), ['bubblegum-window-pop'], 'window pops open');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(300);
+  assert.deepEqual(await page.evaluate(() => window.__pops), ['bubblegum-window-pop'], 'no pop with reduced motion');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
 
   // A composer keeps its draft through collapse and expand.
   const composer = page.locator('.card:has(textarea)').last();
