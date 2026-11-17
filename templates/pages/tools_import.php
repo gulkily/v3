@@ -135,11 +135,18 @@ if ($timing !== null) {
 <?php endif; ?>
     <form method="post" action="/tools/import/" class="deploy-actions import-actions" data-import-form<?= $s['busy'] ? ' hidden' : '' ?>>
 <?php if ($s['pending'] === null): ?>
-      <label>Source <input type="text" name="source" required inputmode="url" autocomplete="off" spellcheck="false" placeholder="forum.example" list="import-sources"<?= $s['sources'] !== [] ? ' value="' . $e($s['sources'][0]['source']) . '"' : '' ?><?= $s['busy'] ? ' disabled' : '' ?>></label>
-<?php if ($s['sources'] !== []): ?>
+<?php
+// Remembered sources first, then known public instances not already remembered.
+$choices = array_column($s['sources'], 'source');
+foreach ($s['known'] as $known) {
+    if (!in_array($known['url'], $choices, true)) $choices[] = $known['url'];
+}
+?>
+      <label>Source <input type="text" name="source" required inputmode="url" autocomplete="off" spellcheck="false" placeholder="forum.example" list="import-sources"<?= $choices !== [] ? ' value="' . $e($choices[0]) . '"' : '' ?><?= $s['busy'] ? ' disabled' : '' ?>></label>
+<?php if ($choices !== []): ?>
       <datalist id="import-sources">
-<?php foreach ($s['sources'] as $source): ?>
-        <option value="<?= $e($source['source']) ?>"></option>
+<?php foreach ($choices as $choice): ?>
+        <option value="<?= $e($choice) ?>"></option>
 <?php endforeach; ?>
       </datalist>
 <?php endif; ?>

@@ -42,6 +42,12 @@ under Advanced (first 500; the rest stay in the saved `report.json`). Preview
 (`--dry-run`), named sources from `--sources` and path overrides stay
 command-line only.
 
+Known instances: `resources/known_instances.txt` ships with the code and lists
+public instances by `Name:`, `Title:` and `URL:` (currently only ZenMemes). The
+page offers them after remembered sources, and the command accepts their names
+(`./v3 import-instance zenmemes`). An instance never offers its own address. Add
+an instance by adding a block to that file.
+
 ## Run an import
 
 Run from the application checkout as the operator who owns the destination
@@ -391,6 +397,9 @@ pending forum import; it does not retry docs publication.
 
 Use the application's supported Linux/WSL PHP runtime with SQLite, zlib,
 HTTPS/OpenSSL, PCNTL and POSIX, plus Git, gzip, GPG and `/usr/bin/setsid`.
+Successful signature checks are saved in `signature_checks.sqlite3` beside the
+database, so a repeat import of the same instance plans without rerunning GPG;
+deleting that file is safe and only makes the next run slower.
 Unavailable supervision fails before import writes; this command does not install
 runtime components. Records and `.git` must share a filesystem for atomic installs.
 The source needs its existing public download endpoint; no schema migration is needed.

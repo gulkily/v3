@@ -29,12 +29,15 @@ final class InstanceSourceResolver
         }
         if (isset($aliases[$input])) {
             $url = $aliases[$input];
+        } elseif (($known = KnownInstances::url($input)) !== null) {
+            // Names from resources/known_instances.txt; a --sources file can override them.
+            $url = $known;
         } elseif (str_contains($input, '://')) {
             $url = $input;
         } elseif (preg_match('#^(?:localhost|[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+|\[[0-9a-fA-F:]+\])(?::[0-9]+)?(?:/[^\s]*)?$#D', $input)) {
             $url = 'https://' . $input;
         } else {
-            throw new RuntimeException('Unknown instance name. Supply a full URL/hostname or define the name in --sources=<JSON file>.');
+            throw new RuntimeException('Unknown instance name. Supply a full URL/hostname, a name from resources/known_instances.txt, or define the name in --sources=<JSON file>.');
         }
         $this->validateBase($url);
         return rtrim($url, '/');

@@ -12,7 +12,13 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — pushed on `fix/duplicate-post-submissions`, not merged into `main`. Review it, confirm the anonymous post ID format, then merge. Remove this entry once merged.
 
+[Draggable windows](draggable_windows/draggable_windows_step3_development_plan.md) — in Bubblegum, every window gets a working collapse button, collapsed posts stay collapsed after a reload, and a desktop Float mode lets you drag windows and Reset them; behind `FORUM_DRAGGABLE_WINDOWS_ENABLED`, with a Preferences row.
+
 [Nav speed checklist](nav_speed_checklist.md) — cutting click-to-done time on navbar links, in five cycles. Cycle 2: [nav quick wins](nav_quick_wins/nav_quick_wins_one_shot.md) — navigation preload, an early fetch on tap, and an immediate highlight. Cycle 3: [nav cached copy](nav_cached_copy/nav_cached_copy_one_shot.md) — navbar pages from the last copy, refreshed in the background.
+
+[New instance home quickfix](new_instance_home/new_instance_home_quickfix.md) — the board opens on All until something is liked, with a link to a new Getting started page (`/start/`) that offers browsing and import choices; first try of the experimental quickfix category.
+[Known instances one-shot](known_instances/known_instances_one_shot.md) — a shipped list of public instances (ZenMemes for now) offered as import sources, never including the site's own address.
+[Worker before the read model one-shot](worker_before_read_model/worker_before_read_model_one_shot.md) — the task worker's first run on a fresh `./v3 start` no longer logs "unable to open database file".
 
 [Import without a worker](import_without_worker/import_without_worker_step1_solution_assessment.md) — Tools → Import starts a worker when none runs, `./v3 start` runs one by default, and the page shows steps, elapsed time and time left.
 
@@ -23,6 +29,8 @@ checklists, and proposals remain at the top level or in the collections below.
 [Import cancel one-shot](import_cancel/import_cancel_one_shot.md) — `./v3 import-instance --cancel` discards an interrupted import that has not committed its content; prerequisite for the import-instance GUI.
 
 [Pledge count unnamed](pledge_count_unnamed/pledge_count_unnamed_one_shot.md) — a flag that lets pledges with no name count toward a campaign's sum.
+
+[Pledge fill review](pledge_fill_review/pledge_fill_review_step3_development_plan.md) — the campaign author or an operator answers a pledger's fill with `confirm` or `dispute`; a disputed fill stops counting and both stay visible.
 
 [Pledge fills](pledge_fills/pledge_fills_step3_development_plan.md) — the pledger, the campaign author or an operator marks a pledge delivered or filled with a `filled` reply; partial fills add up and the block shows what arrived.
 
@@ -79,6 +87,8 @@ checklists, and proposals remain at the top level or in the collections below.
 [Code quality review handoff one-shot](quality_review_handoff/quality_review_handoff_one_shot.md) — adds [the review handoff](code_quality_review_handoff.md): state, open items, and how to rerun the analysis tools.
 
 [Register FastNavigationLayoutTest one-shot](register_fast_navigation_test/register_fast_navigation_test_one_shot.md) — registers a test file that never ran; caught by TestFileRegistrationTest.
+
+[DM composer flush on phones one-shot](dm_composer_flush/dm_composer_flush_one_shot.md) — in a phone conversation the sticky composer stays flush with the bottom edge through the end of scrolling.
 
 [Tools bar at the bottom one-shot](tools_nav_bottom/tools_nav_bottom_one_shot.md) — every /tools/* page shows the tool first and the Tools bar last, under a plain "Tools" card heading.
 
@@ -168,6 +178,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Prompt copy icon](prompt_copy_icon/prompt_copy_icon_one_shot.md) — one-shot: the Copy button on /agent/ prompt fields moves to the top right and shows only its icon.
 - [Prompt copy button, quiet in Gloss and Bubblegum](prompt_copy_quiet/prompt_copy_quiet_one_shot.md) — one-shot: the icon-only Copy button drops its theme button chrome in Gloss, Gloss Dark, Engagify and Bubblegum.
 - [Prompts as plain text](prompt_plain_text/prompt_plain_text_one_shot.md) — one-shot: /agent/ prompts are selectable text with Copy in the corner; long ones cut off with Show all.
+- [Bookmarklet host prefix](bookmarklet_host_prefix/bookmarklet_host_prefix_one_shot.md) — one-shot: every bookmarklet's address starts with the server host (`javascript:/*zenmemes.com*/…`), so a bookmark editor shows where it posts.
 
 - [Reply title directive](reply_title_directive/reply_title_directive_step3_development_plan.md) — `title:` reply line retitles a thread with authority, two feature flags, and a visible likes/flags/title signals line on cards; in progress.
 - [Markdown in post bodies](post_markdown/post_markdown_step3_development_plan.md) — per-post `Body-Format` (Markdown by default for new posts, opt-out), post-safe rendering, plain previews; in progress.
@@ -539,7 +550,7 @@ and repair its navigation and affected references. See the
 
 - [DM instant load](dm_instant_load/dm_instant_load_step3_development_plan.md) — conversations show read messages on first paint from an encrypted per-browser cache behind `FORUM_PRIVATE_MESSAGE_CACHE_ENABLED`, including Messages list previews; complete and accepted on iPhone ([Step 4](dm_instant_load/dm_instant_load_step4_implementation_summary.md)).
 
-- [DM conversation tab bar](dm_conversation_tabbar/dm_conversation_tabbar_step3_development_plan.md) — phone conversations show no bottom tab bar; the back arrow is the way out; Steps 1–3 approved.
+- [DM conversation tab bar](dm_conversation_tabbar/dm_conversation_tabbar_step3_development_plan.md) — phone conversations show no bottom tab bar; the back arrow is the way out; complete and accepted on iPhone ([Step 4](dm_conversation_tabbar/dm_conversation_tabbar_step4_implementation_summary.md)).
 
 - [Gallery zoom](gallery_zoom/gallery_zoom_one_shot.md) — one-shot: Smaller / Larger buttons and phone pinch resize Gallery tiles, remembered per browser and resettable on Preferences.
 - [Gallery compact captions](gallery_compact_captions/gallery_compact_captions_one_shot.md) — one-shot: Gallery tile captions hide when zoomed far out.
@@ -547,6 +558,8 @@ and repair its navigation and affected references. See the
 - [Gallery caption zoom](gallery_caption_zoom/gallery_caption_zoom_one_shot.md) — one-shot: Gallery caption text scales with the gallery zoom.
 
 - [Deploy celebration](deploy_celebration/deploy_celebration_one_shot.md) — one-shot: confetti and a Deployed banner on the page that loads after a deploy that changed the code.
+
+- [One ledger file per cycle](per_cycle_effort_ledger/per_cycle_effort_ledger_one_shot.md) — one-shot: effort-study entries go in `effort_ledger/<cycle>.md`, so open PRs stop conflicting on the shared ledger.
 - [Live feature tour](live_feature_tour/live_feature_tour_one_shot.md) — one-shot: unlinked page of live, scaled-down frames of the main ZenMemes pages.
 - [Live feature tour, quiet](live_feature_tour_quiet/live_feature_tour_quiet_one_shot.md) — one-shot: no intro copy and no new tabs on the tour page.
 - [Offline card extra line](offline_card_extra_line/offline_card_extra_line_one_shot.md) — one-shot: offline board cards show one more line of the post body.
@@ -567,3 +580,6 @@ and repair its navigation and affected references. See the
 - [High-traffic coverage](high_traffic_coverage/high_traffic_coverage_one_shot.md) — one-shot, documentation-only: checklist of what still reaches PHP while high-traffic mode is on.
 
 - [Unicode text rule parity](unicode_text_rule_parity/unicode_text_rule_parity_one_shot.md) — one-shot: checks that the server `UnicodeTextPolicy` and the browser compose validator accept and reject the same text.
+- [Invite QR pitch](invite_qr_pitch/invite_qr_pitch_one_shot.md) — one-shot: the invite QR shows a short pitch for the person scanning it, and the code is smaller.
+
+- [Import planning speed](import_planning_speed/import_planning_speed_step3_development_plan.md) — staged: import planning reuses saved signature checks and one GPG session per signer key.

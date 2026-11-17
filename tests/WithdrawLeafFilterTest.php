@@ -63,4 +63,27 @@ final class WithdrawLeafFilterTest
             array_column(WithdrawLeafFilter::apply(array_slice($replies, 0, 7), ['bare' => $took]), 'post_id')
         );
     }
+    public function testFoldsBareConfirmsButNeverADispute(): void
+    {
+        $reply = static fn (string $id, string $parent, string $body): array => ['post_id' => $id, 'parent_id' => $parent, 'body' => $body];
+        $replies = [
+            $reply('pledge', 'root', 'pledge: 300'),
+            $reply('fill', 'pledge', 'filled'),                   // folds once its bare confirm folds
+            $reply('confirm', 'fill', 'confirm'),                 // folds
+            $reply('fill2', 'pledge', 'filled: 100'),
+            $reply('noted', 'fill2', "confirm\n\nThanks, got them."), // says something: stays
+            $reply('fill3', 'pledge', 'filled'),                  // answered by a dispute: stays
+            $reply('dispute', 'fill3', 'dispute'),                // never folds
+            $reply('refused', 'fill3', 'confirm'),                // did not count: its reason must show
+        ];
+        $took = ['effective' => true, 'note' => ''];
+        $fills = ['fill' => $took, 'fill2' => $took, 'fill3' => ['effective' => false, 'note' => 'Not counted: disputed by ilyag']];
+        $reviews = ['confirm' => $took, 'noted' => $took, 'dispute' => $took,
+            'refused' => ['effective' => false, 'note' => 'Not counted: only the author or an operator can review']];
+
+        assertSame(
+            ['pledge', 'fill2', 'noted', 'fill3', 'dispute', 'refused'],
+            array_column(WithdrawLeafFilter::apply($replies, [], $fills, $reviews), 'post_id')
+        );
+    }
 }

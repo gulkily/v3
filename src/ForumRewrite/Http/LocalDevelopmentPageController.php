@@ -13,7 +13,7 @@ final class LocalDevelopmentPageController
 
     public function handle(string $method): void
     {
-        $source = $this->import->pendingSource() ?? (is_string($_POST['source'] ?? null) ? $_POST['source'] : 'https://zenmemes.com');
+        $source = $this->import->pendingSource() ?? (is_string($_POST['source'] ?? null) ? $_POST['source'] : (\ForumRewrite\Import\KnownInstances::others((string) ($_SERVER['HTTP_HOST'] ?? ''))[0]['url'] ?? ''));
         $result = null;
         $error = null;
         $status = 200;
