@@ -57,11 +57,17 @@ final class ViewerSessions
         return $this->current()?->lobbyIdentityId ?? '';
     }
 
+    /** True when this request arrived over HTTPS. */
+    public function isHttps(): bool
+    {
+        return $this->https;
+    }
+
     /** Records a verified sign-in and sends the cookie the browser should keep. */
-    public function signIn(string $identityId): ViewerSession
+    public function signIn(string $identityId, string $deviceFingerprint = ''): ViewerSession
     {
         $token = $this->token();
-        $session = $this->store()->signIn($identityId, $token === '' ? null : $token);
+        $session = $this->store()->signIn($identityId, $token === '' ? null : $token, $deviceFingerprint);
         // A new token, or the same one with a renewed lifetime: either way the cookie's
         // expiry must match the session's.
         ViewerSessionCookie::send($session, $this->https);
@@ -79,6 +85,27 @@ final class ViewerSessions
         }
         $this->current = $this->store()->signOut($token);
         $this->resolved = true;
+    }
+
+    /** Marks the current session as having bootstrapped a key; false when it already has, or nobody is signed in. */
+    public function markKeyBootstrapped(): bool
+    {
+        $token = $this->token();
+        if ($token === '' || !$this->store()->markKeyBootstrapped($token)) {
+            return false;
+        }
+        $this->resolved = false;
+        return true;
+    }
+
+    /** Undoes markKeyBootstrapped() after a bootstrap that did not commit. */
+    public function clearKeyBootstrapped(): void
+    {
+        $token = $this->token();
+        if ($token !== '') {
+            $this->store()->clearKeyBootstrapped($token);
+        }
+        $this->resolved = false;
     }
 
     /** The Lobby identity's profile is gone; stop offering it. */

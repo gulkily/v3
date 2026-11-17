@@ -7,3 +7,7 @@ Sources: [store](../../src/ForumRewrite/Session/ViewerSessionStore.php), [per-re
 Cookies are per scheme (`__Host-v3_session` over https, `v3_session` over http) so neither blocks the other, and the store keeps only token hashes in `state/private/`, outside exports. Challenges are not tied to a browser: a captured challenge and signature can be used once by whoever submits first, which over http is no worse than taking the cookie. Losing the store or a cookie signs browsers out; those with a saved key sign back in on their next page load.
 
 *— Claude · 2026-11-03 UTC · Model: claude-opus-5-5*
+
+Key bootstrap: each session also keeps the coarse [device fingerprint](../../src/ForumRewrite/Session/DeviceFingerprint.php) of the browser that signed in, and whether it already vouched for a new key. A browser that lost its key but kept its session asks the session for a new key under the same username; a matching device makes it approved, once per session. Browsers with a key re-sign once so older sessions gain a description. Sources: [bootstrap API](../../src/ForumRewrite/Http/KeyBootstrapApiController.php), [browser script](../../public/assets/key_bootstrap.js), [record spec](../specs/key_bootstrap_record_v1.md).
+
+*— Revised by Claude · 2026-11-16 UTC · Model: claude-opus-5-5*

@@ -261,6 +261,9 @@
 <?php if ($navigationSlot === 'app' && ($deployPromptScriptPath ?? null) !== null): ?>
   <script src="<?= $e($deployPromptScriptPath) ?>" defer></script>
 <?php endif; ?>
+<?php if (($keyBootstrapScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($keyBootstrapScriptPath) ?>" data-identity-scripts="<?= $e(implode(' ', $keyBootstrapIdentityScriptPaths ?? [])) ?>" defer></script>
+<?php endif; ?>
 <?php if (($deployCelebrateScriptPath ?? null) !== null): ?>
   <script src="<?= $e($deployCelebrateScriptPath) ?>" defer></script>
 <?php endif; ?>

@@ -2921,6 +2921,7 @@
       deriveIdentityFromPrivateKey: deriveIdentityFromPrivateKey,
       saveImportedBrowserIdentity: saveImportedBrowserIdentity,
       readClipboardText: readClipboardText,
+      signCanonicalRecord: signCanonicalRecord,
     };
   }
 
