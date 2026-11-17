@@ -116,6 +116,7 @@ final class Application
         private readonly ?int $readerWaitMilliseconds = null,
     ) {
         SignatureCheckCache::useBeside($databasePath);
+        \ForumRewrite\Qdb\QdbModeration::useRepository($repositoryRoot);
     }
 
     /**

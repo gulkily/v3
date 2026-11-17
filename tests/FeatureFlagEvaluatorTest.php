@@ -244,6 +244,7 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::TITLE_DIRECTIVE_APPROVED_MEMBERS,
             FeatureFlagRegistry::INBOX_ENABLED,
             FeatureFlagRegistry::TAG_UNLOCKS_ENABLED,
+            FeatureFlagRegistry::QDB_QUEUE_ENABLED,
             FeatureFlagRegistry::DEPLOY_HEADER_PROMPT_ENABLED,
             FeatureFlagRegistry::PRIVATE_MESSAGE_CACHE_ENABLED,
             FeatureFlagRegistry::ENGAGIFY_PASSWORD_NEWSLETTER,

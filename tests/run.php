@@ -29,6 +29,7 @@ $testFiles = [
     __DIR__ . '/PersonIdentityOrderTest.php',
     __DIR__ . '/QdbPageTest.php',
     __DIR__ . '/QdbWelcomeSelectionTest.php',
+    __DIR__ . '/QdbModerationTest.php',
     __DIR__ . '/CommitEvidenceLookupTest.php',
     __DIR__ . '/CommitHistoryReaderTest.php',
     __DIR__ . '/RecentPostTest.php',
