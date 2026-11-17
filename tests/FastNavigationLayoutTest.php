@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/** Fast navigation: the layout's preload setting and page script, rendered through Application in a child process. */
+/** Fast navigation and navbar copies: the layout's attributes and page scripts, rendered through Application in a child process. */
 final class FastNavigationLayoutTest
 {
     public function testLayoutLoadsTheScriptAndAsksForPreloadOnlyWhenTheFlagIsOn(): void
@@ -38,6 +38,15 @@ try {
     $off = page($argv[1], $argv[2], $databasePath, '/');
     expect(str_contains($off, 'data-fast-navigation="0"'), 'flag off: preload not turned off');
     expect(!str_contains($off, '/assets/fast_navigation.'), 'flag off: script loaded');
+
+    putenv('FORUM_NAV_CACHED_COPY_ENABLED=1');
+    $copyOn = page($argv[1], $argv[2], $databasePath, '/');
+    expect(str_contains($copyOn, 'data-nav-cached-copy="1"'), 'copy flag on: attribute missing');
+    expect(preg_match('~<script src="/assets/nav_cached_copy\.[0-9a-f]{12}\.js" defer></script>~', $copyOn) === 1, 'copy flag on: script missing');
+    putenv('FORUM_NAV_CACHED_COPY_ENABLED=0');
+    $copyOff = page($argv[1], $argv[2], $databasePath, '/');
+    expect(str_contains($copyOff, 'data-nav-cached-copy="0"'), 'copy flag off: copies not dropped');
+    expect(!str_contains($copyOff, '/assets/nav_cached_copy.'), 'copy flag off: script loaded');
 } finally {
     @unlink($databasePath);
 }

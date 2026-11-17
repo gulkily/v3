@@ -37,8 +37,15 @@
     }).catch(function () {});
   }
 
+  // Navbar pages from last copy: with the flag off, drop any copies kept while it was on.
+  function dropNavCopiesWhenOff() {
+    if (document.documentElement.getAttribute("data-nav-cached-copy") !== "0" || !window.caches || !runtime.offlineCachePrefix) return;
+    window.caches.delete(runtime.offlineCachePrefix + "nav-copy").catch(function () {});
+  }
+
   window.addEventListener("load", function () {
     applyNavigationPreload();
+    dropNavCopiesWhenOff();
     navigator.serviceWorker.getRegistrations().then(function (registrations) {
       return Promise.all(registrations.map(function (registration) {
         return registration.scope === window.location.origin + "/offline/"

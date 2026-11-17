@@ -2272,3 +2272,11 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 | `v3/nav_quick_wins` | Technically complete; release check and maintainer acceptance pending | v1 / R1 / P2 | 0.30 (intake 0.30; entry 0.30; retrospective 0.25) | [One-shot record](./nav_quick_wins/nav_quick_wins_one_shot.md#study-history) | Nav speed checklist cycle 2; one-shot |
 
 2026-11-17T05:00Z: standing P2 enrollment, one-shot. Intake and execution entry **0.30**; retrospective scope assessment **0.25**; no revisions. Baseline `c010efca`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. Maintainer comfortable-fit judgment pending.
+
+## Cycle v3/nav_cached_copy
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/nav_cached_copy` | Technically complete; release check and maintainer acceptance pending | v1 / R1 / P2 | 0.40 (intake 0.40; entry 0.40; retrospective 0.40) | [One-shot record](./nav_cached_copy/nav_cached_copy_one_shot.md#study-history) | Predecessor `v3/nav_quick_wins` (unmerged); one-shot |
+
+2026-11-17T06:00Z: standing P2 enrollment, one-shot. Intake and execution entry **0.40**; retrospective scope assessment **0.40**; no revisions. Baseline `e7babc06`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. Maintainer comfortable-fit judgment pending.

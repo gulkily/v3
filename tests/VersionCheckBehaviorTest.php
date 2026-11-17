@@ -285,6 +285,68 @@ NODE;
         assertSame('next-version', $result['pendingVersion']);
     }
 
+    public function testPendingVersionShowsTheNoticeInsteadOfReplacingANavbarCopy(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const state = { store: { forum_pending_app_version: 'next-version' }, replaceCalls: [], fetchCalls: [], banner: { hidden: true, querySelector() { return null; } } };
+
+global.window = {
+  location: {
+    href: 'https://example.test/compose/thread',
+    origin: 'https://example.test',
+    assign() {},
+    replace(url) { state.replaceCalls.push(String(url)); }
+  },
+  sessionStorage: {
+    getItem(key) { return Object.prototype.hasOwnProperty.call(state.store, key) ? state.store[key] : null; },
+    setItem(key, value) { state.store[key] = String(value); },
+    removeItem(key) { delete state.store[key]; }
+  },
+  fetch(url) {
+    state.fetchCalls.push(String(url));
+    return Promise.resolve({ ok: true, text() { return Promise.resolve('next-version'); } });
+  },
+  setTimeout() { return 1; },
+  setInterval() { return 1; },
+  addEventListener() {}
+};
+
+global.document = {
+  visibilityState: 'visible',
+  querySelector(selector) {
+    if (selector === 'meta[name="app-version"]') {
+      return { getAttribute(name) { return name === 'content' ? 'current-version' : ''; } };
+    }
+    if (selector === 'meta[name="app-version-endpoint"]') {
+      return { getAttribute(name) { return name === 'content' ? '/api/version' : ''; } };
+    }
+    if (selector === '[data-role="app-version-banner"]') return state.banner;
+    return null;
+  },
+  documentElement: { getAttribute(name) { return name === 'data-nav-cached-copy' ? '1' : null; }, setAttribute() {} },
+  addEventListener() {}
+};
+
+vm.runInThisContext(source);
+
+process.stdout.write(JSON.stringify({
+  replaceCalls: state.replaceCalls,
+  fetchCalls: state.fetchCalls,
+  pendingVersion: state.store.forum_pending_app_version || '',
+  bannerShown: state.banner.hidden === false
+}));
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame([], $result['replaceCalls']);
+        assertSame('next-version', $result['pendingVersion']);
+        assertSame(true, $result['bannerShown']);
+    }
+
     public function testSatisfiedPendingVersionClearsStorageWithoutReloadLoop(): void
     {
         $script = <<<'NODE'

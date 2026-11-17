@@ -8,7 +8,7 @@ Extended estimates: disabled
 
 **Cycle estimate: 0.40**
 
-Status: planned on `feat/nav-cached-copy`; next permitted action: implementation.
+Status: technically complete on `feat/nav-cached-copy`; release check pending maintainer; next permitted action: maintainer review. Cycle 4 (`page_weight`) waits for the maintainer.
 
 # Navbar pages from the last copy, refreshed in the background
 
@@ -63,14 +63,44 @@ None in the inventory.
 
 Branch `feat/nav-cached-copy` from `feat/nav-quick-wins` at `e7babc06` (PR #291, not merged), because this cycle extends that worker code. This PR contains #291; merge #291 first.
 
-Planning commit: pending.
+Planning commit: `6e9f9d01`, before any implementation edit.
 
 ## Dated execution history
 
-- 2026-11-17: plan written.
+- 2026-11-17: plan written and committed (`6e9f9d01`).
+- 2026-11-17: `FeatureFlagRegistry::NAV_CACHED_COPY_ENABLED` ("Navbar pages from last copy", EXPERIENCE, off, site-changeable). `TemplateRenderer` passes `navCachedCopyScriptPath` only with the flag on; the layout writes `data-nav-cached-copy="1"`/`"0"` and loads the script.
+- 2026-11-17: `service_worker.js`: `navCopyTarget()` finds a listed navbar path in `<prefix>nav-copy` (GET, same origin, no query, online). With a kept copy, the copy answers and a background refresh (early fetch, else preload, else fetch) replaces it and records its `app-version` for 30 s under `nav-copy-status`. Without one, the normal response answers and an `ok`, non-redirected, non-`no-store` response is kept. A network-served navbar page clears any older refresh record for its path, so it is never told about an older copy.
+- 2026-11-17: `public/assets/nav_cached_copy.js` (new): writes the main-nav and More paths into the copy cache, asks the worker for this path's fresh version and raises the notice through `window.ForumAppVersion.show()`, and deletes the cache on `forum:identity-changed`.
+- 2026-11-17: `pwa_registration.js`: with `data-nav-cached-copy="0"`, deletes the copy cache after load.
+- 2026-11-17: `version_check.js`: exposes `window.ForumAppVersion`; with the flag on, a remembered pending version shows the notice instead of redirecting to `?__v=`. Side effect, accepted: under the flag this also applies to a page that is old for other reasons (for example a static release), which now offers Reload instead of reloading itself.
+- 2026-11-17: correction during testing: the version check's own node tests stub `document` without `documentElement.getAttribute`; the new check now tolerates that, and a test for the new branch was added.
+- 2026-11-17: one run of the browser test failed once at "board copy refreshed on the previous visit" and passed in eight runs since, unchanged. Cause not found; most likely the refresh had not finished writing before the next visit. Recorded, not fixed.
+
+## Outcome
+
+Delivered as planned. With the flag on, a navbar page opened before appears from its copy; the copy is refreshed in the background and used on the next visit; when the content changed, the existing notice appears and its Reload loads the current page. Nothing on screen is replaced. Off: copies are deleted at the next page load.
+
+Limitations: `app-version` is repository-wide, so any new post anywhere makes the notice appear on the next copied page. No maximum age: a copy from days ago is still shown, with the notice. Not checked on iOS Safari or zenmemes.com.
+
+## Verification
+
+- `CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/nav_cached_copy.mjs`: passed in eight of nine runs (see history). Flag off: no copy cache. Flag on: copies of `/` and `/users/`; after a new commit the next visit shows the older copy, the notice appears, the URL is unchanged; a remembered newer version does not redirect the board copy; the next visit gets the refreshed copy; Reload opens the current version; a key change drops the copies; with the server stopped, Users comes from its copy and About (not a navbar page) fails.
+- `tests/browser/fast_navigation.mjs` and `tests/browser/offline_compose.mjs`: passed.
+- `./v3 test --smoke VersionCheckBehaviorTest LocalAppSmokeTest FastNavigationLayoutTest FeatureFlagEvaluatorTest FeatureFlagChangePageTest AppNavigationPlacementTest PrivateMessageFeatureFlagTest`: 486 of 486 after the fix above (first run: 2 `VersionCheckBehaviorTest` failures caused by this change). The full suite was not run.
+- Not done: iOS Safari, a real logged-in session, zenmemes.com.
+
+## Final review
+
+Diff read: one flag, renderer path and layout attribute, the worker's copy handling and status message, one new page script, the copy-cache cleanup, two `version_check.js` additions, tests. Reuses the notice and the nav quick wins worker path; nothing outside the authorized scope.
+
+## Commit, merge and publication status
+
+Planning commit `6e9f9d01`. Completion commit pending in this record; see the PR. Not merged. Contains PR #291's commits.
 
 ## Study history
 
 - Intake: 0.40 projected total, scope v1, baseline `e7babc06`, R1, P2; Claude single exposed rater, after building nav quick wins and reading `version_check.js`. Not pristine. R1 hashes not re-verified.
+- Execution entry: 0.40 reaffirmed.
+- Closeout: retrospective scope assessment 0.40; no revisions (the `version_check.js` redirect change was planned). Maintainer comfortable-fit judgment pending.
 
 *— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*

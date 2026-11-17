@@ -56,6 +56,7 @@ final class FeatureFlagRegistry
     public const PLEDGES_ENABLED = 'FORUM_PLEDGES_ENABLED';
     public const PLEDGES_COUNT_UNNAMED_ENABLED = 'FORUM_PLEDGES_COUNT_UNNAMED_ENABLED';
     public const FAST_NAVIGATION_ENABLED = 'FORUM_FAST_NAVIGATION_ENABLED';
+    public const NAV_CACHED_COPY_ENABLED = 'FORUM_NAV_CACHED_COPY_ENABLED';
 
     /** Stable UI order, independent of definition insertion order. See CONTRIBUTING.md. */
     public const PRESENTATION_ORDER = [
@@ -70,7 +71,7 @@ final class FeatureFlagRegistry
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
             self::READING_MARGINS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
             self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED, self::PLEDGES_COUNT_UNNAMED_ENABLED,
-            self::FAST_NAVIGATION_ENABLED],
+            self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
             self::THREAD_ACTIVITY_DRAWER_ENABLED],
@@ -447,6 +448,15 @@ final class FeatureFlagRegistry
                 'Pages start loading as soon as a finger or pointer touches a navbar link, the tapped item highlights at once, and the offline helper lets page requests start while it wakes up. Off waits for the click and a full start-up, as before.',
                 true,
                 self::FAST_NAVIGATION_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::NAV_CACHED_COPY_ENABLED,
+                'Navbar pages from last copy',
+                'A navbar page this browser has opened before appears at once from the copy kept last time, while a fresh copy loads in the background for the next visit. If the content changed, the new-version notice offers Reload. The page on screen is never swapped. Off loads every navbar page from the server.',
+                false,
+                self::NAV_CACHED_COPY_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
             ),
