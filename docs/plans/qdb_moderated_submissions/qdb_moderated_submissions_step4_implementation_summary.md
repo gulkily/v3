@@ -86,3 +86,30 @@ Branch `feat/qdb-moderated-submissions` from `6bfe1243`; planning commit `3b34a3
 - Estimate details: original scope; no revision. Retrospective lower because the Add flow needed no change.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 4 - Approve and reject from the queue
+
+**Original estimate: 0.12**
+
+**Retrospective: 0.14**
+
+- Changes:
+  - `LocalWriteService::applyThreadTag` accepts `approved` and `rejected` on qdb only through `assertQdbModerationTag`. The tag must target a quote and carry a verified signature from an active operator. Unsigned tags, other keys and non-quote threads are refused.
+  - Queue cards render Approve and Reject buttons inside the quote card header. They use the existing `apply-thread-tag` action in `thread_reactions.js`, so signing, the Outbox and error feedback are unchanged.
+  - New `templates/partials/qdb_moderation_access.php`: an inline script before the cards compares this browser's key fingerprint with the operator list and sets `data-qdb-moderator` before paint. Server HTML is the same for every viewer.
+  - `QdbModeration::operatorFingerprints` supplies that list; `BoardPageController` passes it only on the Queue page.
+- Verification:
+  - `./v3 test --smoke WriteApiSmokeTest::testQdbQueueApprovalAndRejectionAreSignedOperatorDecisions WriteApiSmokeTest::testQdbQueueHoldsANewQuoteOffListingsButOnItsPermalink WriteApiSmokeTest::testSignedThreadReactionPreservesBytesAndRejectsTampering QdbModerationTest TagScoreTest QuoteCardDisplayNumberTest`: 487 passed. Full suite not run.
+  - New write test with GPG keys: unsigned operator tag, signed visitor tag and a non-quote target are refused. A signed operator approval lists the quote on Latest; a signed rejection removes it from the queue and returns 404 at its address.
+  - Local acceptance in headless Chrome over the DevTools protocol, against a qdb instance whose queue was switched on through `prepareFeatureFlagChange` and an operator's GPG signature:
+    - `/api/create_quote` answered `moderation=pending` for two anonymous quotes.
+    - Signed out, the moderation buttons were hidden; with the operator's key in browser storage they showed.
+    - Approve signed in the browser and showed "✓ Approved"; Reject removed the other quote.
+    - After reload the queue was empty; Latest showed the approved quote and not the rejected one.
+  - This run also covers the signed switch-on path that Stage 1 could test only unsigned.
+- Notes:
+  - **Deviation from Step 3:** a decided card stays in place, showing the applied label, until the page reloads. This reuses the vote buttons' behavior instead of adding card-removal code.
+  - The queue footer still shows the queue's own count ("2 quotes"); Stage 5 replaces it.
+- Estimate details: original scope; no revision. Retrospective slightly higher for the browser acceptance harness.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

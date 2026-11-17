@@ -100,6 +100,15 @@ final class QdbModeration
         return $operators;
     }
 
+    /** @return list<string> Lowercase fingerprints, for the page to decide before paint who sees operator controls. */
+    public function operatorFingerprints(): array
+    {
+        return array_values(array_map(static fn (string $id): string => substr($id, strlen('openpgp:')), array_filter(
+            $this->operatorIds,
+            static fn (string $id): bool => preg_match('/^openpgp:[a-f0-9]{40}$/D', $id) === 1,
+        )));
+    }
+
     public function isActive(): bool
     {
         return $this->startedAt !== null;

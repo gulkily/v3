@@ -82,6 +82,7 @@ final class BoardPageController
                     'viewerFlaggedPostIds' => $viewerReactionState['flagged'],
                     'voteCaptionPair' => $voteCaptionPair,
                     'qdbVoteTags' => $qdbVoteTags,
+                    'qdbModerationActors' => $activeSection === 'queue' ? \ForumRewrite\Qdb\QdbModeration::current()->operatorFingerprints() : [],
                 ] : ['showPinnedMarker' => true],
                 'boardFooterPartial' => $qdbPolicy === null ? null : 'partials/qdb_footer.php',
                 'viewerVotedThreadIds' => $viewerReactionState['voted'],

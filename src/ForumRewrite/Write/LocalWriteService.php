@@ -25,6 +25,7 @@ use ForumRewrite\Canonical\ThreadLabelRecordParser;
 use ForumRewrite\Canonical\ThreadSubjectRecordParser;
 use ForumRewrite\Security\TitleDirectiveAuthority;
 use ForumRewrite\Support\TitleDirective;
+use ForumRewrite\Qdb\QdbModeration;
 use ForumRewrite\Qdb\QdbQuoteNumbers;
 use ForumRewrite\Qdb\QdbVoteCaptionCatalog;
 use ForumRewrite\Qdb\QdbVoteScoringPolicy;
@@ -1478,6 +1479,9 @@ class LocalWriteService
             }
 
             $signed = $this->signedReactionInput('thread', $input, $threadId, $tag, $authorIdentityId);
+            if (in_array($tag, QdbModeration::TAGS, true)) {
+                $this->assertQdbModerationTag($threadId, $signed !== null, $authorIdentityId);
+            }
 
             $viewerIsApproved = $this->isApprovedIdentity($authorIdentityId) ? 'yes' : 'no';
             if (($isQdbCaptionVote && $this->hasQdbVoteFromIdentity($threadId, $authorIdentityId))
@@ -4375,6 +4379,17 @@ class LocalWriteService
         }
     }
 
+    /** Approve and reject are signed operator decisions on quotes; nothing else may write them. */
+    private function assertQdbModerationTag(string $threadId, bool $signed, string $authorIdentityId): void
+    {
+        if (QdbQuoteNumbers::fromThreadId($threadId) === null) {
+            throw new RuntimeException('Only quotes can be approved or rejected.');
+        }
+        if (!$signed || !ApprovalPolicy::isActiveOperator($this->repositoryRoot, $authorIdentityId)) {
+            throw new RuntimeException('Only an operator signing in this browser can approve or reject quotes.');
+        }
+    }
+
     private function assertQdbQuoteAuthoring(): void
     {
         if (SiteProfileRegistry::active()['name'] !== 'qdb') {
@@ -4658,7 +4673,8 @@ class LocalWriteService
     {
         $tag = strtolower(trim($value));
         if (!TagScore::isScoredTag($tag)
-            && !($allowQdbCaptionTag && $this->qdbVoteCaptionCatalog()->isActiveTag($tag))) {
+            && !($allowQdbCaptionTag && $this->qdbVoteCaptionCatalog()->isActiveTag($tag))
+            && !($allowQdbCaptionTag && in_array($tag, QdbModeration::TAGS, true))) {
             throw new RuntimeException('tag must be one of: ' . implode(', ', array_keys(TagScore::scoredTags())));
         }
 

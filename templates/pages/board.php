@@ -32,6 +32,7 @@
 ]), 4) ?>
     </div>
   </article>
+<?= $partial('partials/qdb_moderation_access.php', ['qdbModerationActors' => $boardCardData['qdbModerationActors'] ?? []]) ?>
 <?php foreach ($threads as $thread): ?>
 <?= $indent($partial($boardCardPartial, ['thread' => $thread] + $boardCardData), 1) ?>
 <?php endforeach; ?>
