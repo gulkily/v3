@@ -26,7 +26,7 @@ if ($agentReplyPostedId !== '') {
 $agentReplyIsUnfinished = $agentReplyPostedId === ''
     && in_array($agentReplyStatus, ['requested', 'pending', 'complete', 'posting'], true);
 $isRetracted = ($post['retracted_at'] ?? null) !== null;
-// Tags this reply's thread unlocks (resources/tagsets.txt), e.g. resolved/closed on #meta replies.
+// Tags this reply's thread unlocks (resources/tagsets.txt), e.g. resolved/closed on #issue replies.
 $unlockedPostTags = (($tagUnlocksEnabled ?? false) && isset($thread) && is_array($thread) && !$isRetracted
     && ($post['thread_id'] ?? '') !== '' && (string) $post['post_id'] !== (string) ($thread['root_post_id'] ?? ''))
     ? \ForumRewrite\Support\Tagsets::forApplication()->unlockedFor(array_merge($thread['board_tags'] ?? [], $thread['thread_labels'] ?? []))

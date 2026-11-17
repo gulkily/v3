@@ -1038,8 +1038,8 @@ final class PledgeCampaignTest
     public function testEachPledgeIsOneClosedRowAndRowsNeverJoinARun(): void
     {
         [$root, $database, $service] = $this->environment();
-        // A #meta thread unlocks the tagset fold too; a pledge row must still be one disclosure.
-        $thread = $this->thread($service, 'Row campaign', "goal: 100 coffees\n\n#meta");
+        // An #issue thread unlocks the tagset fold too; a pledge row must still be one disclosure.
+        $thread = $this->thread($service, 'Row campaign', "goal: 100 coffees\n\n#issue");
         $first = $this->reply($service, $thread, "pledge: 20\n\nFirst one.");
         $second = $this->reply($service, $thread, 'pledge: 30');
         $question = $this->reply($service, $thread, 'Does decaf count?');

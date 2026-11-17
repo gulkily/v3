@@ -8,11 +8,12 @@ use ForumRewrite\Support\Tagsets;
 
 final class TagsetsTest
 {
-    public function testShippedFileUnlocksMetaResolution(): void
+    public function testShippedFileUnlocksIssueResolution(): void
     {
         $sets = Tagsets::fromFile(__DIR__ . '/../resources/tagsets.txt');
-        assertSame(['claimed', 'resolved', 'closed', 'open'], $sets->unlockedFor(['general', 'meta']));
+        assertSame(['claimed', 'resolved', 'closed', 'open'], $sets->unlockedFor(['general', 'issue']));
         assertSame([], $sets->unlockedFor(['general']));
+        assertSame([], $sets->unlockedFor(['general', 'meta']), '#meta is a topic; only #issue unlocks the work states.');
         assertSame(['claimed', 'resolved', 'closed', 'open'], $sets->exclusiveGroupOf('closed'));
         assertSame(true, $sets->isUnlockable('resolved'));
         assertSame(false, $sets->isUnlockable('like'));
@@ -40,7 +41,7 @@ final class TagsetsTest
         $sets = Tagsets::parse("Parent: meta\nTarget: reply, root\nUnlocks: resolved\n\nParent: event\nUnlocks: attend\n\nParent: poll\nTarget: root\nUnlocks: vote\n");
         assertSame(['resolved', 'attend'], $sets->unlockedFor(['meta', 'event', 'poll']));
         assertSame(['resolved', 'vote'], $sets->unlockedFor(['meta', 'event', 'poll'], Tagsets::TARGET_ROOT));
-        assertSame(['claimed', 'resolved', 'closed', 'open'], Tagsets::fromFile(__DIR__ . '/../resources/tagsets.txt')->unlockedFor(['meta'], Tagsets::TARGET_ROOT));
+        assertSame(['claimed', 'resolved', 'closed', 'open'], Tagsets::fromFile(__DIR__ . '/../resources/tagsets.txt')->unlockedFor(['issue'], Tagsets::TARGET_ROOT));
     }
 
     public function testMissingFileUnlocksNothing(): void
