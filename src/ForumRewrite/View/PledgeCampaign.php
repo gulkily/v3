@@ -8,6 +8,7 @@ use ForumRewrite\Support\FilledDirective;
 use ForumRewrite\Support\GoalDirective;
 use ForumRewrite\Support\PledgeAmount;
 use ForumRewrite\Support\PledgeDirective;
+use ForumRewrite\Support\ReviewDirective;
 use ForumRewrite\Support\WithdrawDirective;
 
 /**
@@ -51,9 +52,12 @@ final class PledgeCampaign
      *     pledges: array<string, array{state: string, amount: ?string, note: string, withdrawn_by?: string, withdrawn_at?: string}>,
      *     withdrawals: array<string, array{effective: bool, note: string}>,
      *     filled: string, confirmed: string,
-     *     fills: array<string, array{effective: bool, note: string}>
-     * }|null null when the thread is not a campaign; `withdrawals` and `fills` are keyed by the reply's post ID.
-     *     A pledge with a fill that counts also carries `filled` and `fill_list` (post_id, by, role, amount).
+     *     fills: array<string, array{effective: bool, note: string}>,
+     *     reviews: array<string, array{effective: bool, note: string}>
+     * }|null null when the thread is not a campaign; `withdrawals`, `fills` and `reviews` are keyed by the reply's post ID.
+     *     A pledge with a fill that counts also carries `filled` and `fill_list` (post_id, by, role, amount). A pledger's
+     *     fill that was confirmed or disputed also carries `review`, `review_by` and `review_post_id`; a disputed one is
+     *     listed but not counted.
      */
     public static function fromPosts(array $posts, string $rootPostId, bool $countUnnamed = false, ?callable $isOperator = null): ?array
     {
@@ -104,7 +108,15 @@ final class PledgeCampaign
             }
         }
 
-        [$fills, $filledOn, $filledSum, $confirmedSum] = self::fills($posts, $rootPostId, $unit, $pledges, $counted, $campaignAuthor, $isOperator);
+        if ($isOperator !== null) {
+            $operatorCache = [];
+            $check = $isOperator;
+            $isOperator = static function (string $id) use (&$operatorCache, $check): bool {
+                return $operatorCache[$id] ??= (bool) $check($id);
+            };
+        }
+        [$reviews, $reviewed] = self::reviews($posts, $rootPostId, $counted, $campaignAuthor, $isOperator);
+        [$fills, $filledOn, $filledSum, $confirmedSum] = self::fills($posts, $rootPostId, $unit, $pledges, $counted, $campaignAuthor, $isOperator, $reviewed);
         $withdrawals = self::withdrawals($posts, $rootPostId, $pledges, $counted, $filledOn);
         foreach ($counted as $postId => $pledge) {
             if ($pledges[$postId]['state'] === self::COUNTED) {
@@ -132,7 +144,66 @@ final class PledgeCampaign
             'filled' => PledgeAmount::format($filledSum),
             'confirmed' => PledgeAmount::format($confirmedSum),
             'fills' => $fills,
+            'reviews' => $reviews,
         ];
+    }
+
+    /**
+     * Reads each reply's `confirm` or `dispute` line. A review counts when it answers a pledger's
+     * fill of a counted pledge and comes from the campaign author or an operator, other than the
+     * fill's own author; the latest counting review on a fill decides. Read before fills, so a
+     * disputed fill leaves room for later ones.
+     *
+     * @param array<int, array<string, mixed>> $posts
+     * @param array<string, array{amount: int, author: string}> $counted
+     * @param (callable(string): bool)|null $isOperator
+     * @return array{0: array<string, array{effective: bool, note: string}>, 1: array<string, array{review: string, review_by: string, review_post_id: string}>}
+     */
+    private static function reviews(array $posts, string $rootPostId, array $counted, string $campaignAuthor, ?callable $isOperator): array
+    {
+        $pledgerFills = [];
+        foreach ($posts as $post) {
+            $pledgeId = (string) ($post['parent_id'] ?? '');
+            $author = (string) ($post['author_identity_id'] ?? '');
+            if (isset($counted[$pledgeId]) && $author !== '' && $author === $counted[$pledgeId]['author']
+                && ($post['retracted_at'] ?? null) === null && (int) ($post['attribution_counted'] ?? 1) === 1
+                && FilledDirective::extract((string) ($post['body'] ?? '')) !== null) {
+                $pledgerFills[(string) $post['post_id']] = $author;
+            }
+        }
+
+        $reviews = [];
+        $reviewed = [];
+        foreach ($posts as $post) {
+            $postId = (string) ($post['post_id'] ?? '');
+            $body = (string) ($post['body'] ?? '');
+            if ($postId === $rootPostId || ($post['retracted_at'] ?? null) !== null
+                || (stripos($body, 'confirm') === false && stripos($body, 'dispute') === false)) {
+                continue;
+            }
+            $line = ReviewDirective::extract($body);
+            if ($line === null) {
+                continue;
+            }
+            $fillId = (string) ($post['parent_id'] ?? '');
+            $author = (string) ($post['author_identity_id'] ?? '');
+            $note = match (true) {
+                !isset($pledgerFills[$fillId]) => "Not counted: not a reply to a pledger's fill",
+                $line['after'] !== '' => 'Not counted: write “' . $line['word'] . '” alone on its line',
+                $author === '' => 'Not counted: no name',
+                (int) ($post['attribution_counted'] ?? 1) !== 1 => 'Not counted: unverified',
+                $author === $pledgerFills[$fillId] => 'Not counted: a fill cannot be reviewed by its own author',
+                $author !== $campaignAuthor && ($isOperator === null || !$isOperator($author)) => 'Not counted: only the author or an operator can review',
+                default => '',
+            };
+            $reviews[$postId] = ['effective' => $note === '', 'note' => $note];
+            if ($note === '') {
+                $reviewed[$fillId] = ['review' => $line['word'] === ReviewDirective::CONFIRM ? 'confirmed' : 'disputed',
+                    'review_by' => (string) ($post['author_label'] ?? ''), 'review_post_id' => $postId];
+            }
+        }
+
+        return [$reviews, $reviewed];
     }
 
     /**
@@ -143,9 +214,10 @@ final class PledgeCampaign
      * @param array<string, array<string, mixed>> $pledges gains `filled` and `fill_list` in place
      * @param array<string, array{amount: int, author: string}> $counted
      * @param (callable(string): bool)|null $isOperator
+     * @param array<string, array{review: string, review_by: string, review_post_id: string}> $reviewed from reviews()
      * @return array{0: array<string, array{effective: bool, note: string}>, 1: array<string, int>, 2: int, 3: int}
      */
-    private static function fills(array $posts, string $rootPostId, string $unit, array &$pledges, array $counted, string $campaignAuthor, ?callable $isOperator): array
+    private static function fills(array $posts, string $rootPostId, string $unit, array &$pledges, array $counted, string $campaignAuthor, ?callable $isOperator, array $reviewed = []): array
     {
         $fills = [];
         $filledOn = [];
@@ -185,6 +257,14 @@ final class PledgeCampaign
                 $left <= 0 => 'Not counted: already filled',
                 default => '',
             };
+            $review = $role === 'pledger' ? ($reviewed[$postId] ?? null) : null;
+            if ($note === '' && ($review['review'] ?? '') === 'disputed') {
+                // Listed with what it claimed, and takes no room on the pledge.
+                $fills[$postId] = ['effective' => false, 'note' => 'Not counted: disputed by ' . ($review['review_by'] !== '' ? $review['review_by'] : 'unnamed')];
+                $pledges[$pledgeId]['fill_list'][] = ['post_id' => $postId, 'by' => (string) ($post['author_label'] ?? ''),
+                    'role' => $role, 'amount' => PledgeAmount::format($written)] + $review;
+                continue;
+            }
             if ($note !== '') {
                 $fills[$postId] = ['effective' => false, 'note' => $note];
                 continue;
@@ -194,12 +274,12 @@ final class PledgeCampaign
                 ? 'Counted ' . PledgeAmount::format($amount) . ' of ' . PledgeAmount::format($written) : ''];
             $filledOn[$pledgeId] = ($filledOn[$pledgeId] ?? 0) + $amount;
             $filledSum += $amount;
-            if ($role !== 'pledger') {
+            if ($role !== 'pledger' || $review !== null) {
                 $confirmedSum += $amount;
             }
             $pledges[$pledgeId]['filled'] = PledgeAmount::format($filledOn[$pledgeId]);
             $pledges[$pledgeId]['fill_list'][] = ['post_id' => $postId, 'by' => (string) ($post['author_label'] ?? ''),
-                'role' => $role, 'amount' => PledgeAmount::format($amount)];
+                'role' => $role, 'amount' => PledgeAmount::format($amount)] + ($review ?? []);
         }
 
         return [$fills, $filledOn, $filledSum, $confirmedSum];
