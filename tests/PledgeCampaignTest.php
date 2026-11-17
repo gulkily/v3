@@ -1160,6 +1160,44 @@ final class PledgeCampaignTest
         pledgeAssertSame([], $read);
     }
 
+    public function testBoardRowShowsTheThreadPagesProgressOnlyWithTheFlagOn(): void
+    {
+        [$root, $database, $service] = $this->environment();
+        $thread = $this->thread($service, 'Board campaign', "Coffee for the weekend.\ngoal: 10 coffees");
+        $this->reply($service, $thread, 'pledge: 12');
+        $second = $this->secondIdentity($service);
+        $this->reply($service, $thread, 'pledge: 3', $second);
+        $plain = $this->thread($service, 'No campaign here', 'Just talking.');
+        $board = fn (): string => $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/?view=all&sort=newest');
+        $row = static function (string $html, string $threadId): string {
+            preg_match('/<article id="post-' . preg_quote($threadId, '/') . '".*?<\/article>/s', $html, $match);
+            return $match[0] ?? '';
+        };
+
+        putenv('FORUM_PLEDGES_ENABLED');
+        pledgeAssertNotContains('data-pledge-row', $board());
+
+        putenv('FORUM_PLEDGES_ENABLED=1');
+        try {
+            $on = $board();
+            // The waiting pledger's 3 stays out, as on the thread page.
+            pledgeAssertContains('<p class="meta thread-row__pledge" data-pledge-row data-pledge-status="goal_reached"><strong>12</strong> / 10 coffees <span class="pledge-status">Goal reached</span></p>', $row($on, $thread));
+            pledgeAssertNotContains('data-pledge-row', $row($on, $plain));
+            // The excerpt keeps the pitch and leaves out the goal line the row's line already shows.
+            pledgeAssertContains('Coffee for the weekend.', $row($on, $thread));
+            pledgeAssertNotContains('goal: 10 coffees', $row($on, $thread));
+            // The line sits under the title, before the excerpt.
+            pledgeAssertSame(true, strpos($row($on, $thread), 'thread-row__title') < strpos($row($on, $thread), 'thread-row__pledge'));
+            pledgeAssertContains('<strong>12</strong> of 10 coffees pledged', $this->render(new Application(dirname(__DIR__), $root, $database), '/threads/' . rawurlencode($thread)));
+
+            // Approval is read when the board is shown.
+            $this->approveKeys($database, $second);
+            pledgeAssertContains('<strong>15</strong> / 10 coffees', $row($board(), $thread));
+        } finally {
+            putenv('FORUM_PLEDGES_ENABLED');
+        }
+    }
+
     private function environment(): array
     {
         $root = sys_get_temp_dir() . '/forum-rewrite-pledge-repo-' . bin2hex(random_bytes(6));

@@ -368,6 +368,35 @@ try {
   assert.match(await firstMore.getByRole('link', { name: 'Reply' }).getAttribute('href'), /^\/compose\/reply\?thread_id=.+&parent_id=/);
   assert.deepEqual(writer.seen, { dialogs: [], errors: [] });
 
+  // A second campaign with a long unit, so its board row has to wrap rather than squeeze the title.
+  await writer.page.goto(base + '/compose/thread');
+  const longForm = writer.page.locator('[data-compose-kind="thread"]');
+  await longForm.getByRole('textbox', { name: 'Title' }).fill('Roasting day');
+  await longForm.getByRole('textbox', { name: 'Body' }).fill('goal: 40 hand-roasted single-origin coffees from the shop on Mass Ave');
+  await longForm.getByRole('button', { name: 'Post', exact: true }).click();
+  await writer.page.waitForURL(/\/threads\//, { timeout: 30000 });
+  const longId = /\/threads\/([^?#]+)/.exec(writer.page.url())[1];
+  // The board row's line, checked against the thread page's own numbers. Without JavaScript too.
+  const boardLine = async (page, id) => {
+    const row = page.locator(`article#post-${id}`);
+    const line = row.locator('[data-pledge-row]');
+    const title = row.locator('.thread-row__title');
+    const titleHeight = (await title.boundingBox()).height;
+    const geometry = await row.evaluate(r => {
+      const box = s => r.querySelector(s)?.getBoundingClientRect();
+      const [t, l, c] = [box('.thread-row__title'), box('[data-pledge-row]'), box('.thread-row__count')];
+      return { below: l.top >= t.bottom - 1, clear: !c || c.width === 0 || l.right <= c.left + 1, fits: r.scrollWidth <= r.clientWidth + 1 };
+    });
+    await line.evaluate(e => { e.style.display = 'none'; });
+    const titleAlone = (await title.boundingBox()).height;
+    await line.evaluate(e => { e.style.display = ''; });
+    return { text: (await line.innerText()).replace(/\s+/g, ' ').trim(), sameTitle: Math.abs(titleHeight - titleAlone) < 1, ...geometry };
+  };
+  const plainView = await open(false);
+  await plainView.page.goto(base + '/threads/?view=all&sort=newest');
+  assert.match((await boardLine(plainView.page, threadId)).text, /^\d[\d.,]* \/ 1000 coffees/, 'board line without JavaScript');
+  await plainView.context.close();
+
   // Every theme: nothing overflows, and the sum, bar and field are on the page.
   for (const theme of ['light', 'dark', 'gloss', 'glossdark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'bubblegum', 'spearmint']) {
     for (const [width, height] of [[375, 667], [1280, 900]]) {
@@ -417,11 +446,26 @@ try {
         await view.page.locator('[data-pledge-totals]').scrollIntoViewIfNeeded();
         await view.page.screenshot({ path: join(shots, `${theme}-${width}.png`), fullPage: true });
       }
+      // The board row shows the thread page's sum and status word, under the title, without crowding it.
+      const pledged = (await view.page.locator('.pledge-totals__sum strong').textContent()).trim();
+      const status = (await view.page.locator('.pledge-totals__sum .pledge-status').allTextContents()).map(t => t.trim()).join('');
+      await view.page.goto(base + '/threads/?view=all&sort=newest');
+      for (const [id, expected] of [[threadId, `${pledged} / 1000 coffees${status ? ' ' + status : ''}`], [longId, '0 / 40 hand-roasted single-origin coffees from the shop on Mass Ave']]) {
+        const seen = await boardLine(view.page, id);
+        assert.equal(seen.text, expected, `${theme} ${width}px: board line`);
+        assert.equal(await view.page.locator(`article#post-${id} .thread-row__excerpt`).filter({ hasText: 'goal:' }).count(), 0, `${theme} ${width}px: the excerpt leaves out the goal line`);
+        assert.ok(seen.below && seen.sameTitle && seen.clear && seen.fits, `${theme} ${width}px: board line under the title, title unchanged, clear of the count (${JSON.stringify(seen)})`);
+      }
+      assert.ok(await view.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${theme} ${width}px: no board overflow`);
+      if (shots) {
+        await view.page.locator(`article#post-${threadId}`).scrollIntoViewIfNeeded();
+        await view.page.screenshot({ path: join(shots, `${theme}-${width}-board.png`) });
+      }
       console.log(`PASS ${theme} ${width}px`);
       await view.context.close();
     }
   }
   await writer.context.close();
-  console.log('PASS pledge campaign: goal line, totals, amount field both ways, signed pledge, goal mark, withdraw with a failed first press, fill with a failed first press, confirm with a failed first press, dispute, no-JavaScript pledge, uncounted reason, themes');
+  console.log('PASS pledge campaign: goal line, totals, amount field both ways, signed pledge, goal mark, withdraw with a failed first press, fill with a failed first press, confirm with a failed first press, dispute, no-JavaScript pledge, uncounted reason, board rows, themes');
 } catch (error) { console.error(serverLog.slice(-3000)); throw error; }
 finally { await browser.close(); server.kill(); }

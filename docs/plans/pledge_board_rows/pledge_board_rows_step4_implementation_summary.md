@@ -41,3 +41,30 @@ Status: Step 3 approved by the maintainer 2026-11-17 ("approved step 3"). Buildi
 - Estimate details: original scope as planned; uncertainty low; no revisions. The retrospective is lower because the loader dropped in without changes.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 2 - The line on the row
+
+**Original estimate: 0.12**
+
+**Retrospective: 0.14**
+
+- Changes:
+  - `templates/partials/thread_row.php`: a campaign row gets one line under its title: the pledged sum in bold, " / ", the goal and unit, then "Goal reached" or "Complete" with the thread page's `.pledge-status` look and labels.
+  - The row's excerpt leaves out the goal line (`PledgeLines::hide()`), as the thread page does, so a campaign whose first line is its goal does not repeat it. In-scope refinement, recorded below.
+  - `public/assets/site.css`: `.thread-row__pledge` in the first column (second beside a thumbnail), 0.85rem, wrapping; a smaller status word; "Complete" uses the same colour rule as the totals block.
+- Verification:
+  - Passed: `PledgeCampaignTest::testBoardRowShowsTheThreadPagesProgressOnlyWithTheFlagOn` (flag off draws nothing; a 12-coffee pledge plus a waiting 3 reads "12 / 10 coffees · Goal reached", as the thread page's 12; a plain thread has no line; the line follows the title; the excerpt keeps the pitch and drops the goal line; after approval the board reads 15).
+  - Passed: `tests/browser/pledge_campaign.mjs` in headless Chrome, 17 themes at 375 and 1280 px. On the board, the main campaign's line matches its thread page's sum and status word, and a second campaign with a 59-character unit wraps. In both, the line sits under the title, the title's height is the same with and without it, the line stays clear of the reply count, nothing overflows, and the excerpt has no goal line. Also checked once without JavaScript at 375 px.
+  - Screenshots checked by eye at 375 px in Gloss, Word97, Bubblegum, Light and Console, and at 1280 px in Gloss.
+  - Passed: `./v3 test --smoke BoardListTest PledgeCampaignTest BoardSearchTest`, 508 run, 508 passed. The full suite was not run.
+- Notes:
+  - Not exercised: a campaign row with a thumbnail. The CSS gives the line the same column as the excerpt beside a thumbnail, but no fixture attached an image. Pending; low risk, since the line follows the excerpt's rules there.
+  - `thread_row.php` also draws profile and search rows. Those rows carry no `pledge_campaign`, so they are unchanged (`BoardSearchTest` passes).
+  - The browser check needed the project's declared `playwright-core`, installed locally with `npm install --no-save`; nothing was added to the repository.
+- Estimate details: original scope as planned plus the excerpt refinement; uncertainty about Word97 and Bubblegum did not materialise. Retrospective slightly above the original for the refinement and the geometry checks.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Enhancement requests
+
+- **Request:** (found during Stage 2, not from the maintainer) a campaign row's excerpt repeated the raw `goal:` line under the new line. **Disposition:** in-scope refinement of Stage 2's approved row, following the thread page's existing rule; implemented. **Approval:** within approved Step 3 scope. **Outcome:** Stage 2 commit; checked by `PledgeCampaignTest` and the browser check.
