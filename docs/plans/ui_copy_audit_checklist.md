@@ -1,5 +1,12 @@
 # UI copy audit checklist
 
+## Local start MVP — November 16, 2026
+
+Review: [one-shot record](local_start_import/local_start_import_one_shot.md). The development homepage uses existing cards and form controls. Import consequences and recovery remain visible; the detailed CLI output is collapsed. Redundant initial Browse local content was removed because Browse threads already provides that action.
+Verification: Fresh-checkout ./v3 start browser check passed at 390px and 1280px across all offered themes, with native JavaScript-on/off failure/retry/import flows and expanded logs without overflow. Initial, pending, failed and imported screenshots were captured; light initial and Engagify failed/imported screenshots were inspected. Pending feedback was checked through a submit event with navigation prevented, then real native submissions verified the result. HTTP tests cover resume, partial results and local conflict preservation. Production and physical-device acceptance remain unverified. No new navigation icons or CSS were introduced.
+
+*— Codex · 2026-11-16 UTC*
+
 ## Current audit status — October 30, 2026
 
 Four copy-review candidates remain in the [current queue](#next-phase--new-candidates):

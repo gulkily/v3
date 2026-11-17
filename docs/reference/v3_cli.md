@@ -94,6 +94,13 @@ It also runs the internal task worker (`scripts/task_queue.php run --limit=1`) e
 5 seconds while the server runs, as cron does on a server, so queued imports,
 rebuilds and offline snapshots run locally. `--no-worker` turns that off. A worker
 still busy when the server stops finishes its task on its own.
+Loopback browsers get a local exploration homepage with a prefilled public-content
+Import form. `/local/` returns to that page; `/threads/?view=all` opens all local
+threads. Import uses the existing `import-instance` command and its recovery
+journal. Failures retain the source; Resume finishes interrupted publication.
+These controls require a loopback peer and Host without proxy headers. Remote
+clients and deployed servers keep their existing homepage. Imports merge content;
+they do not copy private messages, settings or approval authority.
 Checks local-server prerequisites before application loading, logs, or bootstrap.
 Missing required capabilities produce runtime-specific recovery guidance.
 On Ubuntu 22.04/PHP 8.1 or 24.04/PHP 8.3 distribution packages, terminal input/output
