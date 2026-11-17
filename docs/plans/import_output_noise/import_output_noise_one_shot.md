@@ -4,7 +4,7 @@ Cycle: `v3/import_output_noise`; Mode: one-shot; Record/index: [this record](./i
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/import_output_noise`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment.
+Effort study: `railspike-effort` / `v3/import_output_noise`; [ledger entry](../effort_ledger/import_output_noise.md). Standing P2 enrollment.
 
 Extended estimates: disabled
 
