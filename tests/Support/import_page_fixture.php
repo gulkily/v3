@@ -41,7 +41,10 @@ if ($state === 'result' || $state === 'pending') {
     file_put_contents($run . '/report.json', json_encode([
         'status' => 'partial', 'source' => $longSource, 'review_path' => $run,
         'counts' => ['import' => 412, 'duplicate' => 1830, 'conflict' => 40, 'invalid' => 0, 'unsupported' => 0, 'excluded' => 3],
-        'review_causes' => [['path' => 'records/identity/identity-openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt', 'state' => 'conflict', 'reason' => 'local copy differs', 'affected_count' => 40]],
+        'review_causes' => array_merge(
+            [['path' => 'records/identity/identity-openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954.txt', 'state' => 'conflict', 'reason' => 'local copy differs', 'affected_count' => 40]],
+            array_map(static fn (int $i): array => ['path' => 'records/thread-labels/thread-label-' . $i . '.txt', 'state' => 'invalid', 'reason' => 'Missing dependency: post thread-' . $i, 'affected_count' => 1], range(1, 193)),
+        ),
         'exclusion_reasons' => ['private message envelope' => 3],
         'entries' => $entries,
     ]));
