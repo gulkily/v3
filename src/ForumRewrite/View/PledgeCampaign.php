@@ -17,11 +17,12 @@ use ForumRewrite\Support\WithdrawDirective;
  * loads: the `goal:` line in the opening post, and the `pledge:` line in each reply.
  * Nothing is stored, so a rebuild cannot disagree with the posts.
  *
- * A pledge counts when its post is unretracted, names its author, has counted
- * attribution (so an unverified post counts only while Verified attribution is off),
- * and reads as a number, optionally followed by the campaign's unit. An instance can
- * choose to count posts with no name too (FORUM_PLEDGES_COUNT_UNNAMED_ENABLED). Every other
- * pledge line stays visible with the reason it is not counted.
+ * A pledge counts when its post is unretracted, comes from an approved key with counted
+ * attribution, and reads as a number, optionally followed by the campaign's unit. Approval is
+ * read when the thread is shown, so a pledge starts counting once its key is approved. A
+ * signed pledge from a key not yet approved waits ("Waiting for approval"); a post with no
+ * name can never count. Fills, withdrawals and reviews need an approved key too. Every
+ * other pledge line stays visible with the reason it is not counted.
  *
  * A counted pledge is withdrawn by a reply to it that carries a `withdraw` line, has
  * counted attribution and has the pledge's author (the same key). The pledge stays
@@ -39,7 +40,7 @@ use ForumRewrite\Support\WithdrawDirective;
 final class PledgeCampaign
 {
     public const COUNTED = 'counted';
-    public const UNVERIFIED = 'unverified';
+    public const WAITING = 'waiting';
     public const UNNAMED = 'unnamed';
     public const UNREADABLE = 'unreadable';
     public const WITHDRAWN = 'withdrawn';
@@ -50,7 +51,6 @@ final class PledgeCampaign
 
     /**
      * @param array<int, array<string, mixed>> $posts thread rows, root included
-     * @param bool $countUnnamed count pledges whose post names no author
      * @param (callable(string): bool)|null $isOperator whether a key is an operator now; null means none is
      * @return array{
      *     author: string, goal: string, unit: string, pledged: string, count: int, fill_percent: float, goal_percent: ?float,
@@ -67,7 +67,7 @@ final class PledgeCampaign
      *     fill that was confirmed or disputed also carries `review`, `review_by` and `review_post_id`; a disputed one is
      *     listed but not counted.
      */
-    public static function fromPosts(array $posts, string $rootPostId, bool $countUnnamed = false, ?callable $isOperator = null): ?array
+    public static function fromPosts(array $posts, string $rootPostId, ?callable $isOperator = null): ?array
     {
         $goal = null;
         $campaignAuthor = '';
@@ -102,13 +102,13 @@ final class PledgeCampaign
                 continue;
             }
             $state = match (true) {
-                !$countUnnamed && (string) ($post['author_identity_id'] ?? '') === '' => self::UNNAMED,
-                (int) ($post['attribution_counted'] ?? 1) !== 1 => self::UNVERIFIED,
+                (string) ($post['author_identity_id'] ?? '') === '' => self::UNNAMED,
+                !self::approved($post) => self::WAITING,
                 default => self::COUNTED,
             };
             $pledges[$postId] = ['state' => $state, 'amount' => PledgeAmount::format($amount), 'note' => match ($state) {
                 self::UNNAMED => 'Not counted: no name',
-                self::UNVERIFIED => 'Not counted: unverified',
+                self::WAITING => 'Waiting for approval',
                 default => '',
             }];
             if ($state === self::COUNTED) {
@@ -225,7 +225,7 @@ final class PledgeCampaign
                 !isset($pledgerFills[$fillId]) => "Not counted: not a reply to a pledger's fill",
                 $line['after'] !== '' => 'Not counted: write “' . $line['word'] . '” alone on its line',
                 $author === '' => 'Not counted: no name',
-                (int) ($post['attribution_counted'] ?? 1) !== 1 => 'Not counted: unverified',
+                !self::approved($post) => 'Not counted: waiting for approval',
                 $author === $pledgerFills[$fillId] => 'Not counted: a fill cannot be reviewed by its own author',
                 $author !== $campaignAuthor && ($isOperator === null || !$isOperator($author)) => 'Not counted: only the author or an operator can review',
                 default => '',
@@ -285,7 +285,7 @@ final class PledgeCampaign
             $note = match (true) {
                 !isset($counted[$pledgeId]) => 'Not counted: not a reply to a counted pledge',
                 $author === '' => 'Not counted: no name',
-                (int) ($post['attribution_counted'] ?? 1) !== 1 => 'Not counted: unverified',
+                !self::approved($post) => 'Not counted: waiting for approval',
                 $role === '' => 'Not counted: only the pledger, the author or an operator can fill',
                 $written === null => self::unreadableNote($after, $unit),
                 $left <= 0 => 'Not counted: already filled',
@@ -348,7 +348,7 @@ final class PledgeCampaign
                 !isset($counted[$pledgeId]) => 'Not counted: not a reply to a pledge',
                 $after !== '' => 'Not counted: write “withdraw” alone on its line',
                 $author === '' => 'Not counted: no name',
-                (int) ($post['attribution_counted'] ?? 1) !== 1 => 'Not counted: unverified',
+                !self::approved($post) => 'Not counted: waiting for approval',
                 $author !== $counted[$pledgeId]['author'] => 'Not counted: only the pledger can withdraw',
                 ($filledOn[$pledgeId] ?? 0) >= $counted[$pledgeId]['amount'] => 'Not counted: already filled',
                 default => '',
@@ -392,4 +392,11 @@ final class PledgeCampaign
             ? 'Not counted: “' . $shown . '” is not a number'
             : 'Not counted: “' . $shown . '” is not in ' . ($unit !== '' ? $unit : 'this campaign’s unit');
     }
+
+    /** An approved key's post whose attribution counts: the only posts whose pledge lines count. */
+    private static function approved(array $post): bool
+    {
+        return (int) ($post['author_is_approved'] ?? 0) === 1 && (int) ($post['attribution_counted'] ?? 1) === 1;
+    }
+
 }

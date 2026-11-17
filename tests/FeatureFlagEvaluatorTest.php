@@ -9,6 +9,19 @@ use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 
 final class FeatureFlagEvaluatorTest
 {
+    public function testStoredValuesForARemovedFlagStillLoad(): void
+    {
+        // FORUM_PLEDGES_COUNT_UNNAMED_ENABLED was removed on 2026-11-17; sites may still store it.
+        $removed = 'FORUM_PLEDGES_COUNT_UNNAMED_ENABLED';
+        $record = (new \ForumRewrite\Canonical\SiteFeatureFlagsRecordParser())->parse(
+            "Schema: site-feature-flags-v1\nUpdated-At: 2026-11-17T00:00:00Z\n\n" . FeatureFlagRegistry::PLEDGES_ENABLED . ": true\n" . $removed . ": true\n"
+        );
+        $evaluator = new FeatureFlagEvaluator(siteValues: $record->values);
+        assertTrue($evaluator->isEnabled(FeatureFlagRegistry::PLEDGES_ENABLED));
+        assertSame(count((new FeatureFlagRegistry())->all()), count($evaluator->all()));
+        assertSame(null, (new FeatureFlagRegistry())->get($removed));
+    }
+
     public function testListThumbnailsDependOnImagesAndCanBeDisabledIndependently(): void
     {
         $key = FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED;
@@ -261,7 +274,6 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::PENDING_CHIP_APPROVAL_ENABLED,
             FeatureFlagRegistry::USAGE_REPORTS_ENABLED,
             FeatureFlagRegistry::PLEDGES_ENABLED,
-            FeatureFlagRegistry::PLEDGES_COUNT_UNNAMED_ENABLED,
             FeatureFlagRegistry::FAST_NAVIGATION_ENABLED,
             FeatureFlagRegistry::NAV_CACHED_COPY_ENABLED,
             FeatureFlagRegistry::POST_MARKDOWN_ENABLED,
@@ -596,7 +608,6 @@ PHP);
             FeatureFlagRegistry::PENDING_CHIP_APPROVAL_ENABLED,
             FeatureFlagRegistry::USAGE_REPORTS_ENABLED,
             FeatureFlagRegistry::PLEDGES_ENABLED,
-            FeatureFlagRegistry::PLEDGES_COUNT_UNNAMED_ENABLED,
             FeatureFlagRegistry::FAST_NAVIGATION_ENABLED,
             FeatureFlagRegistry::NAV_CACHED_COPY_ENABLED,
             FeatureFlagRegistry::POST_MARKDOWN_ENABLED,
