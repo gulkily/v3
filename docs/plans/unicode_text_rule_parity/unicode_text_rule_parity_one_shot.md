@@ -8,9 +8,9 @@ Effort study: `railspike-effort`, protocol P2, reference R1; [host ledger](../ef
 
 Extended estimates: enabled (new enrolled cycle default); no real alternatives or work units, so no unit estimates
 
-**Cycle estimate: 0.25 (intake 0.25; execution entry 0.25)**
+**Cycle estimate: 0.25 (intake 0.25; execution entry 0.25; retrospective 0.20)**
 
-Status: planned; next permitted action: planning commit, then implementation.
+Status: technically complete; PR open; Unicode version drift decision and maintainer acceptance pending.
 
 ## Original request
 
@@ -69,11 +69,37 @@ None. The compose normalization is an existing helper.
 
 Starting revisions and branch: `origin/main` at `6bdc52d7`; branch `quality/unicode_text_rule_parity`.
 
-Planning commit: pending.
+Planning commit: `8e3cee7f` (confirmed with Git before any implementation edit).
+
+## Dated execution history
+
+- 2026-11-17: wrote `UnicodeTextRuleParityTest` first and ran it on the unchanged browser code. ASCII mode failed on the 30 control characters and the IRC colour sample; both Unicode modes passed.
+- 2026-11-17: added `isAllowedAsciiCharacter` to `browser_signing.js`, used by both the report and the removal filter. Added twin notes at `UnicodeTextPolicy` and `isAllowedVisibleUnicodeCharacter`, per the checklist's intentional-duplicate rule. This is an in-scope addition, not a new request.
+- 2026-11-17: reran the exhaustive scan against the fixed code. ASCII mode now has 0 differences in either direction.
+- No enhancement requests during the cycle.
+
+## Outcome
+
+Delivered: the ASCII control gap is fixed, a parity test guards all three modes, and the findings, checklist and handoff record the result. Not delivered, by design: anything about Unicode version drift. That decision is posted in the ZenMemes thread.
+
+## Verification
+
+- `./v3 test --smoke UnicodeTextRuleParityTest BrowserSigningNormalizationTest UnicodeTextPolicyTest TestFileRegistrationTest`: 586 run, 586 passed. `TestFileRegistrationTest` confirms the new file is registered.
+- `UnicodeTextRuleParityTest` on the base browser code: 1 of 3 failed (ASCII mode), as expected.
+- Exhaustive scan after the fix: ASCII 0 differences; Unicode and emoji modes differ only on characters newer than Unicode 14 (the drift decision).
+- Full suite not run; the maintainer runs it. No UI renders differently, so theme and page checks do not apply. Production's PCRE version was not checked; the drift numbers come from this sandbox's PHP 8.3.6 (PCRE2 10.42) and Node 22.
+
+## Final review
+
+The diff touches one browser helper, one docblock, one new test and its registration, and the review docs. No duplicated component: the ASCII check is now one function where there were two regexes. No server rule changed.
+
+Commit/merge/publication status: completion commit on `quality/unicode_text_rule_parity`; PR open; not merged.
 
 ## Study history
 
 - 2026-11-17 intake: **0.25**, scope v1, baseline `6bdc52d7`. Recorded after reading only the review docs, before inspecting either rule set. Drivers: find both implementations, compare them with real test inputs, record the result in the findings; a mismatch fix and a parity test would push it toward the top. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified.
 - 2026-11-17 execution entry: **0.25 reaffirmed**, scope v1. The scan found one small fix and one maintainer decision, which the intake drivers already covered.
+
+- 2026-11-17 closeout: delivered scope v1 unchanged, plus the twin notes. Retrospective scope assessment **0.20**: the scan made the comparison quick, and the fix was two lines. Maintainer comfortable-fit judgment pending.
 
 _Claude (Opus 5.5), 2026-11-17_

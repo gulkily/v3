@@ -91,7 +91,7 @@ Standing rules for every PR in this review; followed so far, so they stay untick
 
 ### 2.2 Duplication
 - [~] Copy-pasted logic between subsystems (signature checks, path building, timestamp formatting, HTML escaping, JSON response helpers). jscpd: 0.88% overall. Script helpers shared in #151; card partials and LLM providers left for their own cycles; toggle JS kept on purpose (findings §5).
-- [ ] Server/browser rule pairs that must agree (e.g. `UnicodeTextPolicy` ↔ compose-time JS validator): are they generated from one source or hand-synced?
+- [~] Server/browser rule pairs that must agree (e.g. `UnicodeTextPolicy` ↔ compose-time JS validator): are they generated from one source or hand-synced? Text rules: hand-synced; ASCII control gap fixed and `UnicodeTextRuleParityTest` added; Unicode version drift waits on a decision (findings, "Server and browser text rules"). Incremental updater vs full rebuild not started.
 - [ ] Near-duplicate JS: `outbox_*` (6 files), `private_message_*` (11 files), `key_backup*` (3) — check for repeated helpers that belong in one module.
 - [ ] The `Sqlite*Store` classes: shared connection/busy-timeout/transaction boilerplate.
 
