@@ -77,12 +77,22 @@ try:
         if server.poll() is not None:raise RuntimeError(server.communicate()[1].decode())
         try: request('/api/version');break
         except OSError:time.sleep(.05)
+    # Plain presentation files bypass PHP with PHP's headers; other files under /assets/ do not.
+    before=count()
+    for path,kind in [('/assets/site.css','text/css'),('/assets/favicon-qdb.ico','image/')]:
+        code,headers,body=request(path)
+        assert code==200 and headers.get('Content-Type','').startswith(kind),(path,code,dict(headers))
+        assert headers.get('Cache-Control')=='public, max-age=300, must-revalidate' and headers.get('X-Content-Type-Options')=='nosniff',(path,dict(headers))
+    code,headers,body=request('/assets/site.css',method='HEAD');assert code==200 and body==b''
+    assert count()==before,'plain presentation files reached PHP'
+    for path in ['/assets/1111.html','/assets/openpgp.min.js.map','/assets/site.0123456789ab.css']:
+        before=count();request(path);assert count()>before,path+' bypassed PHP'
     # Cold bursts: coordinate a page and refuse work when both generator slots are held.
     cache_pages=(public/'.high-traffic').resolve()
     slots=[open(cache_pages.parent/f'locks/slot-{i}','a') for i in range(2)]
     for slot in slots:fcntl.flock(slot,fcntl.LOCK_EX)
     status,headers,_=request('/about/')
-    assert status==503 and headers.get('Retry-After')=='5'
+    assert status==503 and headers.get('Retry-After')=='30'
     for slot in slots:fcntl.flock(slot,fcntl.LOCK_UN);slot.close()
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
         burst=list(pool.map(lambda _:request('/about/',headers={'Cookie':'PHPSESSID=burst'}),range(8)))
@@ -231,7 +241,6 @@ try:
         (repo/f'records/posts/{post_id}.txt').unlink()
         (repo/f'records/post-retractions/post-retraction-{post_id}.txt').write_text(f'Record-ID: post-retraction-{post_id}\nCreated-At: 2026-10-14T12:00:00Z\nPost-ID: {post_id}\nOperation: retract\nAuthor-Identity-ID: openpgp:'+('a'*40)+'\n\n')
     cli('prepare')
-    prepared_hash=hashlib.sha256((root/'read.sqlite3.high-traffic.sqlite3').read_bytes()).hexdigest()
     cli('enable')
     status,_,home=request('/')
     assert status==200 and b'v3-generated-at' in home and b'ABSENT-TARGET-SECRET' not in home
@@ -249,7 +258,6 @@ try:
     assert code==200 and headers.get('X-V3-High-Traffic')=='hit' and home!=old_home
     assert b'ABSENT-TARGET-SECRET' not in home
     assert live_hash==hashlib.sha256((root/'read.sqlite3').read_bytes()).hexdigest()
-    assert prepared_hash==hashlib.sha256((root/'read.sqlite3.high-traffic.sqlite3').read_bytes()).hexdigest()
     assert not list(cache_pages.parent.glob('.render-*'))
     cli('disable')
     assert request('/')[0]==200
@@ -306,7 +314,7 @@ try:
     assert_qdb_home(request('/')[2])
     cli('disable')
     (root/'secrets.php').write_text('<?php return [];')
-    print(json.dumps({'status':'passed','checks':['Apache request-scoped QDB profile survives cold/warm/CLI rendering','private-file QDB profile without SetEnv or FORUM_SITE_ID survives normal/cold/warm/CLI rendering','Apache warm hits bypass PHP with sessions','HEAD','direct-storage denial','query/auth bypass','custom rule preservation','disable','CLI routing restore','cold capacity and burst','20-page source refresh','failed refresh retention','old/new atomic readers','obsolete renderer rejection','routine writes do not cancel refresh','canonical private transition','import withdrawal before publication','both production absent-target IDs with stale SQLite rows','excluded-model cold/warm/refresh without live-model mutation'],'fixture':str(root),'twenty_page_refresh_seconds':round(refresh_seconds,3)}))
+    print(json.dumps({'status':'passed','checks':['Apache request-scoped QDB profile survives cold/warm/CLI rendering','private-file QDB profile without SetEnv or FORUM_SITE_ID survives normal/cold/warm/CLI rendering','plain presentation files bypass PHP; HTML, maps and unknown fingerprints do not','Apache warm hits bypass PHP with sessions','HEAD','direct-storage denial','query/auth bypass','custom rule preservation','disable','CLI routing restore','cold capacity and burst','20-page source refresh','failed refresh retention','old/new atomic readers','obsolete renderer rejection','routine writes do not cancel refresh','canonical private transition','import withdrawal before publication','both production absent-target IDs with stale SQLite rows','excluded-model cold/warm/refresh without live-model mutation'],'fixture':str(root),'twenty_page_refresh_seconds':round(refresh_seconds,3)}))
 except Exception:
     print('Fixture:',root)
     if (root/'error.log').exists():print((root/'error.log').read_text()[-5000:])

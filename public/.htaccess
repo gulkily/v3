@@ -31,8 +31,10 @@ RewriteEngine On
 RewriteCond %{THE_REQUEST} \s/+\.static(?:/|\s) [NC]
 RewriteRule ^\.static(?:/|$) - [F,L]
 
-# Only public presentation assets may bypass the PHP access gate.
-RewriteCond %{REQUEST_URI} ^/(?:assets(?:/|$)|favicon\.ico)$ [NC]
+# Only public presentation assets may bypass the PHP access gate: files directly
+# in assets/ with a presentation extension. HTML and other files under assets/,
+# and fingerprinted names (not files on disk), go to PHP.
+RewriteCond %{REQUEST_URI} ^/(?:assets/[^/]+\.(?:css|js|ico|png|jpe?g|gif|svg|webp|woff2?)|favicon\.ico)$ [NC]
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
@@ -42,4 +44,12 @@ RewriteRule ^ - [L]
 # private instances always run the approved-members-only gate.
 RewriteRule ^index\.php$ - [L]
 RewriteRule ^ index.php [L]
+</IfModule>
+
+# Apache-served presentation files get the headers PHP sends for them.
+<IfModule mod_headers.c>
+<If "%{REQUEST_URI} =~ m#^/(?:assets/[^/]+\.(?:css|js|ico|png|jpe?g|gif|svg|webp|woff2?)|favicon\.ico)$#i && -f %{REQUEST_FILENAME}">
+Header set Cache-Control "public, max-age=300, must-revalidate"
+Header set X-Content-Type-Options "nosniff"
+</If>
 </IfModule>

@@ -1,0 +1,42 @@
+> **Feature plan:** [Step 1](./asset_bypass_step1_solution_assessment.md) · [Step 2](./asset_bypass_step2_feature_description.md) · [Step 3](./asset_bypass_step3_development_plan.md) · [Step 4](./asset_bypass_step4_implementation_summary.md)
+
+Debug mode: enabled
+
+Effort study: `railspike-effort` / `v3/asset_bypass`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment.
+
+Extended estimates: enabled
+
+**Cycle estimate: 0.4**
+
+Step 3 approved 2026-11-16 23:22 ET ("approved step 3"). Branch `feat/asset_bypass`, planning commit `fb90541`. At Step 4 entry, 2026-11-17 UTC, Claude reaffirms the Step 3 projection of 0.4 unchanged; same single exposed rater.
+
+Original stage work, copied from Step 3: Stage 1 0.08 · Stage 2 0.1 · Stage 3 0.12 · Stage 4 0.08.
+
+## Test environment
+
+- I installed Apache 2.4.58 and mod_php 8.3 in my workspace; they are not a project dependency. Apache refuses to run as root, so `tests/high_traffic_apache_test.py` runs as an unprivileged user on a copy of the checkout.
+- Baseline at `fb90541`: the smoke set plus `WebServerRoutingTest`, `HighTrafficTest`, `HighTrafficAutomationTest` and `AppUpdateTest` gave 518 run, 518 passed. The Apache test failed at its first busy-page check, which expects `Retry-After: 5`. The busy page sends 30 on purpose (`FrontController::PAGE_RETRY_NOSCRIPT_SECONDS`). Stage 1 fixes that test, as part of this work.
+
+## Stage 1 - Plain presentation files bypass PHP
+
+**Original estimate: 0.08**
+
+**Retrospective stage work: 0.1**
+
+- Changes:
+  - `public/.htaccess` line 35 now matches files directly in `assets/` with an allowlisted extension (css, js, ico, png, jpg, jpeg, gif, svg, webp, woff, woff2), plus `/favicon.ico`.
+  - A root `<If>` block gives those files PHP's headers: `max-age=300, must-revalidate` and `nosniff`.
+  - `WebServerRoutingTest`: the assertion now names the new condition. A new case checks the condition admits and rejects the right paths.
+  - `tests/high_traffic_apache_test.py`: new checks for plain files (no PHP request, headers, HEAD). HTML, a `.map` and an unknown fingerprint still reach PHP.
+  - Stale expectations fixed: `Retry-After` is now 30. The separate prepared read model is gone since `43e0e5bb` (2026-11-10), so the prepared-copy checks are removed. The live-model check stays.
+- Verification:
+  - Passed: `./v3 test --smoke WebServerRoutingTest` gave 469 of 470 passed. The one failure, `StatusCommandTest::testStatusPrintsAlignedHealthSummaryAndEveryFix`, comes from the uncommitted `public/.htaccess` edit: `./v3 status` adds a `public/.htaccess has local edits` row without the label column. It passes once committed (see Stage 2).
+  - Passed: the Apache test's new Stage 1 checks.
+  - Blocked: the Apache test stops later, at the import-withdrawal check. That check also fails at `fb90541`; see the pending decision below.
+  - Full suite not run.
+- Notes:
+  - Key Risk 1 is resolved, but in the opposite direction from the plan. A throwaway Apache 2.4.58 shows that a `.htaccess` in `assets/` with only `Header` lines leaves the root rewrites in place. A missing file still reached `index.php`. The root `<If>` is kept anyway, so no new file is needed.
+  - Pending decision (pre-existing failure, outside this cycle's code): two Apache-test checks broke with the 2026-10-25 retraction simplification (`e31acf0d`). (a) Import no longer withdraws high-traffic serving. Its marker path `records/post-retractions/import.txt` stopped matching once `post-retractions/` left the withdrawal list. (b) A cached thread page shows a reply whose source was deleted and retracted while the read model was stale. Each fix is a product choice under the [retraction handoff](../retraction_simplification_handoff.md), so I am asking the maintainer.
+  - Estimate details: original scope unchanged; the retrospective is higher because of the stale-test triage and Apache setup.
+
+*— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*
