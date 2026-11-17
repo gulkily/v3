@@ -83,6 +83,55 @@ final class PostSignalsTemplateTest
         }
     }
 
+    public function testThreadActivityDrawerListsTagOnlyRepliesAndTheSignalLineActors(): void
+    {
+        $fixture = new RebuildHistoryFixture(0);
+        try {
+            $repository = $fixture->repository;
+            @mkdir($repository . '/records/post-reactions');
+            $write = static function (string $family, string $id, string $kind, string $target, string $tag) use ($repository): void {
+                file_put_contents("{$repository}/records/{$family}/{$id}.txt", "Record-ID: {$id}\nCreated-At: 2026-06-01T00:00:01Z\nTarget-Kind: {$kind}\nTarget-ID: {$target}\nOperation: add\nTags: {$tag}\nAuthor-Identity-ID: " . self::APPROVED . "\n\n");
+            };
+            $write('thread-labels', 'thread-label-activity-1', 'thread', 'root-001', 'like');
+            $write('post-reactions', 'post-reaction-activity-1', 'post', 'reply-001', 'flag');
+            file_put_contents($repository . '/records/posts/reply-tag-only-1.txt', "Post-ID: reply-tag-only-1\nCreated-At: 2026-06-01T00:00:02Z\nBoard-Tags: general\nThread-ID: root-001\nParent-ID: root-001\nAuthor-Identity-ID: " . self::APPROVED . "\n\n#bug #needs-review\n");
+            $fixture->git('add', '.');
+            $fixture->git('commit', '-qm', 'activity');
+            $databasePath = $fixture->root . '/model.sqlite';
+            (new ReadModelBuilder($repository, $databasePath, new CanonicalRecordRepository($repository)))->rebuild();
+            $username = (string) (new PDO('sqlite:' . $databasePath))->query("SELECT username FROM profiles WHERE identity_id = '" . self::APPROVED . "'")->fetchColumn();
+            $page = fn (): string => $this->render(new Application(dirname(__DIR__), $repository, $databasePath), 'GET', '/threads/root-001');
+
+            putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED');
+            $off = $page();
+            assertStringNotContains('thread-activity', $off);
+            assertStringContains('data-post-id="reply-tag-only-1"', $off);
+
+            putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED=1');
+            try {
+                $on = $page();
+                putenv('FORUM_POST_RECORDS_ENABLED=1');
+                $withRecords = $page();
+            } finally {
+                putenv('FORUM_THREAD_ACTIVITY_DRAWER_ENABLED');
+                putenv('FORUM_POST_RECORDS_ENABLED');
+            }
+            assertSame(false, (bool) preg_match('/<article[^>]*data-post-id="reply-tag-only-1"/', $on));
+            assertStringContains('<summary>Activity (3)</summary>', $on);
+            $drawer = substr($on, (int) strpos($on, '<details class="card thread-activity"'));
+            $drawer = substr($drawer, 0, (int) strpos($drawer, '</details>'));
+            $name = preg_quote($username, '/');
+            assertSame(1, preg_match('/data-activity-kind="tagged" data-post-id="reply-tag-only-1">(<a [^>]+>)?' . $name . '(<\/a>)? tagged <a href="\/tags\/bug">#bug<\/a> <a href="\/tags\/needs-review">#needs-review<\/a> · <a href="\/posts\/reply-tag-only-1"><time/', $drawer));
+            assertSame(1, preg_match('/data-post-id="root-001"><a href="\/posts\/root-001">Root post<\/a> — Liked by (<a [^>]+>)?' . $name . '/', $drawer));
+            assertSame(1, preg_match('/data-post-id="reply-001"><a href="\/posts\/reply-001">Reply by [^<]+<\/a> — Flagged by (<a [^>]+>)?' . $name . '/', $drawer));
+            // The drawer sits after the last reply and before the reply box.
+            assertSame(true, strpos($on, 'thread-activity') < strpos($on, 'inline-reply-composer'));
+            assertStringContains('<a href="/posts/root-001#records">Root post</a>', $withRecords);
+        } finally {
+            $fixture->remove();
+        }
+    }
+
     private function render(Application $application, string $method, string $path): string
     {
         ob_start();

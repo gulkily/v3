@@ -1,0 +1,15 @@
+ID: PF-20261111-F23
+Title: Liking your own post as self-approval
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Like should be a secret self-approval: liking your own post gives it score +1, putting it above score 0.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261108230110-511fa9ae
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

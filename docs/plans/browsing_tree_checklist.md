@@ -1,0 +1,78 @@
+# Browsing Tree Checklist
+
+Working checklist for one story told in three Railspike cycles. It is not a
+Railspike artifact and approves no implementation. Each item runs as its own
+cycle, following AGENTS.md. Record progress, checks and limitations here.
+
+Requested by the maintainer on 2026-11-14: a ZenMemes reader gets tree
+history and tree bookmarks, as in the Mosaic browser, and a filmstrip of
+recent screens. Cached HTML pages cost almost nothing to show again, so v3
+can offer many screens at once.
+
+## Decisions so far
+
+- History stays on the device. Syncing a username's history across devices
+  is a possible later cycle. Visits are append-only records with an ID, so
+  syncing stays possible.
+- A visit is a page change: a page load, or an address change made by a page
+  script, such as the paned board reader's `pushState`. Opening a drawer or
+  switching an in-page tab is not a visit yet; revisit later.
+- History stays separate from the opt-in usage log. The usage log strips IDs
+  and can be uploaded; history keeps full addresses and never leaves the
+  device.
+
+## Reuse inventory
+
+- `public/assets/nav_slots.js` keeps per-browser state in one local-storage
+  key (`forum_nav_slots`) and applies it before first paint. It is the
+  precedent for storing visits.
+- `public/assets/usage_log.js` already records page views and clicks. Its
+  capture shape is reusable; its records are not, because they strip IDs.
+- `public/assets/paned_board_reader.js` and `public/assets/offline_reader.js`
+  change the address with `history.pushState` and listen for `popstate`.
+- `public/assets/browser_signing.js` already detects back and forward through
+  the navigation entry type `back_forward`.
+- `public/service_worker.js` fetches pages network-first and caches only the
+  offline reader, compose pages and assets. Other pages are not cached by the
+  worker, which matters for the filmstrip.
+
+## Estimates
+
+Whole-cycle judgments on the `railspike-effort` R1 scale, where 1.0 is the
+largest comfortably approved single-cycle slice. R1 hashes were not
+re-verified. These are single exposed-rater annotations, not ledger
+snapshots, and must not be summed. Each cycle records its own snapshots
+under protocol P2.
+
+## Checklist
+
+- [ ] **1. `nav_tree`: record visits as a tree.**
+  **Estimate: 0.55**
+  Each tab remembers its current visit, so a new visit's parent is the page
+  the reader came from in that tab. A tab with no current visit falls back
+  to the referrer. Back and forward move to an existing visit instead of
+  adding one. A plain Tools → History page lists the tree, with a Clear
+  button, so the cycle is usable on its own.
+  - _Step 1 drafted 2026-11-15 (recommends a per-tab cursor with the
+    referrer as fallback); awaiting Approved Step 1. Staged plans are
+    committed after Approved Step 3._
+- [ ] **2. `tree_history`: history and bookmark views.**
+  **Estimate: 0.50**
+  A richer tree view of history, with branches that fold and a way back to
+  any earlier branch. Bookmarks are pinned visits, kept in folders that form
+  their own tree.
+- [ ] **3. `filmstrip`: a strip of recent screens.**
+  **Estimate: 0.60**
+  A strip along the edge of the screen shows recent pages and their
+  branches. A frame can be the real page in a scaled-down frame instead of a
+  screenshot. Test memory use on an iPhone SE first; if a dozen live frames
+  are too heavy, show placeholders and load a live page only on tap. That
+  fallback may need its own cycle.
+
+## Open questions
+
+- Whether cached pages are cheap enough for live frames, given that the
+  service worker does not cache most pages (item 3).
+- Whether a tab opened from a link inherits its opener's current visit in
+  Safari, Chrome and Firefox (item 1).
+- Later: sync across devices, and in-page changes as visits.

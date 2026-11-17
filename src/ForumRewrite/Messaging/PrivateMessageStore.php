@@ -44,11 +44,6 @@ final class PrivateMessageStore
         return $q->fetchColumn() !== false;
     }
 
-    public function markSeenThrough(string $viewer, string $counterpart, string $messageId): void
-    {
-        $this->readState->mark($viewer, $counterpart, $messageId);
-    }
-
     public function readTokenFor(string $viewer, string $counterpart, string $pageCursor): string
     {
         $page = $this->conversationPageFor($viewer, $counterpart, $pageCursor);
@@ -202,12 +197,6 @@ final class PrivateMessageStore
         }
         unset($row);
         return ['conversations' => $rows, 'page_cursor' => $pageCursor, 'next_cursor' => $hasMore ? $encode($position) : null];
-    }
-
-    /** @return list<array<string, string>> */
-    public function conversationFor(string $viewerUsernameToken, string $counterpartUsernameToken): array
-    {
-        return $this->conversationPageFor($viewerUsernameToken, $counterpartUsernameToken)['messages'];
     }
 
     /** @return array{messages:list<array<string, string>>,page_cursor:string,next_cursor:?string} */

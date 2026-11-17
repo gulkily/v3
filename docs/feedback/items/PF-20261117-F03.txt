@@ -1,0 +1,18 @@
+ID: PF-20261117-F03
+Title: Preview an import on Tools → Import
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-17
+Evidence: unknown
+
+Request:
+preview: in v2 (make a separate task). Preview (./v3 import-instance --dry-run) from the Import page before importing.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261113042243-1cbe8b8a
+
+Done when:
+A root operator can preview an import from Tools → Import and read the same counts and review causes as the command's --dry-run, without changing local content.
+
+Notes:
+2026-11-17: filed from the import-instance GUI thread at the maintainer's request ("file anything we have not finished or addressed yet"). Deferred from v3/import_instance_gui Step 2.

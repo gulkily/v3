@@ -29,3 +29,11 @@ acceptance receipts preserve earlier grants across prospective revocation even
 when second-resolution authored timestamps sort revocation first. Duplicate
 recipient records consume no extra slot; contradictory accepted capacity fails closed.
 Sources: `src/ForumRewrite/Invitation/InvitationApprovalReplay.php`.
+
+# Session-vouched approval
+
+Purpose: Let a signed-in session vouch for a new key under its own username when its browser lost the old key.
+Scenario: the new key signs a key bootstrap record; the server checks the session and writes a `session` receipt naming the session's key as authorizer. Full and incremental rebuilds replay it beside invitations. Retiring the new key is the ordinary undo; operators may also retract the record, the one retractable identity record.
+Sources: `src/ForumRewrite/Security/KeyBootstrapReplay.php`, `src/ForumRewrite/Security/ApprovalAcceptance.php`, `docs/specs/key_bootstrap_record_v1.md`.
+
+*— Claude · 2026-11-16 UTC · Model: claude-opus-5-5*

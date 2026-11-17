@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require dirname(__DIR__, 2) . '/autoload.php';
+require_once __DIR__ . '/TagGroupingReference.php';
 
 use ForumRewrite\Application;
 use ForumRewrite\ReadModel\ThreadRepository;
@@ -29,7 +30,7 @@ for ($i = 0; $i < $count; $i++) {
 $pdo->commit();
 if (($argv[3] ?? '') === 'legacy') {
     // Reproduce the old index allocation in a separate, explicitly capped process.
-    TagGrouping::limitPreview(TagGrouping::byTag(ThreadRepository::fetchThreads($pdo)), 5);
+    TagGroupingReference::limitPreview(TagGrouping::byTag(ThreadRepository::fetchThreads($pdo)), 5);
     exit;
 }
 ob_start();

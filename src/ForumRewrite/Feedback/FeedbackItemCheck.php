@@ -133,7 +133,7 @@ final class FeedbackItemCheck
             $this->problems[] = $name . ': Sources: lists no source';
         }
 
-        return count($this->problems) === $before ? new FeedbackItem($path, $headers, $sections, $sources) : null;
+        return count($this->problems) === $before ? new FeedbackItem($path, $headers, $sources) : null;
     }
 
     /**

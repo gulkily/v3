@@ -22,7 +22,7 @@ export async function checkSeenWindows(page, context, base, seed, incoming, inva
     { id: 'seen-window-other', time: '2030-01-01T00:00:00Z', sender: 'user-58', envelope: incoming },
   ] });
   await page.getByRole('link', { name: 'Messages', exact: true }).click();
-  await page.waitForFunction(() => document.querySelector('[data-private-message-unread]').dataset.unreadCount === '2');
+  await page.waitForFunction(() => document.querySelector('[data-private-message-unread]')?.dataset.unreadCount === '2');
   assert.equal(await count(), 2);
 
   const background = await context.newPage();

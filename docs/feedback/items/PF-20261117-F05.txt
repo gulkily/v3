@@ -1,0 +1,18 @@
+ID: PF-20261117-F05
+Title: Browser-run (client-mediated) import
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-17
+Evidence: unknown
+
+Request:
+it could be client-mediated just as much as server-mediated. The browser could fetch the source's archive and hand it to this site, e.g. when the server cannot reach the source.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261113042243-1cbe8b8a
+
+Done when:
+An operator can import from a source the server cannot reach by having the browser fetch and upload the archive, with the same validation and merge rules as the command.
+
+Notes:
+2026-11-17: filed from the import-instance GUI thread at the maintainer's request ("file anything we have not finished or addressed yet"). Noted in v3/import_instance_gui Step 2, not scheduled; every source would need to allow cross-site downloads.

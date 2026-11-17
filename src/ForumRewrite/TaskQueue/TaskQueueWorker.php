@@ -35,6 +35,8 @@ final class TaskQueueWorker
         private readonly mixed $runRetractionSweep = null,
         /** @var (callable():array<string, mixed>)|null returns an AppUpdate::deploy() attempt */
         private readonly mixed $runAppUpdate = null,
+        /** @var (callable(array<string, mixed>):array{exit_code:int,message:string})|null runs InstanceImportTask */
+        private readonly mixed $runInstanceImport = null,
     ) {
         $this->rebuildReadModel = $rebuildReadModel;
         $this->runFastScoreSweep = $runFastScoreSweep;
@@ -100,6 +102,7 @@ final class TaskQueueWorker
             SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT => $this->runOfflineSnapshotPublication($id),
             SqliteTaskQueueStore::AGENT_REPLY => $this->runAgentReply($id, $task),
             SqliteTaskQueueStore::APP_UPDATE => $this->runAppUpdateTask($id),
+            SqliteTaskQueueStore::INSTANCE_IMPORT => $this->runInstanceImportTask($id, $task),
             default => $this->store->markFailed($id, 'unsupported_task_type', 'The worker does not support this task type.', false),
         };
     }
@@ -157,6 +160,33 @@ final class TaskQueueWorker
         $task['app_update'] = $attempt;
 
         return $task;
+    }
+
+    /**
+     * Exit code 2 (partial result needing review) still counts as a finished import; the page
+     * shows the review causes. Imports are never retried automatically.
+     *
+     * @param array<string, mixed> $task
+     * @return array<string, mixed>
+     */
+    private function runInstanceImportTask(int $id, array $task): array
+    {
+        if (!is_callable($this->runInstanceImport)) {
+            return $this->store->markFailed($id, 'instance_import_unavailable', 'Imports are not configured for this worker.', false);
+        }
+        try {
+            $result = ($this->runInstanceImport)($task);
+        } catch (Throwable $throwable) {
+            $this->reportThrowable($id, $throwable);
+            return $this->store->markFailed($id, 'instance_import_failed', $throwable->getMessage(), false);
+        }
+        $exitCode = (int) ($result['exit_code'] ?? 1);
+        $finished = in_array($exitCode, [0, 2], true)
+            ? $this->store->markCompleted($id)
+            : $this->store->markFailed($id, 'instance_import_failed', (string) ($result['message'] ?? '') ?: 'Import did not complete.', false);
+        $finished['instance_import'] = ['exit_code' => $exitCode];
+
+        return $finished;
     }
 
     private function runFastScoreSweep(int $id): array

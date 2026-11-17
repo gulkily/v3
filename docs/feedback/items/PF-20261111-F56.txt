@@ -1,0 +1,16 @@
+ID: PF-20261111-F56
+Title: Show offline posts in place
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Show posts saved offline in the board and thread, marked unsent, readable and likeable.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261111143227-d8080e90
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Written up by Claude.

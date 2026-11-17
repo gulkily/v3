@@ -73,6 +73,27 @@
   color: var(--gloss-accent);
 }
 
+/* Copy inside a prompt field (/agent/): a bare icon, since a tinted pill sits
+   awkwardly in the field's rounded corner. Fill on hover; the check after a
+   copy takes the accent. */
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not([class*="engagify-"]):not(.sqlite-cell-toggle) {
+  border-color: transparent;
+  border-radius: 0.5rem;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink-soft);
+}
+
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not([class*="engagify-"]):not(.sqlite-cell-toggle):hover,
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not([class*="engagify-"]):not(.sqlite-cell-toggle):focus-visible {
+  background: var(--button-bg);
+  color: var(--ink);
+}
+
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"]) button.copy-prompt__button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not([class*="engagify-"]):not(.sqlite-cell-toggle)[data-copied] {
+  color: var(--gloss-accent);
+}
+
 /* Edges. One rule per kind of element:
    - containers: 16px corners, the pale edge, and a shadow when they float;
    - clickable things: pills with a soft violet edge;

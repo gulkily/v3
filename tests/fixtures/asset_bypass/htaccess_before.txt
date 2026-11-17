@@ -1,0 +1,45 @@
+# BEGIN V3 HIGH TRAFFIC
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteCond %{THE_REQUEST} \s/+\.high-traffic(?:[/\s?]) [NC]
+RewriteRule ^\.high-traffic(?:/|$) - [F,END]
+RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{HTTP:Authorization} ^$
+RewriteCond %{DOCUMENT_ROOT}/.high-traffic/index.html -f
+RewriteRule ^$ .high-traffic/index.html [END]
+RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{HTTP:Authorization} ^$
+RewriteCond %{DOCUMENT_ROOT}/.high-traffic/$1/index.html -f
+RewriteRule ^(threads|about)/$ .high-traffic/$1/index.html [END]
+RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{HTTP:Authorization} ^$
+RewriteCond %{DOCUMENT_ROOT}/.high-traffic/threads/$1/index.html -f
+RewriteRule ^threads/([a-zA-Z0-9][a-zA-Z0-9_-]{0,127})$ .high-traffic/threads/$1/index.html [END]
+</IfModule>
+# END V3 HIGH TRAFFIC
+DirectoryIndex index.php index.html
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# Static releases are exposed to Apache through a document-root `.static`
+# symlink on hosts that permit it. Do not allow a browser to enumerate or fetch
+# that storage path directly; the rules below serve only reviewed QDB routes.
+RewriteCond %{THE_REQUEST} \s/+\.static(?:/|\s) [NC]
+RewriteRule ^\.static(?:/|$) - [F,L]
+
+# Only public presentation assets may bypass the PHP access gate.
+RewriteCond %{REQUEST_URI} ^/(?:assets(?:/|$)|favicon\.ico)$ [NC]
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Feature and membership state must be evaluated by PHP before serving content.
+# Every content, API, download, and generated-artifact request goes through the
+# front controller. Public instances still use its static-artifact fast path;
+# private instances always run the approved-members-only gate.
+RewriteRule ^index\.php$ - [L]
+RewriteRule ^ index.php [L]
+</IfModule>

@@ -642,6 +642,11 @@
 
   function formatThreadScoreText(scoreNode, scoreTotal, voteCount) {
     const format = threadScoreFormat(scoreNode);
+    if (format === "likes") {
+      // The Prompts page's count: "1 like", "2 likes", nothing at zero.
+      const likes = Math.max(0, Number(scoreTotal) || 0);
+      return likes === 0 ? "" : `${likes} ${likes === 1 ? "like" : "likes"}`;
+    }
     if (format === "bare-ratio" && voteCount !== undefined && voteCount !== "") {
       return `(${scoreTotal}/${voteCount})`;
     }
@@ -685,6 +690,11 @@
     }
 
     const format = threadScoreFormat(scoreNode);
+    if (format === "likes") {
+      const text = String(scoreNode.textContent || "").trim();
+      const likes = text.match(/^(\d+) likes?$/);
+      return text === "" ? 0 : (likes ? Number(likes[1]) : null);
+    }
     const pattern = format === "bare-ratio"
       ? /^\((-?\d+)\/\d+\)$/
       : format === "bare"

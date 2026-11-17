@@ -200,10 +200,16 @@
     return String(text || "").replace(/\r\n?/g, "\n");
   }
 
+  // Mirrors the server's ASCII rule (TextValidationException::ascii): LF and printable ASCII only.
+  // tests/UnicodeTextRuleParityTest.php checks that the two still agree.
+  function isAllowedAsciiCharacter(character) {
+    return character === "\n" || /^[\x20-\x7E]$/.test(character);
+  }
+
   function unsupportedComposeCharacters(text) {
     const characters = [];
     for (const character of text) {
-      if (!/^[\x00-\x7F]$/.test(character)) {
+      if (!isAllowedAsciiCharacter(character)) {
         characters.push(character);
       }
     }
@@ -264,6 +270,7 @@
     return isEmojiBaseCharacter(previousCharacter || "") || isEmojiBaseCharacter(nextCharacter || "");
   }
 
+  // Mirrors UnicodeTextPolicy::assertVisibleCharacter; tests/UnicodeTextRuleParityTest.php checks that the two still agree.
   function isAllowedVisibleUnicodeCharacter(character, allowEmojiAuthoredText, previousCharacter, nextCharacter) {
     if (character === "\n" || /^[\x20-\x7E]$/.test(character)) {
       return true;
@@ -386,7 +393,7 @@
               normalizedCharacters[index - 1] || "",
               normalizedCharacters[index + 1] || ""
             )
-            : /^[\x00-\x7F]$/.test(character);
+            : isAllowedAsciiCharacter(character);
         })
         .join("");
     }
@@ -2921,6 +2928,7 @@
       deriveIdentityFromPrivateKey: deriveIdentityFromPrivateKey,
       saveImportedBrowserIdentity: saveImportedBrowserIdentity,
       readClipboardText: readClipboardText,
+      signCanonicalRecord: signCanonicalRecord,
     };
   }
 

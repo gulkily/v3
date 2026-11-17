@@ -3,8 +3,50 @@
 Use `./v3 import-instance` to download a public instance's repository archive,
 merge its supported forum content into this instance, and refresh the local
 read model and applicable offline snapshots. Import does not render pages or
-fingerprint/copy presentation assets. This is an on-demand command;
-there is no schedule or web UI in this release.
+fingerprint/copy presentation assets. This is an on-demand command with no
+schedule; root-approved operators can also run it from Tools → Import (see
+[Browser entry](#browser-entry)).
+
+## Browser entry
+
+With the "Import page" flag (`FORUM_INSTANCE_IMPORT_PAGE_ENABLED`) on, Tools →
+Import lets a signed-in root-approved operator import from a typed or
+remembered source, then resume or cancel an interrupted import. The page queues
+an `instance_import` task. The task worker runs this same command with its own
+destination paths, so limits, locks, exclusions and conflict rules are
+unchanged. One request runs at a time.
+
+No cron is needed to start. `./v3 start` runs the task worker every few
+seconds. On a server with no fresh worker heartbeat, pressing Import, Resume or
+Cancel starts one detached one-task worker (`php scripts/task_queue.php run
+--limit=1`). This doesn't need `FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED`; only
+a root operator's request on this page can start it. If the task hasn't started
+15 seconds later, the page says the worker didn't start, shows that command to
+run in the application checkout, and offers Try again. Hosts that forbid
+processes started by the web server need cron or that command.
+
+While it runs, the page lists the steps (download, archive check, planning,
+installing, commit, view refresh, images) with counts, an elapsed timer, the
+time since the last update, and the time left. Time left comes from the current
+step's rate, or from the previous import's step times (`Step-Seconds` on its
+request). With neither, it says "estimating time left". The command prints the
+same steps as `Progress: <step> [done/total]` lines.
+
+Each request is a private `Key: value` file beside the task queue database
+(`state/private/instance_import/` by default), with the command's full output
+in a `.log` file next to it. Remembered sources (up to 20) live in `sources.txt`
+in the same directory. None of these enter the content repository or public
+downloads. The page shows progress lines while the task runs, then the last
+result: counts, image status and grouped review causes, with per-file entries
+under Advanced (first 500; the rest stay in the saved `report.json`). Preview
+(`--dry-run`), named sources from `--sources` and path overrides stay
+command-line only.
+
+Known instances: `resources/known_instances.txt` ships with the code and lists
+public instances by `Name:`, `Title:` and `URL:` (currently only ZenMemes). The
+page offers them after remembered sources, and the command accepts their names
+(`./v3 import-instance zenmemes`). An instance never offers its own address. Add
+an instance by adding a block to that file.
 
 ## Run an import
 
@@ -292,6 +334,15 @@ file. It verifies import-owned bytes, recognizes an already-created import
 commit, and rebuilds/publishes even when there are no new records. A new source
 import is refused while a recovery journal is pending.
 
+To discard an interrupted import instead of resuming it, run
+`./v3 import-instance --cancel` with the same `--repository-root` and
+`--database-path`. Cancel removes the record files the import installed and
+unstages them. It keeps any import-owned file whose bytes changed since, and it
+moves the journal to `canceled.json` in the run's saved directory, beside the
+saved copies, so the run stays reviewable. Cancel is refused once the import has
+committed its content; `--resume` then only finishes publication. A new import
+can start after a cancel.
+
 The CLI emits resume guidance only when the selected destination already has
 `.git/instance-import/pending.json`. A download failure without that journal
 requires source repair and retry, not `--resume`. Preserve an independently
@@ -346,6 +397,9 @@ pending forum import; it does not retry docs publication.
 
 Use the application's supported Linux/WSL PHP runtime with SQLite, zlib,
 HTTPS/OpenSSL, PCNTL and POSIX, plus Git, gzip, GPG and `/usr/bin/setsid`.
+Successful signature checks are saved in `signature_checks.sqlite3` beside the
+database, so a repeat import of the same instance plans without rerunning GPG;
+deleting that file is safe and only makes the next run slower.
 Unavailable supervision fails before import writes; this command does not install
 runtime components. Records and `.git` must share a filesystem for atomic installs.
 The source needs its existing public download endpoint; no schema migration is needed.

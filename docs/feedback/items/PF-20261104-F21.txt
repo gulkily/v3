@@ -11,6 +11,10 @@ Provide a really obvious place to paste a Starfield image containing a private k
 Sources:
 - https://zenmemes.com/posts/thread-20261103040413-a008e701
 - https://zenmemes.com/posts/thread-20261103082445-475cead1
+- https://zenmemes.com/posts/thread-20261104212625-11c72de6
+- https://zenmemes.com/posts/thread-20261104212636-c5e3e55e
+- https://zenmemes.com/posts/thread-20261104212647-71789c0d
 
 Notes:
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-14: Triage 2026-11-11 attached 3 source(s): Split reposts; no new content.
