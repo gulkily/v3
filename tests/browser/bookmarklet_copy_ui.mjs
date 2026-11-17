@@ -58,7 +58,8 @@ try {
     for(const theme of themes) {
       await page.evaluate(theme=>localStorage.setItem(window.forumBrowserRuntime.themeStorageKey,theme),theme);
       await page.reload();
-      await page.waitForFunction(theme=>document.documentElement.getAttribute('data-theme')===(theme==='auto'?null:theme),theme);
+      // Auto resolves to the instance's default (Gloss or Gloss Dark on ZenMemes since gloss_default), not to no theme.
+      await page.waitForFunction(theme=>theme==='auto'||document.documentElement.getAttribute('data-theme')===theme,theme);
       const buttons=page.locator('[data-bookmarklet-copy]');
       for(let i=0;i<7;i++) {
         const button=buttons.nth(i); await button.scrollIntoViewIfNeeded();

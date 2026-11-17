@@ -35,7 +35,7 @@ foreach ($posts as $post) {
 $replyPosts = \ForumRewrite\ReadModel\RetractedLeafFilter::apply($replyPosts);
 // A bare pledge withdrawal or fill folds into its pledge, which links to it.
 if (is_array($pledgeCampaign ?? null)) {
-    $replyPosts = \ForumRewrite\ReadModel\WithdrawLeafFilter::apply($replyPosts, $pledgeCampaign['withdrawals'] ?? [], $pledgeCampaign['fills'] ?? []);
+    $replyPosts = \ForumRewrite\ReadModel\WithdrawLeafFilter::apply($replyPosts, $pledgeCampaign['withdrawals'] ?? [], $pledgeCampaign['fills'] ?? [], $pledgeCampaign['reviews'] ?? []);
 }
 // Tag-only leaves leave the conversation for the Activity drawer; filter before runs are computed.
 $threadActivityEntries = [];
