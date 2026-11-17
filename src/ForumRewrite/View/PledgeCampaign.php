@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace ForumRewrite\View;
 
 use ForumRewrite\Support\FilledDirective;
-use ForumRewrite\Support\ReviewDirective;
 use ForumRewrite\Support\GoalDirective;
 use ForumRewrite\Support\PledgeAmount;
 use ForumRewrite\Support\PledgeDirective;
+use ForumRewrite\Support\ReviewDirective;
 use ForumRewrite\Support\WithdrawDirective;
 
 /**

@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/pledge_fill_review`; [host ledger](../eff
 
 Extended estimates: enabled
 
-Status: Steps 1 (Option A), 2 and 3 approved by the maintainer 2026-11-16 and 2026-11-17. Step 4 in progress on `feat/pledge-fill-review`, cut from `origin/main` at `6bdc52d7`.
+Status: Steps 1 (Option A), 2 and 3 approved by the maintainer 2026-11-16 and 2026-11-17. Step 4 complete on `feat/pledge-fill-review`, cut from `origin/main` at `6bdc52d7`. Release check on zenmemes.com pending.
 
 **Cycle estimate: 0.40**
 
@@ -68,11 +68,47 @@ Status: Steps 1 (Option A), 2 and 3 approved by the maintainer 2026-11-16 and 20
   - `tests/browser/pledge_campaign.mjs`: a second visitor pledges 20 and 30 and marks both delivered. The author confirms one after a failed first press and disputes the other. The check covers the totals, both labels, the strike-through, the dispute and its fill staying as cards, and no buttons for the pledger. The theme pass checks the disputed line is drawn. The existing fill-link locator takes `.first()`, since the page now has more than one.
 - Verification:
   - Passed: the unchanged browser check before any change (17 themes at 375 and 1280 pixels).
-  - Passed: `./v3 test PledgeCampaignTest WithdrawLeafFilterTest` (26 tests; 1 new in each): fold for bare confirm, noted confirm, dispute and an uncounted review; buttons only for the author, only on the open pledger fill, none for a signed-out viewer or the pledger.
+  - Passed: `./v3 test PledgeCampaignTest WithdrawLeafFilterTest` (25 tests; 1 new in each): fold for bare confirm, noted confirm, dispute and an uncounted review; buttons only for the author, only on the open pledger fill, none for a signed-out viewer or the pledger.
   - Passed: `CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/pledge_campaign.mjs`, all 34 theme and width passes, and the `--count-unnamed` run.
   - Passed: the Stage 2 visual look. The light theme at 375 pixels shows "Delivered by guest · confirmed by guest", the struck-through disputed line, and the dispute card under the fill.
 - Notes:
   - The browser check ran with the preinstalled `playwright-core` 1.63.0, linked into an ignored `node_modules/`; `package.json` declares 1.58.1. No dependency change.
   - Estimate details: original scope as in Step 3; no revision. Retrospective higher: the browser fixture has one key, so the second visitor's automatic guest identity plays the pledger.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Stage 4 - Themes, documentation and closeout
+
+**Original estimate: 0.06**
+
+**Retrospective: 0.05**
+
+- Changes:
+  - [Pledge campaign](../../concepts/pledge_campaign.md) concept: a Review paragraph and a source link for `ReviewDirective`. Released leaves "Not yet", noted as dropped.
+  - [Spec](../pledges_spec.md): Confirm and Dispute name their reply lines, that an operator may confirm, that a disputed part is open again, and that author and operator fills cannot be reviewed.
+  - `PledgeCampaign.php`: the new `use` line moved into alphabetical order.
+  - Checklist, ledger closeout and this summary.
+- Verification:
+  - Passed: the theme pass in Stage 3's browser run covered all 17 themes at 375 and 1280 pixels, including the disputed line. It was not rerun for this documentation-only stage.
+  - Passed: `./v3 test --smoke PledgeCampaignTest WithdrawLeafFilterTest ThreadActivityTest` (502 tests). The full suite was not run.
+  - Passed: `./v3 test PledgeCampaignTest` after the import move (22 tests).
+  - Passed: `git diff --check` over the whole cycle; concept and spec links resolve.
+  - Final diff review: 12 files. No CSS, script, schema, flag or dependency change. One leftover: `fills()` keeps its own per-author operator cache under the new shared one. It is harmless and left alone to keep cycle 3's code as it was.
+  - Pending: the release check on zenmemes.com from the maintainer's iPhone SE (confirm and dispute a test fill, then retract the dispute). It cannot be done from this session.
+  - Not exercised: Outbox and offline sending of a review; the separate Reply page and paned layouts (no buttons there, by scope).
+- Notes:
+  - Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
+
+## Cycle retrospective
+
+**Retrospective scope assessment: 0.40**
+
+- Delivered scope: as approved in Steps 2 and 3, with two refinements inside it (a disputed fill takes no room and is listed with what it claimed; `<s>` instead of the withdrawn CSS). Released was dropped at Step 1 approval and was not built.
+- Starting revision `6bdc52d7`; planning commit `52787a55`; four stage commits. Stage retrospectives 0.10, 0.08, 0.14, 0.05, not summed.
+- Corrective work inside the cycle: two wrong expected totals in the new browser assertions (the writer's own earlier fill is a pledger's fill, so "confirmed" started at 0), and one browser locator that the new fill lines made ambiguous. No new requests.
+- Maintainer comfortable-fit judgment: pending. Release check: pending.
+- Single exposed rater Claude (claude-opus-5-5), 2026-11-17 UTC; R1 hashes not re-verified.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

@@ -41,16 +41,21 @@ Found on a first read at `9e5aa010`. Each cycle re-checks its own part before pl
   - Checks: `PledgeCampaignTest` (17 tests) and `WithdrawLeafFilterTest` (2) with the smoke set; `tests/browser/pledge_campaign.mjs` in headless Chrome, including a failed first press, in 17 themes at 375 and 1280 px. The full suite was not run. Outbox and offline sending were not exercised.
   - Found and fixed: `WithdrawLeafFilterTest` from cycle 2 was never on the runner's list in `tests/run.php`, so it had never run.
   - Left out: no buttons on the separate Reply page or in paned layouts; the text output and agent API do not report fills (cycle 6).
-- [ ] **8. `pledge_fill_review`** — the author confirms or disputes a pledger's "Delivered"; a disputed fill stops counting and both stay visible. Added 2026-11-16 at cycle 3 Step 1 (Option B). Numbered 8 so the other numbers stay stable; it runs straight after cycle 3.
-  - Status: building on `feat/pledge-fill-review` from `origin/main` at `6bdc52d7`. The maintainer approved Step 1 (Option A) on 2026-11-16, and Steps 2 and 3 on 2026-11-17. The maintainer approves every step. [Step 1](./pledge_fill_review/pledge_fill_review_step1_solution_assessment.md) · [Step 2](./pledge_fill_review/pledge_fill_review_step2_feature_description.md) · [Step 3](./pledge_fill_review/pledge_fill_review_step3_development_plan.md) · [Step 4](./pledge_fill_review/pledge_fill_review_step4_implementation_summary.md)
+- [x] **8. `pledge_fill_review`** — the author confirms or disputes a pledger's "Delivered"; a disputed fill stops counting and both stay visible. Added 2026-11-16 at cycle 3 Step 1 (Option B). Numbered 8 so the other numbers stay stable; it runs straight after cycle 3.
+  - Status: built on `feat/pledge-fill-review` (from `origin/main` at `6bdc52d7`) in four stages. The maintainer approved Step 1 (Option A) on 2026-11-16, and Steps 2 and 3 on 2026-11-17. Pending: the maintainer's review and the release check on zenmemes.com from an iPhone SE. The maintainer approves every step. [Step 1](./pledge_fill_review/pledge_fill_review_step1_solution_assessment.md) · [Step 2](./pledge_fill_review/pledge_fill_review_step2_feature_description.md) · [Step 3](./pledge_fill_review/pledge_fill_review_step3_development_plan.md) · [Step 4](./pledge_fill_review/pledge_fill_review_step4_implementation_summary.md)
   - Scope (Option A): `confirm` and `dispute` reply lines from the author or an operator, answering a pledger's fill reply. Buttons sit on the pledge's fill line, since a bare fill reply is folded.
   - Released: dropped by the maintainer at Step 1 approval; not planned for the near future.
+  - Built: reviews are read before fills, so a disputed fill takes no room and its part of the pledge is open again (the pledger can mark it delivered again or withdraw it). The latest counting review decides. A bare confirm folds; a dispute and the fill it answers stay as cards. Buttons sit on the pledge's fill line and show only on an unreviewed pledger fill, for the author or an operator.
+  - Checks: `PledgeCampaignTest` (22 tests) and `WithdrawLeafFilterTest` (3) with the smoke set; `tests/browser/pledge_campaign.mjs` in headless Chrome, with a second visitor as pledger and a failed first Confirm press, in 17 themes at 375 and 1280 px, plus `--count-unnamed`. The full suite was not run. Outbox and offline sending were not exercised.
+  - Left out: no review buttons on the separate Reply page or in paned layouts; the text output and agent API do not report reviews (cycle 6).
 - [ ] **4. `pledge_stages`** — Open, Fully pledged, Cushioned and Complete in the header; the Fully pledged celebration that still shows the pledge box; marker posts; the optional `cushion:` line.
   - Open: what the celebration looks like; it must work without JavaScript.
 - [ ] **5. `pledge_board_rows`** — campaign rows on the board show the bar and "1300 / 1000 coffees".
 - [ ] **6. `pledge_agent_text`** — the thread's text output and the agent API report goal, totals and each pledge's state; `llms.txt` documents the lines.
 - [ ] **7. `pledge_configuration`** — calling method (author decides by default, first come first served, scaled) and the display word for "pledge".
   - Open: per instance, per campaign, or an instance default a campaign can override.
+
+Notes for later cycles from cycle 8: `PledgeCampaign::fromPosts()` gains `reviews`, and a reviewed `fill_list` entry carries `review`, `review_by` and `review_post_id`, which cycle 6 can report. Cycle 4's "Complete" can read `confirmed` as it is.
 
 Notes for later cycles from cycle 3: `PledgeCampaign::fills()` gives each fill a role (pledger, author, operator), which is what cycle 8's confirm and dispute need; `fills` and `withdrawals` carry the reasons; the fold and the button script take a new line by adding to their maps and roles.
 
@@ -80,6 +85,7 @@ Cycles 2 and 3 need 1. Cycle 8 needs 3. Cycle 4 needs 3 only, not 8. Cycles 5 an
 - 2026-11-16: new session. PR #268 checked: open, not merged, so `plan/pledge-withdraw` needed no update (0 commits behind `origin/main`). Maintainer approved cycle 2 Step 1 (Option A). Step 2 written and shared as a file; awaiting `Approved Step 2`. Spec's withdrawal lines reworded.
 - 2026-11-16: maintainer cut Step 2's part-filled groundwork by review comment, then approved Step 2. Step 3 written in four stages and shared as a file; awaiting `Approved Step 3`.
 - 2026-11-17: maintainer approved cycle 8 Step 3. Plans moved into `docs/plans/pledge_fill_review/`; building on `feat/pledge-fill-review` from `origin/main` at `6bdc52d7`.
+- 2026-11-17: cycle 8 built in four stages and pushed as a PR. Release check on zenmemes.com pending. Cycle 4 is next.
 - 2026-11-16: maintainer approved cycle 2 Step 3. PR #268 had merged by then, so cycle 2 was built in four stages on a new branch from `origin/main` and pushed as a PR. Release check on zenmemes.com pending.
 - 2026-11-16: PR #275 merged. Cycle 3 Step 1 written and pushed on `plan/pledge-fills` for a new session to resume.
 - 2026-11-16: new session. `plan/pledge-fills` was 0 commits behind `origin/main`, so it needed no update. Maintainer approved cycle 3 Step 1 (Option B). Cycle 8 `pledge_fill_review` added. Step 2 written and shared as a file; awaiting `Approved Step 2`.
