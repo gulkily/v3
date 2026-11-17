@@ -546,3 +546,5 @@ and repair its navigation and affected references. See the
 - [Import with approvals](import_with_approvals/import_with_approvals_one_shot.md) — one-shot: `import-instance --with-approvals` imports approval/invitation posts and receipts (never seeds) and points to `./v3 approval suggest-roots`.
 
 - [Local start PR integration repair](local_start_import_pr_fix/local_start_import_pr_fix_one_shot.md) — one-shot repair of open PR #284.
+
+- [Local start and import MVP](local_start_import/local_start_import_one_shot.md) — one-shot.

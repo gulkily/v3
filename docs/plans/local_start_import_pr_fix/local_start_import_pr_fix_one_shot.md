@@ -6,7 +6,7 @@ Debug mode: enabled; project marker .railspike_debug_on
 Effort study: railspike-effort / R1 / P2; [ledger](../effort_estimation_trial.md)
 Extended estimates: enabled; no separate work units
 **Cycle estimate: unavailable**
-Status: planned; next action: planning commit, then merge conflict resolution
+Status: conflicts resolved and combined code verified; next action: push and confirm GitHub mergeability
 
 Original request: “can you please help me fix the pr”
 Authorization: User, 2026-11-17 UTC, requests repair of the existing PR #284. GitHub confirms it is OPEN and unmerged, but CONFLICTING. Repair and push to that PR are authorized; no merge into main or deployment.
@@ -19,13 +19,20 @@ Approach and risks: Merge current histories, resolve overlapping indexes and rec
 Completion conditions: GitHub reports PR #284 mergeable, local startup/import/retry/resume still work, and main's operator import/tour paths pass their affected checks. Feedback checker has zero malformed or duplicate IDs. Current code is pushed to the same open PR; no merge/deploy. Previous thread-reply timeout remains separate unless the local server becomes available.
 Verification plan: Smoke plus LocalDevelopmentImportTest, ImportInstanceCommandTest, ContentImportRecoveryTest, ImportPageTest, InstanceImportTaskTest, TourSnapshotsTest and affected routing checks. Run the fresh-checkout browser script on the integrated code. No UI redesign is authorized; inspect screens if markup changes become necessary. Run feedback check/index, syntax and diff/conflict-marker checks. Full suite will not run. Separate baseline failures from introduced regressions by replay on untouched 936c6357 as needed.
 Concepts touched: Local development import and instance content import used unchanged; verify their existing entries and reconcile sources only if the integration changes a described contract.
-Planning commit: pending
+Planning commit: 6c8065bb
 
 Study history:
 2026-11-17: Intake/execution entry, scope v1, baseline 936c6357 and parent PR dee4c41c. Codex is the single exposed rater; prior source/diff and predecessor exposure disclosed. Pristine intake missing. Projection unavailable without frozen external calibration sources. P2 standing enrollment; fit/acceptance pending. This is integration follow-up to v3/local_start_import, not another independently delivered feature.
 
-Verification: pending
-Outcome: pending
-Commit/PR status: planning commit pending; original PR still open/unmerged
+Verification: ./v3 test --smoke LocalDevelopmentImportTest ImportInstanceCommandTest ContentImportRecoveryTest ImportPageTest InstanceImportTaskTest TourSnapshotsTest HighTrafficTest HighTrafficAutomationTest: 526 run, 522 passed, four failed. All local import, newer operator import, task worker, journal recovery, approvals import, tour and cache checks passed. The four failures are AgentPostingApiTest::testSignedControlDiagnosticsBeforeGenericParserFailure, AgentPostingApiTest::testRulesErrorsAndLegacyCompatibility, SingleRequestHttpTest::testUnicodeRoundTripAndSymbolRejection and SignedPostBundleValidatorTest::testStrictSubsetAndExactBytes.
+Baseline replay: Ran those exact four methods on untouched origin/main 936c6357 in /tmp/local-pr-fix-baseline; all four failed identically, with unsupported PCRE Unicode-property warnings. These are existing environment/baseline failures, not evidence against the conflict resolution. Full suite was not run.
+Browser: python3 tests/browser/local_development.py passed. The clean-checkout ./v3 start flow retained All-thread exploration, loopback guards, native import/retry, script-on/off support and all offered themes at 390px and 1280px. Expanded output did not overflow. This run used the integrated runtime files and current main's importer, without contacting production.
+Records and syntax: ./v3 feedback check reported 324 items, zero problems and 35 shared-source review notices (existing splits). Regenerated the feedback index. PHP syntax passed for both shared routing files and tests/run.php; JavaScript syntax, Python compilation and git diff --cached --check passed. No unresolved merge entries or markers remain in the resolved files. Main's PF-20261116-F01 and PF-20261116-F02 files are byte-identical to origin/main.
+Outcome: Preserved both branches' behavior and tests, retained all appended planning/study histories, and repaired the feedback collision through a distinct local-start intake. Runtime files merged cleanly and required no additional behavior changes. No dependency, schema, markup, CSS, navigation or deployed settings changes beyond the original PR. Unrelated .test-self-approve and todo.txt remain untouched.
+Final review: The conflict list contains only tests/run.php and four documentation/index files. Both main import test registrations and the local-start registration remain. Existing GUI root authorization, import exclusions and journal contracts were retained. Local development import and instance content import concept paths match the integrated code and need no semantic edits. Git histories and earlier Feedback trailers are intact.
+Study closeout: Scope v1 / R1 / P2 unchanged; projection and retrospective remain unavailable without recovered external calibration sources. This repair remains a follow-up to v3/local_start_import, not a second independent feature outcome. No measured labor, independent rating or accepted-count increment; maintainer fit pending.
+Commit/PR status: Planning commit 6c8065bb precedes the merge resolution. Completion merge commit pending at authorship. The original PR is still open/unmerged; push the combined descendant to its existing branch and confirm mergeability before handoff. No merge into main, force push or deployment is authorized.
 
 *— Codex · 2026-11-17 UTC*
+
+2026-11-17 resolution: Runtime routing changes merged automatically. Conflicts were confined to tests/run.php, the feedback item/index, plans index and study ledger. Both sets of test registrations and appended planning/study entries are retained. The main cancellation feedback item is byte-identical to origin/main; the local-start intake is PF-20261117-F01.
