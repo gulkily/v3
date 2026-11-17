@@ -8,7 +8,7 @@ Extended estimates: disabled
 
 **Cycle estimate: 0.30**
 
-Status: technically complete on `feat/nav-quick-wins`; release check pending maintainer; next permitted action: maintainer review, then cycle 3 (`nav_cached_copy`).
+Status: merged into `main` (PR #291); release check pending maintainer; next permitted action: the maintainer's check on zenmemes.com.
 
 # Nav quick wins: a navbar tap starts loading sooner and shows at once
 
@@ -103,7 +103,7 @@ Diff read: one flag, one renderer path, one layout attribute and script tag, the
 
 ## Commit, merge and publication status
 
-Planning commit `7050fdf7`. Completion commit pending in this record; see the PR. Not merged.
+Planning commit `7050fdf7`. Completion commit `e7babc06`. PR #291. Merged into `main` by Claude at the maintainer's request on 2026-11-17 ("can you please merge both into main and push, i'm seeing merge conflicts on the prs"): merge `aa49a68f`, then `aa8190d3` after `main` moved; conflicts in `FeatureFlagRegistry.php` and the ledger resolved by keeping both sides. Smoke set plus changed tests (482/482) and both browser tests passed on the merged tree.
 
 ## Study history
 
