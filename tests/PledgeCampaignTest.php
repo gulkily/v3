@@ -1198,6 +1198,21 @@ final class PledgeCampaignTest
         }
     }
 
+    public function testAPledgeReplyClearsTheBakedBoardPages(): void
+    {
+        [$root, $database, $service, $artifacts] = $this->environment();
+        $thread = $this->thread($service, 'Baked board campaign', 'goal: 10 coffees');
+        $baked = [$artifacts . '/index.html', $artifacts . '/threads.html', $artifacts . '/threads/index.html'];
+        foreach ($baked as $path) {
+            @mkdir(dirname($path), 0777, true);
+            file_put_contents($path, 'stale');
+        }
+        $this->reply($service, $thread, 'pledge: 4');
+        foreach ($baked as $path) {
+            pledgeAssertSame(false, is_file($path), 'a pledge should clear the baked board page ' . $path);
+        }
+    }
+
     private function environment(): array
     {
         $root = sys_get_temp_dir() . '/forum-rewrite-pledge-repo-' . bin2hex(random_bytes(6));

@@ -4039,13 +4039,17 @@ class LocalWriteService
         return $context;
     }
 
-    /** Approval changes how this person's posts count, so every thread they posted in is baked again. */
+    /**
+     * Approval changes how this person's posts count, so every thread they posted in is baked again,
+     * and so is the board, whose campaign rows show those counts.
+     */
     private function invalidateThreadsAuthoredBy(string $profileSlug): void
     {
         $query = $this->readModelPdo()->prepare('SELECT DISTINCT posts.thread_id FROM posts
             JOIN profiles ON profiles.identity_id = posts.author_identity_id WHERE profiles.profile_slug = ?');
         $query->execute([$profileSlug]);
         $this->invalidator()->invalidateThreads(array_map('strval', $query->fetchAll(\PDO::FETCH_COLUMN)));
+        $this->invalidator()->invalidateBoardPages();
     }
 
     private function readModelPdo(): \PDO

@@ -27,6 +27,8 @@ final class StaticArtifactInvalidator
     {
         $this->deletePaths([
             '/index.html',
+            '/threads.html',
+            '/threads/index.html',
             '/instance.html',
             '/instance/index.html',
             '/recent.html',
@@ -46,6 +48,8 @@ final class StaticArtifactInvalidator
     {
         $this->deletePaths([
             '/index.html',
+            '/threads.html',
+            '/threads/index.html',
             '/instance.html',
             '/instance/index.html',
             '/recent.html',
@@ -59,6 +63,12 @@ final class StaticArtifactInvalidator
             '/posts/' . $postId . '.html',
             '/posts/' . $postId . '/index.html',
         ]);
+    }
+
+    /** The board's baked pages, `/` and `/threads/`: a campaign row shows totals that approval can change. */
+    public function invalidateBoardPages(): void
+    {
+        $this->deletePaths(['/index.html', '/threads.html', '/threads/index.html']);
     }
 
     /** @param list<string> $threadIds */

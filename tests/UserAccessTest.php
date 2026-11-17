@@ -58,7 +58,9 @@ final class UserAccessTest
             // A thread the person posted in counts them differently once approved, so its baked page goes.
             $other = (string) $writer->createThread(['board_tags' => 'general', 'subject' => 'Campaign', 'body' => 'goal: 10 coffees'])['thread_id'];
             $writer->createReply(['thread_id' => $other, 'parent_id' => $other, 'body' => 'pledge: 2', 'author_identity_id' => $target['identity_id']]);
-            $baked = [$workspace->root . '/artifacts/threads/' . $other . '.html', $workspace->root . '/artifacts/threads/' . $other . '/index.html'];
+            // The board's campaign rows count them too, so its baked pages go as well.
+            $baked = [$workspace->root . '/artifacts/threads/' . $other . '.html', $workspace->root . '/artifacts/threads/' . $other . '/index.html',
+                $workspace->root . '/artifacts/index.html', $workspace->root . '/artifacts/threads.html', $workspace->root . '/artifacts/threads/index.html'];
             foreach ($baked as $path) {
                 @mkdir(dirname($path), 0777, true);
                 file_put_contents($path, 'stale');

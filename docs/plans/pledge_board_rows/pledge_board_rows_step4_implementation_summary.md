@@ -68,3 +68,25 @@ Status: Step 3 approved by the maintainer 2026-11-17 ("approved step 3"). Buildi
 ## Enhancement requests
 
 - **Request:** (found during Stage 2, not from the maintainer) a campaign row's excerpt repeated the raw `goal:` line under the new line. **Disposition:** in-scope refinement of Stage 2's approved row, following the thread page's existing rule; implemented. **Approval:** within approved Step 3 scope. **Outcome:** Stage 2 commit; checked by `PledgeCampaignTest` and the browser check.
+
+## Stage 3 - The board stays current for visitors with no cookies
+
+**Original estimate: 0.08**
+
+**Retrospective: 0.06**
+
+- Changes:
+  - `StaticArtifactInvalidator::invalidateBoardPages()` clears `/index.html`, `/threads.html` and `/threads/index.html`.
+  - `invalidateReply()` and `invalidateBoardThread()` now also clear `/threads.html` and `/threads/index.html`. They already cleared `/index.html`. Every pledge, fill, withdrawal and review is a reply.
+  - `LocalWriteService::invalidateThreadsAuthoredBy()`, the approval path from #317, also calls `invalidateBoardPages()`. It runs on all four approval paths.
+- Verification:
+  - Passed: `PledgeCampaignTest::testAPledgeReplyClearsTheBakedBoardPages` (three baked board files are gone after a pledge reply).
+  - Passed: `UserAccessTest`, with #317's case extended to the three board files after an approval.
+  - Both new assertions fail with the source change stashed and pass with it.
+  - Passed: `./v3 test --smoke BoardListTest PledgeCampaignTest UserAccessTest HighTrafficTest`, 517 run, 517 passed. The full suite was not run.
+- Notes:
+  - Already covered, checked by reading: a retraction runs `invalidateRemovedPost()`, which clears every top-level `*.html` and `*/index.html`. An operator grant and a key retirement, the only way an operator stops being one, run `invalidateApprovalSeed()`, which clears every generated page.
+  - High-traffic mode keeps its own cached copies of `/` and `/threads/`, which may lag, as the maintainer accepted for that mode.
+- Estimate details: original scope as planned; the operator paths needed no change. Retrospective lower for that reason.
+
+*— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*
