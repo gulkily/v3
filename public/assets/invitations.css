@@ -111,3 +111,20 @@
   image-rendering: pixelated;
   forced-color-adjust: none;
 }
+
+/* One line: the link is for copying, not reading. */
+.invitation-link-row {
+  margin-top: 0.75rem;
+  align-items: center;
+}
+
+.invitation-link-row > input {
+  flex: 1 1 12rem;
+  min-width: 0;
+  font-size: 0.85rem;
+}
+
+.invitation-link-row > button {
+  flex: 0 0 auto;
+  width: auto;
+}

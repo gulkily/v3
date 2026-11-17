@@ -217,6 +217,12 @@
     const destinationMenu = form.querySelector("[data-role=invitation-destination-menu]");
     const destinationOptions = form.querySelector("[data-role=invitation-destination-options]");
     const copyButton = root.querySelector("[data-action=copy-invitation-link]");
+    const newInvitationButton = root.querySelector("[data-action=new-invitation]");
+    // Once an invite exists, only what the person being invited needs stays on screen.
+    const issuerOnly = [root.querySelector("[data-role=invitation-setup]"), root.querySelector("[data-role=invitation-revoke]")];
+    const showIssuerControls = function (visible) {
+      issuerOnly.forEach(function (node) { if (node) node.hidden = !visible; });
+    };
     const issueButton = form.querySelector('button[type="submit"]');
     let issuing = false;
     let uncertainInvitation = null;
@@ -227,7 +233,7 @@
         renderInvitationQr(qrCanvas, link.value);
       } catch (error) {
         qrResult.hidden = true;
-        setFeedback(feedback, "Invitation created. QR code unavailable; copy the invitation link instead.", "ok");
+        setFeedback(feedback, "Invitation created. QR code unavailable; copy the invitation link instead. It expires in 30 days.", "ok");
       }
     };
     if (window.MutationObserver) {
@@ -279,6 +285,13 @@
         setFeedback(feedback, error && error.message || "Unable to copy invitation link.", "error");
       }
     });
+    if (newInvitationButton) newInvitationButton.addEventListener("click", function () {
+      result.hidden = true;
+      link.value = "";
+      setFeedback(feedback, "", "ok");
+      showIssuerControls(true);
+      if (issueButton) issueButton.focus();
+    });
     form.addEventListener("submit", async function (event) {
       event.preventDefault();
       if (issuing) return;
@@ -322,13 +335,14 @@
         addDestinationOption(destinationOptions, selectedDestination);
         link.value = window.location.origin + "/lobby/#invite=" + token;
         result.hidden = false;
+        showIssuerControls(false);
         setFeedback(feedback, "", "ok");
         try {
           renderInvitationQr(qrCanvas, link.value);
           qrResult.hidden = false;
         } catch (error) {
           if (qrResult) qrResult.hidden = true;
-          setFeedback(feedback, "Invitation created. QR code unavailable; copy the invitation link instead.", "ok");
+          setFeedback(feedback, "Invitation created. QR code unavailable; copy the invitation link instead. It expires in 30 days.", "ok");
         }
       } catch (error) {
         setFeedback(feedback, invitationFailure(error), "error");

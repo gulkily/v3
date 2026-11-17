@@ -10,7 +10,9 @@ Extended estimates: enabled; no real alternatives or work units, so no unit esti
 
 **Cycle estimate: 0.20 (intake and execution entry)**
 
-Status: plan written; next permitted action: planning commit, then implementation.
+Status: implemented and verified locally on `feat/invite-show-mode`; PR open, awaiting maintainer review, merge and deploy.
+
+Debug log: [invite_show_mode_debug_log.md](./invite_show_mode_debug_log.md)
 
 ## Original request
 
@@ -58,11 +60,13 @@ Smoke set plus `InvitationIssuanceTest` and `LocalAppSmokeTest`; a new JS-harnes
 
 Starting revisions and branch: `feat/invite-show-mode` from `f05cc945`.
 
-Planning commit: pending.
+Planning commit: `9038ad8a`.
 
 ## Dated execution history
 
-- 2026-11-17: record written before implementation.
+- 2026-11-17: record written before implementation; planning commit `9038ad8a`.
+- 2026-11-17: the existing `testInviteTemplateProvidesAnUnfilteredDestinationMenu` counted `<article class="card">` exactly; the Revoke card now carries `data-role`, so the count matches the attribute-tolerant prefix instead.
+- 2026-11-17 closeout: delivered the recorded scope; no scope change. Retrospective scope assessment 0.20. Maintainer fit/acceptance pending.
 
 ## Study history
 
@@ -70,16 +74,21 @@ Planning commit: pending.
 
 ## Outcome
 
-Pending.
+Delivered: after a successful issue, `/invites/` shows the pitch, the QR ("Scan to join · valid 30 days"), a one-line link, Copy and New invite. Heading, warning, form and Revoke are hidden; New invite restores them, clears the link and focuses Generate. The issued invite stays valid.
+
+Limitations: no `h1` while the result shows. Not checked on a real phone.
 
 ## Verification
 
-Pending.
+- Passed: `./v3 test --smoke InvitationIssuanceTest LocalAppSmokeTest PresentationProfileMatrixTest AssetFingerprintTest`: 500 run, 500 passed. New test `testIssuedInviteHidesIssuerControlsUntilNewInvite` drives the real script through issue and New invite. Full suite not run.
+- Passed: rendered `/invites/` as an approved member, clicked Generate in Headless Chromium with stubbed signing and API responses (the real issue handler ran, over plain HTTP, so the pure-JS SHA-256 fallback too), in Gloss, Word 97, Bubblegum and Midnight at 390px and 1280px. Setup and Revoke hidden, no horizontal overflow, the whole card fits in an 844px-tall phone viewport. New invite restored setup and Revoke and hid the result. Screenshots checked by eye.
+- Passed: OpenCV decoded the issued link from all eight screenshots.
+- Inapplicable: migrations, read model, first paint. Pending: production after merge.
 
 ## Final review
 
-Pending.
+Diff checked for scope (template, script, CSS, tests, this record, index, ledger, debug log). No touched concepts.
 
-Commit/merge/publication status: not committed.
+Commit/merge/publication status: planning commit `9038ad8a`; completion commit and PR in the handoff.
 
 *Claude (claude-opus-5-5), 2026-11-17 UTC.*

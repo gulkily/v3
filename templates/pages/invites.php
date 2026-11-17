@@ -1,36 +1,33 @@
 <section class="stack" data-invitation-page>
   <article class="card">
-    <h1>Generate invite</h1>
-    <p>Anyone with this link can use the invite. Share it only with the intended recipient. For an existing username, the new key can act as that account.</p>
-    <form data-invitation-issue-form>
-      <label class="invitation-destination-toggle">
-        <input name="include_destination" type="checkbox" data-action="toggle-invitation-destination" aria-controls="invite-destination-fields" aria-expanded="false">
-        Include destination URL
-      </label>
-      <div id="invite-destination-fields" data-role="invitation-destination-fields" hidden>
-        <label class="account-key-label" for="invite-destination">Destination (optional)</label>
-        <div class="invitation-destination-input">
-          <input id="invite-destination" name="destination" type="text" value="" data-source-destination="<?= $e($destination) ?>" placeholder="/threads/example" autocomplete="off" disabled>
-          <details class="invitation-destination-menu" data-role="invitation-destination-menu">
-            <summary>Choose destination</summary>
-            <div class="button-row button-row-natural invitation-destination-options" data-role="invitation-destination-options">
-              <button type="button" data-destination-value="/">Board</button>
-              <button type="button" data-destination-value="/activity/">Activity</button>
-              <button type="button" data-destination-value="/users/">Users</button>
-              <button type="button" data-destination-value="/tools/">Tools</button>
-            </div>
-          </details>
+    <div data-role="invitation-setup">
+      <h1>Generate invite</h1>
+      <p>Anyone with this link can use the invite. Share it only with the intended recipient. For an existing username, the new key can act as that account.</p>
+      <form data-invitation-issue-form>
+        <label class="invitation-destination-toggle">
+          <input name="include_destination" type="checkbox" data-action="toggle-invitation-destination" aria-controls="invite-destination-fields" aria-expanded="false">
+          Include destination URL
+        </label>
+        <div id="invite-destination-fields" data-role="invitation-destination-fields" hidden>
+          <label class="account-key-label" for="invite-destination">Destination (optional)</label>
+          <div class="invitation-destination-input">
+            <input id="invite-destination" name="destination" type="text" value="" data-source-destination="<?= $e($destination) ?>" placeholder="/threads/example" autocomplete="off" disabled>
+            <details class="invitation-destination-menu" data-role="invitation-destination-menu">
+              <summary>Choose destination</summary>
+              <div class="button-row button-row-natural invitation-destination-options" data-role="invitation-destination-options">
+                <button type="button" data-destination-value="/">Board</button>
+                <button type="button" data-destination-value="/activity/">Activity</button>
+                <button type="button" data-destination-value="/users/">Users</button>
+                <button type="button" data-destination-value="/tools/">Tools</button>
+              </div>
+            </details>
+          </div>
         </div>
-      </div>
-      <button type="submit">Generate invite link</button>
-    </form>
+        <button type="submit">Generate invite link</button>
+      </form>
+    </div>
     <p class="meta" data-role="invitation-feedback" role="status" hidden></p>
     <div data-role="invitation-result" hidden>
-      <p class="meta">Expires 30 days after creation.</p>
-      <div class="button-row button-row-split">
-        <textarea id="invite-link" aria-label="Invitation link" readonly rows="3" data-role="invitation-link"></textarea>
-        <button type="button" data-action="copy-invitation-link">Copy</button>
-      </div>
       <div class="invitation-qr" data-role="invitation-qr" hidden>
 <?php if ($siteDescription !== '' || $invitationReasons !== []): ?>
         <div class="invitation-qr-pitch">
@@ -48,13 +45,18 @@
         </div>
 <?php endif; ?>
         <figure class="invitation-qr-code">
-          <canvas data-role="invitation-qr-code" role="img" aria-label="Invitation QR code. Scan with your phone, or use the invitation link above."></canvas>
-          <figcaption>Scan to join</figcaption>
+          <canvas data-role="invitation-qr-code" role="img" aria-label="Invitation QR code. Scan with your phone, or use the invitation link below."></canvas>
+          <figcaption>Scan to join · valid 30 days</figcaption>
         </figure>
+      </div>
+      <div class="button-row invitation-link-row">
+        <input id="invite-link" type="text" aria-label="Invitation link" readonly data-role="invitation-link">
+        <button type="button" data-action="copy-invitation-link">Copy</button>
+        <button type="button" data-action="new-invitation">New invite</button>
       </div>
     </div>
   </article>
-  <article class="card">
+  <article class="card" data-role="invitation-revoke">
     <details>
       <summary>Revoke invite</summary>
       <form data-invitation-revoke-form>
