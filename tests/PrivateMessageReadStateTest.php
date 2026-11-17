@@ -3,6 +3,7 @@
 declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
+use ForumRewrite\Messaging\PrivateMessageReadState;
 use ForumRewrite\Messaging\PrivateMessageStore;
 
 final class PrivateMessageReadStateTest
@@ -39,18 +40,18 @@ final class PrivateMessageReadStateTest
         $store->storeEnvelope('two', '2026-10-10T12:00:00Z', 'carol', 'alice', 'key', 'cipher');
         $store->storeEnvelope('own', '2026-10-10T13:00:00Z', 'alice', 'bob', 'key', 'cipher');
         assertSame(2, $store->unreadStateFor('alice')['unread_count']);
-        $store->markSeenThrough('alice', 'bob', 'one');
+        (new PrivateMessageReadState($pdo))->mark('alice', 'bob', 'one');
         assertSame(['bob' => false, 'carol' => true], (array) $store->unreadStateFor('alice', ['bob', 'carol'])['conversations']);
         $store->storeEnvelope('backdated', '2020-01-01T00:00:00Z', 'bob', 'alice', 'key', 'cipher');
         assertSame(2, $store->unreadStateFor('alice')['unread_count']);
-        $store->markSeenThrough('alice', 'bob', 'backdated');
-        $store->markSeenThrough('alice', 'bob', 'one');
+        (new PrivateMessageReadState($pdo))->mark('alice', 'bob', 'backdated');
+        (new PrivateMessageReadState($pdo))->mark('alice', 'bob', 'one');
         assertSame(1, (new PrivateMessageStore($pdo))->unreadStateFor('alice')['unread_count']);
         assertSame(0, $store->unreadStateFor('outsider')['unread_count']);
         $revision = $store->unreadStateFor('alice')['revision'];
         $store->storeEnvelope('unrelated-activity', '2026-10-10', 'eve', 'mallory', 'key', 'cipher');
         assertSame($revision, $store->unreadStateFor('alice')['revision'], 'State revisions must not reveal unrelated mailbox activity');
-        try { $store->markSeenThrough('alice', 'bob', 'own'); throw new RuntimeException('Accepted outgoing boundary'); }
+        try { (new PrivateMessageReadState($pdo))->mark('alice', 'bob', 'own'); throw new RuntimeException('Accepted outgoing boundary'); }
         catch (InvalidArgumentException $expected) { assertStringContains('boundary', $expected->getMessage()); }
         for ($i = 0; $i < 30; $i++) $store->storeEnvelope('many-' . $i, '2026-10-10T12:00:00Z', 'user-' . $i, 'alice', 'key', 'cipher');
         assertSame(31, $store->unreadStateFor('alice', ['bob'])['unread_count']);
@@ -70,7 +71,7 @@ final class PrivateMessageReadStateTest
         $pdo->exec("INSERT INTO private_messages VALUES ('during-rollback', '2020-01-01', 'bob', 'alice', 'key', 'cipher')");
         $store = new PrivateMessageStore($pdo);
         assertSame(1, $store->unreadStateFor('alice')['unread_count']);
-        $store->markSeenThrough('alice', 'bob', 'during-rollback');
+        (new PrivateMessageReadState($pdo))->mark('alice', 'bob', 'during-rollback');
         $store = new PrivateMessageStore($pdo);
         assertSame(0, $store->unreadStateFor('alice')['unread_count']);
         assertSame($before, $pdo->query('SELECT * FROM private_message_tracking')->fetch());
@@ -91,7 +92,7 @@ final class PrivateMessageReadStateTest
             assertSame(1, (int) $pdo->query('SELECT COUNT(*) FROM private_message_tracking')->fetchColumn());
             $store->storeEnvelope('a', '2026-10-10', 'bob', 'alice', 'key', 'cipher');
             $store->storeEnvelope('b', '2026-10-10', 'bob', 'alice', 'key', 'cipher');
-            $this->race($script . '$s->markSeenThrough("alice","bob",$argv[1]);', ['a', 'b', 'a', 'b']);
+            $this->race($script . '(new ForumRewrite\\Messaging\\PrivateMessageReadState(new PDO(' . var_export('sqlite:' . $path, true) . ')))->mark("alice","bob",$argv[1]);', ['a', 'b', 'a', 'b']);
             assertSame(0, $store->unreadStateFor('alice')['unread_count']);
         } finally { @unlink($path); }
     }
@@ -101,7 +102,7 @@ final class PrivateMessageReadStateTest
         $pdo = new PDO('sqlite::memory:');
         $store = new PrivateMessageStore($pdo);
         $store->storeEnvelope('received', '2026-10-10', 'bob', 'alice', 'key', 'cipher');
-        $store->markSeenThrough('alice', 'bob', 'received');
+        (new PrivateMessageReadState($pdo))->mark('alice', 'bob', 'received');
         $pdo->exec("UPDATE private_message_seen SET seen_id = 'missing'");
         try { $store->unreadStateFor('alice'); throw new LogicException('Invalid seen anchor accepted'); }
         catch (RuntimeException $expected) { assertStringContains('seen position needs repair', $expected->getMessage()); }

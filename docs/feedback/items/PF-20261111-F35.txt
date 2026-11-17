@@ -1,0 +1,15 @@
+ID: PF-20261111-F35
+Title: Archive and discard old media
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Archive all media older than x days (probably 30 by default), download the archive, and discard the media to save space.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261109182528-bde9f758
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.

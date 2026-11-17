@@ -7,7 +7,7 @@
     <h2>Account keys</h2>
     <ul>
 <?php foreach ($profiles as $profile): ?>
-      <li><a href="/tools/user-access/profiles/<?= $e($profile['profile_slug']) ?>"><?= $e($shortenProfileSlug($profile['profile_slug'])) ?></a> — <?= !empty($profile['retired_at']) ? 'Retired' : ((int) $profile['is_approved'] === 1 ? 'Approved' : 'Pending') ?></li>
+      <li><a href="/tools/user-access/profiles/<?= $e($profile['profile_slug']) ?>"><?= $e($shortenProfileSlug($profile['profile_slug'])) ?></a> — <?= !empty($profile['retired_at']) ? 'Retired' : ((int) $profile['is_approved'] === 1 ? 'Approved' : 'Pending') ?><?php if (isset($replacedKeys[$profile['identity_id']])): ?> <span class="chip chip--replaced">Replaced</span><?php endif; ?></li>
 <?php endforeach; ?>
     </ul>
   </article>

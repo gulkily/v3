@@ -117,9 +117,9 @@ $summary = implode(' · ', $parts);
 <?php endif; ?>
 <?php if ($canDeploy): ?>
     <form method="post" action="/tools/deploy/" class="deploy-actions" data-deploy-form>
-      <button type="submit" name="action" value="queue">Queue deploy</button>
-      <button type="submit" name="action" value="now">Deploy now</button>
-      <button type="submit" name="action" value="check">Check for updates</button>
+      <button type="submit" name="action" value="now" class="deploy-actions__primary">Deploy now</button>
+      <button type="submit" name="action" value="queue" class="deploy-actions__secondary">Queue deploy</button>
+      <button type="submit" name="action" value="check" class="deploy-actions__secondary">Check for updates</button>
     </form>
 <?php endif; ?>
 <?php endif; ?>

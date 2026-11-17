@@ -18,3 +18,4 @@ Notes:
 2026-11-09: one-shot on feat/compose_menu_options (record docs/plans/compose_menu_options/compose_menu_options_one_shot.md). The thread title asked to remove Formatting help; the maintainer then asked in session to move all settings into an expandable section and to move the link rather than remove it.
 2026-11-09: implemented on feat/compose_menu_options with the menu opening downward when there is no room above; verified locally; awaiting review and deployment.
 2026-11-09: maintainer asked for Options in the compose form rather than the menu; moved on feat/compose_options_section; verified locally; awaiting review and deployment.
+2026-11-14: Triage 2026-11-11 (docs/feedback/triage/2026-11-11_proposals.txt): PRs #103, #107 (b62f35cd, 7afe0d6a) merged 2026-11-09; deployment and acceptance not checked.

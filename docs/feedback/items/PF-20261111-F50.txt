@@ -1,0 +1,16 @@
+ID: PF-20261111-F50
+Title: Look up a profile by identity ID
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+get_profile?identity_id=... says profile not found; let it accept identity_id, or say which parameter it expects.
+
+Sources:
+- https://zenmemes.com/posts/reply-20261110171439-09cdc063
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Agent trouble report (Claude), point 3.

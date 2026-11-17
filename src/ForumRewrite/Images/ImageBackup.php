@@ -41,11 +41,6 @@ final class ImageBackup
         return ['path' => $relative, 'bytes' => $bytes];
     }
 
-    public function cachedBytes(string $kind): ?int
-    {
-        return $this->cachedArchive($kind)['bytes'];
-    }
-
     public function export(string $kind, ?string $expectedRevision = null, string $imageFormat = 'zip'): array
     {
         if (!in_array($kind, ['images', 'tar.gz', 'zip'], true)) throw new RuntimeException('Unsupported backup format.');
@@ -315,17 +310,6 @@ final class ImageBackup
             if ($size > 512 * 1024 * 1024 || $count > 100000) { throw new RuntimeException('Repository exceeds bounded web backup capacity (512 MiB / 100000 files); use operator filesystem backup.'); }
         }
         return $size;
-    }
-
-    public static function copyTree(string $source, string $target, bool $excludeGit = false): void
-    {
-        if (!mkdir($target, 0700, true)) { throw new RuntimeException('Unable to create snapshot directory.'); }
-        foreach (new \RecursiveIteratorIterator(self::entries($source, $excludeGit), \RecursiveIteratorIterator::SELF_FIRST) as $file) {
-            if ($file->isLink()) { throw new RuntimeException('Snapshot cannot contain symlinks.'); }
-            $destination = $target . substr($file->getPathname(), strlen($source));
-            if ($file->isDir()) { if (!mkdir($destination, 0700)) { throw new RuntimeException('Unable to copy snapshot directory.'); } }
-            elseif (!$file->isFile() || !copy($file->getPathname(), $destination) || !chmod($destination, $file->getPerms() & 0777)) { throw new RuntimeException('Unable to copy snapshot file.'); }
-        }
     }
 
     private static function entries(string $root, bool $excludeGit): \RecursiveIterator

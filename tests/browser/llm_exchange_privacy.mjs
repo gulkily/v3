@@ -23,6 +23,13 @@ const base = `http://127.0.0.1:${port}`;
 const server = spawn('php', ['-d', `session.save_path=${root}/sessions`, '-S', `127.0.0.1:${port}`, join(project, 'tests/Support/signed_reaction_browser_router.php')], { env, stdio: ['ignore', 'ignore', 'pipe'] });
 let serverLog = ''; server.stderr.on('data', data => { serverLog += data; });
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/google/chrome/chrome', headless: true, args: ['--no-sandbox'] });
+// Retraction leaves saved exchanges in place; the maintenance sweep scrubs them
+// (docs/reference/llm_exchange_privacy.md). The cron worker runs it in production.
+const sweep = () => {
+  const run = spawnSync('php', [join(project, 'scripts/retraction_sweep.php'), 'run', '--repository-root=' + join(root, 'repository'),
+    '--static-html-root=' + join(root, 'static'), '--exchange-database-path=' + join(root, 'exchanges.sqlite3'), '--state-path=' + join(root, 'sweep.json')], { encoding: 'utf8', env });
+  assert.equal(run.status, 0, run.stdout + run.stderr);
+};
 try {
   const setup = await browser.newContext();
   for (let n = 0; n < 60; n++) { try { await fetch(base + '/api/version'); break; } catch { await new Promise(r => setTimeout(r, 100)); } }
@@ -83,8 +90,10 @@ try {
     assert.match(originalText, /PRIVATE-EXCHANGE-/);
     assert.doesNotMatch(originalText, /STALE-EXCHANGE-ARTIFACT/);
     const unknown = await context.request.get(base + '/tools/llm-exchanges/' + exchangeIds[5]);
-    assert.equal(unknown.status(), 404);
-    assert.doesNotMatch(await unknown.text(), /UNKNOWN-LEGACY-EXCHANGE/);
+    // Unknown provenance stays readable until a sweep runs with a retraction accepted;
+    // the author scenario's sweep has scrubbed it by the time the operator scenario starts.
+    assert.equal(unknown.status(), scenario === 'author' ? 200 : 404);
+    if (scenario !== 'author') assert.doesNotMatch(await unknown.text(), /UNKNOWN-LEGACY-EXCHANGE/);
 
     await page.goto(base + '/posts/' + post.post_id);
     const control = page.locator('[data-role="retraction-control"]').first();
@@ -106,6 +115,8 @@ try {
     assert.match(record, new RegExp(`Author-Identity-ID: ${identities.author}`));
     if (role === 'operator') assert.match(record, new RegExp(`Actor-Identity-ID: ${identities.operator}`));
     await page.waitForFunction(role => document.body.textContent.includes(role === 'operator' ? 'retracted by an operator' : 'retracted by its author'), role);
+    assert.equal((await context.request.get(base + '/tools/llm-exchanges/' + pair[0])).status(), 200);
+    sweep();
     for (const id of pair) {
       const denied = await context.request.get(base + '/tools/llm-exchanges/' + id, { headers: { 'If-None-Match': etag } });
       assert.equal(denied.status(), 404);
@@ -131,21 +142,24 @@ try {
   });
   assert.equal(late.status, 0, late.stderr);
   const lateIds = JSON.parse(late.stdout).ids;
+  sweep();
   const review = await browser.newContext();
   await review.addCookies([{ name: 'identity_hint', value: identities.operator, url: base }]);
+  // LLM Exchanges need a signed-in approved member; the hint alone is refused with 403.
+  assert.equal((await review.request.get(base + '/tools/llm-exchanges/' + lateIds[0])).status(), 403);
+  const reviewChallenge = (await (await review.request.get(base + '/api/auth_challenge')).text()).match(/challenge=(\w+)/)[1];
+  const reviewSignature = await openpgp.sign({ message: await openpgp.createMessage({ text: reviewChallenge }), signingKeys: await openpgp.readPrivateKey({ armoredKey: keys.operator.privateKey }), detached: true });
+  assert.equal((await review.request.post(base + '/api/authenticate_identity', { form: { challenge: reviewChallenge, detached_signature: reviewSignature, identity_id: identities.operator } })).status(), 200);
   for (const id of lateIds) {
     const denied = await review.request.get(base + '/tools/llm-exchanges/' + id);
     assert.equal(denied.status(), 404);
     assert.doesNotMatch(await denied.text(), /(LATE|FAILED)-PROVIDER-PROSE/);
   }
-  const evidence = join(root, 'repository/records/post-retractions', `post-retraction-${posts.operator.post_id}.txt`);
-  const originalEvidence = await readFile(evidence);
-  await writeFile(evidence, 'malformed');
-  assert.equal((await review.request.get(base + '/tools/llm-exchanges/' + exchangeIds[4])).status(), 404);
-  await writeFile(evidence, originalEvidence);
+  // Reading no longer re-checks retraction evidence (the fail-closed check was removed with
+  // the retraction simplification); an unrelated exchange stays readable after the sweeps.
   assert.equal((await review.request.get(base + '/tools/llm-exchanges/' + exchangeIds[4])).status(), 200);
   await review.close();
-  console.log('PASS late/error records, state failure/recovery and stale-artifact bypass prevention');
+  console.log('PASS hint-only refusal, late/error records after a sweep, and unrelated exchange kept');
   const retained = spawnSync('php', [join(project, 'tests/Support/llm_exchange_privacy_fixture.php'), root], { input: JSON.stringify({}), encoding: 'utf8', env });
   assert.equal(retained.status, 0, retained.stderr);
   assert.equal(JSON.parse(retained.stdout).count, 8);

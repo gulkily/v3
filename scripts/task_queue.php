@@ -52,6 +52,7 @@ try {
 
     $repositoryRoot = (string) ($options['repository-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: ($projectRoot . '/state/local_repository')));
     $databasePath = (string) ($options['database-path'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: ($projectRoot . '/state/cache/post_index.sqlite3')));
+    $usesInstancePaths = !isset($options['repository-root']) && !isset($options['database-path']);
     $profile = SiteProfileRegistry::active();
     $staticHtmlRoot = (string) ($options['static-html-root'] ?? (\ForumRewrite\Support\DeploymentSettings::value('FORUM_STATIC_HTML_ROOT') ?: PresentationPathResolver::staticHtmlRoot($projectRoot, $profile)));
     $queuePath = TaskQueueDatabaseConfig::path($projectRoot, isset($options['queue-database-path']) ? (string) $options['queue-database-path'] : null);
@@ -111,6 +112,14 @@ try {
             }
         }
         if (is_array($metadata) && \ForumRewrite\ReadModel\ReadModelMetadata::hasExpectedSchemaIdentity($metadata)) {
+            // Tour snapshots need a current read model; after a rebuild, its completion starts them instead.
+            // Printed before the read-model line: the deploy reads that line last. Only for the
+            // instance's own paths, which are the ones ./v3 tour refresh renders from.
+            if ($usesInstancePaths) try {
+                fwrite(STDOUT, 'Tour: ' . (new \ForumRewrite\Tour\TourRefreshLauncher($projectRoot))->startIfDue(\ForumRewrite\Tour\TourSnapshots::forProject($projectRoot)) . "\n");
+            } catch (Throwable $error) {
+                fwrite(STDOUT, 'Tour: not checked (' . $error->getMessage() . ")\n");
+            }
             fwrite(STDOUT, "Read model: current; no rebuild needed\n");
             exit(0);
         }
@@ -212,14 +221,16 @@ try {
             exit(0);
         }
 
-        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose, $taskId, $errorLog): void {
+        $run = static function () use ($store, $projectRoot, $repositoryRoot, $databasePath, $staticHtmlRoot, $queuePath, $limit, $providerCallLimit, $workLimit, $quiet, $verbose, $taskId, $errorLog, $usesInstancePaths): void {
             $startedAt = microtime(true);
             $retractionSweep = \ForumRewrite\Retraction\RetractionSweepFactory::create($projectRoot, $repositoryRoot, $staticHtmlRoot);
-            if ($taskId === null) {
+            // A fresh instance has no repository or read model until its first page request
+            // creates them; there is nothing to discover yet, so skip instead of logging errors.
+            if ($taskId === null && is_dir($repositoryRoot . '/.git')) {
                 try { \ForumRewrite\Retraction\RetractionSweepFactory::reconcile($retractionSweep, $store); }
                 catch (Throwable) { $errorLog->write('retraction_discovery_failed', 'Cannot discover retraction cleanup. Run retraction-sweep status.'); }
             }
-            $reconciledAgentReplyTasks = $taskId === null ? reconcileAgentReplyTasks($store, $databasePath) : 0;
+            $reconciledAgentReplyTasks = $taskId === null && is_file($databasePath) ? reconcileAgentReplyTasks($store, $databasePath) : 0;
             $executorRun = $store->startExecutorRun();
             $taskOutcomes = [];
             $before = $store->counts();
@@ -246,8 +257,13 @@ try {
                 new ReadModelRebuildTaskHandler(
                     $repositoryRoot,
                     $databasePath,
-                    static function () use ($store): void {
+                    static function () use ($store, $projectRoot, $usesInstancePaths): void {
                         $store->enqueue(SqliteTaskQueueStore::PUBLISH_OFFLINE_SNAPSHOT, 'offline-snapshot');
+                        if ($usesInstancePaths) try {
+                            (new \ForumRewrite\Tour\TourRefreshLauncher($projectRoot))->startIfDue(\ForumRewrite\Tour\TourSnapshots::forProject($projectRoot));
+                        } catch (Throwable) {
+                            // The tour is optional; a rebuild never fails because of it.
+                        }
                     },
                     static function (int $taskId, string $message) use ($store, $quiet): void {
                         $store->recordTaskProgress($taskId, $message);
@@ -339,8 +355,43 @@ try {
                 static function (int $failedTaskId, Throwable $throwable) use ($errorLog): void {
                     $errorLog->writeThrowable('task_exception', $throwable, ['task_id' => $failedTaskId]);
                 },
-                runRetractionSweep: static fn (): array => $retractionSweep->run($workLimit),
+                runRetractionSweep: static function () use ($retractionSweep, $workLimit, $projectRoot, $usesInstancePaths): array {
+                    $result = $retractionSweep->run($workLimit);
+                    // Retired tour snapshots come back from the current read model, which no longer has the retracted content.
+                    if ($usesInstancePaths) try {
+                        (new \ForumRewrite\Tour\TourRefreshLauncher($projectRoot))->startIfDue(\ForumRewrite\Tour\TourSnapshots::forProject($projectRoot));
+                    } catch (Throwable) {
+                    }
+                    return $result;
+                },
                 runAppUpdate: static fn (): array => \ForumRewrite\Deploy\AppUpdate::forProject($projectRoot)->runQueued(),
+                runLocalScoreSweep: static function () use ($projectRoot, $databasePath): ?array {
+                    if (!is_file($databasePath)) {
+                        throw new RuntimeException('Read model database not found: ' . $databasePath);
+                    }
+                    $sweep = \ForumRewrite\Scoring\LocalMetaSweep::forProject($projectRoot, new PDO('sqlite:' . $databasePath),
+                        FastScoreDatabaseConfig::path($projectRoot, PrivateConfig::load($projectRoot)));
+                    return $sweep?->run();
+                },
+                runLocalMetaTrain: static function () use ($projectRoot, $databasePath, $store): array {
+                    if (!is_file($databasePath)) {
+                        throw new RuntimeException('Read model database not found: ' . $databasePath);
+                    }
+                    $scorePath = FastScoreDatabaseConfig::path($projectRoot, PrivateConfig::load($projectRoot));
+                    $report = (new \ForumRewrite\Scoring\LocalMetaTraining(new PDO('sqlite:' . $databasePath), is_file($scorePath) ? new PDO('sqlite:' . $scorePath) : null))
+                        ->runAndSave(new \ForumRewrite\Scoring\LocalMetaFiles($projectRoot), false);
+                    $store->enqueue(SqliteTaskQueueStore::LOCAL_SCORE_SWEEP, \ForumRewrite\Scoring\LocalMetaSweep::DEDUPLICATION_KEY);
+                    return $report;
+                },
+                runInstanceImport: static fn (array $task): array => \ForumRewrite\Import\InstanceImportTask::forQueue($queuePath)->run(
+                    $task,
+                    $projectRoot,
+                    ['repository_root' => $repositoryRoot, 'database_path' => $databasePath, 'static_html_root' => $staticHtmlRoot],
+                    static function (string $line) use ($store, $task, $quiet): void {
+                        $store->recordTaskProgress((int) $task['id'], $line);
+                        emitTaskQueue($quiet, '  ' . $line . "\n");
+                    },
+                ),
             );
             $taskStartedAt = [];
             try {
@@ -387,7 +438,10 @@ try {
                     $elapsed,
                     $task['failure_code'] ?? 'none',
                 ));
-                if (isset($task['sweep']) && is_array($task['sweep'])) {
+                if (($task['type'] ?? null) === SqliteTaskQueueStore::LOCAL_SCORE_SWEEP && is_array($task['sweep'] ?? null)) {
+                    emitTaskQueue($quiet, sprintf("  Local score sweep: scored=%d already_current=%d model=%s remaining=%s\n",
+                        $task['sweep']['scored'], $task['sweep']['skipped'], $task['sweep']['model_build'], $task['sweep']['remaining'] ? 'yes' : 'no'));
+                } elseif (isset($task['sweep']) && is_array($task['sweep'])) {
                     emitTaskQueue($quiet, sprintf(
                         "  Fastmod sweep: examined=%d processed=%d provider_calls=%d scored=%d excluded=%d failed=%d remaining=%s\n",
                         (int) ($task['sweep']['examined'] ?? 0),

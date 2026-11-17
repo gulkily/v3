@@ -1,6 +1,6 @@
 Cycle: `v3/thread_activity_record_links`; Mode: one-shot; Record: this file; Index: [plans index](../README.md)
 Debug mode: enabled (project marker `.railspike_debug_on`)
-Effort study: `railspike-effort` / `v3/thread_activity_record_links`; [host ledger](../effort_estimation_trial.md#cycle-v3thread_activity_record_links); standing enrollment under protocol P2
+Effort study: `railspike-effort` / `v3/thread_activity_record_links`; [cycle ledger](../effort_ledger/thread_activity_record_links.md); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.12**
 Status: implemented and verified locally; next permitted action: push and PR (merging and deploying are the maintainer's)

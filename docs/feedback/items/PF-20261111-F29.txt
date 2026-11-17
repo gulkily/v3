@@ -1,0 +1,18 @@
+ID: PF-20261111-F29
+Title: Promote a much-liked reply to its own thread
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Optional: if a reply gets many more likes than its parent, it should become a new top-level item.
+
+Sources:
+- https://zenmemes.com/posts/thread-20261109004748-2103084c
+- https://zenmemes.com/posts/reply-20261109004800-25654684
+- https://zenmemes.com/posts/reply-20261109004902-c6ee97b3
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Dictated; Claude's cleanup lists open questions (threshold, move or copy, back-link, who enables it).

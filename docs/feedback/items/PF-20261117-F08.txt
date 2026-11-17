@@ -1,0 +1,18 @@
+ID: PF-20261117-F08
+Title: Link to the agent conversation from a thread
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-17
+Evidence: unknown
+
+Request:
+perhaps i could somehow see a link to the claude conversation, idk how though. maybe claude can encrypt it for me?
+
+Sources:
+- https://zenmemes.com/threads/thread-20261113042243-1cbe8b8a
+
+Done when:
+Agent replies in a thread can carry a link back to the conversation that produced them, readable by the maintainer and not exposed to others if it should stay private.
+
+Notes:
+2026-11-17: filed from the import-instance GUI thread at the maintainer's request ("file anything we have not finished or addressed yet"). Explained in session 2026-11-17; the claude.ai session link only opens for the owner's signed-in account.

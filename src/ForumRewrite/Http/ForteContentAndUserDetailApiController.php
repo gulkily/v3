@@ -15,7 +15,7 @@ use ForumRewrite\Support\ThreadTitle;
  * /api/get_forte_content_summary and /api/forte_user_detail. The other two
  * (/api/forte_activity_page, /api/forte_commit_detail) stay on
  * Application - both are directly coupled to fetchActivity() /
- * activityCommitManifest(), the same harder-tier activity/commit-manifest
+ * ActivityService::activityCommitManifest(), the same harder-tier activity/commit-manifest
  * subsystem already deferred for /activity itself.
  *
  * fetchVisibleAuthoredThreads()/fetchVisibleAuthoredPosts() and

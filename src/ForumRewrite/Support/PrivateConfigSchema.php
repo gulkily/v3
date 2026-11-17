@@ -146,6 +146,8 @@ final class PrivateConfigSchema
     }
 
     /**
+     * @internal Test hook: lets a test keep the private config template and this schema in sync.
+     *
      * Schema keys deliberately absent from the template: site feature flags are
      * changed in Tools, and DEDALUS_* names are legacy fallbacks for LLM_* settings.
      *

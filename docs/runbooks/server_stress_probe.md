@@ -68,7 +68,7 @@ The exit status is 0 when every step passed and 1 when the run stopped early.
 
 1. `--mode cached` at the defaults: the baseline for Apache-served cache hits.
 2. `--mode uncached --steps 1,2,4`: where PHP worker limits show up.
-3. Writes, by hand: while a cached step runs, post one reply with `frm.py` and note how
+3. Writes, by hand: while a cached step runs, post one reply with `quill.py` and note how
    long it takes and whether it appears on its thread page right away.
 
 For a cold cache, run `./v3 high-traffic purge` on the server first; expect some `503`

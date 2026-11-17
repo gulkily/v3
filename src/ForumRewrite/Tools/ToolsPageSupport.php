@@ -66,6 +66,7 @@ final class ToolsPageSupport
             ['key' => 'fastmod', 'label' => 'Fastmod', 'href' => '/tools/fastmod/', 'group' => 'operator', 'tone' => 'fastmod', 'standalone' => false],
             ['key' => 'operations', 'label' => 'Operations', 'href' => '/tools/operations/', 'group' => 'operator', 'tone' => 'operations', 'standalone' => false],
             ['key' => 'deploy', 'label' => 'Deploy', 'href' => '/tools/deploy/', 'group' => 'operator', 'tone' => 'deploy', 'standalone' => false],
+            ['key' => 'import', 'label' => 'Import', 'href' => '/tools/import/', 'group' => 'operator', 'tone' => 'import', 'standalone' => false],
             ['key' => 'usage-reports', 'label' => 'Usage Reports', 'href' => '/tools/usage-reports/', 'group' => 'operator', 'tone' => 'usage-reports', 'standalone' => false],
         ];
     }

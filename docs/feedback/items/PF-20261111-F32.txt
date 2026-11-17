@@ -1,0 +1,16 @@
+ID: PF-20261111-F32
+Title: Close the ... menu on outside click
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-11
+Evidence: unknown
+
+Request:
+Should the ... button's menu go away when I click elsewhere on the page?
+
+Sources:
+- https://zenmemes.com/posts/thread-20261109174818-d73f84e4
+
+Notes:
+Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+Asked as a question.
