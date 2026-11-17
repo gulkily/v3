@@ -63,8 +63,12 @@ final class WritePostAndIdentityApiController
                 : $this->routeServices->writer()->createThread($input);
             $this->enqueueFastScore($result);
             $result = $this->routeServices->mergeResultTimings($result, $timings, $totalStartedAt);
+            $moderation = $isQdbQuote
+                ? 'moderation=' . \ForumRewrite\Qdb\QdbModeration::current()->state($this->routeServices->pdo(), (string) $result['thread_id']) . "\n"
+                : '';
             $this->routeServices->sendText(
                 "status=ok\npost_id={$result['post_id']}\nthread_id={$result['thread_id']}\ncommit_sha={$result['commit_sha']}\n"
+                    . $moderation
                     . $this->routeServices->unsignedAttributionLines('post', (string) ($input['author_identity_id'] ?? ''), false),
                 200,
                 $this->routeServices->serverTimingHeaders($result)

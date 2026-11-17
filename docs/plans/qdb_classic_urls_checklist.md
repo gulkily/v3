@@ -10,6 +10,9 @@ bare path (`/latest`) and the bash.org-style query flag on `/` (`/?latest`).
 
 Decided out of scope for this pass: **Queue** (would need a real pre-publish
 moderation concept this app doesn't have — skipped per your call).
+_2026-11-17: Queue now exists. `/queue`, `/queue/N` and `/?queue` list pending
+quotes behind `FORUM_QDB_QUEUE_ENABLED`; see the
+[quote queue concept](../concepts/quote_queue.md)._
 
 ## Checklist
 

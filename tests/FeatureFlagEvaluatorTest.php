@@ -260,6 +260,7 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::INBOX_ENABLED,
             FeatureFlagRegistry::TAG_UNLOCKS_ENABLED,
             FeatureFlagRegistry::AGENT_PROMPT_ENABLED,
+            FeatureFlagRegistry::QDB_QUEUE_ENABLED,
             FeatureFlagRegistry::DEPLOY_HEADER_PROMPT_ENABLED,
             FeatureFlagRegistry::INSTANCE_IMPORT_PAGE_ENABLED,
             FeatureFlagRegistry::PRIVATE_MESSAGE_CACHE_ENABLED,

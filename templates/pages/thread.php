@@ -74,6 +74,9 @@ foreach ($replyContinuationFlags as $flagIndex => $flag) {
 }
 $rootMetaVisible = $rootRunTailIndex === -1;
 ?>
+<?php if (($qdbModerationState ?? 'approved') === 'pending'): ?>
+  <p class="meta qdb-pending" data-qdb-moderation="pending">Pending approval · <a href="/queue">Queue</a></p>
+<?php endif; ?>
 <?php if ($rootPost !== null): ?>
 <?php if ($siteGuestbookThreadId !== null && (string) $thread['root_post_id'] === $siteGuestbookThreadId): ?>
   <p class="meta guestbook-thread-link"><a href="/guestbook/">Open as a book</a></p>

@@ -82,6 +82,10 @@ final class ThreadAndPostPageController
         if ($threadRow === null) {
             return null;
         }
+        $qdbModerationState = \ForumRewrite\Qdb\QdbModeration::current()->state($this->routeServices->pdo(), $threadId);
+        if ($qdbModerationState === \ForumRewrite\Qdb\QdbModeration::REJECTED) {
+            return null;
+        }
 
         $service = $this->postWorkflowService();
         $title = ($this->displayThreadTitle)($threadRow);
@@ -164,6 +168,7 @@ final class ThreadAndPostPageController
                 'viewerPostLikes' => $viewerPostLikes,
                 'signalActors' => $signalActors,
                 'createdPostId' => $createdPostId,
+                'qdbModerationState' => $qdbModerationState,
                 'viewerCanSeePostAnalysis' => $viewerCanSeePostAnalysis,
                 'viewerCanRequestAgentReply' => $viewerCanRequestAgentReply,
                 'agentResponseModes' => $viewerCanRequestAgentReply ? AgentResponseTask::selectableModes() : [],

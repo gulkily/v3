@@ -35,6 +35,7 @@
 ]), 4) ?>
     </div>
   </article>
+<?= $partial('partials/qdb_moderation_access.php', ['qdbModerationActors' => $boardCardData['qdbModerationActors'] ?? []]) ?>
 <?php foreach ($threads as $thread): ?>
 <?= $indent($partial($boardCardPartial, ['thread' => $thread] + $boardCardData), 1) ?>
 <?php endforeach; ?>
@@ -43,7 +44,7 @@
 <?php endif; ?>
 </section>
 <?php if ($boardFooterPartial !== null): ?>
-<?= $partial($boardFooterPartial, ['qdbQuoteCount' => $qdbQuoteCount]) ?>
+<?= $partial($boardFooterPartial, ['qdbQuoteCount' => $qdbQuoteCount, 'qdbPendingCount' => $qdbPendingCount ?? null]) ?>
 <?php endif; ?>
 <?php if (!empty($listingQuery)): ?>
 <footer class="listing-query-footer">

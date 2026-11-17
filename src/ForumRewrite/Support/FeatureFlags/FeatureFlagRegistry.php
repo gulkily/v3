@@ -27,6 +27,7 @@ final class FeatureFlagRegistry
     public const TITLE_DIRECTIVE_APPROVED_MEMBERS = 'FORUM_TITLE_DIRECTIVE_APPROVED_MEMBERS';
     public const INBOX_ENABLED = 'FORUM_INBOX_ENABLED';
     public const TAG_UNLOCKS_ENABLED = 'FORUM_TAG_UNLOCKS_ENABLED';
+    public const QDB_QUEUE_ENABLED = 'FORUM_QDB_QUEUE_ENABLED';
     public const DEPLOY_HEADER_PROMPT_ENABLED = 'FORUM_DEPLOY_HEADER_PROMPT_ENABLED';
     public const INSTANCE_IMPORT_PAGE_ENABLED = 'FORUM_INSTANCE_IMPORT_PAGE_ENABLED';
     public const AGENT_PROMPT_ENABLED = 'FORUM_AGENT_PROMPT_ENABLED';
@@ -75,7 +76,7 @@ final class FeatureFlagRegistry
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
             self::READING_MARGINS_ENABLED, self::DRAGGABLE_WINDOWS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
             self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED,
-            self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED],
+            self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED, self::QDB_QUEUE_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
             self::THREAD_ACTIVITY_DRAWER_ENABLED],
@@ -345,6 +346,15 @@ final class FeatureFlagRegistry
                 'Offer /agent/ (Prompts in the main nav): the library of prompts members share as #prompt threads, with copy, search and categories, plus the site\'s own prompts for being introduced, posting as an agent, or running a copy. About, the first-visit intro and Tools link to it. Only sites whose profile has prompts show it.',
                 true,
                 self::AGENT_PROMPT_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::QDB_QUEUE_ENABLED,
+                'QDB quote queue',
+                'On qdb, quotes submitted after an operator first switches this on wait on the Queue page until an operator approves them. Operator quotes and news publish at once; older quotes stay listed. Turning it off lists every quote again.',
+                false,
+                self::QDB_QUEUE_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
             ),

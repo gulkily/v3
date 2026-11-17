@@ -26,6 +26,12 @@ $scoreValueClass = 'quote-card-score-value' . ($scoreSignClass === '' ? '' : ' '
     'viewerHasVoted' => $viewerHasVoted,
     'viewerHasFlagged' => $viewerHasFlagged,
 ]) ?>
+<?php if (!empty($qdbModerationActors)): ?>
+    <span class="quote-card-header-actions" data-qdb-moderation-actions>
+      <button type="button" class="thread-reaction-button quote-card-vote-button" data-action="apply-thread-tag" data-tag="approved" data-applied-label="✓ Approved">Approve</button>
+      <button type="button" class="thread-reaction-button quote-card-vote-button" data-action="apply-thread-tag" data-tag="rejected" data-applied-label="Rejected">Reject</button>
+    </span>
+<?php endif; ?>
   </p>
   <p class="quote-card-body"><?= $br($plainText($thread, (string) $thread['root_post_body'], 'root_post_body_format')) ?></p>
 </article>

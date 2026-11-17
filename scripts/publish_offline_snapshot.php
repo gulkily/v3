@@ -35,6 +35,8 @@ try {
         exit(2);
     }
 
+    // Pending qdb quotes stay out of the snapshot, as they stay out of listings.
+    \ForumRewrite\Qdb\QdbModeration::useRepository($repositoryRoot);
     $publisher = new OfflineSnapshotPublisher($staticHtmlRoot);
     $update = $publisher->publishUpdate($databasePath);
     $result = $publisher->publish($databasePath);
