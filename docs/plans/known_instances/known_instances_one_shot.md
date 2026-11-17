@@ -7,7 +7,7 @@ Extended estimates: disabled (single work unit)
 
 **Cycle estimate: 0.10**
 
-Status: locally complete; next permitted action: push, open the PR, reply in the thread.
+Status: locally complete; next permitted action: push, open the PR, reply in the thread. Maintainer acceptance pending.
 
 Original request: "we should also offer some existing instance choices" (2026-11-17 UTC). Answers, 2026-11-17 UTC:
 - "only list zenmemes.com for now, but anticipate adding more";
@@ -38,10 +38,16 @@ Completion conditions: on localhost, Tools → Import shows https://zenmemes.com
 
 Concepts touched: [Instance content import](../../concepts/instance_content_import.md) (known instances line).
 
-Verification: see the PR.
+Verification:
+- New `KnownInstancesTest`: the shipped list, name resolution (case-insensitive), own-address filtering (port, `www.`, default port, case), file format and validation, and `--sources` overriding a known name.
+- `ImportPageTest` checks the idle page prefills and lists https://zenmemes.com.
+- `./v3 test --smoke KnownInstancesTest ImportPageTest LocalDevelopmentImportTest ImportInstanceCommandTest`: 500 passed (smoke set included).
+- `python3 tests/browser/local_development.py`: passed after the commit. Its fresh checkout uses `git archive HEAD`, so before the commit it failed: the new class wasn't in the archive.
+- `node tests/browser/tools_import.mjs`: 80 cases passed.
+- Full suite not run.
 
 Starting revisions and branch: `96462cfd`; `feat/known_instances`.
 
-Study history: intake 0.10 after reading the resolver and both pages (no pristine intake); closeout pending; Claude single exposed rater; R1 hashes not re-verified.
+Study history: intake 0.10 after reading the resolver and both pages (no pristine intake); closeout retrospective 0.10; Claude single exposed rater; R1 hashes not re-verified.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

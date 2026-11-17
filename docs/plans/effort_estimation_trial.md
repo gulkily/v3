@@ -2344,3 +2344,9 @@ Relationship: integration follow-up to v3/local_start_import on open PR #284, no
 | `v3/nav_cached_copy` | Technically complete; release check and maintainer acceptance pending | v1 / R1 / P2 | 0.40 (intake 0.40; entry 0.40; retrospective 0.40) | [One-shot record](./nav_cached_copy/nav_cached_copy_one_shot.md#study-history) | Predecessor `v3/nav_quick_wins` (unmerged); one-shot |
 
 2026-11-17T06:00Z: standing P2 enrollment, one-shot. Intake and execution entry **0.40**; retrospective scope assessment **0.40**; no revisions. Baseline `e7babc06`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. Maintainer comfortable-fit judgment pending.
+
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/known_instances` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.10 | [One-shot record](./known_instances/known_instances_one_shot.md) | Follow-up to `v3/import_instance_gui`; acceptance pending |
+
+2026-11-17: one-shot known instances; baseline `96462cfd`. Intake and closeout retrospective both 0.10; Claude single exposed rater; R1 hashes not re-verified.
