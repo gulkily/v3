@@ -88,6 +88,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Bubblegum open More tab one-shot](bubblegum_more_tab_open/bubblegum_more_tab_open_one_shot.md) — in Bubblegum on phones, the open More tab gets the selected look instead of a white label on a pale bar.
 
+[Reaction send order one-shot](reaction_send_order/reaction_send_order_one_shot.md) — the page sends reaction clicks one at a time, so Close then Resolve both land, and an Outbox notice stays up until the resend finishes.
+
 [Scoped post reaction update one-shot](scoped_post_reaction_update/scoped_post_reaction_update_one_shot.md) — a like or state mark reads only that post's reaction files, so quick successive clicks no longer hit "server is busy".
 
 [Code quality review handoff one-shot](quality_review_handoff/quality_review_handoff_one_shot.md) — adds [the review handoff](code_quality_review_handoff.md): state, open items, and how to rerun the analysis tools.

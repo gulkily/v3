@@ -284,6 +284,7 @@ $testFiles = [
     __DIR__ . '/OfflineOutboxPresentationTest.php',
     __DIR__ . '/OfflineOutboxSendTest.php',
     __DIR__ . '/ReactionOutboxTest.php',
+    __DIR__ . '/ReactionSendOrderTest.php',
     __DIR__ . '/OfflineOutboxStorageTest.php',
     __DIR__ . '/OfflineSnapshotPresentationTest.php',
     __DIR__ . '/OfflineSnapshotThreadPresentationTest.php',
