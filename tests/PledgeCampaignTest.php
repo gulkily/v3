@@ -947,6 +947,10 @@ final class PledgeCampaignTest
         $totals = strpos($open, 'data-pledge-totals');
         $pitch = strpos($open, 'We need coffee.');
         pledgeAssertSame(true, $title !== false && $totals !== false && $pitch !== false && $title < $totals && $totals < $pitch);
+        // The form follows the pitch, outside the totals block.
+        $form = strpos($open, 'class="pledge-form"');
+        pledgeAssertSame(true, $form !== false && $pitch < $form);
+        pledgeAssertNotContains('data-pledge-form', substr($open, $totals, $pitch - $totals));
         pledgeAssertContains('data-pledge-status="open"', $open);
         pledgeAssertNotContains('data-role="pledge-status"', $open);
         pledgeAssertNotContains('pledge-bar__delivered', $open);

@@ -95,7 +95,8 @@ try {
   const reply = writer.page.locator('[data-pledge-form]');
   const bottom = writer.page.locator('[data-inline-reply-compose] [data-compose-kind="reply"]');
   assert.equal(await bottom.locator('[data-role="pledge-amount"]').count(), 0);
-  assert.equal(await writer.page.locator('[data-pledge-totals] [data-pledge-form]').count(), 1);
+  assert.equal(await writer.page.locator('[data-pledge-totals] [data-pledge-form]').count(), 0);
+  assert.equal(await writer.page.locator('.pledge-form [data-pledge-form]').count(), 1);
   const amount = reply.locator('[data-role="pledge-amount"]');
   const body = reply.locator('textarea[name="body"]');
   assert.equal((await reply.locator('.pledge-field').textContent()).trim(), 'Pledgecoffees');
@@ -143,7 +144,7 @@ try {
     await window.forumOutboxStorage.save(item);
     await window.forumOutboxCompose.showUnsentReplies();
     const list = document.querySelector('[data-role="outbox-unsent-replies"]');
-    const beside = !!list && !list.closest('[data-pledge-totals]') && list.nextElementSibling === document.querySelector('[data-inline-reply-compose]').closest('[data-compose-root]');
+    const beside = !!list && !list.closest('.pledge-form') && list.nextElementSibling === document.querySelector('[data-inline-reply-compose]').closest('[data-compose-root]');
     await window.forumOutboxStorage.remove(item.id);
     await window.forumOutboxCompose.showUnsentReplies();
     return beside;
@@ -376,6 +377,15 @@ try {
       const colours = await view.page.locator('.pledge-bar__fill').evaluate(e => [getComputedStyle(e).backgroundColor, getComputedStyle(e.closest('.card') || document.body).backgroundColor]);
       assert.notEqual(colours[0], colours[1], `${theme}: bar fill differs from the card`);
       assert.equal(await view.page.locator('[data-role="pledge-amount"]').count(), 1);
+      // The form sits below the opening post's text, inside a visible frame.
+      const framed = await view.page.locator('.pledge-form').evaluate(form => {
+        const body = form.closest('.card, article, main').querySelector('.body');
+        const style = getComputedStyle(form);
+        const edge = ['Top', 'Right', 'Bottom', 'Left'].every(side => parseFloat(style[`border${side}Width`]) > 0 && style[`border${side}Style`] !== 'none');
+        return { below: !!body && form.getBoundingClientRect().top >= body.getBoundingClientRect().bottom - 1, edge, colour: style.borderTopColor, page: getComputedStyle(form.parentElement).backgroundColor };
+      });
+      assert.ok(framed.below, `${theme} ${width}px: the pledge form follows the opening post`);
+      assert.ok(framed.edge, `${theme} ${width}px: the pledge form has a border`);
       if (shots) {
         await mkdir(shots, { recursive: true });
         await view.page.screenshot({ path: join(shots, `${theme}-${width}-rows.png`), fullPage: true });
