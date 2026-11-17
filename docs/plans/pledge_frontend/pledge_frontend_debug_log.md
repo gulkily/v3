@@ -59,3 +59,23 @@
 **Uncertain assessments**
 - "Stages should be about ≤1 hour or ≤50 lines": Stage 4 (the pledge form and its browser checks) may run past 50 lines in the browser test alone. Kept whole, since splitting the form from its checks would leave a stage with an unverified control.
 - The writing style's "code never appears" against Step 3's "include planned function signatures": one signature, `PledgeLines::hide()`, is named.
+
+## 2026-11-17T08:45Z — Step 4
+
+**Necessary/useful instructions**
+- `implementation_standards.md` "replay that condition or explicitly report it unverified": the demo thread was replayed locally at the iPhone SE's 375 by 667 pixels, with and without JavaScript, and the device check stays pending. Retain.
+- `step4_implementation_do.md` stage boundary protocol: committing each stage with its summary kept four in-scope refinements (bar colours, blank lines, the unreadable reason, Options) recorded beside the stage that found them. Retain.
+- `implementation_standards.md` "check affected shared consumers": the second composer touched the Outbox list, Reply links and drafts; each got a browser check in Stage 4. Retain.
+- `RAILSPIKE.md` effort ledger rules: the entry snapshot went in with Stage 1, not the planning commit. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Documentation-only rules: the work type is an application change.
+- Follow-up cycles before merge: a new branch from `origin/main`, not a reused one.
+
+**Uncertain assessments**
+- The planning commit also carried the checklist and spec edits that record the replan, as cycle 8's did with the checklist. `RAILSPIKE.md` allows "moves, index entries and reference fixes"; these record approved scope, not organization, so they sit at the edge of that allowance.
+- Step 2 and 3 named a thread `.txt` view that does not exist. Recorded as a correction in Stage 2, not a scope change, since the intent (other views keep every line) held.
+- Screenshots were looked at by the agent; no independent visual review was run.
