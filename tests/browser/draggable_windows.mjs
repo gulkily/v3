@@ -20,6 +20,8 @@ import { chromium } from 'playwright-core';
 // Float mode (desktop only): a window drags by its title bar or moves with
 // arrow keys on its button; text selection and links inside windows still
 // work; Reset puts windows back; Float off and theme switches clear positions.
+// Preferences' Window controls Off removes every button at once and On brings
+// them back, both without a reload.
 // Usage: node tests/browser/draggable_windows.mjs [screenshot-dir]
 const project = resolve(new URL('../..', import.meta.url).pathname);
 const shots = process.argv[2] || null;
@@ -267,6 +269,17 @@ try {
     await page.waitForFunction(() => window.forumThemeScripts && window.forumThemeScripts.active() === 'bubblegum' && document.querySelector('[data-window]'));
     assert.equal(await page.locator('.card > [data-window-titlebar]').count(), await page.locator('.card').count(), `${path}: every window has a title bar`);
   }
+  // Preferences: Off removes the buttons now, On brings them back now.
+  await page.goto(on.base + '/tools/preferences/');
+  await page.waitForSelector('[data-window-titlebar]', { state: 'attached' });
+  await page.locator('#preference-window-controls').selectOption('off');
+  assert.equal(await page.locator('[data-window-titlebar], [data-window-float-controls]').count(), 0, 'Off: buttons gone without a reload');
+  await page.reload();
+  assert.equal(await page.locator('[data-window-titlebar]').count(), 0, 'Off: still off after reload');
+  await page.locator('#preference-window-controls').selectOption('on');
+  await page.waitForSelector('[data-window-titlebar]', { state: 'attached' });
+  assert.equal(await page.locator('.card > [data-window-titlebar]').count(), await page.locator('.card').count(), 'On: buttons back without a reload');
+
   assert.deepEqual(errors, [], 'no page errors with the flag on');
 
   // Phone width, by tap.

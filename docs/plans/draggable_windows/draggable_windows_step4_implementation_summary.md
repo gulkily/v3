@@ -101,8 +101,20 @@ Ledger note: Step 3 said this cycle's ledger row would go into the planning comm
 ## Stage 5 - Preferences row
 
 **Original estimate: 0.06**
+**Retrospective stage work: 0.06**
 
-- Status: not started.
+- Status: complete.
+- Changes:
+  - `ToolsPageController.php` passes `draggableWindowsEnabled`. `preferences.php` shows a "Window controls" On/Off select under Reading margins when the flag is on; its inline script shows the saved value before paint.
+  - `preferences.js`: Off saves `'off'` and removes `data-window-controls`; On removes the key and sets the attribute. Either way it calls `forumWindowControls.restart()`, so Bubblegum's buttons go or return without a reload. "Reset all preferences" also clears the window controls and collapsed-posts keys.
+  - Tests: `PreferencesPageTest` (row shown with the flag on, left out with it off), `tests/browser/preferences.mjs` (default On, saved Off shown before the page script, On removes the key, Off survives reload, Reset all clears both keys), `tests/browser/draggable_windows.mjs` (Off removes every title bar and the Float corner at once and after reload; On brings them back).
+- Verification:
+  - `node tests/browser/draggable_windows.mjs`: passes.
+  - `node tests/browser/preferences.mjs`: passes, including the no-overflow check in seven themes at 390px and 1280px.
+  - `./v3 test --smoke PreferencesPageTest FeatureFlagEvaluatorTest`: 477 run, 477 passed.
+  - Preferences in Bubblegum at 1280px checked by eye.
+- Notes: none.
+- Estimate details: original scope as Step 3; retrospective 0.06, on estimate. No revisions.
 
 ## Stage 6 - Docs and final review
 
