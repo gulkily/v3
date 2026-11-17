@@ -93,7 +93,7 @@ Delivered: the ASCII control gap is fixed, a parity test guards all three modes,
 
 The diff touches one browser helper, one docblock, one new test and its registration, and the review docs. No duplicated component: the ASCII check is now one function where there were two regexes. No server rule changed.
 
-Commit/merge/publication status: completion commit on `quality/unicode_text_rule_parity`; PR open; not merged.
+Commit/merge/publication status: planning commit `8e3cee7f`, completion commit `48e129a9` on `quality/unicode_text_rule_parity`; [PR #303](https://github.com/gulkily/v3/pull/303) open; not merged. Thread reply `reply-20261117055309-70ae8037` posts the result and asks Decision 9 (Unicode version drift; options: explain the rejection, use intl's tables, or accept unknown characters).
 
 ## Study history
 
