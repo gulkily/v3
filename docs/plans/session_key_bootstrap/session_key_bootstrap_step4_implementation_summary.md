@@ -98,3 +98,27 @@ PR #274 was still open at Step 4 entry. This branch starts from `main` and rebas
 **Retrospective stage work: 0.13**
 
 *— Claude · 2026-11-16 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Browser flow and notice
+
+**Original estimate: 0.12**
+
+- Changes:
+  - `key_bootstrap.js`: a page with no stored key, whose `identity_hint` cookie names a key, asks `/api/key_bootstrap_status` once per hinted key. When eligible, it loads the signing scripts and makes and publishes a key under the session's username with `ensureReadyIdentity`. It then prepares, signs and finalizes the record, signs the session in as the new key and shows one notice. A `pending` answer shows the waiting notice and finalizes nothing.
+  - The notice reuses the app version banner (`app-version-banner` classes): "This browser lost its key and has a new one." with Save a backup (to Account → Key) and OK. The pending text is "This browser lost its key. Its new key waits for approval." with Account and OK. It appears only after a real state change, so the first-paint rule holds.
+  - `browser_signing.js`: exposes its existing `signCanonicalRecord` on `__forumBrowserIdentity`.
+  - Guests make no requests: no key, and no member hint, means nothing happens. "Remove this key" signs out and sets the hint to `guest`, so a deliberate removal never bootstraps.
+- Verification:
+  - Passed: `node tests/browser/key_bootstrap.mjs` in headless Chrome (new). It records the device; clears local storage and keeps cookies; on reload gets a new key, approved (`Approved: yes`, `auth_status` 200), with the right username and one notice; on a second reload keeps the same key and shows no notice; after a deliberate removal gets no key.
+  - Passed: `tests/browser/key_bootstrap_contract.cjs` through `KeyBootstrapScriptTest`. It covers the approved order of calls, the pending path, a refused session asked only once, a guest hint, and a session for another key than the hint.
+  - Passed: `./v3 test --smoke KeyBootstrapScriptTest KeyBootstrapTest PrivateSiteAuthTest BrowserSigningNormalizationTest` (572 of 572). The full suite was not run.
+  - Looked at: a screenshot of the notice in the default Gloss theme. The first version had a square link beside pill buttons; both are now buttons.
+  - Without JavaScript: inapplicable by design. The server HTML does not change, and the script is the only actor.
+- Notes:
+  - `npm install` fetched the pinned `playwright-core` from `package.json` (already a dev dependency) for the browser check; nothing new was added.
+  - The identity hint cookie lasts 30 days. A member away longer has no hint, and nothing happens; they restore a backup or ask for approval as today. This is recorded as a limitation, not handled.
+  - Only the default theme was looked at for the notice; Stage 5 checks themes for the pill.
+
+**Retrospective stage work: 0.14**
+
+*— Claude · 2026-11-16 UTC · Model: claude-opus-5-5*
