@@ -326,6 +326,7 @@ $testFiles = [
     __DIR__ . '/ViewerSessionStoreTest.php',
     __DIR__ . '/DeviceFingerprintTest.php',
     __DIR__ . '/KeyBootstrapScriptTest.php',
+    __DIR__ . '/KeyBootstrapTest.php',
     __DIR__ . '/TaskQueueCommandTest.php',
     __DIR__ . '/TaskQueueWorkerTest.php',
     __DIR__ . '/TestRunHistoryStoreTest.php',

@@ -1540,7 +1540,11 @@ final class ReadModelBuilder
      */
     private function invitationApprovalCandidates(array $posts): array
     {
-        return \ForumRewrite\Invitation\InvitationApprovalReplay::candidates($this->repositoryRoot, $posts);
+        // Session-vouched grants (key bootstrap) replay through the same checks as invitations.
+        return array_merge(
+            \ForumRewrite\Invitation\InvitationApprovalReplay::candidates($this->repositoryRoot, $posts),
+            \ForumRewrite\Security\KeyBootstrapReplay::candidates($this->repositoryRoot, $posts),
+        );
     }
 
     private function loadApprovalSeedIdentityIds(): array

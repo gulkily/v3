@@ -18,6 +18,8 @@ PR #274 was still open at Step 4 entry. This branch starts from `main` and rebas
 
 - 2026-11-16, Ilya: "Remove this key" keeps the session open, so we need a way to log out. Disposition: no change needed; Step 3 Stage 7 was wrong. "Remove this key" already calls `/api/clear_identity` before it deletes the key, so it logs out. A deliberate removal therefore never bootstraps a key. Stage 4 adds a test that holds this. Stage 7 needs another way to drop only the stored key (see Stage 7). Approval: not needed (in-scope correction).
 
+- 2026-11-16, discovered in Stage 2: Step 2 says retracting the grant removes membership, but v3 refuses to retract identity, approval and invitation records. Asked Ilya; he chose both: retiring the bootstrapped key is the ordinary undo, and operators alone may also retract the bootstrap record. Disposition: changed requirement, approved by Ilya in chat 2026-11-16; implemented in Stage 2. The Step 2 text stays as approved; this record supersedes its "retracting it" wording.
+
 ## Study history
 
 - Step 4 entry, 2026-11-16 UTC: Step 3 projection **0.80** reaffirmed. Scope v2. Stage originals copied from Step 3; copying is not a new rating. Single exposed rater: Claude.
@@ -45,5 +47,32 @@ PR #274 was still open at Step 4 entry. This branch starts from `main` and rebas
 - Estimate details: original scope as in Step 3; uncertainty was iPad parsing, which turned out simple. No revision.
 
 **Retrospective stage work: 0.14** (the pre-existing test fixes added a little)
+
+*— Claude · 2026-11-16 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Session-sourced grant and replay
+
+**Original estimate: 0.15**
+
+**Revised estimate: 0.22** (2026-11-16, Claude; the undo path grew to cover operator retraction; changed requirement approved by Ilya)
+
+- Changes:
+  - `KeyBootstrapReplay.php` (new): finds bootstrap records (`Board-Tags: identity key-bootstrap`, `Key-Bootstrap-From-Identity-ID:` line) and turns those with a `session` receipt into approval candidates.
+  - `ApprovalAcceptance.php`: receipt kind `session`. It must match the record: the new key signed it, it names the actor, and the classification is `own_account_key`.
+  - `ReadModelBuilder.php`, `IncrementalReadModelUpdater.php`: both builders add bootstrap candidates beside invitation candidates. The incremental loader gives bootstrap records a source path.
+  - `LocalWriteService.php`: `prepareKeyBootstrap` and `finalizeKeyBootstrap`. They reuse the approval policy, the prepared-post store, `commitApprovalAcceptance` and accepted-approval recovery. A session can add a key only under its own username.
+  - Operator-only retraction: `RetractedPosts::retractable()` is now the single rule. `RetractionDeletion.php` deletes the receipt with the record. Retracting a bootstrap record refreshes approval state in full.
+  - Specs: new `docs/specs/key_bootstrap_record_v1.md`; `approval_acceptance_record_v1.md` lists the `session` kind.
+- Verification:
+  - Passed: `KeyBootstrapTest` (5 tests). Covered: a grant applied incrementally and by a fresh rebuild; no approval seed; a forged actor stops the rebuild; a cross-account receipt is rejected; no receipt, no grant; a signature from the wrong key is rejected; a retry returns the accepted commit; another username, self and unapproved session keys are refused; the author cannot retract; an operator can, and that removes the receipt and the grant in both builds; the lost key retires a stolen bootstrapped key.
+  - Passed: `./v3 test --smoke` plus `ApprovalAcceptanceTest ApprovalPolicyTest ApprovalReceiptMaintenanceTest ApprovalHistoryTest InvitationIssuanceTest AcceptedRetractionTest ReadModelPostRetractionsTest RetractionTransactionTest RetractionReceiptTest RemovalReceiptTest ReactionRetractionTest RetractionMaintenanceTest` (527 of 527).
+  - Passed: the 58 `WriteApiSmokeTest` methods about approval, retraction or retirement.
+  - The full suite was not run.
+- Notes:
+  - Read the retraction handoff (`retraction_simplification_handoff.md`) before the retraction change. The change keeps its direction: the record is deleted and a retraction record is kept.
+  - No read-model schema change in this stage.
+  - Session checks (HTTPS, device, one per session) belong to Stage 3; the writer trusts its caller for them, as the spec states.
+
+**Retrospective stage work: 0.24**
 
 *— Claude · 2026-11-16 UTC · Model: claude-opus-5-5*
