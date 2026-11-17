@@ -21,7 +21,9 @@ every theme's CSS on every page.)
    Two optional fields change that (see [Shared stylesheets and the cycle
    button](#shared-stylesheets-and-the-cycle-button)): `'stylesheet' =>
    '<other>'` and `'cycle' => false`. A third, `'palettes'`, adds a colour
-   picker (see [Colour palettes](#colour-palettes)).
+   picker (see [Colour palettes](#colour-palettes)). A fourth, `'flag'`,
+   offers the theme only while a feature flag is on (see [Themes behind a
+   feature flag](#themes-behind-a-feature-flag)).
    The registry feeds the popover markup, the cycle button, the anti-FOUC
    allow-list, and `templates/layout.php`'s `themeStylesheetPaths` JS map
    (which swaps the `<link id="theme-stylesheet">` `href` on theme change) -
@@ -89,6 +91,16 @@ and set only its colours.
 `'cycle' => false` keeps a theme in the menu but out of the cycle button, for
 themes a reader should only choose on purpose, such as Engagify. The menu
 option carries `data-theme-cycle="skip"`.
+
+## Themes behind a feature flag
+
+`'flag' => FeatureFlagRegistry::<KEY>` offers a theme only while that flag is
+on, as Zalgo does with `FORUM_ZALGO_THEME_ENABLED`. Add the flag to
+`FeatureFlagRegistry` (site-mutable, so an operator can switch it from Tools →
+Feature Flags). `ThemeRegistry::permitted()` takes the flag evaluator and drops
+the theme while the flag is off, so the menu, `/themes`, Preferences, the
+composer's theme choice and thread `theme:` lines all follow it. A reader who
+chose the theme sees the site default until the flag is on again.
 
 ## Colour palettes
 

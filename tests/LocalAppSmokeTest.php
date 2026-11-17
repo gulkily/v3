@@ -4956,7 +4956,7 @@ PHP;
             assertStringContains('SQLite format 3', (string) file_get_contents($artifactRoot . '/offline/snapshot.sqlite3'));
             assertStringContains('self.__forumBrowserRuntime = {"namespace":"zenmemes"', (string) file_get_contents($artifactRoot . '/service_worker.js'));
             assertStringContains('"id": "/offline/?site=zenmemes"', (string) file_get_contents($artifactRoot . '/manifest.webmanifest'));
-            foreach (\ForumRewrite\View\ThemeRegistry::permitted(\ForumRewrite\SiteProfileRegistry::all()['zenmemes']['permittedThemes']) as $theme) {
+            foreach (\ForumRewrite\View\ThemeRegistry::permitted(\ForumRewrite\SiteProfileRegistry::all()['zenmemes']['permittedThemes'], new \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator()) as $theme) {
                 if ($theme['name'] === 'auto') {
                     continue;
                 }

@@ -15,7 +15,7 @@ $on = page($application(), 'GET', '/tools/preferences/');
 expect(http_response_code() === 200, 'status ' . var_export(http_response_code(), true));
 expect(str_contains($on, '<h1>Preferences</h1>'), 'heading');
 expect(str_contains($on, '/assets/preferences.') && str_contains($on, '/assets/account.'), 'page script or row styles missing');
-foreach (ForumRewrite\View\ThemeRegistry::permitted(ForumRewrite\SiteProfileRegistry::active()['permittedThemes']) as $theme) {
+foreach (ForumRewrite\View\ThemeRegistry::permitted(ForumRewrite\SiteProfileRegistry::active()['permittedThemes'], new \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator()) as $theme) {
     expect(str_contains($on, '<option value="' . $theme['name'] . '">'), 'theme option ' . $theme['name']);
 }
 foreach (['id="preference-thread-view"', 'data-preference-reset="reading-margins"', 'data-preference-reset="table-size"', 'data-preference-reset="gallery-size"',

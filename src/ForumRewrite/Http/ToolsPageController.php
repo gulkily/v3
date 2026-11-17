@@ -114,7 +114,7 @@ final class ToolsPageController
         return $this->routeServices->renderPageTemplate(
             'preferences.php',
             [
-                'preferenceThemes' => \ForumRewrite\View\ThemeRegistry::permitted(\ForumRewrite\SiteProfileRegistry::active()['permittedThemes']),
+                'preferenceThemes' => \ForumRewrite\View\ThemeRegistry::permitted(\ForumRewrite\SiteProfileRegistry::active()['permittedThemes'], $this->featureFlags),
                 'threadDensityEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED),
                 'readingMarginsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::READING_MARGINS_ENABLED),
                 'usageLogEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED),

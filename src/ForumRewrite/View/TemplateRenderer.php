@@ -229,7 +229,7 @@ final class TemplateRenderer
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::ENGAGIFY_PASSWORD_NEWSLETTER)) {
             $browserRuntime['engagifyPasswordNewsletter'] = true;
         }
-        $themes = ThemeRegistry::permitted($profile['permittedThemes']);
+        $themes = ThemeRegistry::permitted($profile['permittedThemes'], $this->featureFlags);
         $explicitThemeNames = $this->explicitThemeNames($themes);
         $permittedThemeNames = array_column($themes, 'name');
         $themeStylesheetPaths = [];
@@ -668,7 +668,7 @@ final class TemplateRenderer
         }
 
         $profile = SiteProfileRegistry::active();
-        $themes = ThemeRegistry::permitted($profile['permittedThemes']);
+        $themes = ThemeRegistry::permitted($profile['permittedThemes'], $this->featureFlags);
         $explicitThemeNames = $this->explicitThemeNames($themes);
         $themeModes = [];
         foreach ($themes as $theme) {
@@ -751,6 +751,8 @@ final class TemplateRenderer
             'tagLinksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_LINKS_ENABLED),
             'tagUnlocksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED),
             'mediaEmbedsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED),
+            // The composer's theme choice lists only themes this site offers now.
+            'themeFlags' => $this->featureFlags,
         ], $data);
         // Drop tools whose pages are off: Agent Prompts opens /agent/, the
         // usage tools exist only while the "Usage reports" flag is on, and

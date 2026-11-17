@@ -2243,6 +2243,12 @@ Outcome: Await Approved Step 1 for this cycle. No implementation, host execution
 
 | Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
+| `v3/zalgo_theme` | Implemented; PR pending | v2 (one-shot) / R1 / P2 | 0.45 | [Step 1](./zalgo_theme/zalgo_theme_step1_solution_assessment.md#study-snapshots-and-approval), [one-shot record](./zalgo_theme/zalgo_theme_one_shot.md#study-history) | New cycle; maintainer acceptance pending |
+
+2026-11-15: standing P2 enrollment for the Zalgo theme, staged; Step 1 handoff 0.40 for Option B (A 0.35, B 0.40, C 0.65; not summed). 2026-11-16: the maintainer briefly asked for an operator theme panel first (`v3/operator_theme_choice`, Step 1 written, uncommitted, shelved), then asked for Zalgo behind an on/off flag. Transitioned to one-shot: execution entry 0.45 (Option A plus flag gate), closeout retrospective 0.45. Claude single exposed rater; R1 hashes not re-verified.
+
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
 | `v3/import_cancel` | Locally complete; acceptance pending | v1 / R1 / P2 | 0.25 | [One-shot record](./import_cancel/import_cancel_one_shot.md) | Prerequisite of `v3/import_instance_gui`; acceptance pending |
 
 2026-11-16: one-shot import cancel; baseline `c95e22b3`. Intake after inspection and closeout retrospective both 0.25; Claude single exposed rater; R1 hashes not re-verified.
