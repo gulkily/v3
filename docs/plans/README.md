@@ -541,3 +541,4 @@ and repair its navigation and affected references. See the
 - [Offline card extra line](offline_card_extra_line/offline_card_extra_line_one_shot.md) — one-shot: offline board cards show one more line of the post body.
 - [Tour snapshots](tour_snapshots/tour_snapshots_step1_solution_assessment.md) — staged: the feature tour as one row per feature with essays, served from pre-rendered HTML snapshots refreshed by deploy, cron or Tools → Operations.
 - [Approval root suggestions](approval_suggest_roots/approval_suggest_roots_one_shot.md) — one-shot: read-only `./v3 approval suggest-roots` that finds which keys to seed as roots after importing a site without its approval seeds.
+- [Asset bypass](asset_bypass/asset_bypass_step1_solution_assessment.md) — staged: high-traffic mode serves its verified asset copies through Apache; fix the broken /assets/ bypass condition.
