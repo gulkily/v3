@@ -34,6 +34,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Pledge count unnamed](pledge_count_unnamed/pledge_count_unnamed_one_shot.md) — a flag that lets pledges with no name count toward a campaign's sum.
 
+[Pledge approval reload](pledge_approval_reload/pledge_approval_reload_one_shot.md) — approving a waiting pledger from their Pending chip on a campaign thread reloads the page, so their pledge counts at once.
+
 [Pledge More flat](pledge_more_flat/pledge_more_flat_one_shot.md) — inside "More" on a campaign thread, Retract and the format switch are plain buttons, not a second "…" menu.
 
 [Pledge row byline](pledge_row_byline/pledge_row_byline_one_shot.md) — an opened pledge row names the pledger once; the byline under it keeps the date and any Pending chip.
