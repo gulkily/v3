@@ -7,7 +7,8 @@ Extended estimates: enabled (no alternatives or stages, so only the cycle estima
 
 **Cycle estimate: 0.10**
 
-Status: planned; next permitted action: implement after the planning commit.
+Status: technically complete and committed; next permitted action: the sibling polish cycles, then push and open the PR (authorized).
+Debug report: [log](pledge_row_byline_debug_log.md)
 
 ## Original request
 
@@ -45,14 +46,38 @@ Open a pledge row on a campaign thread: the name appears once; the date and any 
 `PledgeCampaignTest` check on an opened row's byline; the browser check across 17 themes. Smoke set plus `PledgeCampaignTest`. Full suite not run, per `AGENTS.md`.
 
 Starting revisions and branch: `feat/pledge-polish` from `d33114d2`.
-Planning commit: pending.
+Planning commit: `826e5df6` (plan and index link only; confirmed with `git log`).
 
 ## Dated execution history
 
 - 2026-11-17: plan written.
+- 2026-11-17: `$rowMeta` takes `withAuthor` (default true); `renderRowMeta` leaves the author out when false. `post_card.php` passes `!$isPledgeRow`. `PledgeCampaignTest::testEachPledgeIsOneClosedRowAndRowsNeverJoinARun` now checks that a row's byline starts with its date and a question's does not.
 
 ## Study history
 
 - Intake: **0.10**, exposed rater Claude (claude-opus-5-5), after reading `post_card.php`, `pledge_amount.php` and `renderRowMeta` (no pristine intake).
+
+- Execution entry: reaffirmed 0.10.
+- Closeout retrospective: **0.10**. Not hours or measured labor; maintainer acceptance pending.
+
+## Outcome
+
+Delivered as bounded. An opened pledge row reads "guest  300 Delivered", then "Nov 17", then the note; the name appears once. Other replies on the thread keep "guest · Nov 17".
+
+Limitation: inside an opened row there is no link to an approved pledger's profile.
+
+## Verification
+
+- `./v3 test PledgeCampaignTest`: 28 passed; the new check failed with the base `post_card.php` (27 of 28).
+- `tests/browser/pledge_campaign.mjs`: whole flow and 17 themes at 375 and 1280 pixels passed; the Light phone screenshot of opened rows looked at by the agent.
+- Smoke set run once for the branch at the end (see [`pledge_approval_reload`](../pledge_approval_reload/pledge_approval_reload_one_shot.md#verification)). Full suite not run, per `AGENTS.md`.
+
+## Final review
+
+Diff checked: `TemplateRenderer.php`, `post_card.php`, one test, the concept's Rows entry, this record, its debug log, the plans index and the cycle ledger. Other `$rowMeta` callers unchanged (default keeps the author).
+
+## Commit/merge/publication status
+
+Completion commit: the commit that adds this text (hash in the PR). Not pushed at writing.
 
 *— Claude · 2026-11-17 UTC · Model: claude-opus-5-5*

@@ -79,7 +79,7 @@ $hoverTimeLabel = $isRunTail ? '' : $postTimeLabel;
 // byline-above-body order.
 $metaLine = '';
 if ($isRunTail) {
-    $metaLine = '<p class="meta" data-post-byline>' . ($compactCard ? $rowMeta($post) : $contentMeta($post, 'created_at', ''));
+    $metaLine = '<p class="meta" data-post-byline>' . ($compactCard ? $rowMeta($post, 'created_at', !$isPledgeRow) : $contentMeta($post, 'created_at', ''));
     if ($postFoldable) {
         $metaLine .= ' <span class="post-resolution-state" data-role="post-state-label"' . ($postStateLabel === '' ? ' hidden' : '') . '>' . $e($postStateLabel) . '</span>';
     }

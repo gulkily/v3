@@ -1063,6 +1063,13 @@ final class PledgeCampaignTest
         }
         pledgeAssertContains('<span class="pledge-row-name">', $card($html, $first));
         pledgeAssertContains('First one.', $card($html, $first));
+        // The row names the pledger, so the byline under it shows only the date; a question keeps its name.
+        $byline = static function (string $card): string {
+            $start = (int) strpos($card, 'data-post-byline>') + strlen('data-post-byline>');
+            return substr($card, $start, (int) strpos($card, '</p>', $start) - $start);
+        };
+        pledgeAssertSame(true, str_starts_with($byline($card($html, $first)), '<time'));
+        pledgeAssertSame(false, str_starts_with($byline($card($html, $question)), '<time'));
         // Two pledges in a row from one key are two rows, not one merged card; a question stays a card.
         pledgeAssertSame(2, substr_count($html, 'class="card post-card pledge-row'));
         pledgeAssertNotContains('pledge-row', substr($html, (int) strpos($html, 'data-post-id="' . $question . '"') - 200, 200));

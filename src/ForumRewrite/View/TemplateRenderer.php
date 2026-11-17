@@ -813,7 +813,7 @@ final class TemplateRenderer
         $author = fn (array $record): string => $this->renderAuthorHtml($record, $e);
         $forteAuthor = fn (array $record): string => $this->renderAuthorHtml($record, $e, true);
         $contentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e);
-        $rowMeta = fn (array $record, string $timeField = 'created_at'): string => $this->renderRowMeta($record, $timeField, $e);
+        $rowMeta = fn (array $record, string $timeField = 'created_at', bool $withAuthor = true): string => $this->renderRowMeta($record, $timeField, $e, $withAuthor);
         $forteContentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e, true);
         $timeMeta = fn (string $label, ?string $timestamp): string => $this->renderTimeMeta($label, $timestamp, $e);
         $heat = fn (?string $timestamp, int $replyCount = 0): int => $this->heatLevel($timestamp, $replyCount);
@@ -937,11 +937,12 @@ final class TemplateRenderer
      *
      * @param callable(mixed): string $escape
      */
-    private function renderRowMeta(array $record, string $timeField, callable $escape): string
+    /** Without the author, for a byline whose row already names them (a pledge row). */
+    private function renderRowMeta(array $record, string $timeField, callable $escape, bool $withAuthor = true): string
     {
         $authorHtml = $this->renderAuthorHtml($record, $escape);
         $authorHtml = str_replace(' <span class="meta">(unapproved)</span>', '', $authorHtml, $unapproved);
-        $parts = [$authorHtml];
+        $parts = $withAuthor ? [$authorHtml] : [];
         $dateHtml = $this->renderShortDateHtml((string) ($record[$timeField] ?? ''), $escape);
         if ($dateHtml !== '') {
             $parts[] = $dateHtml;
