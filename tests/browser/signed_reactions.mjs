@@ -55,9 +55,10 @@ try {
         await button.click();
         await page.waitForFunction(({ selector, index }) => document.querySelectorAll(selector)[index]?.getAttribute('aria-pressed') === 'true', { selector, index });
         // Optimistic aria-pressed can precede completion; wait for saved feedback/response.
-        for (let i = 0; i < 200 && responses.length < before + (mode === 'forte' ? 2 : 1); i++) await page.waitForTimeout(50);
+        for (let i = 0; i < 200 && responses.length < before + 1; i++) await page.waitForTimeout(50);
         const batch = responses.slice(before);
-        assert.equal(batch.length, mode === 'forte' ? 2 : 1);
+        // A skewed clock (forte mode) is accepted as signed in one request, with a receipt.
+        assert.equal(batch.length, 1);
         const final = batch.at(-1);
         assert.match(await final.text(), /status=ok/);
         const fields = new URLSearchParams(final.request().postData());
@@ -71,6 +72,8 @@ try {
         const source = await context.request.get(base + `/source/current/records/${family}/${id}.txt`);
         assert.equal(await source.text(), record);
         assert.equal(source.headers()['x-forum-signature-status'], 'verified');
+        const receipt = await readFile(join(root, 'repository/records', family, id + '.txt.received'), 'utf8').catch(() => null);
+        assert.equal(receipt !== null, mode === 'forte', 'only the skewed clock gets a receipt');
         return id;
       }
       if (mode === 'qdb') {

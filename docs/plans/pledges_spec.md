@@ -2,6 +2,8 @@
 
 Status: draft for discussion, 2026-11-15; code check added 2026-11-16. Cycles are tracked in [pledges_checklist.md](./pledges_checklist.md). Working name: "pledges". Feature flag: `pledges`.
 
+Replanned 2026-11-17 as an MVP: stages, the cushion, marker posts, the celebration and configuration are cut. Only a status word ("Goal reached", "Complete") remains, in the `pledge_frontend` cycle. Board rows and the agent text view are parked. Sections below keep the earlier design for reference.
+
 ## Summary
 
 A campaign is a thread that states a goal in a unit the author picks ("1000 coffees"). People reply with pledges, each a number in that unit. No money moves through the site. The thread shows a running total, and the author marks pledges filled as they come through. Pledges can be withdrawn. Going over the goal is allowed and expected, because some pledges will not be filled.
@@ -56,9 +58,9 @@ The rest of the reply is an optional note ("I'll order these from the roaster my
 - By the pledger: "Delivered (reported by mara)". It counts toward the filled total immediately.
 - By the campaign author or an operator: "Filled (confirmed by ilyag)".
 
-**Confirm.** The author's record on a pledger-reported fill. It changes the label to confirmed and nothing else.
+**Confirm.** The author's (or an operator's) record on a pledger-reported fill: a reply to the fill with the line `confirm`. It changes the label to confirmed and moves the fill into the confirmed share. (Reworded 2026-11-17 with [pledge_fill_review](./pledge_fill_review/pledge_fill_review_step3_development_plan.md): an operator may confirm too, and confirmed is a share of filled.)
 
-**Dispute.** The author's (or an operator's) record on a pledger-reported fill, saying it did not arrive. The fill stops counting. The fill and the dispute both stay visible. A dispute can itself be retracted.
+**Dispute.** The author's (or an operator's) record on a pledger-reported fill, saying it did not arrive: a reply to the fill with the line `dispute`. The fill stops counting and that part of the pledge is open again. The fill and the dispute both stay visible. A dispute can itself be retracted, and a later confirm replaces it. Fills by the author or an operator cannot be reviewed. (Reply line decided 2026-11-17.)
 
 The pledger is the one who knows whether they delivered, so an author who goes quiet cannot freeze a campaign. The label always says who made the claim, so a reader can tell a campaign that is complete and confirmed from one that is complete on self-reports.
 
@@ -77,6 +79,8 @@ Computed from the records, never stored as the source of truth:
 The thread header shows goal, pledged and filled. Pledged may exceed the goal ("1300 of 1000 pledged").
 
 ## Stages and milestones
+
+Cut 2026-11-17 except the status word; see the note at the top.
 
 A campaign has two numbers that can each reach the goal, and each gets its own moment.
 
@@ -117,7 +121,7 @@ Same unit as the goal. With no cushion line, the Cushioned stage is skipped.
 
 ## Pages
 
-- **Campaign thread.** The normal thread page with a summary block under the first post: goal, pledged, filled, a bar, and a pledge box (one number field, one optional note, one button). Each pledge reply shows its amount and state: open, filled, part filled, or withdrawn.
+- **Campaign thread.** (Built 2026-11-17 by `pledge_frontend`: the block sits under the title, with a pledge form, a status word and one status per pledge.) The normal thread page with a summary block under the first post: goal, pledged, filled, a bar, and a pledge box (one number field, one optional note, one button). Each pledge reply shows its amount and state: open, filled, part filled, or withdrawn.
 - **Board.** A campaign's row shows a compact "620 / 1000 coffees" next to the title.
 - **Text view.** `<thread-url>.txt` includes the goal line, the totals, and each pledge with its state, so agents can read and pledge without scraping HTML.
 - **User page (later).** Pledged and filled counts per username.
@@ -125,6 +129,8 @@ Same unit as the goal. With no cushion line, the Cushioned stage is skipped.
 URLs stay the ordinary thread URLs. No new opaque state.
 
 ## Configuration
+
+Cut 2026-11-17.
 
 Two choices are meant to be configurable, in keeping with v3's feature-flag approach. Whether each is set per instance, per campaign, or both is still open.
 

@@ -21,6 +21,7 @@ final class FeatureFlagRegistry
     public const APP_VERSION_NOTIFICATION = 'FORUM_APP_VERSION_NOTIFICATION';
     public const THREAD_DENSITY_TOGGLE_ENABLED = 'FORUM_THREAD_DENSITY_TOGGLE_ENABLED';
     public const READING_MARGINS_ENABLED = 'FORUM_READING_MARGINS_ENABLED';
+    public const DRAGGABLE_WINDOWS_ENABLED = 'FORUM_DRAGGABLE_WINDOWS_ENABLED';
     public const GUESTBOOK_ENABLED = 'FORUM_GUESTBOOK_ENABLED';
     public const TITLE_DIRECTIVE_ENABLED = 'FORUM_TITLE_DIRECTIVE_ENABLED';
     public const TITLE_DIRECTIVE_APPROVED_MEMBERS = 'FORUM_TITLE_DIRECTIVE_APPROVED_MEMBERS';
@@ -30,6 +31,7 @@ final class FeatureFlagRegistry
     public const INSTANCE_IMPORT_PAGE_ENABLED = 'FORUM_INSTANCE_IMPORT_PAGE_ENABLED';
     public const AGENT_PROMPT_ENABLED = 'FORUM_AGENT_PROMPT_ENABLED';
     public const ENGAGIFY_PASSWORD_NEWSLETTER = 'FORUM_ENGAGIFY_PASSWORD_NEWSLETTER';
+    public const ZALGO_THEME_ENABLED = 'FORUM_ZALGO_THEME_ENABLED';
     public const MEDIA_EMBEDS_ENABLED = 'FORUM_MEDIA_EMBEDS_ENABLED';
     public const MEDIA_EMBEDS_INLINE_PLAYER_ENABLED = 'FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED';
     public const TAG_LINKS_ENABLED = 'FORUM_TAG_LINKS_ENABLED';
@@ -69,9 +71,10 @@ final class FeatureFlagRegistry
             self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED, self::EVENT_WHEN_ENABLED],
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
             self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED,
-            self::DEPLOY_HEADER_PROMPT_ENABLED, self::INSTANCE_IMPORT_PAGE_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER, self::PRIVATE_MESSAGE_CACHE_ENABLED,
+            self::DEPLOY_HEADER_PROMPT_ENABLED, self::INSTANCE_IMPORT_PAGE_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER,
+            self::ZALGO_THEME_ENABLED, self::PRIVATE_MESSAGE_CACHE_ENABLED,
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
-            self::READING_MARGINS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
+            self::READING_MARGINS_ENABLED, self::DRAGGABLE_WINDOWS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
             self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED, self::PLEDGES_COUNT_UNNAMED_ENABLED,
             self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
@@ -383,6 +386,15 @@ final class FeatureFlagRegistry
                 group: 'EXPERIENCE',
             ),
             new FeatureFlagDefinition(
+                self::DRAGGABLE_WINDOWS_ENABLED,
+                'Draggable windows',
+                'In the Bubblegum theme, give every window a working collapse button, keep a post collapsed after a reload once a reader collapses it, and let desktop readers turn on Float mode to drag windows around. Readers can turn it off in Preferences.',
+                false,
+                self::DRAGGABLE_WINDOWS_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
                 self::GUESTBOOK_ENABLED,
                 'Guestbook',
                 "Show the site's guestbook thread as a paper book at /guestbook/, with a Sign the book form on the last page. Needs a guestbook thread in the site profile; the thread itself always stays available.",
@@ -397,6 +409,15 @@ final class FeatureFlagRegistry
                 "In the Engagify theme, the newsletter's email box hides what you type like a password, and Ava's chat panel opens over it. Off by default; Ava then waits until the popup is closed.",
                 false,
                 self::ENGAGIFY_PASSWORD_NEWSLETTER,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+            ),
+            new FeatureFlagDefinition(
+                self::ZALGO_THEME_ENABLED,
+                'Zalgo theme',
+                'Offer the Zalgo theme: dark, with headings and borders that look like the page is being corrupted. Off by default; while it is off, anyone who chose Zalgo sees the site default.',
+                false,
+                self::ZALGO_THEME_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
             ),
@@ -434,6 +455,7 @@ final class FeatureFlagRegistry
                 "Clicking a Pending chip beside an author's name opens a short summary of them with their newest posts, and approved members can approve them there. Off, the chip is a plain label.",
                 true,
                 self::PENDING_CHIP_APPROVAL_ENABLED,
+                siteMutable: true,
                 group: 'EXPERIENCE',
             ),
             new FeatureFlagDefinition(

@@ -1,0 +1,14 @@
+Schema: known-instances-v1
+
+# Public v3 instances offered as import sources on Tools → Import and the local
+# start page, and accepted by name by ./v3 import-instance (for example
+# `./v3 import-instance zenmemes`). An instance never offers its own address.
+# Each block names one instance:
+#   Name:  short name for the command line (letters, digits, - and _)
+#   Title: what people call the site
+#   URL:   the instance's base URL
+# Lines starting with # are comments. Blocks are separated by blank lines.
+
+Name: zenmemes
+Title: ZenMemes
+URL: https://zenmemes.com

@@ -653,6 +653,11 @@ final class Application
             return;
         }
 
+        if (($path === '/tools/fastmod/' || $path === '/tools/fastmod') && $method === 'POST') {
+            $this->toolsPageController()->fastmodSubmit($query);
+            return;
+        }
+
         if (($path === '/tools/operations/' || $path === '/tools/operations') && $method === 'POST') {
             $this->toolsPageController()->operationsSubmit($query);
             return;
@@ -721,7 +726,7 @@ final class Application
             }
 
             $location = $this->qdbExperience()->isEnabled() ? null : $this->boardPageController()->listWithLocation(
-                (string) ($query['view'] ?? 'liked'),
+                (string) ($query['view'] ?? ''),
                 (string) ($query['sort'] ?? 'newest'),
                 $query['with'] ?? null,
             );
@@ -731,12 +736,17 @@ final class Application
             }
             $this->sendHtml(
                 $this->boardPageController()->board(
-                    (string) ($query['view'] ?? 'liked'),
+                    (string) ($query['view'] ?? ''),
                     (string) ($query['sort'] ?? 'newest'),
                     listPage: $query['page'] ?? null,
                 ),
                 200
             );
+            return;
+        }
+
+        if ($path === '/start/' || $path === '/start') {
+            $this->sendHtml($this->renderGettingStarted(), 200);
             return;
         }
 
@@ -755,7 +765,7 @@ final class Application
         }
 
         if ($path === '/themes/' || $path === '/themes') {
-            $this->sendHtml((new \ForumRewrite\Http\ThemeCatalogPageController($this->renderPageTemplate(...), $this->projectRoot))->render(), 200);
+            $this->sendHtml((new \ForumRewrite\Http\ThemeCatalogPageController($this->renderPageTemplate(...), $this->projectRoot, $this->featureFlags()))->render(), 200);
             return;
         }
 
@@ -1694,6 +1704,14 @@ final class Application
         );
     }
 
+    private function renderGettingStarted(): string
+    {
+        return $this->renderPageTemplate('getting_started.php', [
+            'knownInstances' => \ForumRewrite\Import\KnownInstances::others((string) ($_SERVER['HTTP_HOST'] ?? '')),
+            'importPageEnabled' => $this->featureFlags()->isEnabled(FeatureFlagRegistry::INSTANCE_IMPORT_PAGE_ENABLED),
+        ], 'Getting started', 'board');
+    }
+
     private function renderAbout(): string
     {
         return (new AboutPageController($this->renderPageTemplate(...)))->render();
@@ -2485,7 +2503,7 @@ final class Application
         if (in_array($path, [
             '', '/',
             '/threads', '/threads/',
-            '/about', '/about/',
+            '/about', '/about/', '/start', '/start/',
             '/themes', '/themes/',
             '/agent', '/agent/',
             '/docs', '/docs/',

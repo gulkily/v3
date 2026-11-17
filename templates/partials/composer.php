@@ -58,7 +58,7 @@ HTML;
           <span class="compose-options-name"><?= $composerIsThread ? 'Theme' : 'Thread theme' ?></span>
           <select name="theme" data-role="thread-theme-choice">
             <option value=""><?= $composerIsThread ? 'Site default' : 'Unchanged' ?></option>
-<?php foreach (\ForumRewrite\View\ThreadTheme::choices() as $composerThemeChoice): ?>
+<?php foreach (\ForumRewrite\View\ThreadTheme::choices($themeFlags) as $composerThemeChoice): ?>
             <option value="<?= $e($composerThemeChoice['name']) ?>"><?= $e($composerThemeChoice['label']) ?></option>
 <?php endforeach; ?>
 <?php if (!$composerIsThread): ?>
@@ -69,6 +69,13 @@ HTML;
       </div>
     </details>
 <?php $composerOptions = (string) ob_get_clean(); ?>
+<?php
+// A placement may leave Options out (the pledge form: a note has no format or theme to choose);
+// the post is then plain, as an unticked Markdown box would make it.
+if (!($composerShowOptions ?? true)) {
+    $composerOptions = '    <input type="hidden" name="body_format" value="plain">' . "\n";
+}
+?>
 <form method="post"<?= $composerAction !== '' ? ' action="' . $e($composerAction) . '"' : '' ?> class="<?= $e($composerFormClass) ?>" data-compose-form data-compose-kind="<?= $e($composerKind) ?>"<?= $composerFormAttributes ?>>
 <?= $composerLeadFields ?>  <textarea name="body" data-compose-field-label="Body" rows="<?= $e($composerBodyRows) ?>" placeholder="<?= $e($composerBodyPlaceholder) ?>" aria-label="Body"><?= $e($body) ?></textarea>
 <?= $composerNormalizationStatus('body') ?>

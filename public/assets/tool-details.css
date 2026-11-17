@@ -620,11 +620,27 @@ form.feature-flag-control,
   margin: 0.3rem 0 0;
 }
 
+/* Deploy now leads; Queue deploy and Check for updates sit beside it as
+   quieter secondary buttons. One row when it fits, wrapping on phones. */
 .deploy-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 1rem;
+}
+
+.deploy-actions > button {
+  flex: 1 1 auto;
+  width: auto;
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+.deploy-actions > .deploy-actions__primary {
+  background-color: var(--active-bg);
+  border-color: var(--active-ink);
+  color: var(--active-ink);
+  font-weight: 700;
 }
 
 .import-actions label {

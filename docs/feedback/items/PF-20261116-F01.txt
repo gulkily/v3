@@ -1,7 +1,7 @@
 ID: PF-20261116-F01
 Title: Cancel an interrupted instance import instead of resuming it
 Kind: feature
-Workflow: blocked
+Workflow: done
 Created: 2026-11-16
 Evidence: locally-verified
 
@@ -16,3 +16,4 @@ An operator with an interrupted import that has not committed its content can ru
 
 Notes:
 2026-11-16: one-shot on feat/import_cancel (record docs/plans/import_cancel/import_cancel_one_shot.md); verified locally; awaiting PR review and deployment.
+2026-11-17: merged in #285. The maintainer says the import feature is largely for localhost for now, where a merged change is in use without a deploy; completion checks met by the local verification. Done.

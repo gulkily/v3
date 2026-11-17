@@ -22,5 +22,6 @@ repository.tar.gz
 # Local testing approval opt-in
 /.test-self-approval
 public/.high-traffic
+public/.high-traffic-assets
 public/assets/tour/
 __pycache__/

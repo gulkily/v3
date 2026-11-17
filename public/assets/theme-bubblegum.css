@@ -92,6 +92,181 @@
     repeating-linear-gradient(180deg, transparent 0 2px, rgba(255, 255, 255, 0.85) 2px 4px) left 0.5rem center / 3.5rem 0.75rem no-repeat,
     var(--bubblegum-bar);
   pointer-events: none;
+  /* content-interactions.css hides .meta-deferred::before (its hover time) on
+     every post that starts a run; here ::before is the title bar, so keep it. */
+  opacity: 1;
+}
+
+:root[data-theme="bubblegum"][data-window-controls] .card[data-window-collapsed] {
+  /* Window controls (FORUM_DRAGGABLE_WINDOWS_ENABLED, theme-bubblegum.js): a
+     collapsed window keeps only its title bar; its contents stay in the page,
+     only hidden. layout.php writes the same rules for posts collapsed in this
+     browser, so they show collapsed before the script starts. */
+  padding-top: 1.5rem;
+  padding-bottom: 0;
+  min-height: 0;
+}
+
+:root[data-theme="bubblegum"][data-window-controls] .card[data-window-collapsed] > :not([data-window-titlebar]):not([data-visitor-intro-hide]) {
+  display: none !important;
+}
+
+/* The script's title bar: a strip over the drawn bar holding the window's
+   label (shown when collapsed) and the real collapse button, which replaces
+   the drawn boxes so every box on the bar does something. */
+:root[data-theme="bubblegum"][data-window-controls] .card[data-window]::before {
+  background:
+    repeating-linear-gradient(180deg, transparent 0 2px, rgba(255, 255, 255, 0.85) 2px 4px) left 0.5rem center / 3.5rem 0.75rem no-repeat,
+    var(--bubblegum-bar);
+}
+
+:root[data-theme="bubblegum"] [data-window-titlebar] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(1.5rem - 3px);
+  margin: 0 !important;
+  padding: 0 0.4rem 0 4.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+:root[data-theme="bubblegum"] .visitor-intro > [data-window-titlebar] {
+  /* Leave the close box (the intro's Hide button) its own spot at the end. */
+  padding-right: 1.9rem;
+}
+
+:root[data-theme="bubblegum"] [data-window-label] {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #ffffff;
+  font-family: var(--ui-font);
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: 1px 1px 0 var(--bubblegum-berry);
+  visibility: hidden;
+}
+
+:root[data-theme="bubblegum"] .card[data-window-collapsed] [data-window-label] {
+  visibility: visible;
+}
+
+/* Once the reader is in a window, the other title bars fade to a pale pink;
+   a collapsed window's label turns berry there so it stays readable. */
+:root[data-theme="bubblegum"][data-window-has-active] .card[data-window]:not([data-window-active])::before {
+  background:
+    repeating-linear-gradient(180deg, transparent 0 2px, rgba(255, 255, 255, 0.85) 2px 4px) left 0.5rem center / 3.5rem 0.75rem no-repeat,
+    #f6b4d3;
+}
+
+:root[data-theme="bubblegum"][data-window-has-active] .card[data-window]:not([data-window-active]) [data-window-label] {
+  color: var(--bubblegum-berry);
+  text-shadow: none;
+}
+
+/* A short pop as a collapsed window opens. */
+@keyframes bubblegum-window-pop {
+  0% { transform: scale(0.97); }
+  60% { transform: scale(1.015); }
+  100% { transform: scale(1); }
+}
+
+:root[data-theme="bubblegum"] .card[data-window-pop] {
+  animation: bubblegum-window-pop 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="bubblegum"] .card[data-window-pop] {
+    animation: none;
+  }
+}
+
+/* Float mode (desktop): windows drag by their title bars; the one in use sits on top. */
+:root[data-theme="bubblegum"][data-window-float] [data-window-titlebar] {
+  cursor: grab;
+}
+
+:root[data-theme="bubblegum"][data-window-float] .card[data-window-dragging] > [data-window-titlebar] {
+  cursor: grabbing;
+}
+
+:root[data-theme="bubblegum"][data-window-float] .card[data-window-active] {
+  z-index: 2;
+}
+
+/* Float and Reset sit in a small taskbar corner at the bottom left
+   (desktop only; the script doesn't add it for touch or narrow screens). */
+:root[data-theme="bubblegum"] [data-window-float-controls] {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 20;
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.35rem;
+  border: 3px solid var(--bubblegum-berry);
+  background: var(--bubblegum-bar);
+  box-shadow: 4px 4px 0 var(--bubblegum-shadow);
+}
+
+:root[data-theme="bubblegum"] [data-window-float-controls] > button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  margin: 0;
+  padding: 0.15rem 0.45rem;
+  min-height: 0;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  box-shadow: 2px 2px 0 var(--bubblegum-berry);
+}
+
+:root[data-theme="bubblegum"] [data-window-float-controls] > button[aria-pressed="true"]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  background: var(--active-bg);
+  color: var(--active-ink);
+}
+
+:root[data-theme="bubblegum"] [data-window-float-controls] > button[hidden] {
+  display: none;
+}
+
+/* A white box with a pixel underscore (collapse), or an outlined window
+   (expand) once collapsed. The invisible ::after makes a 44px touch target. */
+/* `.card >` outranks the chunky-button hover and press rules further down. */
+:root[data-theme="bubblegum"] .card > [data-window-titlebar] > button[data-window-collapse]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  position: relative;
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 2px solid var(--bubblegum-berry);
+  background:
+    linear-gradient(var(--bubblegum-berry), var(--bubblegum-berry)) center bottom 2px / 55% 2px no-repeat,
+    #ffffff;
+  box-shadow: none;
+  transform: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root[data-theme="bubblegum"] .card[data-window-collapsed] > [data-window-titlebar] > button[data-window-collapse]:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  background: #ffffff;
+  box-shadow: inset 0 0 0 2px #ffffff, inset 0 0 0 4px var(--bubblegum-berry);
+}
+
+:root[data-theme="bubblegum"] [data-window-titlebar] > button[data-window-collapse]::after {
+  content: "";
+  position: absolute;
+  inset: -0.625rem;
 }
 
 :root[data-theme="bubblegum"] .thread-rows {
@@ -636,4 +811,16 @@
 
 :root[data-theme="bubblegum"] .visitor-statistics-table tbody tr:nth-child(even) {
   background: rgba(228, 91, 156, 0.07);
+}
+
+/* Deploy page: only Deploy now is the filled pink button; the other two
+   keep the pale candy look so the main action stands out. */
+:root[data-theme="bubblegum"] .deploy-actions > button.deploy-actions__secondary:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  background: var(--button-bg);
+  background-image: var(--bubblegum-shine), var(--bubblegum-candy);
+  color: var(--bubblegum-berry);
+}
+
+:root[data-theme="bubblegum"] .deploy-actions > button.deploy-actions__secondary:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):hover {
+  background-color: #ffc7e0;
 }

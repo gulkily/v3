@@ -2,12 +2,7 @@
   <article class="card stack">
     <h1>Local development</h1>
     <p>Explore your local copy, or bring in public content from another instance.</p>
-    <div class="button-row button-row-natural">
-      <a href="/threads/?view=all">Browse threads</a>
-      <a href="/recent/">Recent posts</a>
-      <a href="/themes/">Themes</a>
-      <a href="/docs/">Documentation</a>
-    </div>
+<?= $indent($partial('partials/getting_started_links.php', ['part' => 'browse']), 2) ?>
   </article>
   <article class="card stack">
     <h2>Import public content</h2>
@@ -40,7 +35,6 @@
   </article>
   <article class="card stack">
     <h2>Try the forum</h2>
-    <p><a href="/compose/thread">Start a thread</a>, reply to a post, or <a href="/search/">search your local content</a>.</p>
-    <p><a href="/agent/">Work with an agent</a> · <a href="/tools/">Tools</a> · <a href="/about/">About the project</a></p>
+<?= $indent($partial('partials/getting_started_links.php', ['part' => 'try']), 2) ?>
   </article>
 </section>
