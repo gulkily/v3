@@ -10,7 +10,7 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.55**
 
-Branch: `feat/import_planning_speed`, from `origin/main` at `f9d61535`. Planning commit `4bc38c64`.
+Branch: `feat/import_planning_speed`. Built on `origin/main` `f9d61535` (planning commit first made as `4bc38c64`); rebased onto `fc368349` before opening the PR, which made the planning commit `5fd337c3`. Measurements below were taken on the `f9d61535` base.
 
 ## Entry notes
 
