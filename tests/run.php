@@ -337,6 +337,7 @@ $testFiles = [
     __DIR__ . '/GpgAvailabilityTest.php',
     __DIR__ . '/ScriptsIndexTest.php',
     __DIR__ . '/TestFileRegistrationTest.php',
+    __DIR__ . '/FastNavigationLayoutTest.php',
     __DIR__ . '/ThemeToggleScriptTest.php',
     __DIR__ . '/Word97ThemeCoverageTest.php',
     __DIR__ . '/NavIconSetsTest.php',
