@@ -81,7 +81,7 @@ Diff limited to `ApprovalLabel.php` (new), `CalendarQuery.php`, `CalendarPageTes
 
 ## Commit, merge and publication status
 
-Planning commit `a8487ae`; completion commit pending (this record's hash is reported in the handoff). Not merged or deployed.
+Planning commit `a8487ae`; completion commit `28ec4718` (implementation, record, item, ledger, debug log). Pushed as `feat/post_approval_label`; [PR #330](https://github.com/gulkily/v3/pull/330) open. Not merged or deployed.
 
 ## Attribution
 
