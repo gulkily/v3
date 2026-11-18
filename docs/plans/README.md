@@ -621,3 +621,4 @@ and repair its navigation and affected references. See the
 
 - [Import output noise](import_output_noise/import_output_noise_one_shot.md) — one-shot: import-instance prints a short log by default; per-file causes move to --verbose.
 - [Invite show mode](invite_show_mode/invite_show_mode_one_shot.md) — one-shot: once an invite is generated, the page shows only the pitch, QR, link, Copy and New invite.
+- [Recently released feature flags](recent_feature_flags/recent_feature_flags_one_shot.md) — one-shot: flags carry a release date, and Feature Flags opens with a "Recently released" list.
