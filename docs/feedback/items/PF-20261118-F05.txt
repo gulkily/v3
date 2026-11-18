@@ -1,0 +1,18 @@
+ID: PF-20261118-F05
+Title: Post file links open in small themed windows
+Kind: feature
+Workflow: blocked
+Created: 2026-11-18
+Evidence: locally-verified
+
+Request:
+for this dialog, it would be amazing to have adorable little popup windows for the file contents (which have a link to raw file). adjust level of adorable for theme
+
+Sources:
+- https://zenmemes.com/threads/thread-20261116080536-1ed26bc9
+
+Done when:
+On a post's details page, Source, Commit, Signature and Public key open their text in small windows with a Raw link, styled by the active theme; modified clicks and browsers without JavaScript still follow the link.
+
+Notes:
+2026-11-18: one-shot on feat/post_file_windows (record docs/plans/post_file_windows/post_file_windows_one_shot.md); verified locally in headless Chrome; awaiting review and deployment.

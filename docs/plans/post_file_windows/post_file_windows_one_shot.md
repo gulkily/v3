@@ -7,7 +7,7 @@ Extended estimates: enabled (no real alternatives or work units, so no unit esti
 
 **Cycle estimate: 0.1**
 
-Status: planned on `feat/post_file_windows`; next permitted action: implement and verify.
+Status: technically complete on `feat/post_file_windows`; pushed for review, not merged or deployed. Next action: maintainer review, merge and deployment.
 
 ## Request and authorization
 
@@ -17,7 +17,7 @@ Thread so far (Claude, 2026-11-17): all four file links on that page (Source, Co
 
 Authorization: the maintainer, 2026-11-18 (Claude session): "Can you please scan Zen memes for anything that's asking for a PR? And if the task seems appropriate for a one-shot, make the PR and reply in the thread." With "yes, please make a pr!" in the thread, this authorizes a one-shot through an open PR and a thread reply. Exclusions: merge, deployment.
 
-Feedback item: none matched in `docs/feedback/items/` (searched the thread ID, "popup", "raw file"). Creating PF-20261118-F05 in the completion commit.
+Feedback item: none matched in `docs/feedback/items/` (searched the thread ID, "popup", "raw file"). Created [PF-20261118-F05](../../feedback/items/PF-20261118-F05.txt) in the completion commit.
 
 ## Outcome and work type
 
@@ -49,12 +49,31 @@ None changed. Uses window controls (`docs/concepts/window_controls.md`) unchange
 
 Starting revision and branch: `31e16b066774dbdf8f4d3709ae4ad021bfff9516` on `main`; branch `feat/post_file_windows`.
 
-Planning commit: pending.
+Planning commit: `32483359` (2026-11-18T07:39Z), containing only this record and its index link.
 
 ## Dated execution history
 
 - 2026-11-18T07:38Z: plan written after reading `post.php`, `source_metadata.php`, `ThreadAndPostPageController::renderPost`, `pending_user_summary.js`, the pending-user dialog CSS and `theme-bubblegum.js`; checked prod's four link types (all `text/plain`).
+- 2026-11-18T07:40Z: planning commit `32483359` confirmed. Added `file_windows.js`, the `.file-window` CSS beside the pending dialog's, `data-file-windows` on the post facts table, the script in the post page's list, and smoke assertions.
+- 2026-11-18T07:45Z: discovery from the browser check. Placed under the clicked link, the first window covered the links below it, so a second file couldn't be opened without closing the first. Windows now open below the facts table, under the link's column, cascading. Correction to placement, within scope.
 
 ## Study history
 
 - Intake, 2026-11-18T07:38Z: **0.1** whole-cycle projection, scope v1, R1/P2. Recorded after inspecting the files above (not a blind intake). Single exposed rater (Claude).
+- Execution entry, 2026-11-18T07:40Z: 0.1 reaffirmed.
+- Closeout, 2026-11-18T07:48Z: delivered scope v1. Retrospective **0.08**. Maintainer fit and acceptance pending.
+
+## Outcome
+
+Delivered: the file links on `/posts/<id>` open small non-modal windows (file name, Raw link, ×, the text), several at once, cascading; themes style them as cards; in Bubblegum with draggable windows on they get the title bar and Float dragging. Modified clicks, failed fetches and no-JavaScript browsers follow the link as before.
+
+## Verification
+
+- `./v3 test --smoke LocalAppSmokeTest::testPostPagesExposeAvailableAuthorPublicKeyLink`: 478 of 478 (marker and script asserted); `node --check public/assets/file_windows.js`.
+- Scratch headless-Chrome check on a git-backed fixture post in Light, Gloss, Word97 and Bubblegum (draggable windows on) at 1280x900 and 390x800: Source opens with the record text and the right Raw link without navigating; a second window (Commit) opens and cascades; every window inside the viewport; Bubblegum windows get title bars; Escape closes one; Ctrl-click opens no window; no page errors. Screenshots reviewed.
+- `./v3 feedback check`: 0 problems; `./v3 feedback index` regenerated.
+- Not run: the full suite; Signature window (the fixture post is unsigned), Safari and real devices.
+
+## Final review
+
+Diff limited to `file_windows.js` (new), `site.css`, `post.php` (one attribute), `ThreadAndPostPageController.php` (one script path), `LocalAppSmokeTest.php`, this record and its index line, the feedback item and index, ledger and debug log. No server route, dependency or theme-specific code.
