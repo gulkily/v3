@@ -1,0 +1,67 @@
+/* Open beside (FORUM_OPEN_BESIDE_ENABLED, open_beside.js). */
+
+/* The mode's toggle, at the window's right edge on the reading-margins ruler.
+   The ruler is as wide as the normal column and centred, so half the
+   difference from the window's width reaches the window's edge; the extra
+   1.5rem keeps clear of a scrollbar. */
+.reading-margins .reading-margins__beside {
+  position: absolute;
+  top: 50%;
+  right: calc((100% - 100vw) / 2 + 1.5rem);
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0.1rem 0.6rem;
+  border: 1.5px solid var(--ink-soft, var(--line, currentColor));
+  border-radius: 999px;
+  background: var(--panel, Canvas);
+  color: inherit;
+  font: inherit;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  box-shadow: none;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.reading-margins .reading-margins__beside:hover {
+  border-color: var(--active-line, currentColor);
+}
+
+.reading-margins .reading-margins__beside[aria-pressed="true"] {
+  border-color: var(--active-line, currentColor);
+  background: var(--active-line, currentColor);
+  color: var(--panel, Canvas);
+}
+
+.reading-margins .reading-margins__beside:focus-visible {
+  outline: 2px solid var(--active-line, currentColor);
+  outline-offset: 2px;
+}
+
+/* The pane: fixed to the window so it keeps its place while the page scrolls.
+   open_beside.js sets left, width and top from the column and the ruler. */
+.open-beside {
+  position: fixed;
+  bottom: 0.5rem;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line, currentColor);
+  border-radius: 6px;
+  background: var(--page-bg, Canvas);
+  overflow: hidden;
+}
+
+.open-beside[hidden] {
+  display: none;
+}
+
+.open-beside__frame {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: var(--page-bg, Canvas);
+}

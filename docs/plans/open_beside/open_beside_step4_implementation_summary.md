@@ -42,4 +42,26 @@ Link rules answered in session before approval (the maintainer asked which links
   - The test watches the frames from the host page. A script injected into the frame does not run early enough in a frame that starts as a blank document.
 - Estimate details: original scope as Step 3; uncertainty was whether Firefox could be installed here, and it could. No revisions.
 
+## Stage 2 - The Beside toggle and the pane
+
+**Original estimate: 0.14**
+**Retrospective stage work: 0.13**
+
+- Status: complete.
+- Changes:
+  - `openBesideStorageKey` and `openBesidePaneStorageKey` in `BrowserRuntimeProfile.php`. `layout.php` restores the mode before paint as `data-open-beside="on"`.
+  - `reading_margins.php`: a Beside button at the window's right end of the ruler, only with the flag on; its inline script draws it pressed before paint.
+  - New `public/assets/open_beside.js` and `open-beside.css`, loaded only with the flag on. The script catches plain left clicks on same-site page links inside `.main` and shows the page in a frame named `forum-open-beside`, fixed to the window between the column's right edge and the window's, no wider than the normal page, and only with at least 20rem of room. It starts below the ruler while the ruler is on screen. The pane follows window resizes, column changes and scrolling. A framed page never runs the mode.
+  - Turning the mode off removes the pane.
+- Verification:
+  - `node tests/browser/open_beside.mjs` in Chrome and `BROWSER=firefox`: both pass. Mode off navigates; mode on at 2048px with the column narrowed to the left opens the thread in the pane with the main address and scroll unchanged; the pane sits right of the column, inside the window, nearly window-tall and below the ruler; no sideways scrolling; no pane inside the pane; the mode survives a reload; at 1280px with the normal column the mode stays on and the click navigates; a phone shows no toggle and no pane.
+  - `node tests/browser/reading_margins.mjs`: passes unchanged (18 themes).
+  - `./v3 test --smoke FeatureFlagEvaluatorTest BrowserRuntimeProfileTest PresentationProfileMatrixTest`: 486 run, 486 passed.
+  - Screenshots at 2048px (pane open) and 1280px (no room) checked by eye.
+- Notes:
+  - The pane's position is set by the script from the column's measured edge, not from the ruler's CSS variables as Step 3 expected. The measured edge is right in every theme and for the normal column too, and one rule serves both.
+  - The pane's address is already saved on open; restoring it is Stage 4.
+  - The fixture's `/` answers 503 in the test server, so the test uses `/threads/` as the board.
+- Estimate details: original scope as Step 3; the header moving with the column caused no trouble. No revisions.
+
 *— Claude · 2026-11-18 UTC · Model: claude-fable-5-2*

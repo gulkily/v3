@@ -11,6 +11,10 @@ const playwright = await import(process.env.PLAYWRIGHT_MODULE || 'playwright-cor
 // A page shown in the pane's frame has no site header, ruler or status bar
 // from the first frame; in any other frame, at top level, and with the flag
 // off it keeps them.
+// The Beside toggle on the ruler turns the mode on. With the mode on and room
+// beside the column, a click on a content link opens the page in the pane and
+// leaves the main page where it was; with no room, on a phone, or with the
+// mode off the click navigates. Turning the mode off removes the pane.
 // Usage: node tests/browser/open_beside.mjs [screenshot-dir]
 // BROWSER=firefox runs it in Firefox (needs `npx playwright-core install firefox`).
 const project = resolve(new URL('../..', import.meta.url).pathname);
@@ -113,6 +117,108 @@ try {
   seen = await frames(off.base);
   assert.equal(seen.pane.framed, false, 'flag off: not marked');
   for (const selector of ['.site-header', '.reading-margins']) assert.equal(seen.pane.now[selector], true, `flag off: ${selector} shown`);
+
+  // --- The mode and the pane ---
+  const sideways = () => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+  const toggle = page.locator('[data-open-beside-toggle]');
+  const paneFrame = () => page.frames().find(frame => frame.name() === 'forum-open-beside' && frame.parentFrame() === page.mainFrame());
+  const paneBox = () => page.evaluate(() => {
+    const pane = document.querySelector('[data-open-beside-pane]');
+    if (!pane || pane.hidden) return null;
+    const box = pane.getBoundingClientRect(); const main = document.querySelector('.main').getBoundingClientRect();
+    return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width, mainRight: main.right, window: document.documentElement.clientWidth, viewport: innerHeight };
+  });
+  // The pane's page, once it has loaded.
+  const paneAt = async () => {
+    await page.waitForFunction(() => {
+      const frame = document.querySelector('.open-beside__frame');
+      return frame && frame.contentWindow.location.href !== 'about:blank' && frame.contentDocument.readyState === 'complete';
+    });
+    return page.evaluate(() => { const at = document.querySelector('.open-beside__frame').contentWindow.location; return at.pathname + at.search; });
+  };
+  // Narrow the column to the left of the window: its edges at stops -8... whatever fits, then 0.
+  const narrowLeft = async () => {
+    const stops = await page.locator('[data-reading-margin-stop]:not([hidden])').evaluateAll(all => all.map(stop => Number(stop.value)));
+    const left = Math.min(...stops);
+    await page.locator(`[data-reading-margin-stop][value="${left}"]`).click();
+    await page.locator(`[data-reading-margin-stop][value="${left + 5}"]`).click();
+    return left;
+  };
+
+  await page.setViewportSize({ width: 2048, height: 1280 });
+  await page.goto(on.base + '/threads/');
+  assert.equal(await toggle.getAttribute('aria-pressed'), 'false', 'the mode starts off');
+  assert.equal(await sideways(), false, 'the toggle adds no sideways scrolling');
+  const firstThread = page.locator('.main a[href^="/threads/root-"]').first();
+  const threadPath = await firstThread.getAttribute('href');
+
+  // Mode off: a click navigates as always.
+  await firstThread.click();
+  await page.waitForURL('**' + threadPath);
+  assert.equal(await page.locator('[data-open-beside-pane]').count(), 0, 'mode off: no pane');
+  await page.goto(on.base + '/threads/');
+
+  // Mode on with the column narrowed to the left: the click opens the pane.
+  await narrowLeft();
+  await toggle.click();
+  assert.equal(await toggle.getAttribute('aria-pressed'), 'true');
+  assert.equal(await page.evaluate(key => localStorage.getItem(key), (await page.evaluate(() => window.forumBrowserRuntime)).openBesideStorageKey), 'on', 'the mode is saved');
+  await page.evaluate(() => window.scrollTo(0, 40));
+  const before = await page.evaluate(() => ({ url: location.href, y: scrollY }));
+  await firstThread.click();
+  assert.equal(await paneAt(), threadPath.split('#')[0], 'the thread opened in the pane');
+  assert.deepEqual(await page.evaluate(() => ({ url: location.href, y: scrollY })), before, 'the main page stayed where it was');
+  let box = await paneBox();
+  assert.ok(box.left >= box.mainRight + 8, 'the pane starts right of the column');
+  assert.ok(box.right <= box.window - 8, 'the pane ends inside the window');
+  assert.ok(box.width >= 320 && box.width <= 1000, `the pane is a page wide (${box.width}px)`);
+  assert.ok(box.bottom <= box.viewport && box.bottom - box.top > box.viewport * 0.8, 'the pane is nearly as tall as the window');
+  assert.equal(await sideways(), false, 'no sideways scrolling with a pane');
+  assert.equal(await paneFrame().evaluate(() => document.documentElement.hasAttribute('data-open-beside-framed')), true, 'the pane\'s page is framed');
+  assert.equal(await paneFrame().locator('[data-open-beside-pane]').count(), 0, 'no pane inside the pane');
+  if (shots) await page.screenshot({ path: join(shots, 'stage2-pane-2048.png') });
+
+  // The ruler's toggle stays reachable above the pane at the top of the page.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(100);
+  box = await paneBox();
+  const toggleBox = await toggle.boundingBox();
+  assert.ok(box.top >= toggleBox.y + toggleBox.height, 'the pane starts below the ruler');
+
+  // A reload restores the mode before paint.
+  await page.reload();
+  assert.equal(await toggle.getAttribute('aria-pressed'), 'true', 'the mode survives a reload');
+
+  // No room (the normal column at 1280px): the mode stays on and the click navigates.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.evaluate(() => window.forumResetReadingMargins());
+  await page.reload();
+  assert.equal(await toggle.getAttribute('aria-pressed'), 'true', 'no room: the mode stays on');
+  assert.equal(await sideways(), false, '1280px: no sideways scrolling');
+  if (shots) await page.screenshot({ path: join(shots, 'stage2-noroom-1280.png') });
+  await firstThread.click();
+  await page.waitForURL('**' + threadPath);
+  assert.equal(await page.locator('[data-open-beside-pane]:not([hidden])').count(), 0, 'no room: no pane');
+
+  // Turning the mode off removes the pane and forgets it.
+  await page.setViewportSize({ width: 2048, height: 1280 });
+  await page.goto(on.base + '/threads/');
+  await narrowLeft();
+  await firstThread.click();
+  assert.ok(await paneBox(), 'a pane again');
+  await toggle.click();
+  assert.equal(await page.locator('[data-open-beside-pane]').count(), 0, 'mode off removes the pane');
+  assert.equal(await toggle.getAttribute('aria-pressed'), 'false');
+
+  // A phone has no ruler and no mode.
+  await page.evaluate(key => localStorage.setItem(key, 'on'), (await page.evaluate(() => window.forumBrowserRuntime)).openBesideStorageKey);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(on.base + '/threads/');
+  assert.equal(await toggle.isVisible(), false, 'phone: no toggle');
+  await firstThread.click();
+  await page.waitForURL('**' + threadPath);
+  assert.equal(await page.locator('[data-open-beside-pane]:not([hidden])').count(), 0, 'phone: no pane');
+  await page.evaluate(key => localStorage.removeItem(key), (await page.evaluate(() => window.forumBrowserRuntime)).openBesideStorageKey);
 
   assert.deepEqual(errors, [], 'no page errors');
   console.log(`open_beside (${browserName}): ok`);

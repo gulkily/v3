@@ -271,6 +271,8 @@ final class TemplateRenderer
             'showReadingMargins' => $showReadingMargins,
             'draggableWindowsEnabled' => $draggableWindowsEnabled,
             'openBesideEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::OPEN_BESIDE_ENABLED),
+            'openBesideScriptPath' => $this->assetPath('/assets/open_beside.js'),
+            'openBesideCssPath' => $this->assetPath('/assets/open-beside.css'),
             'siteName' => SiteConfig::displayName(),
             'appVersion' => $this->appVersion,
             'versionEndpoint' => $this->versionEndpoint,

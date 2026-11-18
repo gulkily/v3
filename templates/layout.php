@@ -210,6 +210,11 @@
         // Open beside (open_beside.js): a page shown in the pane's frame has no
         // site header, ruler or status bar, from the first frame. Only the
         // pane's own frame name counts, so other frames (the tour) keep theirs.
+        // The mode itself is restored before paint too, so the ruler's Beside
+        // toggle is drawn pressed from the first frame.
+        if (localStorage.getItem(browserRuntime.openBesideStorageKey) === 'on') {
+          document.documentElement.setAttribute('data-open-beside', 'on');
+        }
         if (window.name === 'forum-open-beside' && window.parent !== window && window.parent.location.origin === location.origin) {
           document.documentElement.setAttribute('data-open-beside-framed', '');
           var framedStyle = document.createElement('style');
@@ -284,6 +289,10 @@
 <?php endif; ?>
 <?php if ($showReadingMargins ?? false): ?>
   <script src="<?= $e($readingMarginsScriptPath) ?>" defer></script>
+<?php endif; ?>
+<?php if ($openBesideEnabled ?? false): ?>
+  <link rel="stylesheet" href="<?= $e($openBesideCssPath) ?>">
+  <script src="<?= $e($openBesideScriptPath) ?>" defer></script>
 <?php endif; ?>
 <?php foreach ($scriptPaths as $scriptPath): ?>
   <script src="<?= $e($scriptPath) ?>" defer></script>
