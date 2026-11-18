@@ -4,7 +4,10 @@
   // the content column, when there is room for it. The pane is a frame named
   // forum-open-beside under a bar with the page's title, Open alone and Close;
   // layout.php hides the site header, ruler and status bar in a page shown
-  // there. Focus stays on the clicked link; the opening is announced. The mode is switched with the Beside toggle on the
+  // there. Focus stays on the clicked link; the opening is announced. The pane's
+  // page and scroll position are saved, so the pane is back on the next main
+  // page; it hides while the window has no room and reloads when the theme
+  // changes. The mode is switched with the Beside toggle on the
   // reading-margins ruler (reading_margins.php); layout.php restores it before
   // paint as data-open-beside="on".
   var root = document.documentElement;
@@ -51,6 +54,24 @@
   var status = null;
   // Set when a click opens a page, so the next load is announced once.
   var announceNext = false;
+  // A pane restored from the last page: where its page was scrolled to.
+  var restoreScroll = null;
+  // Set by Open alone.
+  var leaving = false;
+  var scrollKey = paneKey ? paneKey + "-scroll" : null;
+
+  function read(key) {
+    try {
+      return key ? localStorage.getItem(key) : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  // A saved page is used only if it is a path on this site.
+  function sitePath(value) {
+    return typeof value === "string" && /^\/(?!\/)/.test(value) ? value : null;
+  }
 
   function modeOn() {
     return root.getAttribute("data-open-beside") === "on";
@@ -101,11 +122,15 @@
 
   var placing = false;
   function placeSoon() {
-    if (placing || !pane) return;
+    if (placing) return;
     placing = true;
     requestAnimationFrame(function () {
       placing = false;
-      place();
+      if (pane) {
+        place();
+      } else {
+        restore();
+      }
     });
   }
 
@@ -125,7 +150,11 @@
     alone.setAttribute("data-open-beside-alone", "");
     alone.textContent = "Open alone";
     alone.addEventListener("click", function () {
+      // The main page is about to become this page; a load still on its way
+      // must not save the pane again.
+      leaving = true;
       store(paneKey, null);
+      store(scrollKey, null);
     });
     var closer = document.createElement("button");
     closer.type = "button";
@@ -157,7 +186,7 @@
   // The pane's page changed: by a click here, a link followed inside the pane,
   // or a form posted there. The bar and the saved address follow it.
   function loaded() {
-    if (!frame) return;
+    if (!frame || leaving) return;
     var address = null;
     var name = "";
     try {
@@ -173,6 +202,15 @@
     if (address !== null) {
       alone.href = address;
       store(paneKey, address);
+      // Back where the reader was, when this is the page the last main page left open.
+      if (restoreScroll && restoreScroll.address === address) {
+        frame.contentWindow.scrollTo(0, restoreScroll.y);
+      }
+      restoreScroll = null;
+      try {
+        frame.contentWindow.addEventListener("scroll", saveScroll, { passive: true });
+      } catch (error) {
+      }
     }
     if (announceNext) {
       announceNext = false;
@@ -180,10 +218,44 @@
     }
   }
 
+  var savingScroll = false;
+  function saveScroll() {
+    if (savingScroll) return;
+    savingScroll = true;
+    setTimeout(function () {
+      savingScroll = false;
+      if (!frame || leaving) return;
+      try {
+        var at = frame.contentWindow.location;
+        store(scrollKey, JSON.stringify({ address: at.pathname + at.search + at.hash, y: Math.round(frame.contentWindow.scrollY) }));
+      } catch (error) {
+      }
+    }, 150);
+  }
+
+  // The pane the last main page left open comes back on this one, once there
+  // is room for it.
+  function restore() {
+    if (pane || !modeOn()) return;
+    var saved = sitePath(read(paneKey));
+    if (saved === null || room() === null) return;
+    try {
+      var scroll = JSON.parse(read(scrollKey) || "null");
+      restoreScroll = scroll && scroll.address === saved && scroll.y > 0 ? scroll : null;
+    } catch (error) {
+      restoreScroll = null;
+    }
+    build();
+    alone.href = saved;
+    frame.src = saved;
+  }
+
   function open(url) {
     if (room() === null) return false;
     if (!pane) build();
     announceNext = true;
+    restoreScroll = null;
+    store(scrollKey, null);
     title.textContent = "";
     alone.href = url;
     frame.src = url;
@@ -200,6 +272,7 @@
     alone = null;
     if (status) status.textContent = "";
     store(paneKey, null);
+    store(scrollKey, null);
   }
 
   // A link the pane may take: a page of this site, reached by a plain left
@@ -251,6 +324,24 @@
     if (toggle) setMode(!modeOn());
   });
 
+  // The pane follows the main page's theme: a page reads its theme when it loads.
+  if (window.MutationObserver) {
+    var shownTheme = root.getAttribute("data-theme");
+    new MutationObserver(function () {
+      // The theme script may set the same theme again; only a real change counts.
+      var theme = root.getAttribute("data-theme");
+      if (theme === shownTheme) return;
+      shownTheme = theme;
+      if (!frame) return;
+      try {
+        // A pane still on its way to its first page picks the theme up by itself.
+        if (frame.contentWindow.location.href !== "about:blank") frame.contentWindow.location.reload();
+      } catch (error) {
+      }
+    }).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+  }
+
+  restore();
   window.addEventListener("resize", placeSoon);
   window.addEventListener("scroll", placeSoon, { passive: true });
   if (window.ResizeObserver) {

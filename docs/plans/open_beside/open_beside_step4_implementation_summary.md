@@ -86,4 +86,25 @@ Link rules answered in session before approval (the maintainer asked which links
   - The main page is not refreshed after a post in the pane. Known limitation, as Step 2 says; the test asserts it so a later cycle changes it on purpose.
 - Estimate details: original scope as Step 3; the retrospective is higher because of the Firefox focus finding and the second fixture. No scope change.
 
+## Stage 4 - The pane stays
+
+**Original estimate: 0.12**
+**Retrospective stage work: 0.12**
+
+- Status: complete.
+- Changes:
+  - `open_beside.js`: on every page with the mode on, the saved page comes back in the pane as soon as there is room. A saved value is used only if it is a path on this site. The pane's scroll position is saved as it scrolls and restored when the same page comes back. A restored pane is not announced.
+  - With no room the pane hides without unloading; a page that loads with no room builds its pane once there is room.
+  - The pane reloads when the main page's theme really changes (the theme script also re-sets the same theme, which is ignored).
+  - Open alone now also stops a pane load that is still on its way from saving the pane again.
+- Verification:
+  - `node tests/browser/open_beside.mjs` in Chrome and `BROWSER=firefox`: both pass. After a header link and after a reload the pane shows the same page at the same scroll position, and the main column sits where it was first parsed; hiding at 900px keeps the pane's page loaded; a page loaded at 900px gets its pane at 2048px; a theme change reaches the pane and keeps its page; a saved page that does not exist shows the framed not-found page and Close forgets it; `https://…`, `//…` and `javascript:` values are not opened.
+  - Screenshot in Word97 at 2048px checked by eye.
+- Notes:
+  - The pane is created when the page's deferred scripts run, not from the head script as Step 3 planned. The pane is fixed to the window and never moves the main column, so the "no jump" criterion holds either way, and the test checks it. The head script could not create it in any case: `site.css` loads without blocking, so the column's width is not known that early.
+  - `theme_toggle.js` is unchanged. The pane watches `data-theme` on the page instead of needing a new signal.
+  - Two bugs found by the test and fixed in this stage: the theme watcher reloaded a pane that had not left its blank page yet, cancelling its first load; and a pane load finishing after Open alone saved the pane again.
+  - Scroll restore is exact in the test. On a page whose height changes after load it may land short.
+- Estimate details: original scope as Step 3; uncertainty was scroll restore, which held. No revisions.
+
 *— Claude · 2026-11-18 UTC · Model: claude-fable-5-2*

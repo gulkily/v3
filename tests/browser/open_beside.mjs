@@ -22,6 +22,9 @@ const playwright = await import(process.env.PLAYWRIGHT_MODULE || 'playwright-cor
 // in the pane, and so does a reply posted there. Ctrl-click, middle-click,
 // new-tab, download and same-page links are left alone; a link to another
 // site takes the whole tab, from the page or from the pane.
+// The pane and its scroll position come back after the main page changes or
+// reloads, without moving the main column; it hides while there is no room,
+// follows a theme change, and ignores a saved value that is not a site path.
 // Usage: node tests/browser/open_beside.mjs [screenshot-dir]
 // BROWSER=firefox runs it in Firefox (needs `npx playwright-core install firefox`).
 const project = resolve(new URL('../..', import.meta.url).pathname);
@@ -246,8 +249,13 @@ try {
   const openBoardWithPane = async () => {
     await page.goto(on.base + '/threads/');
     if (await toggle.getAttribute('aria-pressed') !== 'true') await toggle.click();
+    // A pane restored from the last page is about to be loaded again by the click; wait for that load.
+    await page.evaluate(() => { const frame = document.querySelector('.open-beside__frame'); if (frame) frame.contentWindow.__stale = true; });
     await firstThread.click();
-    await paneShows(threadPath);
+    await page.waitForFunction(expected => {
+      const frame = document.querySelector('.open-beside__frame');
+      return frame && frame.contentDocument.readyState === 'complete' && !frame.contentWindow.__stale && frame.contentWindow.location.pathname === expected;
+    }, threadPath);
   };
 
   await page.goto(on.base + '/threads/');
@@ -274,6 +282,8 @@ try {
 
   // Ctrl-click and middle-click keep their browser meaning: no pane change, main page stays.
   await page.goto(on.base + '/threads/');
+  await paneShows('/tags/bug', 'the pane came back on the next page');
+  await page.locator('[data-open-beside-close]').click();
   for (const how of [{ modifiers: ['Control'] }, { button: 'middle' }]) {
     const opened = context.waitForEvent('page', { timeout: 5000 }).catch(() => null);
     await firstThread.click(how);
@@ -338,6 +348,91 @@ try {
   assert.equal(await stored(keys.openBesidePaneStorageKey), null, 'Close forgets the pane');
   await toggle.click();
   assert.equal(await toggle.getAttribute('aria-pressed'), 'false');
+
+  // --- The pane stays ---
+  {
+    // Where the main column sat the moment it was parsed, on every page from here on.
+    await context.addInitScript(() => {
+      if (window.top !== window || location.href === 'about:blank') return;
+      new MutationObserver((records, observer) => {
+        const main = document.querySelector('.main');
+        if (!main) return;
+        const box = main.getBoundingClientRect();
+        window.__mainFirst = [Math.round(box.left), Math.round(box.width)];
+        observer.disconnect();
+      }).observe(document, { childList: true, subtree: true });
+    });
+    const mainNow = () => page.evaluate(() => { const box = document.querySelector('.main').getBoundingClientRect(); return { first: window.__mainFirst, now: [Math.round(box.left), Math.round(box.width)] }; });
+    const paneScroll = () => page.evaluate(() => Math.round(document.querySelector('.open-beside__frame').contentWindow.scrollY));
+    await page.setViewportSize({ width: 2048, height: 420 });
+    await openBoardWithPane();
+    await narrowLeft();
+    // Scroll the pane, then change the main page from the header.
+    await page.evaluate(() => document.querySelector('.open-beside__frame').contentWindow.scrollTo(0, 120));
+    await page.waitForFunction(key => /"y":120/.test(localStorage.getItem(key + '-scroll') || ''), keys.openBesidePaneStorageKey);
+    await page.locator('.site-header a[href^="/recent"], .site-header a[href*="recent"]').first().click();
+    await page.waitForURL('**/recent**');
+    await paneShows(threadPath, 'the pane is back after the main page changed');
+    await page.waitForFunction(() => document.querySelector('.open-beside__frame').contentWindow.scrollY > 0);
+    assert.equal(await paneScroll(), 120, 'the pane is scrolled where it was');
+    let main = await mainNow();
+    assert.deepEqual(main.now, main.first, 'the main column did not move when the pane came back');
+    assert.equal(await page.locator('[data-open-beside-status]').textContent(), '', 'a restored pane is not announced');
+    await page.waitForFunction(() => document.querySelector('.open-beside__title').textContent !== '');
+
+    // A reload keeps it too.
+    await page.reload();
+    await paneShows(threadPath, 'the pane is back after a reload');
+    main = await mainNow();
+    assert.deepEqual(main.now, main.first, 'reload: the main column did not move');
+
+    // No room hides the pane without unloading it; room brings it back.
+    await page.evaluate(() => { document.querySelector('.open-beside__frame').contentWindow.__kept = true; });
+    await page.setViewportSize({ width: 900, height: 420 });
+    await page.waitForFunction(() => document.querySelector('[data-open-beside-pane]').hidden);
+    assert.equal(await sideways(), false, 'a hidden pane adds no sideways scrolling');
+    await page.setViewportSize({ width: 2048, height: 420 });
+    await page.waitForFunction(() => !document.querySelector('[data-open-beside-pane]').hidden);
+    assert.equal(await page.evaluate(() => document.querySelector('.open-beside__frame').contentWindow.__kept), true, 'the pane was hidden, not reloaded');
+
+    // A page that loads with no room builds its pane once there is room.
+    await page.setViewportSize({ width: 900, height: 420 });
+    await page.reload();
+    assert.equal(await page.locator('[data-open-beside-pane]').count(), 0, 'no room at load: no pane yet');
+    await page.setViewportSize({ width: 2048, height: 420 });
+    await paneShows(threadPath, 'the pane appears once there is room');
+
+    // A theme change in the main page reaches the pane.
+    const themeBefore = await paneFrame().evaluate(() => document.documentElement.getAttribute('data-theme'));
+    const other = themeBefore === 'word97' ? 'gloss' : 'word97';
+    await page.evaluate(theme => window.forumSelectTheme(theme), other);
+    await page.waitForFunction(theme => {
+      const frame = document.querySelector('.open-beside__frame');
+      return frame.contentDocument && frame.contentDocument.readyState === 'complete' && frame.contentDocument.documentElement.getAttribute('data-theme') === theme;
+    }, other);
+    await paneShows(threadPath, 'the pane kept its page through the theme change');
+    if (shots) await page.screenshot({ path: join(shots, 'stage4-word97-2048.png') });
+    await page.evaluate(theme => window.forumSelectTheme(theme), themeBefore);
+
+    // A saved page that no longer exists shows the site's not-found page, and Close forgets it.
+    await page.evaluate(key => localStorage.setItem(key, '/threads/no-such-thread'), keys.openBesidePaneStorageKey);
+    await page.reload();
+    await paneShows('/threads/no-such-thread');
+    assert.equal(await paneFrame().evaluate(() => document.documentElement.hasAttribute('data-open-beside-framed')), true, 'the not-found page is framed too');
+    await page.locator('[data-open-beside-close]').click();
+    assert.equal(await stored(keys.openBesidePaneStorageKey), null);
+    // A saved value that is not a path on this site is ignored.
+    for (const bad of ['https://elsewhere.example/x', '//elsewhere.example/x', 'javascript:alert(1)']) {
+      await page.evaluate(([key, value]) => localStorage.setItem(key, value), [keys.openBesidePaneStorageKey, bad]);
+      await page.reload();
+      await page.waitForTimeout(300);
+      assert.equal(await page.locator('[data-open-beside-pane]').count(), 0, `${bad} is not opened`);
+    }
+    await page.evaluate(key => localStorage.removeItem(key), keys.openBesidePaneStorageKey);
+    await page.evaluate(() => window.forumResetReadingMargins());
+    await toggle.click();
+    assert.equal(await toggle.getAttribute('aria-pressed'), 'false');
+  }
 
   // A phone has no ruler and no mode.
   await page.evaluate(key => localStorage.setItem(key, 'on'), (await page.evaluate(() => window.forumBrowserRuntime)).openBesideStorageKey);
