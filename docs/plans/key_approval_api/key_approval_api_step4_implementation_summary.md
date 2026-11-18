@@ -67,3 +67,23 @@ Branch: `feat/key-approval-api`. Planning commit: `520141a`.
 - Estimate details: original scope as Step 3; unchanged.
 
 *— Claude · 2026-11-18 UTC · Model: Claude Opus 5.5*
+
+## Stage 4 - quill.py pending and approve
+
+**Original estimate: 0.15**
+**Retrospective stage work: 0.15**
+
+- Changes:
+  - `quill.py pending`: signs in with the client's saved key (or `--signing-key`), refuses an unapproved key, prints `/api/pending_keys`.
+  - `quill.py approve TARGET`: TARGET is a profile slug, an identity ID or a post ID. A post resolves through `Author-Identity-ID`; an unsigned post is refused and the message points to PF-20261111-F49. Then: `get_profile` (unknown key refused; already approved prints `Status: already approved`, exit 0), self-approval refused, sign in, refuse an unapproved approver, `prepare_approval`, check that the prepared record names this key as author and the requested key as target (the same check the browser makes), sign the exact record, `create_prepared_approval`, and confirm `Approved: yes`. No confirmation prompt, as Step 2 decided; the server's review label is printed instead.
+  - `api` passes an optional session cookie through to `request`.
+  - `QUILL_VERSION` bumped to 2026-11-18, so agents running the older copy get the server's update notice.
+- Verification:
+  - New `QuillClientTest::testApproveByPostPicksTheRightKeyAmongSharedNames` on a real local server, with two pending keys under the username `shared-agent`: a pending key can't list or approve; the approver lists both; approving by post ID approves that key and leaves the other pending; rerun reports already approved (exit 0); self-approval, an unknown slug, a missing post and an unsigned post naming a key are each refused with exit 2 and a plain message, and nothing gets approved; approving by slug works; the list ends empty.
+  - `./v3 test --smoke QuillClientTest`: 494 passed, every Quill integration test included. `python3 tests/quill_client_test.py`: 38 passed. Full suite not run.
+- Notes:
+  - Interrupted publish: no resume state was added. A rerun goes through the server's own already-approved check, which the test covers.
+  - Reuse: `read_post`, `sign`, `api`, `identity`/`saved_key`, `state_directory`; server approval routes unchanged.
+- Estimate details: original scope as Step 3; unchanged.
+
+*— Claude · 2026-11-18 UTC · Model: Claude Opus 5.5*

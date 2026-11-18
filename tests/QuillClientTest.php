@@ -384,6 +384,48 @@ final class QuillClientTest
         } finally {self::disposeKeyrings($root); $server->close();}
     }
 
+    public function testApproveByPostPicksTheRightKeyAmongSharedNames(): void
+    {
+        [$server,$repo,$db,$root,$script,$approver,$pending,$posts]=self::approvalFixture();
+        try {
+            [$approverId,$oneId,$twoId]=array_keys($posts);
+            $oneSlug=str_replace(':','-',$oneId); $twoSlug=str_replace(':','-',$twoId);
+            $profile=fn(string $slug): string => (string) file_get_contents($server->url.'/api/get_profile?profile_slug='.$slug);
+            // A pending key can neither list nor approve.
+            [$code,$out]=self::run($script,array_merge($pending[1],['approve',$posts[$oneId]]));
+            assertSame(2,$code,$out); assertStringContains('is not approved here',$out);
+            [$code,$out]=self::run($script,array_merge($pending[1],['pending']));
+            assertSame(2,$code,$out); assertStringContains('is not approved here',$out);
+            // The approver lists both shared-name keys.
+            [$code,$out]=self::run($script,array_merge($approver,['pending']));
+            assertSame(0,$code,$out); assertStringContains('Pending-Count: 2',$out); assertStringContains('Identity-ID: '.$oneId,$out);
+            // Approving by post ID approves that post's key and leaves the other with the same username pending.
+            [$code,$out]=self::run($script,array_merge($approver,['approve',$posts[$oneId]]));
+            assertSame(0,$code,$out); assertStringContains('Status: approved',$out); assertStringContains('Post: '.$posts[$oneId].' by shared-agent ('.$oneId.')',$out);
+            assertStringContains('Approved: yes',$profile($oneSlug)); assertStringContains('Approved: no',$profile($twoSlug));
+            // Rerunning is safe.
+            [$code,$out]=self::run($script,array_merge($approver,['approve',$posts[$oneId]]));
+            assertSame(0,$code,$out); assertStringContains('Status: already approved',$out);
+            // Self-approval, unknown targets and unsigned posts are refused with a plain message.
+            [$code,$out]=self::run($script,array_merge($pending[1],['approve',$twoSlug]));
+            assertSame(2,$code,$out); assertStringContains('cannot approve itself',$out);
+            [$code,$out]=self::run($script,array_merge($approver,['approve','openpgp-'.str_repeat('0',40)]));
+            assertSame(2,$code,$out); assertStringContains('No key openpgp:',$out);
+            [$code,$out]=self::run($script,array_merge($approver,['approve','reply-20990101000000-nosuchpost']));
+            assertSame(2,$code,$out); assertStringContains('No post or key called',$out);
+            [$h,$reply]=AgentPostingApiTest::request($server,'/api/create_reply','POST',['thread_id'=>$posts[$twoId],'parent_id'=>$posts[$twoId],'body'=>'Unsigned.','author_identity_id'=>$twoId]);
+            assertTrue(preg_match('/^post_id=(\S+)$/m',$reply,$unsigned)===1,$reply);
+            [$code,$out]=self::run($script,array_merge($approver,['approve',$unsigned[1]]));
+            assertSame(2,$code,$out); assertStringContains('is not signed',$out);
+            assertStringContains('Approved: no',$profile($twoSlug));
+            // Approving by slug works too, and the list is then empty.
+            [$code,$out]=self::run($script,array_merge($approver,['approve',$twoSlug]));
+            assertSame(0,$code,$out); assertStringContains('Status: approved',$out);
+            [$code,$out]=self::run($script,array_merge($approver,['pending']));
+            assertSame(0,$code,$out); assertStringContains('Pending-Count: 0',$out);
+        } finally {self::disposeKeyrings($root); $server->close();}
+    }
+
     public function testDownloadedReaderAndPublicDelivery(): void
     {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
