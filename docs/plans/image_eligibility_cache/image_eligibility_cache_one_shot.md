@@ -10,7 +10,7 @@ Extended estimates: disabled (no real alternatives or work units)
 
 **Cycle estimate: 0.05 (intake)**
 
-Status: planned; next permitted action: implement after the planning commit.
+Status: implemented and verified locally; PR open for review. Real-device iPhone confirmation and deployment are the maintainer's.
 
 ## Original request
 
@@ -51,14 +51,37 @@ New `tests/browser/image_upload_eligibility.mjs` with a delayed `/api/get_profil
 
 Starting revisions and branch: `origin/main` `df0ac8c5`; branch `feat/image-eligibility-cache`.
 
-Planning commit: pending.
+Planning commit: `6947166` (record and index only; confirmed with `git log` before implementation).
 
 ## Dated execution history
 
-- 2026-11-18: record written.
+- 2026-11-18: record written; planning commit `6947166`.
+- 2026-11-18: `image_upload.js`: added `remembered()`/`remember()` around `forum_image_eligible_identity`; `refreshEligibility()` shows eligibility before the fetch when the identity matches, writes it on a yes, and clears it on an OK "no" response (a failed request keeps it). As planned; no corrections.
+- 2026-11-18: added `tests/browser/image_upload_eligibility.mjs`. Confirmed it fails against the old `image_upload.js` (nothing remembered) and passes with the change.
 
 ## Study history
 
 - 2026-11-18 intake: **0.05**, scope v1, starting revision `df0ac8c5`. Not pristine (the rater traced the cause first). Single exposed Claude rater.
+- 2026-11-18 execution entry after planning commit `6947166`: 0.05 reaffirmed.
+- 2026-11-18 closeout: delivered scope v1; retrospective **0.05**. Maintainer fit and acceptance pending.
+
+## Outcome
+
+Delivered as recorded: a key confirmed allowed is offered Attach image as soon as the page knows the identity; the check still runs and a "no" hides it and forgets the key. Not delivered (by authorization): server-rendered eligibility.
+
+## Verification
+
+- Passed: `node tests/browser/image_upload_eligibility.mjs` (new; first visit waits, a confirmed key is offered before the answer, another key is not, "no" hides and forgets, the next visit waits again). Fails on the old code.
+- Passed: `node tests/browser/image_photo_details.mjs`, `image_prepare.mjs`, `image_compose_transport.cjs`.
+- Passed: `./v3 test --smoke` (478 run, 478 passed).
+- Not run: the full suite (maintainer runs it). Not replayed: an actual iPhone home-screen app resumed after time away; the test's held `/api/get_profile` response stands in for the slow request.
+
+## Final review
+
+Diff checked: one JS file, one new test, this record, the index, the ledger and the debug log. No new component; no UI text added or changed.
+
+## Commit/merge/publication status
+
+Implementation and this record committed together on `feat/image-eligibility-cache` (hash in the PR); pushed; PR open. Not merged or deployed.
 
 _Claude Opus 5.5, 2026-11-18_
