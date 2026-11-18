@@ -443,6 +443,10 @@
         link.href = snapshotPresentation.normalThreadUrl(thread.id);
         link.textContent = snapshotPresentation.threadTitle(thread.subject, thread.preview);
         link.addEventListener("click", function (event) {
+          // With Beside on and room, the thread opens in the pane (open_beside.js) and this page stays.
+          if (window.forumOpenBeside && window.forumOpenBeside.take(event)) return;
+          // Ctrl-click, middle-click and the like keep their browser meaning (a new tab).
+          if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
           if (onSelect) {
             event.preventDefault();
             onSelect(thread.id);

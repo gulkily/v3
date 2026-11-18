@@ -51,6 +51,8 @@
   var frame = null;
   var title = null;
   var alone = null;
+  var note = null;
+  var titleWatch = null;
   var status = null;
   // Set when a click opens a page, so the next load is announced once.
   var announceNext = false;
@@ -170,7 +172,13 @@
     frame.name = FRAME_NAME;
     frame.title = "Page opened beside";
     frame.addEventListener("load", loaded);
+    // Shown in place of the page when it could not be loaded.
+    note = document.createElement("p");
+    note.className = "open-beside__note";
+    note.hidden = true;
+    note.textContent = "This page could not be loaded. If you are offline, it has no offline copy.";
     pane.appendChild(bar);
+    pane.appendChild(note);
     pane.appendChild(frame);
     document.body.appendChild(pane);
     if (!status) {
@@ -185,20 +193,51 @@
 
   // The pane's page changed: by a click here, a link followed inside the pane,
   // or a form posted there. The bar and the saved address follow it.
+  function showTitle(name, address) {
+    title.textContent = name || address || "";
+    frame.title = name ? "Beside: " + name : "Page opened beside";
+  }
+
   function loaded() {
     if (!frame || leaving) return;
     var address = null;
     var name = "";
+    var readable = true;
     try {
       var at = frame.contentWindow.location;
       if (at.href === "about:blank") return;
       address = at.pathname + at.search + at.hash;
       name = frame.contentDocument.title || "";
     } catch (error) {
-      // Another site's page: nothing of it can be read.
+      // The browser's own error page: the load failed. Offline, that is a page
+      // with no offline copy.
+      readable = false;
     }
-    title.textContent = name || address || "";
-    frame.title = name ? "Beside: " + name : "Page opened beside";
+    pane.classList.toggle("open-beside--failed", !readable);
+    note.hidden = readable;
+    if (!readable) {
+      showTitle("Not available", null);
+      if (announceNext) {
+        announceNext = false;
+        status.textContent = note.textContent;
+      }
+      return;
+    }
+    showTitle(name, address);
+    // A page may name itself after it loads (the offline reader does, once it
+    // has drawn the thread); the bar follows.
+    if (titleWatch) titleWatch.disconnect();
+    try {
+      var shown = frame.contentDocument;
+      var head = shown.querySelector("head");
+      if (head && window.MutationObserver) {
+        titleWatch = new MutationObserver(function () {
+          if (frame && frame.contentDocument === shown) showTitle(shown.title || "", address);
+        });
+        titleWatch.observe(head, { childList: true, subtree: true, characterData: true });
+      }
+    } catch (error) {
+    }
     if (address !== null) {
       alone.href = address;
       store(paneKey, address);
@@ -254,6 +293,8 @@
     if (room() === null) return false;
     if (!pane) build();
     announceNext = true;
+    pane.classList.remove("open-beside--failed");
+    note.hidden = true;
     restoreScroll = null;
     store(scrollKey, null);
     title.textContent = "";
@@ -266,10 +307,13 @@
 
   function close() {
     if (pane) pane.remove();
+    if (titleWatch) titleWatch.disconnect();
+    titleWatch = null;
     pane = null;
     frame = null;
     title = null;
     alone = null;
+    note = null;
     if (status) status.textContent = "";
     store(paneKey, null);
     store(scrollKey, null);
@@ -279,7 +323,7 @@
   // click, that asks for nothing else (a new tab, a download, a spot on this
   // page).
   function paneAddress(event) {
-    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return null;
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return null;
     var link = event.target && event.target.closest ? event.target.closest("a[href]") : null;
     if (!link || !link.closest(".main") || link.closest("[data-open-beside-pane]")) return null;
     if (link.hasAttribute("download")) return null;
@@ -300,11 +344,21 @@
   // first: a link another script already handles (an inline reply form, say)
   // arrives here with its default prevented and is left alone.
   window.addEventListener("click", function (event) {
-    if (!modeOn()) return;
-    var address = paneAddress(event);
-    if (address === null || !open(address)) return;
-    event.preventDefault();
+    if (event.defaultPrevented) return;
+    take(event);
   });
+
+  // Opens the clicked link in the pane if the mode is on, the link is one the
+  // pane may take and there is room; says whether it did. A script that
+  // handles a link itself (the offline reader's thread titles) calls this
+  // first, through window.forumOpenBeside.take, and stands aside on true.
+  function take(event) {
+    if (!modeOn()) return false;
+    var address = paneAddress(event);
+    if (address === null || !open(address)) return false;
+    event.preventDefault();
+    return true;
+  }
 
   function setMode(on) {
     if (on) {
@@ -324,7 +378,7 @@
   }
 
   // Preferences (preferences.js) switches the mode through here.
-  window.forumOpenBeside = { set: setMode };
+  window.forumOpenBeside = { set: setMode, take: take };
 
   document.addEventListener("click", function (event) {
     var toggle = event.target && event.target.closest ? event.target.closest("[data-open-beside-toggle]") : null;
