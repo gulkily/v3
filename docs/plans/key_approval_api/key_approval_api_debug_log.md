@@ -59,3 +59,20 @@
 
 **Uncertain assessments**
 - Whether the `__Host-` cookie name over HTTPS needs special handling in quill is untested; Stage 1 checks it read-only against zenmemes.com.
+
+## 2026-11-18T03:50Z — Step 4
+
+**Necessary/useful instructions**
+- Step 3 "resolve each material risk before dependent work": the Stage 1 sign-in was checked read-only against zenmemes.com before any command work, which confirmed the `__Host-` cookie on HTTPS; retain.
+- `implementation_standards.md` reuse: `pending_keys` reads the page's own `pendingDirectoryProfiles`, and a test checks the API and the page list the same keys; retain.
+- Step 4 "If additional scope emerges, return to the appropriate earlier step": narrowing `get_thread` out of Stage 2 was recorded in the summary rather than done silently; retain.
+
+**Redundant/unnecessary instructions**
+- Effort-study bookkeeping repeats the same projected value in the plan, summary and ledger at every step when nothing changes.
+
+**Inapplicable instructions**
+- Known-user replay stage: no user device named in Step 2.
+- Documentation-only stage checks: application change.
+
+**Uncertain assessments**
+- Whether a scope reduction (Stage 2, `get_thread`) needs renewed approval or only recording is not spelled out; recorded and flagged in the handoff.
