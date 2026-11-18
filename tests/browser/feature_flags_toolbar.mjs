@@ -24,6 +24,17 @@ try {
   const visible = () => page.locator('[data-feature-flag-row]:visible').evaluateAll(rows => rows.map(row => row.dataset.flagKey));
   const counts = () => page.locator('[data-flag-filter-count]').allTextContents();
   assert.deepEqual(await counts(), ['4', '3', '1', '1', '2']);
+  // Recently released: newest release date and the day before, newest first; undated
+  // and older flags left out. A link to a filtered-out row clears the filter.
+  assert.deepEqual(await page.locator('[data-feature-flags-recent] li').allTextContents(), ['Beta switch Nov 17', 'Alpha switch Nov 16']);
+  await chip('disabled').click();
+  assert.deepEqual(await visible(), ['TEST_GAMMA']);
+  await page.locator('[data-feature-flags-recent] a', { hasText: 'Alpha switch' }).click();
+  assert.equal(await page.locator('#flag-TEST_ALPHA').isVisible(), true);
+  const landed = await page.evaluate(() => [document.querySelector('#flag-TEST_ALPHA').getBoundingClientRect().top, document.querySelector('[data-feature-flags-toolbar]').getBoundingClientRect().bottom]);
+  assert.ok(landed[0] >= landed[1], 'row lands below the sticky toolbar: ' + landed);
+  assert.equal(await chip('all').getAttribute('aria-pressed'), 'true');
+  assert.equal((await visible()).length, 4);
   for (const [status, expected] of [
     ['enabled', ['TEST_ALPHA', 'TEST_BETA', 'TEST_DELTA']],
     ['disabled', ['TEST_GAMMA']],
@@ -183,7 +194,12 @@ try {
   const canonical = await setup(await browser.newContext(), 'canonical');
   const expectedGroups = ['Access and identity', 'Authored content', 'Forum experience', 'Site rendering',
     'Backups', 'Fastmod', 'Agent replies', 'LLM exchanges'];
-  assert.deepEqual(await canonical.locator('.feature-flag-group-heading').allTextContents(), expectedGroups);
+  assert.deepEqual(await canonical.locator('.feature-flag-group > .feature-flag-group-heading').allTextContents(), expectedGroups);
+  // Recently released comes first and links to real rows.
+  assert.equal(await canonical.locator('.feature-flag-group-heading').first().textContent(), 'Recently released');
+  for (const href of await canonical.locator('[data-feature-flags-recent] a').evaluateAll(links => links.map(link => link.getAttribute('href')))) {
+    assert.equal(await canonical.locator(href).count(), 1, href);
+  }
   const canonicalKeys = await canonical.locator('[data-flag-key]').evaluateAll(rows => rows.map(row => row.dataset.flagKey));
   const visibleKeys = () => canonical.locator('[data-flag-key]:visible').evaluateAll(rows => rows.map(row => row.dataset.flagKey));
   for (const status of ['enabled', 'disabled', 'overridden', 'locked', 'all']) {
@@ -206,6 +222,14 @@ try {
       assert.deepEqual(await visibleKeys(), canonicalKeys);
       assert.equal(await canonical.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `canonical ${theme}/${width}`);
       await canonical.screenshot({ path: `/tmp/feature-flags-order-${theme}-${width}.png`, fullPage: true });
+    }
+    // Each Recently released link lands its row fully below the sticky toolbar.
+    for (const link of await canonical.locator('[data-feature-flags-recent] a').all()) {
+      await canonical.evaluate(() => scrollTo(0, 0));
+      await link.click();
+      await canonical.waitForTimeout(50);
+      const [rowTop, barBottom] = await canonical.evaluate(hash => [document.querySelector(hash).getBoundingClientRect().top, document.querySelector('[data-feature-flags-toolbar]').getBoundingClientRect().bottom], await link.getAttribute('href'));
+      assert.ok(rowTop >= barBottom, `${await link.getAttribute('href')} at ${width}px lands below the toolbar (${rowTop} < ${barBottom})`);
     }
   }
   console.log('PASS canonical groups/flags from reversed input, stable status/search/empty recovery and 12 real-registry theme/viewport states');

@@ -633,3 +633,4 @@ and repair its navigation and affected references. See the
 - [Post file windows](post_file_windows/post_file_windows_one_shot.md) — one-shot: Source, Commit, Signature and Public key on a post page open in small themed windows with a Raw link.
 - [Gallery reading margins](gallery_reading_margins/gallery_reading_margins_one_shot.md) — one-shot: the reading-margins ruler also shows on /gallery/, and tiles refill the chosen column.
 - [App icons](app_icons/app_icons_one_shot.md) — one-shot: home-screen icons for ZenMemes (apple-touch-icon and 192/512 manifest PNGs).
+- [Recently released feature flags](recent_feature_flags/recent_feature_flags_one_shot.md) — one-shot: flags carry a release date, and Feature Flags opens with a "Recently released" list.

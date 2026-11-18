@@ -116,6 +116,30 @@ final class FeatureFlagRegistry
     }
 
     /**
+     * Flags released on the newest release date or the day before, newest first,
+     * then in presentation order. Counted from the newest release rather than
+     * today, so the list is never empty after a quiet stretch.
+     *
+     * @param list<FeatureFlagState> $flags
+     * @return list<FeatureFlagState>
+     */
+    public function recentlyReleased(array $flags): array
+    {
+        $dated = array_values(array_filter($flags, static fn (FeatureFlagState $flag): bool => $flag->definition->releasedOn !== null));
+        if ($dated === []) {
+            return [];
+        }
+        $newest = max(array_map(static fn (FeatureFlagState $flag): string => (string) $flag->definition->releasedOn, $dated));
+        $since = (new \DateTimeImmutable($newest))->modify('-1 day')->format('Y-m-d');
+        $order = array_flip(array_merge(...array_values(self::PRESENTATION_ORDER)));
+        $recent = array_values(array_filter($dated, static fn (FeatureFlagState $flag): bool => $flag->definition->releasedOn >= $since));
+        usort($recent, static fn (FeatureFlagState $a, FeatureFlagState $b): int => [$b->definition->releasedOn, $order[$a->definition->key] ?? PHP_INT_MAX]
+            <=> [$a->definition->releasedOn, $order[$b->definition->key] ?? PHP_INT_MAX]);
+
+        return $recent;
+    }
+
+    /**
      * @return list<FeatureFlagDefinition>
      */
     public function all(): array
@@ -129,6 +153,7 @@ final class FeatureFlagRegistry
                 self::IMAGE_BACKUP_ENABLED,
                 siteMutable: true,
                 group: 'BACKUP',
+                releasedOn: '2026-10-26',
             ),
             new FeatureFlagDefinition(
                 self::TEXT_BACKUP_ENABLED,
@@ -138,6 +163,7 @@ final class FeatureFlagRegistry
                 self::TEXT_BACKUP_ENABLED,
                 siteMutable: true,
                 group: 'BACKUP',
+                releasedOn: '2026-10-26',
             ),
             new FeatureFlagDefinition(
                 self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED,
@@ -147,6 +173,7 @@ final class FeatureFlagRegistry
                 self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',
+                releasedOn: '2026-10-21',
             ),
             new FeatureFlagDefinition(
                 self::IMAGE_CONTENT_ENABLED,
@@ -156,6 +183,7 @@ final class FeatureFlagRegistry
                 self::IMAGE_CONTENT_ENABLED,
                 siteMutable: true,
                 group: 'AUTHORING',
+                releasedOn: '2026-10-13',
             ),
             new FeatureFlagDefinition(
                 self::LIST_THUMBNAILS_ENABLED,
@@ -166,6 +194,7 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 requiresEnabledFlag: self::IMAGE_CONTENT_ENABLED,
                 group: 'AUTHORING',
+                releasedOn: '2026-11-05',
             ),
             new FeatureFlagDefinition(
                 self::IMAGE_GALLERY_ENABLED,
@@ -176,6 +205,7 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 requiresEnabledFlag: self::IMAGE_CONTENT_ENABLED,
                 group: 'AUTHORING',
+                releasedOn: '2026-11-05',
             ),
             new FeatureFlagDefinition(
                 self::PRIVATE_MESSAGES_ENABLED,
@@ -185,6 +215,7 @@ final class FeatureFlagRegistry
                 self::PRIVATE_MESSAGES_ENABLED,
                 siteMutable: true,
                 group: 'ACCESS',
+                releasedOn: '2026-10-13',
             ),
             new FeatureFlagDefinition(
                 self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
@@ -194,6 +225,7 @@ final class FeatureFlagRegistry
                 self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
                 siteMutable: true,
                 group: 'ACCESS',
+                releasedOn: '2026-10-11',
             ),
             new FeatureFlagDefinition(
                 self::APPROVED_MEMBERS_ONLY,
@@ -203,6 +235,7 @@ final class FeatureFlagRegistry
                 self::APPROVED_MEMBERS_ONLY,
                 siteMutable: true,
                 group: 'ACCESS',
+                releasedOn: '2026-09-13',
             ),
             new FeatureFlagDefinition(
                 self::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
@@ -212,6 +245,7 @@ final class FeatureFlagRegistry
                 self::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
                 siteMutable: true,
                 group: 'ACCESS',
+                releasedOn: '2026-10-08',
             ),
             new FeatureFlagDefinition(
                 self::USERNAME_CHANGES_ENABLED,
@@ -221,6 +255,7 @@ final class FeatureFlagRegistry
                 self::USERNAME_CHANGES_ENABLED,
                 siteMutable: true,
                 group: 'ACCESS',
+                releasedOn: '2026-10-16',
             ),
             new FeatureFlagDefinition(
                 self::VERIFIED_ATTRIBUTION,
@@ -230,6 +265,7 @@ final class FeatureFlagRegistry
                 self::VERIFIED_ATTRIBUTION,
                 siteMutable: true,
                 group: 'ACCESS',
+                releasedOn: '2026-10-23',
             ),
             new FeatureFlagDefinition(
                 self::SESSION_KEY_BOOTSTRAP_ENABLED,
@@ -239,6 +275,7 @@ final class FeatureFlagRegistry
                 self::SESSION_KEY_BOOTSTRAP_ENABLED,
                 siteMutable: true,
                 group: 'ACCESS',
+                releasedOn: '2026-11-16',
             ),
             new FeatureFlagDefinition(
                 self::SESSION_KEY_BOOTSTRAP_HTTP_ENABLED,
@@ -249,6 +286,7 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 requiresEnabledFlag: self::SESSION_KEY_BOOTSTRAP_ENABLED,
                 group: 'ACCESS',
+                releasedOn: '2026-11-16',
             ),
             new FeatureFlagDefinition(
                 self::UNICODE_AUTHORED_TEXT,
@@ -258,6 +296,7 @@ final class FeatureFlagRegistry
                 self::UNICODE_AUTHORED_TEXT,
                 siteMutable: true,
                 group: 'AUTHORING',
+                releasedOn: '2026-06-27',
             ),
             new FeatureFlagDefinition(
                 self::EMOJI_AUTHORED_TEXT,
@@ -268,6 +307,7 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 requiresEnabledFlag: self::UNICODE_AUTHORED_TEXT,
                 group: 'AUTHORING',
+                releasedOn: '2026-07-03',
             ),
             new FeatureFlagDefinition(
                 self::EVENT_SUPPORT_ENABLED,
@@ -277,6 +317,7 @@ final class FeatureFlagRegistry
                 self::EVENT_SUPPORT_ENABLED,
                 siteMutable: true,
                 group: 'AUTHORING',
+                releasedOn: '2026-10-09',
             ),
             new FeatureFlagDefinition(
                 self::EVENT_WHEN_ENABLED,
@@ -287,6 +328,7 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 requiresEnabledFlag: self::EVENT_SUPPORT_ENABLED,
                 group: 'AUTHORING',
+                releasedOn: '2026-11-10',
             ),
             new FeatureFlagDefinition(
                 self::CALENDAR_FEED_ENABLED,
@@ -297,6 +339,7 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 requiresEnabledFlag: self::EVENT_SUPPORT_ENABLED,
                 group: 'AUTHORING',
+                releasedOn: '2026-11-17',
             ),
             new FeatureFlagDefinition(
                 self::APP_VERSION_NOTIFICATION,
@@ -306,6 +349,7 @@ final class FeatureFlagRegistry
                 self::APP_VERSION_NOTIFICATION,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-06-27',
             ),
             new FeatureFlagDefinition(
                 self::THREAD_DENSITY_TOGGLE_ENABLED,
@@ -315,6 +359,7 @@ final class FeatureFlagRegistry
                 self::THREAD_DENSITY_TOGGLE_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-09-22',
             ),
             new FeatureFlagDefinition(
                 self::TITLE_DIRECTIVE_ENABLED,
@@ -324,6 +369,7 @@ final class FeatureFlagRegistry
                 self::TITLE_DIRECTIVE_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-03',
             ),
             new FeatureFlagDefinition(
                 self::TITLE_DIRECTIVE_APPROVED_MEMBERS,
@@ -334,6 +380,7 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 requiresEnabledFlag: self::TITLE_DIRECTIVE_ENABLED,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-03',
             ),
             new FeatureFlagDefinition(
                 self::INBOX_ENABLED,
@@ -343,6 +390,7 @@ final class FeatureFlagRegistry
                 self::INBOX_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-07',
             ),
             new FeatureFlagDefinition(
                 self::TAG_UNLOCKS_ENABLED,
@@ -352,6 +400,7 @@ final class FeatureFlagRegistry
                 self::TAG_UNLOCKS_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-12',
             ),
             new FeatureFlagDefinition(
                 self::AGENT_PROMPT_ENABLED,
@@ -361,6 +410,7 @@ final class FeatureFlagRegistry
                 self::AGENT_PROMPT_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-13',
             ),
             new FeatureFlagDefinition(
                 self::QDB_QUEUE_ENABLED,
@@ -370,6 +420,7 @@ final class FeatureFlagRegistry
                 self::QDB_QUEUE_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-17',
             ),
             new FeatureFlagDefinition(
                 self::DEPLOY_HEADER_PROMPT_ENABLED,
@@ -379,6 +430,7 @@ final class FeatureFlagRegistry
                 self::DEPLOY_HEADER_PROMPT_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-10',
             ),
             new FeatureFlagDefinition(
                 self::INSTANCE_IMPORT_PAGE_ENABLED,
@@ -388,6 +440,7 @@ final class FeatureFlagRegistry
                 self::INSTANCE_IMPORT_PAGE_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-16',
             ),
             new FeatureFlagDefinition(
                 self::PRIVATE_MESSAGE_CACHE_ENABLED,
@@ -397,6 +450,7 @@ final class FeatureFlagRegistry
                 self::PRIVATE_MESSAGE_CACHE_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-11',
             ),
             new FeatureFlagDefinition(
                 self::READING_MARGINS_ENABLED,
@@ -406,6 +460,7 @@ final class FeatureFlagRegistry
                 self::READING_MARGINS_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-12',
             ),
             new FeatureFlagDefinition(
                 self::DRAGGABLE_WINDOWS_ENABLED,
@@ -415,6 +470,7 @@ final class FeatureFlagRegistry
                 self::DRAGGABLE_WINDOWS_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-17',
             ),
             new FeatureFlagDefinition(
                 self::OPEN_BESIDE_ENABLED,
@@ -424,6 +480,7 @@ final class FeatureFlagRegistry
                 self::OPEN_BESIDE_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-17',
             ),
             new FeatureFlagDefinition(
                 self::GUESTBOOK_ENABLED,
@@ -433,6 +490,7 @@ final class FeatureFlagRegistry
                 self::GUESTBOOK_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-13',
             ),
             new FeatureFlagDefinition(
                 self::ENGAGIFY_PASSWORD_NEWSLETTER,
@@ -442,6 +500,7 @@ final class FeatureFlagRegistry
                 self::ENGAGIFY_PASSWORD_NEWSLETTER,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-08',
             ),
             new FeatureFlagDefinition(
                 self::ZALGO_THEME_ENABLED,
@@ -451,6 +510,7 @@ final class FeatureFlagRegistry
                 self::ZALGO_THEME_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-16',
             ),
             new FeatureFlagDefinition(
                 self::MEDIA_EMBEDS_ENABLED,
@@ -460,6 +520,7 @@ final class FeatureFlagRegistry
                 self::MEDIA_EMBEDS_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',
+                releasedOn: '2026-10-08',
             ),
             new FeatureFlagDefinition(
                 self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
@@ -470,6 +531,7 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 requiresEnabledFlag: self::MEDIA_EMBEDS_ENABLED,
                 group: 'RENDERING',
+                releasedOn: '2026-10-09',
             ),
             new FeatureFlagDefinition(
                 self::POST_RECORDS_ENABLED,
@@ -479,6 +541,7 @@ final class FeatureFlagRegistry
                 self::POST_RECORDS_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-14',
             ),
             new FeatureFlagDefinition(
                 self::PENDING_CHIP_APPROVAL_ENABLED,
@@ -488,6 +551,7 @@ final class FeatureFlagRegistry
                 self::PENDING_CHIP_APPROVAL_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-14',
             ),
             new FeatureFlagDefinition(
                 self::USAGE_REPORTS_ENABLED,
@@ -497,6 +561,7 @@ final class FeatureFlagRegistry
                 self::USAGE_REPORTS_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-14',
             ),
             new FeatureFlagDefinition(
                 self::PLEDGES_ENABLED,
@@ -506,6 +571,7 @@ final class FeatureFlagRegistry
                 self::PLEDGES_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-15',
             ),
             new FeatureFlagDefinition(
                 self::FAST_NAVIGATION_ENABLED,
@@ -515,6 +581,7 @@ final class FeatureFlagRegistry
                 self::FAST_NAVIGATION_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-16',
             ),
             new FeatureFlagDefinition(
                 self::NAV_CACHED_COPY_ENABLED,
@@ -524,6 +591,7 @@ final class FeatureFlagRegistry
                 self::NAV_CACHED_COPY_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-16',
             ),
             new FeatureFlagDefinition(
                 self::POST_MARKDOWN_ENABLED,
@@ -533,6 +601,7 @@ final class FeatureFlagRegistry
                 self::POST_MARKDOWN_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',
+                releasedOn: '2026-11-03',
             ),
             new FeatureFlagDefinition(
                 self::TAG_LINKS_ENABLED,
@@ -542,6 +611,7 @@ final class FeatureFlagRegistry
                 self::TAG_LINKS_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',
+                releasedOn: '2026-11-05',
             ),
             new FeatureFlagDefinition(
                 self::THREAD_ACTIVITY_DRAWER_ENABLED,
@@ -551,6 +621,7 @@ final class FeatureFlagRegistry
                 self::THREAD_ACTIVITY_DRAWER_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',
+                releasedOn: '2026-11-14',
             ),
             new FeatureFlagDefinition(
                 self::STATIC_PROFILE_PAGES_ENABLED,
@@ -560,6 +631,7 @@ final class FeatureFlagRegistry
                 self::STATIC_PROFILE_PAGES_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',
+                releasedOn: '2026-10-30',
             ),
             new FeatureFlagDefinition(
                 self::STATIC_DETAIL_PAGES_ENABLED,
@@ -569,6 +641,7 @@ final class FeatureFlagRegistry
                 self::STATIC_DETAIL_PAGES_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',
+                releasedOn: '2026-10-06',
             ),
             new FeatureFlagDefinition(
                 self::DEDALUS_AGENT_REPLIES_ENABLED,
@@ -577,6 +650,7 @@ final class FeatureFlagRegistry
                 true,
                 self::DEDALUS_AGENT_REPLIES_ENABLED,
                 'private',
+                releasedOn: '2026-06-27',
             ),
             new FeatureFlagDefinition(
                 self::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
@@ -586,6 +660,7 @@ final class FeatureFlagRegistry
                 self::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
                 'private',
                 requiresEnabledFlag: self::DEDALUS_AGENT_REPLIES_ENABLED,
+                releasedOn: '2026-06-27',
             ),
             new FeatureFlagDefinition(
                 self::AGENT_RESPONSE_REQUESTS_ENABLED,
@@ -595,6 +670,7 @@ final class FeatureFlagRegistry
                 self::AGENT_RESPONSE_REQUESTS_ENABLED,
                 'private',
                 group: 'DEDALUS',
+                releasedOn: '2026-10-05',
             ),
             new FeatureFlagDefinition(
                 self::LLM_CONVERSATION_RECORDING_ENABLED,
@@ -603,6 +679,7 @@ final class FeatureFlagRegistry
                 true,
                 self::LLM_CONVERSATION_RECORDING_ENABLED,
                 'private',
+                releasedOn: '2026-09-06',
             ),
             new FeatureFlagDefinition(
                 self::LLM_CONVERSATION_UI_ENABLED,
@@ -611,6 +688,7 @@ final class FeatureFlagRegistry
                 true,
                 self::LLM_CONVERSATION_UI_ENABLED,
                 'private',
+                releasedOn: '2026-09-06',
             ),
             new FeatureFlagDefinition(
                 self::FAST_SCORING_ENABLED,
@@ -620,6 +698,7 @@ final class FeatureFlagRegistry
                 self::FAST_SCORING_ENABLED,
                 'private',
                 group: 'FASTMOD',
+                releasedOn: '2026-09-27',
             ),
             new FeatureFlagDefinition(
                 self::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED,
@@ -630,6 +709,7 @@ final class FeatureFlagRegistry
                 'private',
                 requiresEnabledFlag: self::FAST_SCORING_ENABLED,
                 group: 'FASTMOD',
+                releasedOn: '2026-09-27',
             ),
             new FeatureFlagDefinition(
                 self::FASTMOD_AUTOMATIC_TAGGING_ENABLED,
@@ -640,6 +720,7 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 requiresEnabledFlag: self::FAST_SCORING_ENABLED,
                 group: 'FASTMOD',
+                releasedOn: '2026-10-20',
             ),
         ];
     }
