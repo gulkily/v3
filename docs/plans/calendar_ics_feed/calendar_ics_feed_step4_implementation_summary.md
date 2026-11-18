@@ -117,4 +117,61 @@ Branch `feat/calendar-ics-feed`, replayed onto `f05cc94` when push access arrive
   - Google is given an `https:` feed address in its subscribe link. Stage 1 only tested the `webcal:` form, so this is checked in Stage 7.
 - Estimate details: smaller than planned, without the copy-code move.
 
+## Stage 6 - Documentation and concepts
+
+**Original estimate: 0.05**
+
+**Retrospective: 0.05**
+
+- Changes:
+  - `docs/reference/calendar.md`: new "Subscribing" section covering the feeds, the window and states, event identity and naming, timing, the Subscribe panel, per-event links and file, members-only behaviour, and the flag.
+  - `docs/concepts/calendar.md`: "export" removed from the Boundary, which now points to the new concept.
+  - New `docs/concepts/calendar_feed.md` (purpose, scenario, sources, boundary).
+  - `docs/reference/agent_api.md`: the three iCal reads, in the Events section.
+  - `docs/plans/README.md`: entry updated to the delivered state.
+- Verification:
+  - Every relative link in the new concept file resolves; `git diff --check` is clean.
+  - Concept entries checked against delivered behaviour: no full-inventory audit.
+- Notes: documentation only; runtime checks not applicable.
+
+## Stage 7 - Production check on the maintainer's iPhone
+
+**Original estimate: 0.03**
+
+**Status: pending maintainer.** This needs Stages 4–5 deployed, after this PR is merged.
+
+- Already shown (Stage 3, 2026-11-17): Google Calendar on the iPhone subscribed to `/calendar.ics` and showed a ZenMemes all-day event over the right dates.
+- Still to check after deploy:
+  - Event titles appear in Google (not "Event") after Google's next refresh.
+  - A timed event shows at the time written. This is the open Stage 1 time-zone risk; no ZenMemes event with a time was seen yet.
+  - Subscribe → Add to Google Calendar on `/calendar` works on the phone with the `https:` address.
+  - "Add to Google Calendar" on an event thread opens a filled form.
+- No retrospective until the check is done.
+
+## Final verification
+
+- Planned stages: Stages 1–6 complete and committed; Stage 7 **pending** the maintainer's phone check after deploy.
+- Stage commits: planning `ab5c89f`; Stage 1 `fc4c007`; Stage 2 `377d149`; Stage 3 `de1d6d9`; Stage 4 `e4b1fb2`; Stage 5 `c58b592`; Stage 6 is the closeout commit. Seven commits across three PRs (#324, #325, #326) for six completed stages: **passed** (needs at least 1 + 6).
+- Planning commit holds only approved plans, the debug log and the index entry: **passed**.
+- Completion Contract:
+  - Normal entry, the Subscribe panel and event-thread links: **passed** locally (browser test).
+  - End-to-end subscription: **partly passed** on production (Stage 3 screenshot); the rest is **pending** Stage 7.
+  - Recovery, the copyable address and the refresh note: **passed** locally.
+  - Deployment, no schema or dependency change: **passed**.
+- Tests: `./v3 test --smoke CalendarPageTest CalendarIcsTest FeatureFlagEvaluatorTest`, 503 passed; `node tests/browser/calendar.mjs` passed. Full suite **not run**, per AGENTS.md. No baseline failures found.
+- Dependencies: none added. `playwright-core@1.58.1`, already declared in `package.json`, was installed outside the repository (`--no-save`) to run the browser test.
+- Final diff review over `src`, `templates`, `public` and `tests` for this branch: no stray changes. `/threads/<id>.ics` falls through to the normal thread route, giving a 404 when there is no event.
+- Shared consumers: `thread_root_card.php` is used only by `thread.php`; `event_block.php` is unchanged; the calendar page script is shared by the grid only.
+- Themes: the browser test's theme sweep (Light, Dark, Chicago, Midnight, Word97) fits at 390px and 1280px. No navigation destination was added, so no nav icons were needed.
+- Feedback items: none.
+
+## Cycle retrospective
+
+**Cycle estimate: 0.55**
+
+**Retrospective: 0.55**
+
+- The production fixes (event titles, test registration) and the three-PR split added work. Dropping the copy button saved some.
+- Maintainer comfortable-fit judgment: **pending**.
+
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

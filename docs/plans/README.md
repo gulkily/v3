@@ -14,7 +14,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [QDB moderated submissions](qdb_moderated_submissions/qdb_moderated_submissions_step3_development_plan.md) — new qdb quotes wait on a public `/queue` until an operator approves them, behind `FORUM_QDB_QUEUE_ENABLED`; Steps 1–3 approved.
 
-[Calendar iCal feed](calendar_ics_feed/calendar_ics_feed_step3_development_plan.md) — `/calendar.ics`, tag feeds, a Subscribe panel and per-event "Add to Google Calendar" links, behind `FORUM_CALENDAR_FEED_ENABLED`; Steps 1–3 approved.
+[Calendar iCal feed](calendar_ics_feed/calendar_ics_feed_step3_development_plan.md) — `/calendar.ics`, tag feeds, a Subscribe panel and per-event "Add to Google Calendar" links, behind `FORUM_CALENDAR_FEED_ENABLED`; Stages 1–6 done ([summary](calendar_ics_feed/calendar_ics_feed_step4_implementation_summary.md)), the production phone check pending.
 
 [Quill rename](quill_rename/quill_rename_one_shot.md) — the posting client `frm.py` becomes `quill.py` (old URL kept), sends its version on every request, and gets an update notice when it is out of date.
 
