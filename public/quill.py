@@ -71,10 +71,12 @@ def site_url(value):
     return value.rstrip('/')
 
 
-def request(site, route, fields=None, timeout=60, files=None):
-    """One request. Never forward authored data via redirects. No curl config/cookies.
+def request(site, route, fields=None, timeout=60, files=None, cookie=None):
+    """One request. Never forward authored data via redirects. No curl config or cookie jar.
 
-    files maps a form field to (path, content type) and sends the request as multipart."""
+    files maps a form field to (path, content type) and sends the request as multipart.
+    cookie is a 'name=value' session cookie held in memory for this run (see sign_in);
+    the returned headers carry every Set-Cookie value under 'set-cookies'."""
     if not shutil.which('curl'):
         raise ClientError('curl is required. Install it using your operating system tools.')
     TRACE['route'] = route.split('?', 1)[0]
@@ -84,6 +86,8 @@ def request(site, route, fields=None, timeout=60, files=None):
         command = ['curl', '--disable', '--silent', '--show-error', '--max-time', str(timeout),
                    '--proto', '=http,https', '--output', str(body), '--dump-header', str(headers),
                    '--write-out', '%{http_code}', '--user-agent', USER_AGENT]
+        if cookie:
+            command += ['--header', 'Cookie: ' + header(cookie)]
         data = None
         if files:
             # Field values go through files so curl never reads @ or < at the start of authored text.
@@ -105,10 +109,14 @@ def request(site, route, fields=None, timeout=60, files=None):
         except (ValueError, UnicodeError):
             raise ClientError('Malformed response; keep any saved operation and check the instance URL.')
         values = {}
+        cookies = []
         for line in headers.read_text(encoding='iso-8859-1').splitlines():
             if ':' in line:
                 key, value = line.split(':', 1)
                 values[key.lower()] = value.strip()
+                if key.lower() == 'set-cookie':
+                    cookies.append(value.strip())
+        values['set-cookies'] = cookies
         notice = values.get('x-quill-update')
         if notice and notice not in NOTICES:
             NOTICES.add(notice)
@@ -218,6 +226,47 @@ def sign(operation, key, source, target):
     arguments += ['--local-user', key['Fingerprint'], '--armor', '--detach-sign',
                   '--output', str(operation / (target + '.txt')), str(operation / (source + '.txt'))]
     gpg_run(key['Home'], arguments)
+
+
+SESSION_COOKIES = ('__Host-v3_session', 'v3_session')
+
+
+def saved_key(args, site):
+    """The key this client already posts with; never generates one (approving needs an approved key)."""
+    if getattr(args, 'signing_key', None):
+        directory = state_directory(args, site)
+        directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+        return identity(args, directory)
+    file = state_directory(args, site) / 'identity.txt'
+    if not file.exists():
+        raise ClientError('No key for this site yet. Post once with this state directory, or pass --signing-key FINGERPRINT.')
+    return load_meta(file)
+
+
+def sign_in(site, key, timeout=60):
+    """Sign the server's challenge and return the session cookie ('name=value') for this run only.
+
+    The cookie is never written to disk; each run signs in again."""
+    status, text, _ = request(site, '/api/auth_challenge', timeout=timeout)
+    values = dict(line.split('=', 1) for line in text.splitlines() if '=' in line)
+    if status != 200 or not values.get('challenge'):
+        raise ClientError('HTTP %s: %s' % (status, values.get('error') or 'no sign-in challenge'))
+    identity_id = 'openpgp:' + key['Fingerprint'].lower()
+    with tempfile.TemporaryDirectory(prefix='quill-signin-') as directory:
+        folder = Path(directory)
+        (folder / 'challenge.txt').write_bytes(values['challenge'].encode('ascii'))
+        sign(folder, key, 'challenge', 'challenge-signature')
+        signature = (folder / 'challenge-signature.txt').read_text(encoding='ascii')
+    status, text, headers = request(site, '/api/authenticate_identity', {
+        'challenge': values['challenge'], 'identity_id': identity_id, 'detached_signature': signature}, timeout)
+    result = dict(line.split('=', 1) for line in text.splitlines() if '=' in line)
+    if status != 200 or result.get('status') != 'ok':
+        raise ClientError('Sign-in failed (HTTP %s): %s' % (status, result.get('error') or 'unexpected response'))
+    for value in headers.get('set-cookies', []):
+        pair = value.split(';', 1)[0].strip()
+        if pair.split('=', 1)[0] in SESSION_COOKIES and '=' in pair:
+            return {'cookie': pair, 'identity_id': identity_id, 'approved': result.get('approved') == '1'}
+    raise ClientError('Signed in, but the server set no session cookie.')
 
 
 def api(site, route, fields, args, operation=None, files=None):

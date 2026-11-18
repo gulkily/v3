@@ -420,5 +420,71 @@ class VersionAndCompatibilityTest(unittest.TestCase):
             self.assertTrue(quill.recovery_command(Path('/tmp/op'), meta).startswith('python3 quill.py --site '))
 
 
+class SignInTest(unittest.TestCase):
+    """sign_in keeps the session cookie in memory and sends it only when asked; nothing on disk."""
+
+    def fake_server(self, responses):
+        seen = []
+
+        def fake_run(command, input=None, stdout=None, stderr=None):
+            url = command[-1]
+            route = url.split('://', 1)[1].split('/', 1)[1].split('?', 1)[0]
+            status, body, headers = responses['/' + route]
+            seen.append(command)
+            Path(command[command.index('--output') + 1]).write_text(body)
+            Path(command[command.index('--dump-header') + 1]).write_text('HTTP/1.1 %d X\r\n%s' % (status, headers))
+            return argparse.Namespace(returncode=0, stdout=str(status).encode(), stderr=b'')
+        return seen, fake_run
+
+    def sign_in(self, responses):
+        seen, fake_run = self.fake_server(responses)
+
+        def fake_sign(folder, key, source, target):
+            (folder / (target + '.txt')).write_text('SIGNATURE')
+        key = {'Fingerprint': 'ABCDEF', 'Home': '/nowhere', 'Generated': 'no'}
+        with patch.object(quill.subprocess, 'run', side_effect=fake_run), patch.object(quill.shutil, 'which', return_value='/usr/bin/curl'), \
+                patch.object(quill, 'sign', side_effect=fake_sign):
+            return seen, quill.sign_in('https://forum.example', key)
+
+    def test_session_cookie_is_picked_from_several(self):
+        seen, session = self.sign_in({
+            '/api/auth_challenge': (200, 'challenge=abc123\n', ''),
+            '/api/authenticate_identity': (200, 'status=ok\nidentity_id=openpgp:abcdef\napproved=1\n',
+                                           'Set-Cookie: theme-hint=gloss; Path=/\r\nSet-Cookie: __Host-v3_session=s3cret; Path=/; Secure; HttpOnly\r\n'),
+        })
+        self.assertEqual('__Host-v3_session=s3cret', session['cookie'])
+        self.assertEqual('openpgp:abcdef', session['identity_id'])
+        self.assertTrue(session['approved'])
+        self.assertNotIn('--cookie-jar', seen[1])
+
+    def test_cookie_is_sent_only_when_given(self):
+        seen, fake_run = self.fake_server({'/api/auth_status': (200, 'status=authenticated\n', '')})
+        with patch.object(quill.subprocess, 'run', side_effect=fake_run), patch.object(quill.shutil, 'which', return_value='/usr/bin/curl'):
+            quill.request('https://forum.example', '/api/auth_status', cookie='v3_session=abc')
+            quill.request('https://forum.example', '/api/auth_status')
+        self.assertIn('Cookie: v3_session=abc', seen[0])
+        self.assertFalse(any(part.startswith('Cookie:') for part in seen[1]))
+
+    def test_rejected_signature_names_the_server_error(self):
+        with self.assertRaisesRegex(quill.ClientError, 'Identity signature verification failed'):
+            self.sign_in({
+                '/api/auth_challenge': (200, 'challenge=abc123\n', ''),
+                '/api/authenticate_identity': (403, 'error=Identity signature verification failed.\n', ''),
+            })
+
+    def test_no_session_cookie_is_an_error(self):
+        with self.assertRaisesRegex(quill.ClientError, 'no session cookie'):
+            self.sign_in({
+                '/api/auth_challenge': (200, 'challenge=abc123\n', ''),
+                '/api/authenticate_identity': (200, 'status=ok\napproved=1\n', 'Set-Cookie: theme-hint=gloss\r\n'),
+            })
+
+    def test_saved_key_never_generates_one(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args = argparse.Namespace(state_dir=directory, resume=None, signing_key=None, gpg_home=None)
+            with self.assertRaisesRegex(quill.ClientError, 'No key for this site yet'):
+                quill.saved_key(args, 'https://forum.example')
+
+
 if __name__ == '__main__':
     unittest.main()
