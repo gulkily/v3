@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`)
 Effort study: `railspike-effort` / `v3/title_only_activity`; [cycle ledger](../effort_ledger/title_only_activity.md); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.08**
-Status: planned; next permitted action: implement and verify
+Status: implemented and verified locally; next permitted action: push and PR (merging and deploying are the maintainer's)
 
 Predecessor: [`v3/thread_activity_drawer`](../thread_activity_drawer/thread_activity_drawer_step3_development_plan.md) (merged #246) and [`v3/thread_activity_record_links`](../thread_activity_record_links/thread_activity_record_links_one_shot.md).
 
@@ -63,8 +63,47 @@ Risks:
 
 Host `main` at `f5d53fa` (merge of #338); branch `feat/title-only-activity-drawer`.
 
+## Planning commit
+
+`737edbd` (plan and index entry only).
+
+## Dated execution history
+
+- 2026-11-18, **order disclosure:** I drafted and tested the implementation before writing this plan, which breaks the one-shot planning gate. To recover, I stashed the uncommitted implementation, committed the plan alone as `737edbd`, then restored the stash. Nothing was backdated; the implementation lands in the completion commit after the plan.
+- No discoveries changed the approach. No enhancement requests.
+
+## Changes
+
+- `Support/TitleDirective.php`: `lineValue()` split out of `extract()`, same rule.
+- `Support/ThreadLabels.php`: `isTagOrTitleOnly()`; `isTagOnly()` and it share `isBookkeepingOnly()`.
+- `ReadModel/TagOnlyLeafFilter.php`, `View/ThreadActivity.php`: `titleLines` parameter; entries carry `title`.
+- `Http/ThreadAndPostPageController.php`, `templates/pages/thread.php`: pass `titleDirectiveEnabled`.
+- `templates/partials/thread_activity_drawer.php`: "posted title: X", then "and tagged …" when there are labels.
+- Tests: `TagOnlyLeafFilterTest::testTitleOnlyRepliesMoveOnlyWhenAsked`, `ThreadActivityTest::testTitleOnlyReplyBecomesTaggedEntryWithTitle`.
+- Concept: [thread activity](../../concepts/thread_activity.md).
+
+## Outcome
+
+Delivered as scoped. Limitation: the drawer cannot tell whether the `title:` line took effect, so it says "posted title:" rather than "retitled".
+
+## Verification
+
+- Smoke set plus `TagOnlyLeafFilterTest`, `ThreadActivityTest`, `ThreadLabelsTest`, `LocalWriteServiceTitleDirectiveTest`, `PostSignalsTemplateTest`: 496 of 496 passed. The full suite was not run, per `AGENTS.md`.
+- Rendered the partial with a title-plus-label entry and a title-only entry (escaped title, profile and plain-name actors); output as expected.
+- No browser or theme check: the change adds text inside the existing list item, with no new markup, CSS or script.
+- No production check: that is the maintainer's after merge.
+
+## Final review
+
+Reviewed `737edbd..` for scope and duplication: all files within the plan; the title regex lives only in `TitleDirective`. No feedback item matches, so no `Feedback:` trailer.
+
+## Commit/merge/publication status
+
+Planning `737edbd`; completion commit follows on `feat/title-only-activity-drawer`; push and PR in the handoff.
+
 ## Study history
 
 - 2026-11-18T22:40Z, intake: **0.08**. Not pristine and recorded late: I rated it after reading the drawer code and after a first implementation draft (see the execution history). Scope v1 as above. R1, P2, single exposed Claude rater.
+- 2026-11-18T22:55Z, closeout: retrospective **0.08** (not a measured actual). Scope v1 delivered unchanged. Full suite and maintainer judgment pending; no accepted-count increment.
 
 *— Claude · 2026-11-18 UTC · Model: claude-opus-5-5*

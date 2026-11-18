@@ -37,11 +37,11 @@ $replyPosts = \ForumRewrite\ReadModel\RetractedLeafFilter::apply($replyPosts);
 if (is_array($pledgeCampaign ?? null)) {
     $replyPosts = \ForumRewrite\ReadModel\WithdrawLeafFilter::apply($replyPosts, $pledgeCampaign['withdrawals'] ?? [], $pledgeCampaign['fills'] ?? [], $pledgeCampaign['reviews'] ?? []);
 }
-// Tag-only leaves leave the conversation for the Activity drawer; filter before runs are computed.
+// Tag-only and title-only leaves leave the conversation for the Activity drawer; filter before runs are computed.
 $threadActivityEntries = [];
 if ($threadActivityDrawerEnabled ?? false) {
     ['shown' => $replyPosts, 'entries' => $threadActivityEntries] = \ForumRewrite\View\ThreadActivity::partition(
-        $rootPost, $replyPosts, $signalActors ?? null, $postRecordsEnabled ?? false, $threadReactionRecordIds ?? []);
+        $rootPost, $replyPosts, $signalActors ?? null, $postRecordsEnabled ?? false, $threadReactionRecordIds ?? [], $titleDirectiveEnabled ?? false);
 }
 
 // Pre-compute continuation flags so the root card can show a true reply count before the reply loop runs.

@@ -155,6 +155,7 @@ final class ThreadAndPostPageController
                     \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED
                 ),
                 'threadActivityDrawerEnabled' => $threadActivityDrawerEnabled,
+                'titleDirectiveEnabled' => $flags->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::TITLE_DIRECTIVE_ENABLED),
                 'postRecordsEnabled' => $postRecordsEnabled,
                 'thread' => $threadRow,
                 'eventState' => ((string) ($threadRow['event_date'] ?? '')) !== ''
