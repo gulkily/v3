@@ -641,7 +641,8 @@ not read the phrase into dates for you. `GET /api/read_event_phrase?phrase=...&t
 returns the fields the composer's Fill would set, and writes nothing. Client-built records for `create_signed_post` cannot carry event
 headers; use the prepared flow. A root-approved operator settles an event with a line
 `event: confirmed` or `event: declined` in any post of its thread; see the
-[calendar reference](calendar.md#confirming-or-declining).
+[calendar reference](calendar.md#confirming-or-declining). Read the calendar as iCal at `GET /calendar.ics`, `GET /calendar/<tag>.ics`
+or `GET /threads/<id>.ics` ([subscribing](calendar.md#subscribing)).
 
 A thread's author or a root-approved operator can give the thread its own page
 theme, shown to every reader. Put a line `theme: <name>` in the opening post or any

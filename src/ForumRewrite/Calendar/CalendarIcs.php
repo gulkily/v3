@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace ForumRewrite\Calendar;
 
 use ForumRewrite\Support\EventStatusDirective;
+use ForumRewrite\Support\PostText;
+use ForumRewrite\Support\ThreadTitle;
 
 /**
  * Writes calendar events as an iCalendar (RFC 5545) document, for the calendar
@@ -86,7 +88,7 @@ final class CalendarIcs
             $lines[] = 'DTEND:' . $end->format('Ymd\THis');
         }
 
-        $lines[] = 'SUMMARY:' . self::text(trim((string) ($event['subject'] ?? '')) ?: 'Event');
+        $lines[] = 'SUMMARY:' . self::text(self::title($event));
         $location = trim((string) ($event['event_location'] ?? ''));
         if ($location !== '') {
             $lines[] = 'LOCATION:' . self::text($location);
@@ -108,6 +110,62 @@ final class CalendarIcs
         $lines[] = 'END:VEVENT';
 
         return $lines;
+    }
+
+    /**
+     * Google Calendar's "new event" form for one event, filled in. Dates and times carry
+     * no zone, so Google reads them in the viewer's own zone, as the feed does.
+     *
+     * @param array<string, mixed> $event
+     */
+    public static function googleEventUrl(array $event): ?string
+    {
+        $first = self::date((string) ($event['event_date'] ?? ''));
+        if ($first === null) {
+            return null;
+        }
+        $last = self::date((string) ($event['event_end_date'] ?? '')) ?? $first;
+        if ($last < $first) {
+            $last = $first;
+        }
+        $time = self::time((string) ($event['event_time'] ?? ''));
+        if ($time === null) {
+            $dates = $first->format('Ymd') . '/' . $last->modify('+1 day')->format('Ymd');
+        } else {
+            [$hour, $minute] = $time;
+            $dates = $first->setTime($hour, $minute)->format('Ymd\THis') . '/'
+                . $last->setTime($hour, $minute)->modify('+' . self::TIMED_EVENT_MINUTES . ' minutes')->format('Ymd\THis');
+        }
+        $details = array_values(array_filter([
+            trim((string) ($event['event_when'] ?? '')),
+            trim((string) ($event['event_link'] ?? '')),
+        ], static fn (string $line): bool => $line !== ''));
+        $query = ['action' => 'TEMPLATE', 'text' => self::title($event), 'dates' => $dates];
+        if ($details !== []) {
+            $query['details'] = implode("\n", $details);
+        }
+        $location = trim((string) ($event['event_location'] ?? ''));
+        if ($location !== '') {
+            $query['location'] = $location;
+        }
+
+        return 'https://calendar.google.com/calendar/render?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986);
+    }
+
+    /**
+     * The event's name: the thread's display title, the same one the calendar grid
+     * shows, so a thread with no subject is named from its text.
+     *
+     * @param array<string, mixed> $event
+     */
+    public static function title(array $event): string
+    {
+        return ThreadTitle::displayTitle(
+            (string) ($event['subject'] ?? ''),
+            PostText::plainPreview((string) ($event['body_preview'] ?? ''), $event['body_format'] ?? null),
+            (string) ($event['root_post_id'] ?? ''),
+            80,
+        );
     }
 
     private static function date(string $value): ?\DateTimeImmutable

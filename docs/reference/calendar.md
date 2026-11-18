@@ -72,6 +72,33 @@ sign-in or Lobby page ([access modes](authentication_modes.md)). On a public
 instance they are public, like the threads they show. Every viewer receives the same
 markup.
 
+## Subscribing
+
+With Calendar feed on (`FORUM_CALENDAR_FEED_ENABLED`, on by default, needs event
+support), `/calendar.ics` and `/calendar/<tag>.ics` publish the calendar as an iCal
+feed. A feed lists what the matching calendar page lists, from 90 days ago to two
+years ahead. Declined events are left out, confirmed events are marked confirmed and
+open ones tentative. Each event keeps its thread ID as its identity, so an edit or a
+confirmation updates the subscriber's copy. Its name is the thread's title, as the
+grid shows it. An event with a time starts at that time and lasts an hour; times
+carry no zone, so a calendar app shows them as written.
+
+Each calendar page has a Subscribe panel, closed by default. It offers Add to Google
+Calendar, a `webcal:` link for other apps, the `.ics` file, and the feed address to
+copy. Without JavaScript the panel keeps the `.ics` link and a relative address.
+Google refreshes subscribed calendars on its own schedule, often hours apart, and
+fetches `webcal:` links over plain HTTP; the panel's Google link uses the page's own
+address instead.
+
+An event thread's page shows Add to Google Calendar, which opens Google's event form
+filled in, and the thread's own file at `/threads/<id>.ics`. Like the event block,
+these do not need an approved author. A copy added this way does not update; the
+feed does.
+
+On a members-only instance the feeds and files stay behind sign-in like every other
+page, so calendar apps cannot subscribe there. Turn the flag off to remove the feeds,
+the panel and the links.
+
 ## Records and storage
 
 `Event-End-Date` is an optional root header described in the

@@ -82,6 +82,24 @@ final class CalendarIcsTest
         calendarIcsAssertSame(true, str_ends_with($ics, "END:VCALENDAR\r\n"));
     }
 
+    public function testEventWithNoSubjectIsNamedFromItsTextLikeTheGrid(): void
+    {
+        $ics = $this->write([$this->event(['subject' => '', 'body_preview' => 'somerville couch for the weekend'])]);
+        calendarIcsAssertContains("SUMMARY:somerville couch for the weekend\r\n", $ics);
+        calendarIcsAssertNotContains('SUMMARY:Event', $ics);
+    }
+
+    public function testGoogleEventUrlFillsTheFormWithFloatingDates(): void
+    {
+        $allDay = CalendarIcs::googleEventUrl($this->event(['event_end_date' => '2026-11-22', 'event_location' => 'Cambridge, MA']));
+        calendarIcsAssertContains('https://calendar.google.com/calendar/render?action=TEMPLATE&text=Couch%20night&dates=20261120%2F20261123', (string) $allDay);
+        calendarIcsAssertContains('&location=Cambridge%2C%20MA', (string) $allDay);
+        $timed = CalendarIcs::googleEventUrl($this->event(['event_time' => '19:00', 'event_when' => 'next Friday at 7']));
+        calendarIcsAssertContains('dates=20261120T190000%2F20261120T200000', (string) $timed);
+        calendarIcsAssertContains('details=next%20Friday%20at%207', (string) $timed);
+        calendarIcsAssertSame(null, CalendarIcs::googleEventUrl($this->event(['event_date' => ''])));
+    }
+
     /**
      * @param list<array<string, mixed>> $events
      * @param array<string, ?string> $states

@@ -1,0 +1,17 @@
+# Cycle v3/calendar_ics_feed
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/calendar_ics_feed` | Step 4 Stages 1–6 committed; Stage 7 and comfortable-fit judgment pending maintainer | v2 / R1 / P2 | 0.55 (intake 0.40; Step 1 Revision 1 0.50; Step 3 0.55) | [Step 1](../calendar_ics_feed/calendar_ics_feed_step1_solution_assessment.md#study-snapshots), [Step 2](../calendar_ics_feed/calendar_ics_feed_step2_feature_description.md#study-snapshots), [Step 3](../calendar_ics_feed/calendar_ics_feed_step3_development_plan.md#study-checkpoint), [Step 4](../calendar_ics_feed/calendar_ics_feed_step4_implementation_summary.md#cycle-retrospective) | New cycle; no parent |
+
+2026-11-17T21:50:00Z — v3/calendar_ics_feed Step 1 handoff (standing P2 enrollment, no parent): [assessment/checkpoint](../calendar_ics_feed/calendar_ics_feed_step1_solution_assessment.md#study-snapshots). Scope v1, recommended Option B (public `.ics` feed per calendar page plus a Subscribe link). Starting revision `1446b8a5`, R1/P2; R1 hashes not re-verified. Pristine intake missing; intake and projected total **0.40**; options A 0.30, B 0.40, C 0.20, D 0.80, non-additive. Single exposed Claude rater. Await Approved Step 1.
+
+2026-11-17T21:55:00Z — v3/calendar_ics_feed Step 1 Revision 1: maintainer asked for B and C combined. Scope v2; recommendation becomes Option B+C (feed, Subscribe link, per-event Google link and one-event `.ics`). Projected total 0.40 → **0.50** (changed scope); options A 0.30, B 0.40, C 0.20, D 0.80, B+C 0.50, non-additive. Same R1/P2, single exposed Claude rater. Await Approved Step 1.
+
+2026-11-17T22:05:00Z — v3/calendar_ics_feed Step 2 handoff: Step 1 Revision 1 (Option B+C) approved (maintainer wrote "approved step 2" before Step 2 existed; read as Step 1 approval). [Description/checkpoint](../calendar_ics_feed/calendar_ics_feed_step2_feature_description.md#study-snapshots). Projected total **0.50** reaffirmed, scope v2. Same R1/P2, single exposed Claude rater. Await Approved Step 2.
+
+2026-11-17T22:20:00Z — v3/calendar_ics_feed Step 3 handoff: Step 2 approved. [Plan/checkpoint](../calendar_ics_feed/calendar_ics_feed_step3_development_plan.md#study-checkpoint). Seven stages. Projected total 0.50 → **0.55** (new understanding, same scope v2: Google probe stage, `.ics` route order). Stage work 0.05/0.12/0.12/0.10/0.10/0.05/0.03, non-additive. Same R1/P2, single exposed Claude rater. Await Approved Step 3; planning uncommitted.
+
+2026-11-17T22:35:00Z — v3/calendar_ics_feed Step 4 entry: Step 3 approved; branch `feat/calendar-ics-feed` from `1446b8a5` (local only, no push access), planning `5b202b6`. [Summary](../calendar_ics_feed/calendar_ics_feed_step4_implementation_summary.md#step-4-entry). Projection **0.55** reaffirmed; stage originals 0.05/0.12/0.12/0.10/0.10/0.05/0.03, non-additive. Stage 1 probe committed `5cf0ee4`; Google checks pending maintainer.
+
+2026-11-18T02:30:00Z — v3/calendar_ics_feed Step 4 closeout: [summary](../calendar_ics_feed/calendar_ics_feed_step4_implementation_summary.md#cycle-retrospective). Stages 1–6 complete across PRs #324, #325 (merged) and #326. Stage retrospectives: Stage 1 partly checked (no retrospective), Stage 2 0.10, Stage 3 0.10, Stage 4 0.12, Stage 5 0.08, Stage 6 0.05; Stage 7 pending. Cycle projection 0.55; cycle retrospective **0.55**. Maintainer comfortable-fit judgment pending. Same R1/P2, single exposed Claude rater.

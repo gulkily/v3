@@ -96,13 +96,37 @@ final class CalendarPageController
             static fn (array $event): bool => ($states[(string) $event['root_post_id']] ?? null) !== EventStatusDirective::DECLINED,
         ));
 
-        $origin = $siteUrl ?? TemplateRenderer::requestOrigin();
-        if ($origin === '{origin}') {
-            $origin = 'http://localhost';
-        }
         $name = SiteConfig::displayName() . ($tag === null ? '' : ' #' . $tag);
 
-        return CalendarIcs::document($events, $states, $origin, $name);
+        return CalendarIcs::document($events, $states, self::origin($siteUrl), $name);
+    }
+
+    /**
+     * /threads/<id>.ics: one thread's event as an iCal file to add to a calendar. Null
+     * while event support or the feed is off, or when the thread has no event.
+     */
+    public function eventFile(string $threadId, ?string $siteUrl = null): ?string
+    {
+        $flags = $this->routeServices->featureFlags();
+        if (!$flags->isEnabled(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED)
+            || !$flags->isEnabled(FeatureFlagRegistry::CALENDAR_FEED_ENABLED)) {
+            return null;
+        }
+        $pdo = $this->routeServices->pdo();
+        $event = CalendarQuery::eventForThread($pdo, $threadId);
+        if ($event === null) {
+            return null;
+        }
+        $states = EventStatus::forThreads($pdo, $this->repositoryRoot, [$threadId]);
+
+        return CalendarIcs::document([$event], $states, self::origin($siteUrl), CalendarIcs::title($event));
+    }
+
+    private static function origin(?string $siteUrl): string
+    {
+        $origin = $siteUrl ?? TemplateRenderer::requestOrigin();
+
+        return $origin === '{origin}' ? 'http://localhost' : $origin;
     }
 
     /** /calendar/<date> and /calendar/<tag>/<date>; null for a date that does not exist. */

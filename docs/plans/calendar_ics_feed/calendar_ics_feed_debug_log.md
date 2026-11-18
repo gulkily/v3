@@ -76,3 +76,23 @@
 
 **Uncertain assessments**
 - The maintainer asked to start Stage 2 before Stage 1's time checks finished, which the plan made a dependency. Proceeded at his request; recorded in the Stage 1 status.
+
+## 2026-11-18T02:35Z — Step 4 (Stages 3–6 and closeout)
+
+**Necessary/useful instructions**
+- `AGENTS.md` "Follow-up changes after a PR": #324 and #325 were merged mid-cycle, so Stages 3 and 4–6 went out on new branches from `origin/main` with new PRs; retain.
+- `step4_implementation_after.md` checklist item 2 (each stage has its own commit): kept Stages 5 and 6 as separate commits on one PR; retain.
+- `implementation_standards.md` "replay that condition": the maintainer's screenshot of the live feed showed every event named "Event", which led to the Stage 4 title fix; retain.
+- `step4_implementation_after.md` "A focused pass is never reported as a full-suite or user-outcome result": kept Stage 7 pending, not passed; retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Navigation icon rule in `AGENTS.md`: no new navigation destination.
+- Read-model schema rules: no schema change.
+
+**Uncertain assessments**
+- Stage 2 reported `CalendarIcsTest` as passing, but the test was not registered in `tests/run.php`, so it never ran. The runner prints "No tests matched" only when a test is named alone. A Railspike or project check that every `tests/*Test.php` is registered would have caught this; suggest one.
+- The summary's Stage 4 commit hash was written from expectation rather than read from `git log`, and was corrected in a follow-up commit. Suggest that Railspike say to record hashes only after reading them.
+- The maintainer waived step approvals for the remaining stages ("You don't have to wait for my approval anymore"); Stage 5 was not a separate approval point anyway.

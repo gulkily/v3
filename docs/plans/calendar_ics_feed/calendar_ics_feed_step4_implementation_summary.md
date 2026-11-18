@@ -8,7 +8,7 @@ Effort study: `railspike-effort` / `v3/calendar_ics_feed`; [host ledger](../effo
 
 **Cycle estimate: 0.55**
 
-Branch `feat/calendar-ics-feed`, replayed onto `f05cc94` when push access arrived; planning commit `ab5c89f`, Stage 1 `fc4c007`. PR [#324](https://github.com/gulkily/v3/pull/324) (Steps 1–3, Stages 1–2) was merged 2026-11-17. Later stages continue on `feat/calendar-ics-routes` from `3e1b719`, per AGENTS.md follow-up rules.
+Branch `feat/calendar-ics-feed`, replayed onto `f05cc94` when push access arrived; planning commit `ab5c89f`, Stage 1 `fc4c007`. PR [#324](https://github.com/gulkily/v3/pull/324) (Steps 1–3, Stages 1–2) was merged 2026-11-17. Later stages continue on `feat/calendar-ics-routes` from `3e1b719`, per AGENTS.md follow-up rules. Stage 3 went out in [#325](https://github.com/gulkily/v3/pull/325), merged 2026-11-17. Stage 4 is on `feat/calendar-ics-event-links` from `08a8cce`.
 
 ## Step 4 entry
 
@@ -48,7 +48,7 @@ Branch `feat/calendar-ics-feed`, replayed onto `f05cc94` when push access arrive
   - New flag `FORUM_CALENDAR_FEED_ENABLED` ("Calendar feed"): site-mutable, on, requires Event support, in the AUTHORING group after Event phrases.
 - Verification:
   - `./v3 test --smoke CalendarIcsTest FeatureFlagEvaluatorTest`: 478 passed. Full suite not run.
-  - New `CalendarIcsTest`: one-day, multi-day, timed, timed multi-day across midnight, tentative and confirmed, escaping, the description, folding of Cyrillic text, and skipping rows with a bad date.
+  - **Correction (2026-11-18):** `CalendarIcsTest` was not registered in `tests/run.php`, so it did not run in Stage 2; the 478 count did not include it. Stage 4 registered it, and all its cases pass. New `CalendarIcsTest`: one-day, multi-day, timed, timed multi-day across midnight, tentative and confirmed, escaping, the description, folding of Cyrillic text, and skipping rows with a bad date.
   - `FeatureFlagEvaluatorTest`: both registry lists updated for the new flag.
   - A two-event sample with a long Cyrillic title read back through the Python `icalendar` package with the intended dates, times, status, title and description.
 - Notes:
@@ -71,9 +71,107 @@ Branch `feat/calendar-ics-feed`, replayed onto `f05cc94` when push access arrive
   - `./v3 test --smoke CalendarPageTest CalendarIcsTest`: 490 passed. Full suite not run.
   - New `CalendarPageTest` cases: the feed lists the grid's events with dates relative to today, leaving out declined, anonymous and too-old events; confirmed and tentative status; the tag feed lists only its tag; 404 with event support off and with the feed flag off, while the tag page still works; and on a members-only site, signed-out visitors don't get the feed.
   - Local server with event support on: `/calendar.ics` returned 200, `text/calendar; charset=utf-8`, `Cache-Control: public, max-age=300`. `/calendar/general.ics` returned 200 and `/calendar.ics/` returned 404.
-  - zenmemes.com: pending deploy.
+  - zenmemes.com after deploy: `/calendar.ics` returned 200 `text/calendar` with 30 events. The maintainer subscribed on his iPhone and Google Calendar showed a ZenMemes all-day event over the right dates (screenshot, 2026-11-17).
+  - **Found in production:** every event's title came through as "Event", because most event threads have no subject. Fixed in Stage 4. Google also showed the thread link as `http://`, because the subscribe link used `webcal://`, which Google fetches over HTTP; Stage 5's link will use the HTTPS address.
 - Notes:
   - The Stage 1 time checks are still open. The live feed can now stand in for the probe file.
 - Estimate details: as planned.
+
+## Stage 4 - Per-event file and Google link
+
+**Original estimate: 0.10**
+
+**Retrospective: 0.12**
+
+- Changes:
+  - Production fix: `CalendarIcs::title()` names an event with the thread's display title, the one the grid shows (`ThreadTitle::displayTitle` over subject and text), so threads with no subject no longer arrive as "Event".
+  - `CalendarQuery::eventForThread()` returns one listed, unretracted thread's event, sharing the select with `eventsBetween`. Like the event block, it doesn't require an approved author.
+  - `CalendarPageController::eventFile()`, and the `/threads/<id>.ics` route ahead of the thread route. It sends `text/calendar` as a download, or falls through to the normal 404.
+  - `CalendarIcs::googleEventUrl()` builds Google's filled event form, with dates that have no time zone, like the feed.
+  - New `templates/partials/event_calendar_links.php`, shown after the event block in `thread_root_card.php`. That partial only appears on thread pages, so board rows and cards are unchanged. It reads "Add to Google Calendar · .ics" and appears only while event support and the feed flag are on, and never for a retracted post. The renderer exposes `calendarFeedEnabled`.
+  - `tests/run.php` registers `CalendarIcsTest`.
+- Verification:
+  - `./v3 test --smoke CalendarPageTest CalendarIcsTest`: smoke 492 passed, and `CalendarIcsTest` on its own 10 passed. It was not in the smoke run because it was registered after that run. Full suite not run.
+  - New cases: a title taken from the text when there is no subject; the Google link for all-day and timed events; the thread page shows the links, while a plain thread and the board don't; the `.ics` file of an anonymous author's event has one event with its title; a thread with no event and an unknown thread both return 404; with the feed off, the event block stays but the links and file are gone.
+- Notes:
+  - The Google link leaves out the thread address. Thread pages are cached HTML that must be the same for every visitor, and the origin isn't known when the page is built. The `.ics` file includes the address, because it is built per request.
+- Estimate details: a bit over, because of the production title fix and the missing test registration.
+
+## Stage 5 - Subscribe panel
+
+**Original estimate: 0.10**
+
+**Retrospective: 0.08**
+
+- Approval: on 2026-11-18 the maintainer asked us to finish the remaining stages without waiting for his approval.
+- Changes:
+  - `templates/pages/calendar.php`: a closed `<details>` Subscribe panel under the month links, shown while the feed flag is on. It holds Add to Google Calendar, "Other calendar apps" (`webcal:`), the `.ics` link, the feed address in a read-only field, and one line about Google's refresh delay. A tag calendar offers its own tag feed.
+  - A script fills the absolute feed address from `location.origin` before paint. Cached pages stay identical for every visitor, and a page on HTTPS gives Google an HTTPS address, which avoids the `webcal:` plain-HTTP fetch seen in Stage 3. Without script, the `.ics` link and the relative address remain, and the Google and app links stay hidden.
+  - `public/assets/calendar.css`: panel spacing, and a 16px address field so iPhone Safari doesn't zoom.
+- Verification:
+  - `./v3 test CalendarPageTest`: 15 passed. New case: the panel on `/calendar` and `/calendar/couches` names each page's own feed, and is absent with the feed flag or event support off.
+  - `node tests/browser/calendar.mjs`: passed. New checks: at 390px and 1280px the panel starts closed, opens with the page-origin address and with Google and `webcal:` links, and still fits the width; the feed fetches as an iCal document. Without JavaScript, the `.ics` link and the relative address remain and the Google link is hidden. The existing theme sweep (Light, Dark, Chicago, Midnight, Word97 at both widths) still fits.
+  - Looked at the 390px screenshot with the panel open: it sits under the month links and fits the card.
+- Notes:
+  - **Deviation from Step 3:** no copy button, so no copy code moved out of the Prompts page. Stage 1 showed the Google link works on the iPhone, which makes the address a fallback, and a read-only field can be selected and copied by hand. That follows the AGENTS.md guidance to keep UI minimal and avoids touching the Prompts page. A copy button can follow if the field proves awkward.
+  - Google is given an `https:` feed address in its subscribe link. Stage 1 only tested the `webcal:` form, so this is checked in Stage 7.
+- Estimate details: smaller than planned, without the copy-code move.
+
+## Stage 6 - Documentation and concepts
+
+**Original estimate: 0.05**
+
+**Retrospective: 0.05**
+
+- Changes:
+  - `docs/reference/calendar.md`: new "Subscribing" section covering the feeds, the window and states, event identity and naming, timing, the Subscribe panel, per-event links and file, members-only behaviour, and the flag.
+  - `docs/concepts/calendar.md`: "export" removed from the Boundary, which now points to the new concept.
+  - New `docs/concepts/calendar_feed.md` (purpose, scenario, sources, boundary).
+  - `docs/reference/agent_api.md`: the three iCal reads, in the Events section.
+  - `docs/plans/README.md`: entry updated to the delivered state.
+- Verification:
+  - Every relative link in the new concept file resolves; `git diff --check` is clean.
+  - Concept entries checked against delivered behaviour: no full-inventory audit.
+- Notes: documentation only; runtime checks not applicable.
+
+## Stage 7 - Production check on the maintainer's iPhone
+
+**Original estimate: 0.03**
+
+**Status: pending maintainer.** This needs Stages 4–5 deployed, after this PR is merged.
+
+- Already shown (Stage 3, 2026-11-17): Google Calendar on the iPhone subscribed to `/calendar.ics` and showed a ZenMemes all-day event over the right dates.
+- Still to check after deploy:
+  - Event titles appear in Google (not "Event") after Google's next refresh.
+  - A timed event shows at the time written. This is the open Stage 1 time-zone risk; no ZenMemes event with a time was seen yet.
+  - Subscribe → Add to Google Calendar on `/calendar` works on the phone with the `https:` address.
+  - "Add to Google Calendar" on an event thread opens a filled form.
+- No retrospective until the check is done.
+
+## Final verification
+
+- Planned stages: Stages 1–6 complete and committed; Stage 7 **pending** the maintainer's phone check after deploy.
+- Stage commits: planning `ab5c89f`; Stage 1 `fc4c007`; Stage 2 `377d149`; Stage 3 `de1d6d9`; Stage 4 `349afb5`; Stage 5 `c58b592`; Stage 6 `6bb5e0d`. Seven commits across three PRs (#324, #325, #326) for six completed stages: **passed** (needs at least 1 + 6).
+- Planning commit holds only approved plans, the debug log and the index entry: **passed**.
+- Completion Contract:
+  - Normal entry, the Subscribe panel and event-thread links: **passed** locally (browser test).
+  - End-to-end subscription: **partly passed** on production (Stage 3 screenshot); the rest is **pending** Stage 7.
+  - Recovery, the copyable address and the refresh note: **passed** locally.
+  - Deployment, no schema or dependency change: **passed**.
+- Tests: `./v3 test --smoke CalendarPageTest CalendarIcsTest FeatureFlagEvaluatorTest`, 503 passed; `node tests/browser/calendar.mjs` passed. Full suite **not run**, per AGENTS.md. No baseline failures found.
+- Dependencies: none added. `playwright-core@1.58.1`, already declared in `package.json`, was installed outside the repository (`--no-save`) to run the browser test.
+- Final diff review over `src`, `templates`, `public` and `tests` for this branch: no stray changes. `/threads/<id>.ics` falls through to the normal thread route, giving a 404 when there is no event.
+- Shared consumers: `thread_root_card.php` is used only by `thread.php`; `event_block.php` is unchanged; the calendar page script is shared by the grid only.
+- Themes: the browser test's theme sweep (Light, Dark, Chicago, Midnight, Word97) fits at 390px and 1280px. No navigation destination was added, so no nav icons were needed.
+- Feedback items: none.
+
+## Cycle retrospective
+
+**Cycle estimate: 0.55**
+
+**Retrospective: 0.55**
+
+- The production fixes (event titles, test registration) and the three-PR split added work. Dropping the copy button saved some.
+- Maintainer comfortable-fit judgment: **pending**.
 
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

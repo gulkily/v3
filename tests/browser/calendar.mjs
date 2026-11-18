@@ -101,6 +101,12 @@ try {
   // An anonymous post keeps its event on its thread but stays off the calendar.
   await plain.page.goto(base + '/calendar/couches/2026-11-28');
   assert.equal(await plain.page.getByRole('link', { name: 'Couch without JavaScript' }).count(), 0, 'anonymous: not on the calendar');
+  // Without JavaScript the Subscribe panel keeps the .ics link and the relative address.
+  await plain.page.goto(base + '/calendar/couches?month=2026-11');
+  await plain.page.locator('[data-calendar-subscribe] summary').click();
+  assert.equal(await plain.page.locator('[data-calendar-subscribe-file]').getAttribute('href'), '/calendar/couches.ics');
+  assert.equal(await plain.page.locator('[data-calendar-subscribe-google]').isVisible(), false, 'no script: no Google link');
+  assert.equal(await plain.page.locator('[data-calendar-subscribe-url]').inputValue(), '/calendar/couches.ics');
   await plain.context.close();
 
   // Five events on one day: the cell caps its list and the grid stays inside a phone's width.
@@ -170,7 +176,19 @@ try {
       await viewer.page.waitForURL(/\/calendar\/couches\/2026-11-25$/);
       await viewer.page.goBack();
     }
+    // Subscribe: closed by default; open, it names this calendar's feed at this page's origin.
+    const subscribe = viewer.page.locator('[data-calendar-subscribe]');
+    assert.equal(await subscribe.evaluate(d => d.open), false, `${width}px: Subscribe starts closed`);
+    await subscribe.locator('summary').click();
+    const feed = base + '/calendar/couches.ics';
+    assert.equal(await viewer.page.locator('[data-calendar-subscribe-url]').inputValue(), feed);
+    assert.equal(await viewer.page.locator('[data-calendar-subscribe-google]').getAttribute('href'), 'https://calendar.google.com/calendar/render?cid=' + encodeURIComponent(feed));
+    assert.equal(await viewer.page.locator('[data-calendar-subscribe-webcal]').getAttribute('href'), feed.replace(/^http:/, 'webcal:'));
+    assert.equal(await fitsWidth(viewer.page), true, `${width}px: open Subscribe fits`);
+    const ics = await (await fetch(feed)).text();
+    assert.match(ics, /^BEGIN:VCALENDAR\r\n/);
     if (shots) await viewer.page.screenshot({ path: join(shots, `calendar-grid-${width}.png`), fullPage: true });
+    await subscribe.locator('summary').click();
     await viewer.page.goto(base + '/calendar/couches/2026-11-25');
     assert.equal(await fitsWidth(viewer.page), true, `day page fits ${width}px`);
     if (shots) await viewer.page.screenshot({ path: join(shots, `calendar-day-${width}.png`), fullPage: true });
