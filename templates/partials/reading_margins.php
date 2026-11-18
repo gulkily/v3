@@ -37,7 +37,7 @@ $readingMarginLabel = static function (int $position): string {
 <?php endforeach; ?>
   </fieldset>
 <?php if ($openBesideEnabled ?? false): ?>
-  <button type="button" class="reading-margins__beside" data-open-beside-toggle aria-pressed="false" title="Open links in a pane beside this page">Beside</button>
+  <button type="button" class="reading-margins__beside" data-open-beside-toggle aria-pressed="false" title="Open links in a pane beside this page"><span class="reading-margins__beside-label">Beside</span></button>
 <?php endif; ?>
 </div>
 <script>

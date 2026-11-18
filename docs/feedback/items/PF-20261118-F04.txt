@@ -1,0 +1,18 @@
+ID: PF-20261118-F04
+Title: Beside button does not show clearly when it is on
+Kind: bug
+Workflow: blocked
+Created: 2026-11-18
+Evidence: locally-verified
+
+Request:
+"i think we just need a better indicator of when beside button is activated, because i could not tell." The maintainer, after trying open beside on the gallery and Recent pages.
+
+Sources:
+- Claude session, 2026-11-18 (no thread)
+
+Done when:
+On the reading-margins ruler, the Beside button looks plainly different when the mode is on than when it is off, in every theme.
+
+Notes:
+2026-11-18: one-shot on feat/beside_toggle_state (record docs/plans/beside_toggle_state/beside_toggle_state_one_shot.md). On is now a filled pill with a check mark and a bold label; off stays outlined. Verified locally in Chrome and Firefox in all 18 themes (tests/browser/open_beside.mjs). Blocked on review, merge and deployment.

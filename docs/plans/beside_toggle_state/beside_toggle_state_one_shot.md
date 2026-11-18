@@ -5,9 +5,9 @@ Debug mode: enabled ([log](beside_toggle_state_debug_log.md); project `.railspik
 Effort study: `railspike-effort` / `v3/beside_toggle_state`, standing enrollment under protocol P2, reference R1 ([ledger](../effort_ledger/beside_toggle_state.md))
 Extended estimates: enabled (no real alternatives or work units, so no unit estimates)
 
-**Cycle estimate: 0.04**
+**Cycle estimate: 0.04** (retrospective 0.07)
 
-Status: planned; next permitted action: implement and verify, then push and open a PR. Merge and deployment need the maintainer.
+Status: technically complete on `feat/beside_toggle_state`; pushed for review, not merged or deployed. Next action: maintainer review, merge and deployment.
 
 ## Request and authorization
 
@@ -49,12 +49,37 @@ Starting revision and branch: `07a6a652` on `main`; branch `feat/beside_toggle_s
 
 ## Planning commit
 
-Pending.
+`2ca69c80` (confirmed with Git).
 
 ## Study history
 
 - 2026-11-18T07:40Z intake: projection **0.04**, scope v1, R1, P2, single exposed rater Claude (claude-fable-5-2). Not pristine: the rater wrote the code being changed.
+- 2026-11-18T07:54Z execution entry after the planning commit: 0.04 reaffirmed.
+- 2026-11-18T07:54Z closeout: retrospective **0.07**. Two themes defeated the planned colours and one theme's hover effect had to be worked around; scope v1 unchanged. Maintainer fit and acceptance pending.
 
 ## Execution history
 
 - 2026-11-18T07:40Z: request received in session; record written.
+- 2026-11-18T07:54Z: correction to the approach. The planned colours (`--active-line` fill, `--page-bg` label) failed the contrast check in Sticker, where both are white. On is now the off state's own two colours swapped: a layer of the button's ink under the label, and the label in the page's background colour. The fill is a layer (`::before`) because Sticker sets button backgrounds with a selector that outranks the toggle's.
+- 2026-11-18T07:54Z: found and fixed on the way: in Sticker, hovering the toggle threw it out from under the pointer, so it could not be clicked reliably. The theme moves buttons with a transform on hover, which replaced the transform that centred the toggle. The toggle is now centred with auto margins. This was in #329.
+- 2026-11-18T07:54Z: also moved the `v3/open_beside` ledger entry out of the frozen `effort_estimation_trial.md`, where #329 had appended it by mistake, into `effort_ledger/open_beside.md`, and repointed that cycle's step documents.
+
+## Outcome
+
+Delivered: the Beside button is an outlined pill when off and a filled pill with a check mark and a bold label when on, in all 18 themes. The label sits in a new `<span class="reading-margins__beside-label">`. No behaviour changed.
+
+Limitations: in Chicago and Word97 the pressed label is dimmer than elsewhere (above 3:1, below the others).
+
+## Verification
+
+- `node tests/browser/open_beside.mjs <dir>` in Chrome and `BROWSER=firefox`: pass. New checks in every theme: on and off fills differ; the label has at least 3:1 contrast in both states; on shows a check mark and off does not; the toggle stays under the pointer when hovered.
+- Off and on crops of the toggle in all 18 themes, checked by eye on one sheet.
+- `node tests/browser/reading_margins.mjs` and `preferences.mjs`: pass.
+- `./v3 test --smoke PreferencesPageTest PresentationProfileMatrixTest`: 488 run, 488 passed.
+- Not verified: the full suite (the maintainer runs it), real Firefox outside automation, production.
+
+## Final review
+
+Diff limited to `open-beside.css`, the label span in `reading_margins.php`, the browser test, and this cycle's documents plus the ledger move. [Open beside concept](../../concepts/open_beside.md) still reads true.
+
+*Claude (claude-fable-5-2), 2026-11-18*

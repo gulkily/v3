@@ -2,7 +2,7 @@
 
 Debug mode: enabled ([debug log](./open_beside_debug_log.md))
 
-Effort study: `railspike-effort` / `v3/open_beside`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment.
+Effort study: `railspike-effort` / `v3/open_beside`; [host ledger](../effort_ledger/open_beside.md). Standing P2 enrollment.
 
 Extended estimates: enabled
 
