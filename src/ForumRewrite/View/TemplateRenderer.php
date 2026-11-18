@@ -270,6 +270,7 @@ final class TemplateRenderer
             'showThreadDensityToggle' => $showThreadDensityToggle,
             'showReadingMargins' => $showReadingMargins,
             'draggableWindowsEnabled' => $draggableWindowsEnabled,
+            'openBesideEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::OPEN_BESIDE_ENABLED),
             'siteName' => SiteConfig::displayName(),
             'appVersion' => $this->appVersion,
             'versionEndpoint' => $this->versionEndpoint,

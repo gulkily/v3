@@ -205,6 +205,22 @@
       } catch (error) {
       }
 <?php endif; ?>
+<?php if ($openBesideEnabled ?? false): ?>
+      try {
+        // Open beside (open_beside.js): a page shown in the pane's frame has no
+        // site header, ruler or status bar, from the first frame. Only the
+        // pane's own frame name counts, so other frames (the tour) keep theirs.
+        if (window.name === 'forum-open-beside' && window.parent !== window && window.parent.location.origin === location.origin) {
+          document.documentElement.setAttribute('data-open-beside-framed', '');
+          var framedStyle = document.createElement('style');
+          framedStyle.textContent = ':root[data-open-beside-framed] .site-header,:root[data-open-beside-framed] .shell-sky,'
+            + ':root[data-open-beside-framed] .reading-margins,:root[data-open-beside-framed] .site-status-bar,'
+            + ':root[data-open-beside-framed] .app-version-banner{display:none!important}';
+          document.head.appendChild(framedStyle);
+        }
+      } catch (error) {
+      }
+<?php endif; ?>
 <?php if ($draggableWindowsEnabled ?? false): ?>
       try {
         // Window controls (theme-bubblegum.js) are on unless this browser turned them off in Preferences.
