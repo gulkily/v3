@@ -151,7 +151,7 @@ Branch `feat/calendar-ics-feed`, replayed onto `f05cc94` when push access arrive
 ## Final verification
 
 - Planned stages: Stages 1–6 complete and committed; Stage 7 **pending** the maintainer's phone check after deploy.
-- Stage commits: planning `ab5c89f`; Stage 1 `fc4c007`; Stage 2 `377d149`; Stage 3 `de1d6d9`; Stage 4 `e4b1fb2`; Stage 5 `c58b592`; Stage 6 is the closeout commit. Seven commits across three PRs (#324, #325, #326) for six completed stages: **passed** (needs at least 1 + 6).
+- Stage commits: planning `ab5c89f`; Stage 1 `fc4c007`; Stage 2 `377d149`; Stage 3 `de1d6d9`; Stage 4 `349afb5`; Stage 5 `c58b592`; Stage 6 `6bb5e0d`. Seven commits across three PRs (#324, #325, #326) for six completed stages: **passed** (needs at least 1 + 6).
 - Planning commit holds only approved plans, the debug log and the index entry: **passed**.
 - Completion Contract:
   - Normal entry, the Subscribe panel and event-thread links: **passed** locally (browser test).
