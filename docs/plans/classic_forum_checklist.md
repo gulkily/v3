@@ -27,7 +27,7 @@ Found on a first read. Each cycle re-checks its own part before planning.
 ## Cycles
 
 - [ ] **1. `member_write_gate`** — one flag, "Posting requires an approved account". Guests read everything; compose boxes become "Register to post"; guest and unsigned writes (posts, replies, likes, flags) are turned away or staged. Off by default.
-  - Status: not started.
+  - Status: Step 1 written 2026-11-18, recommending Option B (hold non-member posts in staging until the author is approved); awaiting Approved Step 1. Planning stays uncommitted until Step 3 is approved.
   - Open: stage or reject turned-away writes; whether guests may still like or flag (suggested: no); how the no-JavaScript path behaves (no-JS browsers can't be blocked from reading).
 - [ ] **2. `registration_auto_approve`** — optional flag so a new username is approved on registration, with no moderator in the loop, like traditional instant signup. Needed for a demo that doesn't stall.
   - Status: not started.
