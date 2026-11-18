@@ -3989,6 +3989,16 @@ PHP;
         assertStringContains('class="stack thread-list" data-offline-reader', $reader);
         assertStringContains('data-snapshot-url="/offline/snapshot.sqlite3"', $reader);
         assertStringContains('data-snapshot-revision=""', $reader);
+        // Hashtag links follow the site's flag, which is on by default.
+        assertStringContains('data-tag-links="1"', $reader);
+        $previousTagLinks = getenv('FORUM_TAG_LINKS_ENABLED');
+        putenv('FORUM_TAG_LINKS_ENABLED=false');
+        try {
+            $withoutTagLinks = $this->render(new Application(dirname(__DIR__), $this->repositoryRoot, $this->databasePath), '/offline/reader/');
+        } finally {
+            putenv($previousTagLinks === false ? 'FORUM_TAG_LINKS_ENABLED' : 'FORUM_TAG_LINKS_ENABLED=' . $previousTagLinks);
+        }
+        assertStringContains('data-tag-links="0"', $withoutTagLinks);
         assertStringMatches('#data-reader-revision="/assets/offline_reader\.[a-f0-9]{12}\.js"#', $reader);
         assertStringContains('data-role="offline-reader-status"', $reader);
         assertStringContains('data-role="offline-mode-bar"', $reader);
