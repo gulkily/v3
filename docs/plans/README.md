@@ -58,6 +58,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Pledge withdraw](pledge_withdraw/pledge_withdraw_step3_development_plan.md) — a pledger takes a pledge back with a `withdraw` reply; the pledge stays visible, marked withdrawn, and leaves the sum.
 
+[Classic forum checklist](classic_forum_checklist.md) — a configuration where anyone reads and posting needs a registered account, for demos; four cycles: member write gate, registration auto-approve, config presets, demo instance.
+
 [Pledges checklist](pledges_checklist.md) — pledge campaigns in eight cycles, with the [spec](pledges_spec.md). Cycle 1: [pledge campaigns](pledge_campaigns/pledge_campaigns_step3_development_plan.md) — a thread with a `goal:` line shows a totals block, and replies with a `pledge:` line add to it.
 
 [Guestbook](guestbook/guestbook_step3_development_plan.md) — a `/guestbook/` page shows the guestbook thread's top-level replies as a paper book with numbered pages and a "Sign the book" form; the thread stays available as an ordinary thread.
