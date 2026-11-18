@@ -2899,7 +2899,7 @@ PHP;
             assertStringNotContains('data-reading-margin-edge', $thread);
             // The ruler sits between the header and the column it moves.
             assertTrue(strpos($thread, 'data-role="reading-margins"') < strpos($thread, '<main class="main">'));
-            // Every page in the main layout gets the ruler, except the gallery.
+            // Every page in the main layout gets the ruler, the gallery included.
             foreach (['/', '/threads/?view=all', '/tags/bug/', '/recent/', '/search?q=hello', '/users/', '/unread',
                 '/messages/', '/about/', '/tools/', '/docs/', '/tools/bookmarklets'] as $rulerPath) {
                 $page = $this->render($application, $rulerPath);
@@ -2916,8 +2916,8 @@ PHP;
                 putenv('FORUM_IMAGE_GALLERY_ENABLED');
             }
             assertStringContains('<main class="main">', $gallery);
-            assertStringNotContains('data-role="reading-margins"', $gallery);
-            assertStringNotContains('reading_margins', $gallery);
+            assertStringContains('data-role="reading-margins"', $gallery);
+            assertFingerprintedAsset($gallery, 'reading_margins.js');
 
             $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/reading-margins.css');
             assertStringContains(':root[data-reading-margins] .main', $css);
@@ -4026,6 +4026,8 @@ PHP;
 
         assertStringContains('rel="manifest" href="/manifest.webmanifest"', $board);
         assertStringContains('/assets/pwa_registration.', $board);
+        // A home-screen install gets a real icon on iPhone.
+        assertStringContains('<link rel="apple-touch-icon" href="/assets/app-icon-180.png">', $board);
         assertStringNotContains('href="/offline/"', $board);
         assertStringContains('refresh-offline-reader', $serviceWorker);
         assertStringContains('status: "unchanged"', $serviceWorker);
@@ -4511,6 +4513,22 @@ PHP;
 
                 assertStringContains('"id": "/offline/?site=' . $runtime['namespace'] . '"', $manifest);
                 assertStringContains('"name": "' . $runtime['manifestName'] . '"', $manifest);
+                // Home-screen icons follow the favicon slot: the default (ZenMemes) art has
+                // its own PNGs; slots without art keep the favicon only.
+                $icons = json_decode($manifest, true, 512, JSON_THROW_ON_ERROR)['icons'];
+                $sizes = array_column($icons, 'sizes');
+                $hasAppIcons = \ForumRewrite\PresentationSlotRegistry::resolve($contract['profile'], 'favicon') === 'default';
+                assertTrue($profileId !== 'zenmemes' || $hasAppIcons, 'ZenMemes uses the default favicon slot');
+                if ($hasAppIcons) {
+                    assertTrue($sizes === ['32x32', '192x192', '512x512', '512x512'], 'ZenMemes manifest icon sizes: ' . implode(' ', $sizes));
+                    assertTrue(($icons[3]['purpose'] ?? '') === 'maskable', 'largest icon also maskable');
+                    foreach (array_slice($icons, 1) as $icon) {
+                        $size = getimagesize(dirname(__DIR__) . '/public' . $icon['src']);
+                        assertTrue($icon['sizes'] === $size[0] . 'x' . $size[1], $icon['src'] . ' is ' . $size[0] . 'x' . $size[1]);
+                    }
+                } else {
+                    assertTrue($sizes === ['32x32'], $profileId . ' manifest keeps the favicon only');
+                }
                 assertStringContains('self.__forumBrowserRuntime = {"namespace":"' . $runtime['namespace'] . '"', $worker);
                 assertStringContains('"offlineCacheName":"' . $runtime['offlineCacheName'] . '"', $worker);
             }

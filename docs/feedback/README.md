@@ -38,6 +38,8 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261117-F01](items/PF-20261117-F01.txt) | Useful local first page and browser import | blocked | locally-verified | — | 1 |
 | [PF-20261117-F02](items/PF-20261117-F02.txt) | Offer known public instances as import sources | blocked | locally-verified | — | 1 |
 | [PF-20261117-F10](items/PF-20261117-F10.txt) | Second pane: open a link beside the current page on wide screens | blocked | locally-verified | — | 1 |
+| [PF-20261118-F02](items/PF-20261118-F02.txt) | Reading margins on the gallery | blocked | locally-verified | — | 1 |
+| [PF-20261118-F03](items/PF-20261118-F03.txt) | Home-screen app icons (apple-touch-icon and manifest PNGs) | blocked | locally-verified | — | 1 |
 | [PF-20261021-F03](items/PF-20261021-F03.txt) | Text-entry macros | untriaged | unknown | 0.5 | 1 |
 | [PF-20261021-F05](items/PF-20261021-F05.txt) | QR appearance | untriaged | unknown | 0.25 | 1 |
 | [PF-20261021-F07](items/PF-20261021-F07.txt) | Default port fallback | untriaged | unknown | 0.2 | 1 |

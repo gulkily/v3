@@ -1,0 +1,18 @@
+ID: PF-20261118-F02
+Title: Reading margins on the gallery
+Kind: feature
+Workflow: blocked
+Created: 2026-11-18
+Evidence: locally-verified
+
+Request:
+please add margin support to gallery view #meta go straight to pr
+
+Sources:
+- https://zenmemes.com/threads/thread-20261117215425-c1f4cc8b
+
+Done when:
+With reading margins on, /gallery/ shows the margins ruler and a chosen column narrows the gallery; tiles stay inside the column without sideways scrolling in every theme.
+
+Notes:
+2026-11-18: one-shot on feat/gallery_reading_margins (record docs/plans/gallery_reading_margins/gallery_reading_margins_one_shot.md); verified locally; awaiting review and deployment.
