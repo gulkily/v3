@@ -2462,3 +2462,9 @@ Relationship: integration follow-up to v3/local_start_import on open PR #284, no
 2026-11-17: import planning speed Stage 2 retrospective 0.35 (original 0.30); killed-process cleanup found in verification.
 
 2026-11-17: import planning speed Stage 3 retrospective 0.10 (original 0.08). Stage 4 pending maintainer WSL replay.
+
+| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/invite_show_mode` | Implemented; PR open | v1 (one-shot) / R1 / P2 | 0.20 | [One-shot record](./invite_show_mode/invite_show_mode_one_shot.md#study-history) | Follow-up to `v3/invite_qr_pitch`; maintainer acceptance pending |
+
+2026-11-17: one-shot invite show mode; baseline `f05cc945`. Intake and execution entry 0.20; closeout retrospective 0.20. Single exposed rater Claude (claude-opus-5-5). No measured effort or accepted-count increment.

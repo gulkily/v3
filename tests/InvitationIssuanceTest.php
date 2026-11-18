@@ -113,7 +113,7 @@ NODE);
         assertStringContains('data-destination-value="/activity/">Activity', $template);
         assertStringContains('data-destination-value="/users/">Users', $template);
         assertStringContains('data-destination-value="/tools/">Tools', $template);
-        assertSame(2, substr_count($template, '<article class="card">'));
+        assertSame(2, substr_count($template, '<article class="card"'));
     }
 
     public function testInviteQrShowsAPitchForThePersonScanning(): void
@@ -313,6 +313,81 @@ NODE);
         assertSame(true, $result['failed']['resultHidden']);
         assertSame(0, $result['unavailable']['writes']);
         assertSame(false, $result['unavailable']['resultHidden']);
+    }
+
+    public function testIssuedInviteHidesIssuerControlsUntilNewInvite(): void
+    {
+        $result = $this->runScript(<<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+(async function() {
+  let ready = null;
+  const listeners = {};
+  const clicks = {};
+  const node = (extra) => Object.assign({ hidden: false, addEventListener(type, listener) { clicks[this.name] = listener; } }, extra);
+  const checkbox = { checked: false, addEventListener() {}, setAttribute() {} };
+  const destination = { disabled: true, value: '', dataset: {}, addEventListener() {}, focus() {} };
+  const options = { querySelectorAll() { return []; }, appendChild() {}, addEventListener() {} };
+  const feedback = { hidden: true, textContent: '', dataset: {} };
+  const result = { hidden: true };
+  const link = { value: '', addEventListener() {}, select() {} };
+  const setup = node({ name: 'setup' });
+  const revoke = node({ name: 'revoke' });
+  const newInvite = node({ name: 'new' });
+  const issueButton = { disabled: false, textContent: 'Generate invite link', focused: false, focus() { this.focused = true; } };
+  const form = {
+    elements: { include_destination: checkbox, destination },
+    addEventListener(type, listener) { listeners[type] = listener; },
+    querySelector(selector) {
+      if (selector === '[data-role=invitation-destination-options]') return options;
+      if (selector === 'button[type="submit"]') return issueButton;
+      return null;
+    }
+  };
+  const root = {
+    querySelector(selector) {
+      return {
+        '[data-invitation-issue-form]': form, '[data-role=invitation-feedback]': feedback,
+        '[data-role=invitation-result]': result, '[data-role=invitation-link]': link,
+        '[data-role=invitation-setup]': setup, '[data-role=invitation-revoke]': revoke,
+        '[data-action=new-invitation]': newInvite
+      }[selector] || null;
+    }
+  };
+  const document = {
+    addEventListener(type, listener) { if (type === 'DOMContentLoaded') ready = listener; },
+    querySelector(selector) { return selector === '[data-invitation-page]' ? root : null; },
+    createElement() { return { dataset: {} }; }
+  };
+  vm.runInNewContext(source, {
+    window: {
+      location: { origin: 'https://forum.test' }, localStorage: { getItem() { return '[]'; }, setItem() {} },
+      PrivateSiteAuth: { async authenticate() { return { status: 'approved', identityId: 'openpgp:test' }; } },
+      ForumBrowserSigning: { async ensureActionIdentity() {}, async signCanonicalRecord() { return 'signature'; } }
+    },
+    document,
+    crypto: { getRandomValues(bytes) { bytes.fill(1); }, subtle: { async digest() { return new Uint8Array(32).buffer; } } },
+    TextEncoder, URLSearchParams,
+    fetch: async function() { return { json: async function() { return { status: 'ok', canonical_record: 'Author-Identity-ID: openpgp:test' }; } }; },
+    console
+  });
+  ready();
+  await listeners.submit({ preventDefault() {} });
+  const issued = { result: result.hidden, setup: setup.hidden, revoke: revoke.hidden, link: link.value !== '' };
+  clicks.new();
+  const reset = { result: result.hidden, setup: setup.hidden, revoke: revoke.hidden, link: link.value, focused: issueButton.focused };
+  process.stdout.write(JSON.stringify({ issued, reset }));
+}()).catch((error) => { console.error(error); process.exit(1); });
+NODE);
+
+        assertSame(['result' => false, 'setup' => true, 'revoke' => true, 'link' => true], $result['issued']);
+        assertSame(['result' => true, 'setup' => false, 'revoke' => false, 'link' => '', 'focused' => true], $result['reset']);
+
+        $template = file_get_contents(__DIR__ . '/../templates/pages/invites.php');
+        assertStringContains('<input id="invite-link" type="text"', $template);
+        assertStringContains('Scan to join · valid 30 days', $template);
+        assertSame(true, strpos($template, 'data-role="invitation-qr"') < strpos($template, 'data-role="invitation-link"'));
     }
 }
 
