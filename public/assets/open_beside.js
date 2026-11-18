@@ -317,7 +317,14 @@
     Array.prototype.forEach.call(document.querySelectorAll("[data-open-beside-toggle]"), function (toggle) {
       toggle.setAttribute("aria-pressed", on ? "true" : "false");
     });
+    // The Preferences page shows the same choice in its own row.
+    if (window.forumPreferences && typeof window.forumPreferences.render === "function") {
+      window.forumPreferences.render();
+    }
   }
+
+  // Preferences (preferences.js) switches the mode through here.
+  window.forumOpenBeside = { set: setMode };
 
   document.addEventListener("click", function (event) {
     var toggle = event.target && event.target.closest ? event.target.closest("[data-open-beside-toggle]") : null;

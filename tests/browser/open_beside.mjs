@@ -25,6 +25,8 @@ const playwright = await import(process.env.PLAYWRIGHT_MODULE || 'playwright-cor
 // The pane and its scroll position come back after the main page changes or
 // reloads, without moving the main column; it hides while there is no room,
 // follows a theme change, and ignores a saved value that is not a site path.
+// With the ruler's flag off, the Preferences row alone switches the mode, and
+// Reset all preferences turns it off and forgets the pane.
 // Usage: node tests/browser/open_beside.mjs [screenshot-dir]
 // BROWSER=firefox runs it in Firefox (needs `npx playwright-core install firefox`).
 const project = resolve(new URL('../..', import.meta.url).pathname);
@@ -41,10 +43,10 @@ const baseEnv = { ...process.env, FORUM_REPOSITORY_ROOT: repo, FORUM_DATABASE_PA
 const rebuild = spawnSync(join(project, 'v3'), ['rebuild', repo, db], { cwd: project, env: baseEnv, encoding: 'utf8' });
 assert.equal(rebuild.status, 0, rebuild.stderr + rebuild.stdout);
 
-async function startServer(flagOn) {
+async function startServer(flagOn, extra = {}) {
   const socket = createServer().listen(0, '127.0.0.1'); await once(socket, 'listening');
   const port = socket.address().port; await new Promise(r => socket.close(r));
-  const env = { ...baseEnv, FORUM_OPEN_BESIDE_ENABLED: flagOn ? 'true' : 'false' };
+  const env = { ...baseEnv, FORUM_OPEN_BESIDE_ENABLED: flagOn ? 'true' : 'false', ...extra };
   const server = spawn(join(project, 'v3'), ['start', `127.0.0.1:${port}`, '--quiet'], { cwd: project, env, detached: true });
   const base = `http://127.0.0.1:${port}`;
   for (let i = 0; i < 200; i++) { try { await (await fetch(base + '/')).text(); break; } catch { await new Promise(r => setTimeout(r, 50)); } }
@@ -413,6 +415,12 @@ try {
     await paneShows(threadPath, 'the pane kept its page through the theme change');
     if (shots) await page.screenshot({ path: join(shots, 'stage4-word97-2048.png') });
     await page.evaluate(theme => window.forumSelectTheme(theme), themeBefore);
+    // Let the pane finish following the theme back before the saved page is changed by hand below.
+    await page.waitForFunction(theme => {
+      const frame = document.querySelector('.open-beside__frame');
+      return frame.contentDocument && frame.contentDocument.readyState === 'complete' && frame.contentDocument.documentElement.getAttribute('data-theme') === theme;
+    }, themeBefore);
+    await page.waitForTimeout(300);
 
     // A saved page that no longer exists shows the site's not-found page, and Close forgets it.
     await page.evaluate(key => localStorage.setItem(key, '/threads/no-such-thread'), keys.openBesidePaneStorageKey);
@@ -443,6 +451,25 @@ try {
   await page.waitForURL('**' + threadPath);
   assert.equal(await page.locator('[data-open-beside-pane]:not([hidden])').count(), 0, 'phone: no pane');
   await page.evaluate(key => localStorage.removeItem(key), (await page.evaluate(() => window.forumBrowserRuntime)).openBesideStorageKey);
+
+  // --- Without the ruler: Preferences alone switches the mode ---
+  {
+    const bare = await startServer(true, { FORUM_READING_MARGINS_ENABLED: 'false' }); servers.push(bare);
+    await page.setViewportSize({ width: 2048, height: 1280 });
+    await page.goto(bare.base + '/tools/preferences/');
+    assert.equal(await page.locator('[data-open-beside-toggle]').count(), 0, 'no ruler, no toggle');
+    await page.locator('#preference-open-beside').selectOption('on');
+    await page.goto(bare.base + '/threads/');
+    await page.locator('.main a[href^="/threads/root-"]').first().click();
+    await paneShows(threadPath, 'the mode works without the ruler');
+    await page.goto(bare.base + '/tools/preferences/');
+    await paneShows(threadPath);
+    // Reset all preferences turns the mode off and forgets the pane.
+    await Promise.all([page.waitForEvent('load'), page.locator('[data-preference-reset="all"]').click()]);
+    assert.equal(await page.locator('#preference-open-beside').inputValue(), 'off');
+    assert.equal(await page.locator('[data-open-beside-pane]').count(), 0, 'Reset all: no pane');
+    assert.equal(await page.evaluate(() => Object.keys(localStorage).filter(key => key.includes('open-beside')).length), 0, 'Reset all: nothing of the mode is left');
+  }
 
   // --- Posting in the pane (the signing fixture, which can accept posts) ---
   {

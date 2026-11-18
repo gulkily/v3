@@ -107,4 +107,23 @@ Link rules answered in session before approval (the maintainer asked which links
   - Scroll restore is exact in the test. On a page whose height changes after load it may land short.
 - Estimate details: original scope as Step 3; uncertainty was scroll restore, which held. No revisions.
 
+## Stage 5 - Preferences row and reset
+
+**Original estimate: 0.06**
+**Retrospective stage work: 0.07**
+
+- Status: complete.
+- Changes:
+  - `preferences.php`: a row "Open links beside", Off or On, only with the flag on. `ToolsPageController.php` passes the flag. The page's inline script shows the saved choice before paint.
+  - `preferences.js`: the row switches the mode through `window.forumOpenBeside.set`, which `open_beside.js` now exposes, so the row and the ruler's toggle share one path. "Reset all preferences" removes the mode, the pane's page and its scroll position.
+  - `open_beside.js`: switching the mode re-renders the Preferences rows when that page is open.
+  - Fixed on the way, a test failing on the base commit: `tests/browser/preferences.mjs` seeded reading margins as `23 77`, the ruler's old numbering, which the rebuilt ruler (PR #263) ignores, so its "Custom" check failed. Confirmed failing on the base commit in a clean worktree; the seed is now `1 4`.
+- Verification:
+  - `node tests/browser/preferences.mjs`: passes, with the new row (off on a fresh browser, on from a saved choice, the row and the ruler toggle following each other, On surviving a reload, Reset all).
+  - `node tests/browser/open_beside.mjs` in Chrome (twice) and `BROWSER=firefox`: pass, with a new part: with the reading margins flag off there is no toggle, the Preferences row alone switches the mode, a pane opens beside the normal column at 2048px, and Reset all leaves nothing of the mode in storage.
+  - `./v3 test --smoke PreferencesPageTest FeatureFlagEvaluatorTest`: 480 run, 480 passed.
+- Notes:
+  - A race in the test itself (changing the saved page by hand while the pane was still reloading for a theme change) was removed by waiting for that reload.
+- Estimate details: original scope as Step 3, plus the pre-existing test fix. No revisions.
+
 *— Claude · 2026-11-18 UTC · Model: claude-fable-5-2*

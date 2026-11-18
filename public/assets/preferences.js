@@ -59,7 +59,8 @@
         remove(key);
       }
     });
-    [keys.density, keys.margins, keys.windowControls, keys.collapsedWindows, keys.gallerySize, keys.navSlots, keys.welcome].forEach(remove);
+    [keys.density, keys.margins, keys.windowControls, keys.collapsedWindows, keys.openBeside, keys.openBesidePane,
+      keys.openBesidePane ? keys.openBesidePane + '-scroll' : '', keys.gallerySize, keys.navSlots, keys.welcome].forEach(remove);
     keys.tableSizes.forEach(remove);
     window.location.reload();
   }
@@ -83,6 +84,18 @@
       if (control.value === 'off') root.removeAttribute('data-window-controls');
       else root.setAttribute('data-window-controls', 'on');
       if (window.forumWindowControls) window.forumWindowControls.restart();
+    } else if (name === 'open-beside') {
+      // open_beside.js owns the mode: the same key and attribute as the ruler's
+      // Beside toggle, and turning it off closes the pane. Without that script
+      // (a page inside the pane), only the saved choice changes.
+      if (window.forumOpenBeside) {
+        window.forumOpenBeside.set(control.value === 'on');
+      } else {
+        try {
+          if (control.value === 'on') localStorage.setItem(keys.openBeside, 'on');
+          else localStorage.removeItem(keys.openBeside);
+        } catch (error) {}
+      }
     }
   });
 
