@@ -6,6 +6,9 @@
   <meta name="color-scheme" content="light dark">
   <title><?= $e($title) ?></title>
   <link rel="icon" href="<?= $e($faviconPath) ?>" sizes="32x32">
+<?php if (($touchIconPath ?? null) !== null): ?>
+  <link rel="apple-touch-icon" href="<?= $e($touchIconPath) ?>">
+<?php endif; ?>
   <link rel="alternate" type="text/plain" href="/llms.txt" title="Agent guide">
   <script>
     (function () {

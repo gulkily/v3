@@ -122,7 +122,7 @@ final class ProfileRepository
     public static function pendingDirectoryProfiles(PDO $pdo, bool $includeProfileNameChanges = false): array
     {
         $stmt = $pdo->prepare(
-            'SELECT profiles.profile_slug, profiles.username, profiles.username_token, profiles.fallback_label,
+            'SELECT profiles.profile_slug, profiles.identity_id, profiles.username, profiles.username_token, profiles.fallback_label,
                     profiles.post_count, profiles.thread_count, profiles.bootstrap_post_id, profiles.bootstrap_thread_id,
                     latest_activity.label AS latest_activity_label,
                     latest_activity.created_at AS latest_activity_at,
