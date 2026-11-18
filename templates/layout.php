@@ -239,6 +239,9 @@
 <?php endif; ?>
 <?php endif; ?>
   <link rel="icon" href="<?= $e($faviconPath) ?>" sizes="32x32">
+<?php if (($touchIconPath ?? null) !== null): ?>
+  <link rel="apple-touch-icon" href="<?= $e($touchIconPath) ?>">
+<?php endif; ?>
 <?php if (!$approvedMembersOnlyEnabled): ?>
   <link rel="manifest" href="/manifest.webmanifest">
 <?php endif; ?>

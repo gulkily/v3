@@ -279,6 +279,7 @@ final class TemplateRenderer
             'navIconsCssPath' => $this->assetPath('/assets/theme-nav-icons.css'),
             'faviconPath' => $this->versionEndpoint === '/api/docs-version'
                 ? '/docs/_assets/' . basename(FaviconRegistry::resolve($profile)) : FaviconRegistry::resolve($profile),
+            'touchIconPath' => $this->versionEndpoint === '/api/docs-version' ? null : FaviconRegistry::touchIcon($profile),
             'browserRuntimeAssetPaths' => [
                 'openpgpV6' => $this->assetPath('/assets/openpgp.min.js'),
                 'openpgpV5' => $this->assetPath('/assets/openpgp.v5.11.3.min.js'),
@@ -690,6 +691,7 @@ final class TemplateRenderer
             'scriptPaths' => $assetScriptPaths,
             'siteCssPath' => $this->assetPath('/assets/site.css'),
             'faviconPath' => FaviconRegistry::resolve($profile),
+            'touchIconPath' => FaviconRegistry::touchIcon($profile),
             'additionalCssPaths' => $assetAdditionalCssPaths,
             'themeStorageKey' => BrowserRuntimeProfile::fromProfile($profile)['themeStorageKey'],
             'defaultTheme' => $this->defaultThemeName($profile, array_column($themes, 'name')),
