@@ -22,6 +22,7 @@ final class PrivateMessageApiController
         private readonly \Closure $authenticatedViewerProfile,
         private readonly \Closure $privateMessageStore,
         private readonly ?\Closure $recordHistoryActivity = null,
+        private readonly ?\Closure $historySyncStore = null,
     ) {
     }
 
@@ -75,7 +76,8 @@ final class PrivateMessageApiController
             foreach (['after_time', 'after_id'] as $field) {
                 if (isset($query[$field]) && !is_string($query[$field])) throw new InvalidArgumentException('Export position is invalid.');
             }
-            $page = $this->service()->export($viewer, (string) ($query['after_time'] ?? ''), (string) ($query['after_id'] ?? ''));
+            $page = $this->service()->export($viewer, (string) ($query['after_time'] ?? ''), (string) ($query['after_id'] ?? ''),
+                $this->historySyncStore === null ? null : ($this->historySyncStore)());
             $this->routeServices->sendJson(['status' => 'ok'] + $page, 200, $this->routeServices->noStoreHeaders());
         } catch (InvalidArgumentException $exception) {
             $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $this->routeServices->noStoreHeaders());

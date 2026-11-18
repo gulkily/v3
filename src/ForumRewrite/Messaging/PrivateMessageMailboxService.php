@@ -100,7 +100,7 @@ final class PrivateMessageMailboxService
      * @param array<string, mixed> $viewer
      * @return array<string, mixed>
      */
-    public function export(array $viewer, string $afterTime = '', string $afterId = ''): array
+    public function export(array $viewer, string $afterTime = '', string $afterId = '', ?PrivateMessageHistorySyncStore $historySync = null): array
     {
         $viewer = $this->approvedViewer($viewer);
         if ($afterTime !== '' && preg_match('/^\d{4}-\d{2}-\d{2}[0-9T:.Z+-]{0,24}$/D', $afterTime) !== 1) {
@@ -112,8 +112,11 @@ final class PrivateMessageMailboxService
         if (($afterTime === '') !== ($afterId === '')) {
             throw new InvalidArgumentException('Export position needs both after_time and after_id.');
         }
-        return ['account' => (string) $viewer['username_token']]
-            + $this->store->exportPage((string) $viewer['username_token'], $afterTime, $afterId);
+        $account = (string) $viewer['username_token'];
+        $page = $this->store->exportPage($account, $afterTime, $afterId);
+        $page['transfers'] = $historySync === null ? []
+            : $historySync->transfersFor($account, array_column($page['messages'], 'message_id'));
+        return ['account' => $account] + $page;
     }
 
     /** @param array<string, mixed> $viewer @return array<string, mixed> */

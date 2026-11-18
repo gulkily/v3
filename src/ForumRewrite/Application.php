@@ -3006,6 +3006,8 @@ final class Application
             $this->authenticatedViewerProfile(...),
             $this->privateMessageStore(...),
             $this->recordHistoryActivity(...),
+            fn (): \ForumRewrite\Messaging\PrivateMessageHistorySyncStore => new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore(
+                \ForumRewrite\Messaging\PrivateMessageHistorySyncDatabaseConfig::open($this->projectRoot, PrivateConfig::load($this->projectRoot))),
         );
     }
 

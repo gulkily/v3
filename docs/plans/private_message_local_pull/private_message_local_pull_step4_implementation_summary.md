@@ -31,3 +31,19 @@ Branch `feature/private_message_local_pull` from `origin/main` `31e16b06`, which
   - Retrospective stage-work assessment: **0.15**.
 
 *— Claude · 2026-11-18 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Transfers in the export
+
+**Original estimate: 0.10** (unchanged)
+
+- Changes:
+  - `PrivateMessageHistorySyncStore::transfersFor()` returns transfers whose destination is the account, for the page's messages. Each carries its ID, source, target, ciphertext and only the items for those messages.
+  - `PrivateMessageMailboxService::export()` takes an optional sync store and adds `transfers` to each page. `Application` passes a lazily opened sync store to `PrivateMessageApiController`, so other mailbox routes never open sync storage.
+  - A new test in `PrivateMessageExportTest` covers same-account and sender-assisted transfers. Another account's transfer must not appear, and a later page must carry only its own items.
+- Verification:
+  - `./v3 test PrivateMessageExportTest PrivateMessageHistorySyncTest PrivateMessageApiRoutingTest`: 33 run, 33 passed.
+- Notes:
+  - **New understanding for Stage 4:** `upload()` derives a transfer ID by hashing its exact item list, which the export cannot reproduce once a transfer spans pages. Stage 4 will insert transfers under their original ID instead of reusing `upload()`. The scope is unchanged, and the Stage 4 estimate stays 0.20.
+  - A sync-store failure makes the export return an error instead of silently leaving transfers out, so a pull never stores messages and misses their transfers.
+  - Transfer size stays bounded by history sync's 100,000-byte upload limit. No separate export cap was added.
+  - Retrospective stage-work assessment: **0.10**.

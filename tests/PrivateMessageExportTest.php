@@ -3,6 +3,7 @@
 declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
+use ForumRewrite\Messaging\PrivateMessageHistorySyncStore;
 use ForumRewrite\Messaging\PrivateMessageMailboxService;
 use ForumRewrite\Messaging\PrivateMessageReadState;
 use ForumRewrite\Messaging\PrivateMessageStore;
@@ -73,5 +74,27 @@ final class PrivateMessageExportTest
             try { $this->service($pdo)->export($this->viewer('alice'), $time, $id); throw new LogicException('Malformed position accepted'); }
             catch (InvalidArgumentException $expected) { assertStringContains('position', $expected->getMessage()); }
         }
+    }
+
+    public function testExportCarriesOnlyTransfersAddressedToTheViewersAccount(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+        $store = new PrivateMessageStore($pdo);
+        $store->storeEnvelope('a1', '2026-11-01T00:00:00Z', 'bob', 'alice', 'key', 'c1');
+        $store->storeEnvelope('a2', '2026-11-02T00:00:00Z', 'alice', 'bob', 'key', 'c2');
+        $sync = new PrivateMessageHistorySyncStore(new PDO('sqlite::memory:'));
+        $own = $sync->upload('alice', 'old-key', 'new-key', 'bundle-for-alice', [['message_id' => 'a1', 'digest' => 'd1'], ['message_id' => 'a2', 'digest' => 'd2']]);
+        $assist = $sync->upload('alice', 'bob-key', 'new-key', 'sender-bundle', [['message_id' => 'a1', 'digest' => 'd1']]);
+        $sync->upload('bob', 'bob-key', 'bob-new', 'bundle-for-bob', [['message_id' => 'a2', 'digest' => 'd2']]);
+        $page = $this->service($pdo)->export($this->viewer('alice'), '', '', $sync);
+        $byId = array_column($page['transfers'], null, 'transfer_id');
+        assertSame([$own, $assist], array_values(array_intersect([$own, $assist], array_keys($byId))));
+        assertSame(2, count($byId));
+        assertSame(['a1', 'a2'], array_column($byId[$own]['items'], 'message_id'));
+        assertSame('sender-bundle', $byId[$assist]['ciphertext']);
+        assertStringNotContains('bundle-for-bob', json_encode($page));
+        $later = $this->service($pdo)->export($this->viewer('alice'), '2026-11-01T00:00:00Z', 'a1', $sync);
+        assertSame([['message_id' => 'a2', 'digest' => 'd2']], array_column($later['transfers'], 'items', 'transfer_id')[$own]);
+        assertSame([], $this->service($pdo)->export($this->viewer('alice'))['transfers']);
     }
 }
