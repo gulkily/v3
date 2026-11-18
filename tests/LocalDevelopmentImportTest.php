@@ -308,6 +308,35 @@ final class LocalDevelopmentImportTest
         assertSame(3, count($seen));
     }
 
+    public function testRemoteFailuresNameTheirCauseAndNextStep(): void
+    {
+        $remote = static fn (\Closure $transport) => new \ForumRewrite\Support\LocalDevelopmentRemote('https://source.example', $transport);
+        $cases = [
+            'unreachable' => [fn () => throw new RuntimeException('Could not reach https://source.example. Check the connection and retry.'), 'export', 'Check the connection and retry'],
+            'old source' => [fn () => ['status' => 404, 'headers' => [], 'body' => 'not found'], 'export', 'does not support pulling messages yet. Deploy a newer version there'],
+            'expired sign-in' => [fn () => ['status' => 400, 'headers' => [], 'body' => "error=Authentication challenge is missing or expired.\n"], 'signIn', 'https://source.example: Authentication challenge is missing or expired.'],
+            'retired key' => [fn () => ['status' => 403, 'headers' => [], 'body' => "error=This key was retired.\n"], 'signIn', 'This key was retired.'],
+            'rate limit' => [fn () => ['status' => 429, 'headers' => [], 'body' => json_encode(['status' => 'error', 'error' => 'Too many history requests. Retry shortly.'])], 'acknowledge', 'Retry shortly'],
+        ];
+        foreach ($cases as $name => [$transport, $method, $expected]) {
+            try {
+                $client = $remote($transport);
+                match ($method) {
+                    'export' => $client->export(),
+                    'signIn' => $client->signIn('openpgp:' . str_repeat('a', 40), 'c', 's'),
+                    'acknowledge' => $client->acknowledge([]),
+                };
+                throw new LogicException($name . ' did not fail');
+            } catch (RuntimeException $error) {
+                assertStringContains($expected, $error->getMessage(), $name);
+            }
+        }
+        $unapproved = $remote(fn () => ['status' => 200, 'headers' => [], 'body' => "status=ok\napproved=0\n"]);
+        assertSame(['approved' => false], $unapproved->signIn('openpgp:' . str_repeat('a', 40), 'c', 's'));
+        $missing = $remote(fn () => ['status' => 404, 'headers' => [], 'body' => "profile not found\n"]);
+        assertSame(['registered' => false, 'approved' => false], $missing->keyState('openpgp:' . str_repeat('a', 40)));
+    }
+
     private function environment(ImportTestWorkspace $w, string $target): array
     {
         $w->put($w->root . '/secrets.php', '<?php return [];');

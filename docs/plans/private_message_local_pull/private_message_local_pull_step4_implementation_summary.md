@@ -127,3 +127,29 @@ Branch `feature/private_message_local_pull` from `origin/main` `31e16b06`, which
 ## Cycle Revision
 
 2026-11-18T06:40Z: **1.10 projected total**, up from 0.95. Reason: changed scope (the local trust step), approved by the maintainer. Claude, single exposed rater; earlier snapshots kept above.
+
+## Stage 6 - Failure messages and documentation
+
+**Original estimate: 0.10** (unchanged)
+
+- Changes:
+  - Each failure from Step 2 has a message that names its cause and the next step:
+    - Unregistered or unapproved key: card steps and the Register button.
+    - Approved but not imported here: "Run Import above, then pull again."
+    - Source unreachable: "Check the connection and retry."
+    - Source without the endpoint: "does not support pulling messages yet. Deploy a newer version there."
+    - Expired sign-in, retired key or rate limit: the source's own error, plus "Press Pull to resume."
+    - Interrupted pull: "Press Pull to resume."
+    - Key not approved on the source at pull time: "Approve it there, then pull again."
+  - The Stages 3–5 code already carries these messages; this stage adds tests and documentation.
+  - Docs:
+    - New concept [participant mailbox export](../../concepts/participant_mailbox_export.md).
+    - "Messages pull" entry in [local development import](../../concepts/local_development_import.md).
+    - "Pulled history" entry in [private-message history](../../concepts/private_message_history.md).
+    - "Export your own private messages" section in `docs/reference/agent_api.md`.
+- Verification:
+  - `./v3 test LocalDevelopmentImportTest`: 5 run, 5 passed. The new failure test covers unreachable, old source, expired sign-in, retired key, rate limit, an unapproved sign-in and an unregistered key.
+  - Relative links in the four documents resolve. `git diff --check` is clean.
+- Notes:
+  - The page's message for an unapproved sign-in comes from the controller and has no direct test. Its inputs (`approved=0`) are tested, and the browser check covers the earlier "no Pull before approval" state.
+  - Retrospective stage-work assessment: **0.10**.
