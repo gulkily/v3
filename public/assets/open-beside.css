@@ -145,3 +145,18 @@
   border: 0;
   background: var(--page-bg, Canvas);
 }
+
+/* A pane whose page could not be loaded shows a line of text in its place. */
+.open-beside__note {
+  margin: 0;
+  padding: 1rem 0.75rem;
+  color: inherit;
+}
+
+.open-beside__note[hidden] {
+  display: none;
+}
+
+.open-beside--failed .open-beside__frame {
+  display: none;
+}

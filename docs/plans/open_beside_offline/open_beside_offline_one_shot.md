@@ -5,9 +5,9 @@ Debug mode: enabled ([log](open_beside_offline_debug_log.md); project `.railspik
 Effort study: `railspike-effort` / `v3/open_beside_offline`, standing enrollment under protocol P2, reference R1 ([ledger](../effort_ledger/open_beside_offline.md))
 Extended estimates: enabled (no real alternatives or work units, so no unit estimates)
 
-**Cycle estimate: 0.12**
+**Cycle estimate: 0.12** (retrospective 0.13)
 
-Status: planned; next permitted action: implement and verify, then push and open a PR. Merge and deployment need the maintainer.
+Status: technically complete on `feat/open_beside_offline`; pushed for review, not merged or deployed. Next action: maintainer review, merge and deployment.
 
 ## Request and authorization
 
@@ -15,7 +15,7 @@ Original request, 2026-11-18 (maintainer, in the Claude session that built [open
 
 The maintainer raised it and confirmed the symptom after being told a one-shot port was proposed; he did not say "go ahead" in those words. Treated as authorized through to a pushed branch and an open PR, which he reviews by merging or not.
 
-Feedback item: none matched (searched `docs/feedback/items/` for "beside" and "offline"). Created [PF-20261118-F05](../../feedback/items/PF-20261118-F05.txt) in the completion commit.
+Feedback item: none matched (searched `docs/feedback/items/` for "beside" and "offline"). Created [PF-20261118-F07](../../feedback/items/PF-20261118-F07.txt) in the completion commit.
 
 ## What happens today (inspected and reproduced in Chrome)
 
@@ -63,16 +63,45 @@ Concepts touched: [open beside](../../concepts/open_beside.md) (one paragraph on
 - Smoke set plus `OfflineNavigationWorkerTest`. Screenshot of the offline pane checked by eye.
 - Recovery: none needed; Close and the Beside toggle work offline.
 
-Starting revision and branch: `df0ac8c5` on `main`; branch `feat/open_beside_offline`. PR #335 (the toggle's on state) is open and not in this base; the two touch different rules.
+Starting revision and branch: `df0ac8c5` on `main`; branch `feat/open_beside_offline`. Correction: PR #335 (the toggle's on state) was already merged and is in this base.
 
 ## Planning commit
 
-Pending.
+`e4fa005c` (confirmed with Git).
 
 ## Study history
 
 - 2026-11-18T15:06Z intake: projection **0.12**, scope v1, R1, P2, single exposed rater Claude (claude-fable-5-2). Not pristine: given after reading the offline reader and worker and reproducing the behaviour.
+- 2026-11-18T15:16Z execution entry after the planning commit: 0.12 reaffirmed.
+- 2026-11-18T15:16Z closeout: retrospective **0.13**. Scope v1 delivered; three stale worker tests fixed on the way. Maintainer fit and acceptance pending.
 
 ## Execution history
 
 - 2026-11-18T15:06Z: reproduced in Chrome with a scratch script; record written.
+- 2026-11-18T15:16Z: implemented. `forumOpenBeside.take(event)` in `open_beside.js`, called first by the offline reader's thread titles; the bar follows the pane's title; `.offline-mode-bar` hidden in a framed page; a failed load shows a message in the pane.
+- 2026-11-18T15:16Z: the reply risk did not appear. A reply typed in the pane offline is kept as "not sent", listed above the pane's composer and queued in the Outbox, with no change to the Outbox scripts.
+- 2026-11-18T15:16Z: found on the way and fixed: the offline reader's thread titles swallowed Ctrl-click and middle-click (they loaded the thread in the same tab). Those clicks are now left to the browser.
+- 2026-11-18T15:16Z: fixed three tests failing on the base commit, confirmed in a clean worktree: `OfflineNavigationWorkerTest` built navigation events without `waitUntil`, which the worker has called since the fast-navigation work, and one test passed a request where the worker now takes the event. The tests' fake events were brought up to date; the worker is unchanged.
+
+## Outcome
+
+Delivered, offline with Beside on and room: a thread title on the offline board or a saved tag's list opens in the pane and the page stays; the bar shows the thread's title; the offline mode bar appears once, on the main page; a page with no offline copy shows "This page could not be loaded. If you are offline, it has no offline copy."; a reply written in the pane goes to the Outbox. With Beside off, a title loads the thread as before.
+
+Limitations: the message appears for any pane page that fails to load, online too. Pages without an offline copy (Recent, gallery, Prompts, users) still have none.
+
+Not done: `templates/pages/offline_reader.php` reads `$tagLinksEnabled`, which its controller does not pass; PHP logs a warning on each render. Seen in test output, not changed here.
+
+## Verification
+
+- `node tests/browser/open_beside_offline.mjs <dir>` (new, Chrome): pass. Beside off loads the thread as the page; Beside on opens it in the pane with the board still drawn; framed, no header, no second offline bar, bar title, no sideways scrolling; Ctrl-click left alone; the offline reply kept and queued; the no-copy message, announced, and cleared by the next page that loads; Close; a tagged thread from a saved tag page.
+- `node tests/browser/open_beside.mjs` in Chrome and `BROWSER=firefox` (online behaviour): pass.
+- `node tests/browser/offline_compose.mjs`, `offline_board_toolbar.cjs`: pass.
+- `./v3 test --smoke OfflineNavigationWorkerTest PresentationProfileMatrixTest`: 497 run, 497 passed.
+- Screenshot of the offline pane at 2048px checked by eye.
+- Not verified: offline in Firefox. Playwright's offline switch did not take the worker offline in Firefox here, so there is no Firefox offline evidence. Also not verified: phones, production, and the full suite (the maintainer runs it).
+
+## Final review
+
+Diff limited to `open_beside.js`, one handler in `offline_reader.js`, one selector in `layout.php`, the message's style, the new browser test, the three worker tests, the concept paragraph and this cycle's documents.
+
+*Claude (claude-fable-5-2), 2026-11-18*

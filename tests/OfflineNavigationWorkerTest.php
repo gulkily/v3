@@ -72,7 +72,7 @@ vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
   for (const path of ['/activity/?view=all&page=2', '/recent/', '/recent/?page=2']) {
   const request = new Request('https://forum.test' + path);
   if (cacheableRequest(request)) throw new Error('A later page was cacheable');
-  try { await networkFirstNavigation(request); throw new Error('Wrong fallback supplied'); }
+  try { await networkFirstNavigation({ request, waitUntil() {} }); throw new Error('Wrong fallback supplied'); }
   catch (error) { if (error.message !== 'offline') throw error; }
   if (cacheLookups !== 0) throw new Error('An unrelated shell was read');
   }
@@ -466,7 +466,8 @@ global.fetch = async () => { throw new Error('Offline'); };
 vm.runInThisContext(source);
 let responsePromise;
 listeners.fetch({
-  request: { mode: 'navigate', url: 'https://forum.test/tools/outbox/' },
+  request: { mode: 'navigate', method: 'GET', url: 'https://forum.test/tools/outbox/' },
+  waitUntil() {},
   respondWith(promise) { responsePromise = promise; }
 });
 responsePromise.then((response) => process.stdout.write(JSON.stringify(response)));
@@ -569,6 +570,7 @@ const context = {
 vm.runInNewContext(source, context);
 const navigate = (url, method = 'GET') => new Promise((resolve) => listeners.fetch({
   request: { mode: 'navigate', method, url },
+  waitUntil() {},
   respondWith(promise) { promise.then((response) => response.text(), (error) => 'ERROR ' + error.message).then(resolve); },
 }));
 (async () => {

@@ -208,7 +208,7 @@
 <?php if ($openBesideEnabled ?? false): ?>
       try {
         // Open beside (open_beside.js): a page shown in the pane's frame has no
-        // site header, ruler or status bar, from the first frame. Only the
+        // site header, ruler, status bar or offline mode bar, from the first frame. Only the
         // pane's own frame name counts, so other frames (the tour) keep theirs.
         // The mode itself is restored before paint too, so the ruler's Beside
         // toggle is drawn pressed from the first frame.
@@ -220,7 +220,7 @@
           var framedStyle = document.createElement('style');
           framedStyle.textContent = ':root[data-open-beside-framed] .site-header,:root[data-open-beside-framed] .shell-sky,'
             + ':root[data-open-beside-framed] .reading-margins,:root[data-open-beside-framed] .site-status-bar,'
-            + ':root[data-open-beside-framed] .app-version-banner{display:none!important}';
+            + ':root[data-open-beside-framed] .app-version-banner,:root[data-open-beside-framed] .offline-mode-bar{display:none!important}';
           document.head.appendChild(framedStyle);
         }
       } catch (error) {
