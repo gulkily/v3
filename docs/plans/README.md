@@ -22,6 +22,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Beside toggle state](beside_toggle_state/beside_toggle_state_one_shot.md) — one-shot: the ruler's Beside button shows clearly when the mode is on.
 
+[Open beside offline](open_beside_offline/open_beside_offline_one_shot.md) — one-shot: offline, a thread title on the board opens in the pane, and the pane handles the offline reader's pages.
+
 [Open beside](open_beside/open_beside_step3_development_plan.md) — with the Beside mode on, a click on a link in a page's content opens it in one pane beside the column; behind `FORUM_OPEN_BESIDE_ENABLED`. Background in the [design notes](open_beside_design_notes.md).
 
 [Open beside design notes](open_beside_design_notes.md) — a second pane on wide screens: with the mode on, a click opens the link beside the current page. Maintainer decisions, review recommendations, Pollyanna prior art and open questions; no Step 1 yet.
