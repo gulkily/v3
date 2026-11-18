@@ -31,6 +31,8 @@ try {
   assert.deepEqual(await visible(), ['TEST_GAMMA']);
   await page.locator('[data-feature-flags-recent] a', { hasText: 'Alpha switch' }).click();
   assert.equal(await page.locator('#flag-TEST_ALPHA').isVisible(), true);
+  const landed = await page.evaluate(() => [document.querySelector('#flag-TEST_ALPHA').getBoundingClientRect().top, document.querySelector('[data-feature-flags-toolbar]').getBoundingClientRect().bottom]);
+  assert.ok(landed[0] >= landed[1], 'row lands below the sticky toolbar: ' + landed);
   assert.equal(await chip('all').getAttribute('aria-pressed'), 'true');
   assert.equal((await visible()).length, 4);
   for (const [status, expected] of [
@@ -220,6 +222,14 @@ try {
       assert.deepEqual(await visibleKeys(), canonicalKeys);
       assert.equal(await canonical.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `canonical ${theme}/${width}`);
       await canonical.screenshot({ path: `/tmp/feature-flags-order-${theme}-${width}.png`, fullPage: true });
+    }
+    // Each Recently released link lands its row fully below the sticky toolbar.
+    for (const link of await canonical.locator('[data-feature-flags-recent] a').all()) {
+      await canonical.evaluate(() => scrollTo(0, 0));
+      await link.click();
+      await canonical.waitForTimeout(50);
+      const [rowTop, barBottom] = await canonical.evaluate(hash => [document.querySelector(hash).getBoundingClientRect().top, document.querySelector('[data-feature-flags-toolbar]').getBoundingClientRect().bottom], await link.getAttribute('href'));
+      assert.ok(rowTop >= barBottom, `${await link.getAttribute('href')} at ${width}px lands below the toolbar (${rowTop} < ${barBottom})`);
     }
   }
   console.log('PASS canonical groups/flags from reversed input, stable status/search/empty recovery and 12 real-registry theme/viewport states');

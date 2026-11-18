@@ -35,11 +35,15 @@
       document.querySelector('[data-feature-flags-empty]').hidden = visible !== 0;
     }
 
-    // A Recently released link to a row a filter hides clears the filter first.
+    // A Recently released link lands its row below the sticky toolbar, and a row a
+    // filter hides clears the filter first. Opening the link in a new tab changes nothing here.
     document.querySelectorAll('[data-feature-flags-recent] a').forEach(function (link) {
-      link.addEventListener('click', function () {
+      link.addEventListener('click', function (event) {
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         var row = document.getElementById(link.hash.slice(1));
-        if (!row || !row.hidden) return;
+        if (!row) return;
+        row.style.scrollMarginTop = (toolbar.offsetHeight + 8) + 'px';
+        if (!row.hidden) return;
         search.value = '';
         selected = 'all';
         refresh();
