@@ -26,12 +26,7 @@ final class CalendarQuery
     /** @return list<array<string, mixed>> ordered by first day, then creation */
     public static function eventsBetween(PDO $pdo, string $from, string $to, ?string $tag = null): array
     {
-        $sql = 'SELECT threads.root_post_id, threads.root_post_created_at, threads.subject, threads.body_preview, threads.retracted_at,
-                    threads.event_date, threads.event_end_date, threads.event_time, threads.event_location,
-                    threads.event_link, threads.event_when,
-                    posts.author_label, posts.author_profile_slug, posts.attribution_counted, posts.body_format,
-                    (SELECT profiles.username_token FROM profiles WHERE profiles.identity_id = posts.author_identity_id) AS author_username_token,
-                    ' . self::AUTHOR_IS_APPROVED_SQL . ' AS author_is_approved'
+        $sql = self::selectSql()
             . ThreadKeysetPage::listedRootsSql()
             . ' AND posts.attribution_counted = 1
                 AND ' . self::AUTHOR_IS_APPROVED_SQL . ' = 1
@@ -52,5 +47,34 @@ final class CalendarQuery
         $stmt->execute($parameters);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * One listed, unretracted thread's event, for the thread's own .ics file. Like the
+     * thread page's event block, this does not require an approved author.
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function eventForThread(PDO $pdo, string $threadId): ?array
+    {
+        $stmt = $pdo->prepare(self::selectSql()
+            . ThreadKeysetPage::listedRootsSql()
+            . ' AND threads.root_post_id = :thread_id
+                AND threads.retracted_at IS NULL
+                AND threads.event_date IS NOT NULL');
+        $stmt->execute(['thread_id' => $threadId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return is_array($row) ? $row : null;
+    }
+
+    private static function selectSql(): string
+    {
+        return 'SELECT threads.root_post_id, threads.root_post_created_at, threads.subject, threads.body_preview, threads.retracted_at,
+                    threads.event_date, threads.event_end_date, threads.event_time, threads.event_location,
+                    threads.event_link, threads.event_when,
+                    posts.author_label, posts.author_profile_slug, posts.attribution_counted, posts.body_format,
+                    (SELECT profiles.username_token FROM profiles WHERE profiles.identity_id = posts.author_identity_id) AS author_username_token,
+                    ' . self::AUTHOR_IS_APPROVED_SQL . ' AS author_is_approved';
     }
 }

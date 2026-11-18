@@ -1158,6 +1158,17 @@ final class Application
             return;
         }
 
+        if (preg_match('#^/threads/([^/]+)\.ics$#', $path, $matches) === 1) {
+            $ics = $this->calendarPageController()->eventFile($matches[1]);
+            if ($ics !== null) {
+                $this->sendText($ics, 200, [
+                    'Content-Type: text/calendar; charset=utf-8',
+                    'Content-Disposition: attachment; filename="' . preg_replace('/[^A-Za-z0-9._-]/', '', $matches[1]) . '.ics"',
+                ]);
+                return;
+            }
+        }
+
         if (preg_match('#^/threads/([^/]+)/?$#', $path, $matches) === 1) {
             if (($query['format'] ?? null) === 'rss') {
                 $xml = $this->threadAndPostPageController()->threadRss($matches[1]);

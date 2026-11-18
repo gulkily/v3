@@ -129,6 +129,7 @@ if (isset($pledgeCampaign['used_lines'][(string) $post['post_id']])) {
 <?php endif; ?>
 <?php endif; ?>
 <?= $partial('partials/event_block.php') ?>
+<?= $isRetracted ? '' : $partial('partials/event_calendar_links.php') ?>
 <?php if ($isQdbQuoteRoot): ?>
 <?= $partial('partials/pledge_totals.php') ?>
 <?php endif; ?>

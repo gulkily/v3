@@ -747,6 +747,7 @@ final class TemplateRenderer
             'imageContentEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED),
             'eventSupportEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED),
             'eventWhenEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EVENT_WHEN_ENABLED),
+            'calendarFeedEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::CALENDAR_FEED_ENABLED),
             'usernameChangesEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),
             'composerPrompt' => SiteProfileRegistry::active()['composerPrompt'],
             'siteDescription' => \ForumRewrite\ProfilePresentationContent::siteDescription(SiteProfileRegistry::active()),

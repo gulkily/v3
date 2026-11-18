@@ -326,6 +326,44 @@ final class CalendarPageTest
         }
     }
 
+    public function testEventThreadOffersItsOwnCalendarFileAndGoogleLink(): void
+    {
+        [, $service, $application] = $this->environment();
+        $date = gmdate('Y-m-d', strtotime('+3 days'));
+        $event = $this->event($service, 'couches', '', 'somerville couch for the weekend', $date, null, '');
+        $plain = (string) $service->createThread(['board_tags' => 'general', 'subject' => 'Plain', 'body' => 'No event', 'author_identity_id' => self::OPERATOR])['thread_id'];
+
+        $page = $this->render($application, '/threads/' . $event);
+        calendarAssertContains('data-event-calendar-links', $page);
+        calendarAssertContains('https://calendar.google.com/calendar/render?action=TEMPLATE', $page);
+        calendarAssertContains('href="/threads/' . $event . '.ics"', $page);
+        calendarAssertNotContains('data-event-calendar-links', $this->render($application, '/threads/' . $plain));
+        calendarAssertNotContains('data-event-calendar-links', $this->render($application, '/'));
+
+        // Like the event block, the file does not need an approved author.
+        $ics = $this->render($application, '/threads/' . $event . '.ics');
+        calendarAssertSame(200, http_response_code());
+        calendarAssertSame(1, substr_count($ics, 'BEGIN:VEVENT'));
+        calendarAssertContains("SUMMARY:somerville couch for the weekend\r\n", $ics);
+        calendarAssertContains('DTSTART;VALUE=DATE:' . str_replace('-', '', $date), $ics);
+
+        calendarAssertNotContains('BEGIN:VCALENDAR', $this->render($application, '/threads/' . $plain . '.ics'));
+        calendarAssertSame(404, http_response_code());
+        calendarAssertNotContains('BEGIN:VCALENDAR', $this->render($application, '/threads/no-such-thread.ics'));
+        calendarAssertSame(404, http_response_code());
+    }
+
+    public function testEventLinksAndFileAreGoneWhileTheFeedIsOff(): void
+    {
+        [, $service, $application] = $this->environment(true, "FORUM_CALENDAR_FEED_ENABLED: false\n");
+        $event = $this->event($service, 'couches', 'Spare room', 'Couch', gmdate('Y-m-d', strtotime('+3 days')));
+        $page = $this->render($application, '/threads/' . $event);
+        calendarAssertContains('data-event-block', $page);
+        calendarAssertNotContains('data-event-calendar-links', $page);
+        calendarAssertNotContains('BEGIN:VCALENDAR', $this->render($application, '/threads/' . $event . '.ics'));
+        calendarAssertSame(404, http_response_code());
+    }
+
     /** @return array{string, LocalWriteService, Application} */
     private function environment(bool $events = true, string $extraFlags = ''): array
     {
