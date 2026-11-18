@@ -35,6 +35,16 @@
       document.querySelector('[data-feature-flags-empty]').hidden = visible !== 0;
     }
 
+    // A Recently released link to a row a filter hides clears the filter first.
+    document.querySelectorAll('[data-feature-flags-recent] a').forEach(function (link) {
+      link.addEventListener('click', function () {
+        var row = document.getElementById(link.hash.slice(1));
+        if (!row || !row.hidden) return;
+        search.value = '';
+        selected = 'all';
+        refresh();
+      });
+    });
     search.addEventListener('input', refresh);
     search.addEventListener('search', refresh);
     chips.forEach(function (chip) {

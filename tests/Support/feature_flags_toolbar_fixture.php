@@ -14,12 +14,12 @@ $registry = new FeatureFlagRegistry();
 $canManageFeatureFlags = ($argv[1] ?? '') !== 'readonly';
 $flags = [];
 foreach ([
-    ['TEST_ALPHA', 'Alpha switch', 'Unique apricot description', false, true, null, 'First'],
-    ['TEST_BETA', 'Beta switch', 'Shared description', true, true, null, 'First'],
-    ['TEST_GAMMA', 'Gamma switch', 'Shared description', false, false, false, 'Second'],
-    ['TEST_DELTA', 'Delta switch', 'Shared description', true, true, true, 'Second'],
-] as [$key, $label, $description, $default, $enabled, $environment, $group]) {
-    $definition = new FeatureFlagDefinition($key, $label, $description, $default, $key, siteMutable: true, group: $group);
+    ['TEST_ALPHA', 'Alpha switch', 'Unique apricot description', false, true, null, 'First', '2026-11-16'],
+    ['TEST_BETA', 'Beta switch', 'Shared description', true, true, null, 'First', '2026-11-17'],
+    ['TEST_GAMMA', 'Gamma switch', 'Shared description', false, false, false, 'Second', '2026-11-10'],
+    ['TEST_DELTA', 'Delta switch', 'Shared description', true, true, true, 'Second', null],
+] as [$key, $label, $description, $default, $enabled, $environment, $group, $releasedOn]) {
+    $definition = new FeatureFlagDefinition($key, $label, $description, $default, $key, siteMutable: true, group: $group, releasedOn: $releasedOn);
     $flags[] = new FeatureFlagState($definition, $enabled, $environment !== null ? 'environment' : 'site', $environment);
 }
 if (($argv[1] ?? '') === 'canonical') {

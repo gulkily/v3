@@ -7,7 +7,7 @@ Extended estimates: enabled (no real alternatives or work units, so no unit esti
 
 **Cycle estimate: 0.1**
 
-Status: planned on `feat/recent_feature_flags`; next permitted action: implement and verify.
+Status: technically complete on `feat/recent_feature_flags`; pushed for review, not merged or deployed. Next action: maintainer review (including the window reading), merge and deployment.
 
 ## Request and authorization
 
@@ -17,7 +17,7 @@ Thread so far: Claude found that git already dates each flag (28 of 47 then were
 
 Authorization: the maintainer, 2026-11-18 (Claude session): "Can you please scan Zen memes for anything that's asking for a PR? And if the task seems appropriate for a one-shot, make the PR and reply in the thread." With "Please make a PR?" in the thread, this authorizes a one-shot through an open PR and a thread reply. Exclusions: merge, deployment.
 
-Feedback item: none matched in `docs/feedback/items/` (searched the thread ID, "recent", "release"). Creating PF-20261118-F04 in the completion commit.
+Feedback item: none matched in `docs/feedback/items/` (searched the thread ID, "recent", "release"). Created [PF-20261118-F04](../../feedback/items/PF-20261118-F04.txt) in the completion commit.
 
 ## Outcome and work type
 
@@ -50,12 +50,32 @@ None in the concept inventory.
 
 Starting revision and branch: `31e16b066774dbdf8f4d3709ae4ad021bfff9516` on `main`; branch `feat/recent_feature_flags`.
 
-Planning commit: pending.
+Planning commit: `19980370` (2026-11-18T07:31Z), containing only this record and its index link.
 
 ## Dated execution history
 
 - 2026-11-18T07:30Z: plan written after reading `FeatureFlagDefinition`, `FeatureFlagRegistry`, `feature_flags.php`, `feature_flags.js`, the flag CSS in `tool-details.css` and `CONTRIBUTING.md`; release dates computed with `git log -S` on a full clone.
+- 2026-11-18T07:32Z: planning commit `19980370` confirmed. Added `releasedOn` to the definition and all 56 registry entries (scripted insertion; a first pass mis-parsed a double-quoted description and dated only 30, caught by count and redone), `recentlyReleased()`, the template section, CSS and the filter-clearing link handler.
+- 2026-11-18T07:38Z: tests. `FeatureFlagsBehaviorTest` gains a date-on-every-flag check and a window test; the toolbar fixture flags get dates (one undated, one old); `tests/browser/feature_flags_toolbar.mjs` checks the list, its order, the filter-clearing click, and that every link on the real registry page hits a row. Its group-heading assertion now scopes to `.feature-flag-group` headings, since the new section reuses the heading class. Correction to an existing test's selector, not to its intent.
+- 2026-11-18T07:40Z: `CONTRIBUTING.md` feature-flag section: set `releasedOn` when adding a flag.
 
 ## Study history
 
 - Intake, 2026-11-18T07:30Z: **0.1** whole-cycle projection, scope v1, R1/P2. Recorded after inspecting the files above (not a blind intake). Single exposed rater (Claude).
+- Execution entry, 2026-11-18T07:32Z: 0.1 reaffirmed.
+- Closeout, 2026-11-18T07:42Z: delivered scope v1. Retrospective **0.1**. Maintainer fit and acceptance pending.
+
+## Outcome
+
+Delivered: every flag has `releasedOn`; Feature Flags shows "Recently released" at the top (newest release date and the day before, with dates, linking to rows; a click on a filtered-out row clears the filter). Open: whether the window should count from today instead; one-line change in `recentlyReleased()`.
+
+## Verification
+
+- `./v3 test --smoke FeatureFlagsBehaviorTest FeatureFlagEvaluatorTest`: 484 of 484.
+- `node tests/browser/feature_flags_toolbar.mjs`: all three passes, including nine themes at 375 and 1150 px and the real registry; screenshots of Gloss and Word97 reviewed.
+- `./v3 feedback check`: 0 problems; `./v3 feedback index` regenerated.
+- Not run: the full suite. Release dates for flags older than the registry (2026-06-27) are the registry's first commit, not the flag's true first day.
+
+## Final review
+
+Diff limited to `FeatureFlagDefinition.php`, `FeatureFlagRegistry.php` (dates plus one method), `feature_flags.php`, `tool-details.css`, `feature_flags.js`, `CONTRIBUTING.md`, the two tests and the fixture, this record and its index line, the feedback item and index, ledger and debug log. No new dependency or route. PR #329 adds `FORUM_OPEN_BESIDE_ENABLED`, which will need a `releasedOn` when both are merged.

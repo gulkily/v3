@@ -1,0 +1,18 @@
+ID: PF-20261118-F04
+Title: Recently released section on the Feature Flags page
+Kind: feature
+Workflow: blocked
+Created: 2026-11-18
+Evidence: locally-verified
+
+Request:
+feature request: for the feature flags page to have a recently released features section that's easy to find. Follow-up from the maintainer: recent is probably 1-2 days; yes to release dates.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261117184223-e6485eca
+
+Done when:
+Tools, Feature Flags opens with a Recently released list of the newest flags, each with its release date and a link to its row; every flag carries a release date.
+
+Notes:
+2026-11-18: one-shot on feat/recent_feature_flags (record docs/plans/recent_feature_flags/recent_feature_flags_one_shot.md); verified locally; awaiting review and deployment. Window counted from the newest release, not today (open question in the thread).

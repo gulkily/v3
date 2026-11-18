@@ -93,6 +93,10 @@ intentional UI change, not a side effect of registering a flag. Search and statu
 filters must preserve this order. Keep the registry completeness/dependency and
 rendered-order checks current; do not bypass them for new flags.
 
+Give every new flag `releasedOn:` with the date it ships (`YYYY-MM-DD`). Feature
+Flags opens with a "Recently released" list built from these dates, and
+`FeatureFlagsBehaviorTest` fails for a flag without one.
+
 ## Operator CLI
 
 Inspect comparable `v3` commands before designing a command. Use readable output

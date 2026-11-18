@@ -2,6 +2,7 @@
 $siteError = $flags[0]->siteError ?? null;
 
 $flagGroups = $registry->presentationGroups($flags);
+$recentFlags = $registry->recentlyReleased($flags);
 ?>
 <section class="stack">
   <article class="card">
@@ -20,6 +21,16 @@ $flagGroups = $registry->presentationGroups($flags);
       <p class="sr-only" role="status" aria-live="polite" aria-atomic="true" data-feature-flags-results></p>
     </div>
     <p data-feature-flags-empty hidden>No flags match.</p>
+<?php if ($recentFlags !== []): ?>
+    <section class="feature-flags-recent" data-feature-flags-recent>
+      <h2 class="feature-flag-group-heading">Recently released</h2>
+      <ul class="feature-flags-recent-list">
+<?php foreach ($recentFlags as $flag): ?>
+        <li><a href="#flag-<?= $e($flag->definition->key) ?>"><?= $e($flag->definition->label) ?></a> <time class="meta" datetime="<?= $e((string) $flag->definition->releasedOn) ?>"><?= $e((new \DateTimeImmutable((string) $flag->definition->releasedOn))->format('M j')) ?></time></li>
+<?php endforeach; ?>
+      </ul>
+    </section>
+<?php endif; ?>
 <?php foreach ($flagGroups as $groupKey => $groupFlags): ?>
     <section class="feature-flag-group">
       <h2 class="feature-flag-group-heading"><?= $e($registry->groupLabel($groupKey)) ?></h2>

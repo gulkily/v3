@@ -291,6 +291,30 @@
   background: var(--panel);
 }
 
+/* Links to the newest flags' rows (FeatureFlagRegistry::recentlyReleased). */
+.feature-flags-recent {
+  margin-top: 0.9rem;
+}
+
+.feature-flags-recent-list {
+  margin: 0;
+  padding: 0.4rem 0.75rem;
+  list-style: none;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.feature-flags-recent-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.15rem 0;
+}
+
+.feature-flags-recent-list time {
+  flex-shrink: 0;
+}
+
 .badge {
   display: inline-block;
   padding: 0.05rem 0.45rem;
