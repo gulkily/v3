@@ -339,6 +339,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/private_messages/export') {
+            $this->privateMessageApiController()->export($method, $query);
+            return;
+        }
+
         if ($path === '/api/private_messages/sent') {
             $this->privateMessageApiController()->sent($method, $query);
             return;

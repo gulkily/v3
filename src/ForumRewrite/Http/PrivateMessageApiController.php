@@ -61,6 +61,30 @@ final class PrivateMessageApiController
     }
 
     /** @param array<string, mixed> $query */
+    public function export(string $method, array $query): void
+    {
+        if ($method !== 'GET') {
+            $this->methodNotAllowed();
+            return;
+        }
+        $viewer = $this->viewer();
+        if ($viewer === null) {
+            return;
+        }
+        try {
+            foreach (['after_time', 'after_id'] as $field) {
+                if (isset($query[$field]) && !is_string($query[$field])) throw new InvalidArgumentException('Export position is invalid.');
+            }
+            $page = $this->service()->export($viewer, (string) ($query['after_time'] ?? ''), (string) ($query['after_id'] ?? ''));
+            $this->routeServices->sendJson(['status' => 'ok'] + $page, 200, $this->routeServices->noStoreHeaders());
+        } catch (InvalidArgumentException $exception) {
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $this->routeServices->noStoreHeaders());
+        } catch (RuntimeException $exception) {
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 403, $this->routeServices->noStoreHeaders());
+        }
+    }
+
+    /** @param array<string, mixed> $query */
     public function conversations(string $method, array $query): void
     {
         if ($method !== 'GET') {
