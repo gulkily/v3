@@ -97,4 +97,24 @@ Branch `feat/calendar-ics-feed`, replayed onto `f05cc94` when push access arrive
   - The Google link leaves out the thread address. Thread pages are cached HTML that must be the same for every visitor, and the origin isn't known when the page is built. The `.ics` file includes the address, because it is built per request.
 - Estimate details: a bit over, because of the production title fix and the missing test registration.
 
+## Stage 5 - Subscribe panel
+
+**Original estimate: 0.10**
+
+**Retrospective: 0.08**
+
+- Approval: on 2026-11-18 the maintainer asked us to finish the remaining stages without waiting for his approval.
+- Changes:
+  - `templates/pages/calendar.php`: a closed `<details>` Subscribe panel under the month links, shown while the feed flag is on. It holds Add to Google Calendar, "Other calendar apps" (`webcal:`), the `.ics` link, the feed address in a read-only field, and one line about Google's refresh delay. A tag calendar offers its own tag feed.
+  - A script fills the absolute feed address from `location.origin` before paint. Cached pages stay identical for every visitor, and a page on HTTPS gives Google an HTTPS address, which avoids the `webcal:` plain-HTTP fetch seen in Stage 3. Without script, the `.ics` link and the relative address remain, and the Google and app links stay hidden.
+  - `public/assets/calendar.css`: panel spacing, and a 16px address field so iPhone Safari doesn't zoom.
+- Verification:
+  - `./v3 test CalendarPageTest`: 15 passed. New case: the panel on `/calendar` and `/calendar/couches` names each page's own feed, and is absent with the feed flag or event support off.
+  - `node tests/browser/calendar.mjs`: passed. New checks: at 390px and 1280px the panel starts closed, opens with the page-origin address and with Google and `webcal:` links, and still fits the width; the feed fetches as an iCal document. Without JavaScript, the `.ics` link and the relative address remain and the Google link is hidden. The existing theme sweep (Light, Dark, Chicago, Midnight, Word97 at both widths) still fits.
+  - Looked at the 390px screenshot with the panel open: it sits under the month links and fits the card.
+- Notes:
+  - **Deviation from Step 3:** no copy button, so no copy code moved out of the Prompts page. Stage 1 showed the Google link works on the iPhone, which makes the address a fallback, and a read-only field can be selected and copied by hand. That follows the AGENTS.md guidance to keep UI minimal and avoids touching the Prompts page. A copy button can follow if the field proves awkward.
+  - Google is given an `https:` feed address in its subscribe link. Stage 1 only tested the `webcal:` form, so this is checked in Stage 7.
+- Estimate details: smaller than planned, without the copy-code move.
+
 *— Claude · 2026-11-17 UTC · Model: Claude Opus 5.5*

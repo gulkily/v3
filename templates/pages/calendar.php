@@ -35,6 +35,19 @@ $weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 <?php endif; ?>
       <a href="#" role="button" class="calendar-titles-toggle" data-calendar-titles aria-pressed="false" hidden>Show titles</a>
     </nav>
+<?php if ($calendarFeedEnabled ?? false): ?>
+<?php $calendarFeed = $calendarBase . '.ics'; ?>
+    <details class="calendar-subscribe meta" data-calendar-subscribe>
+      <summary>Subscribe</summary>
+      <p>
+        <a href="<?= $e($calendarFeed) ?>" data-calendar-subscribe-google hidden>Add to Google Calendar</a>
+        <a href="<?= $e($calendarFeed) ?>" data-calendar-subscribe-webcal hidden>Other calendar apps</a>
+        <a href="<?= $e($calendarFeed) ?>" data-calendar-subscribe-file>.ics</a>
+      </p>
+      <input class="calendar-subscribe__url" type="text" readonly value="<?= $e($calendarFeed) ?>" aria-label="Calendar feed address" data-calendar-subscribe-url>
+      <p>Google refreshes subscribed calendars every few hours.</p>
+    </details>
+<?php endif; ?>
 <?php endif; ?>
     <?= \ForumRewrite\View\ZoomTable::open('calendar', 0, $month['label'], 'text') ?>
       <table class="calendar-grid">
@@ -94,6 +107,21 @@ $weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       show(on);
       try { if (on) { localStorage.setItem(key, 'on'); } else { localStorage.removeItem(key); } } catch (e) {}
     });
+  })();
+  // Before paint: the feed links need this page's own origin (cached pages are the same for every
+  // viewer), so they are filled here. Without script, the .ics link and the relative address remain.
+  (function () {
+    var panel = document.querySelector('[data-calendar-subscribe]');
+    if (!panel) return;
+    var file = panel.querySelector('[data-calendar-subscribe-file]');
+    var feed = location.origin + file.getAttribute('href');
+    var google = panel.querySelector('[data-calendar-subscribe-google]');
+    var webcal = panel.querySelector('[data-calendar-subscribe-webcal]');
+    google.href = 'https://calendar.google.com/calendar/render?cid=' + encodeURIComponent(feed);
+    webcal.href = feed.replace(/^https?:/, 'webcal:');
+    google.hidden = false;
+    webcal.hidden = false;
+    panel.querySelector('[data-calendar-subscribe-url]').value = feed;
   })();
   // Before paint, in the viewer's own time zone: mark today, or offer Today when its month is not shown.
   (function () {

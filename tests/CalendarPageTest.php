@@ -326,6 +326,23 @@ final class CalendarPageTest
         }
     }
 
+    public function testCalendarPagesOfferTheirOwnFeedInASubscribePanel(): void
+    {
+        [, , $application] = $this->environment();
+        $all = $this->render($application, '/calendar');
+        calendarAssertContains('data-calendar-subscribe', $all);
+        calendarAssertContains('href="/calendar.ics" data-calendar-subscribe-file', $all);
+        calendarAssertContains('value="/calendar.ics"', $all);
+        calendarAssertSame(1, substr_count($all, '<details class="calendar-subscribe'));
+        $couches = $this->render($application, '/calendar/couches');
+        calendarAssertContains('href="/calendar/couches.ics" data-calendar-subscribe-file', $couches);
+
+        [, , $feedOff] = $this->environment(true, "FORUM_CALENDAR_FEED_ENABLED: false\n");
+        calendarAssertNotContains('<details class="calendar-subscribe', $this->render($feedOff, '/calendar'));
+        [, , $eventsOff] = $this->environment(false);
+        calendarAssertNotContains('<details class="calendar-subscribe', $this->render($eventsOff, '/calendar'));
+    }
+
     public function testEventThreadOffersItsOwnCalendarFileAndGoogleLink(): void
     {
         [, $service, $application] = $this->environment();
