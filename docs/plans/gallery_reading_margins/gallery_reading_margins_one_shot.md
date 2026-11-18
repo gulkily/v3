@@ -7,7 +7,7 @@ Extended estimates: enabled (no real alternatives or work units, so no unit esti
 
 **Cycle estimate: 0.04**
 
-Status: planned on `feat/gallery_reading_margins`; next permitted action: implement and verify.
+Status: technically complete on `feat/gallery_reading_margins`; pushed for review, not merged or deployed. Next action: maintainer review, merge and deployment.
 
 ## Request and authorization
 
@@ -15,7 +15,7 @@ Original request, 2026-11-17 (maintainer, [thread](https://zenmemes.com/threads/
 
 Authorization: the maintainer, 2026-11-18 (Claude session): "Can you please scan Zen memes for anything that's asking for a PR? And if the task seems appropriate for a one-shot, make the PR and reply in the thread." Together with the thread's "go straight to pr", this authorizes a one-shot through an open PR and a thread reply. Exclusions: merge, deployment.
 
-Feedback item: none matched in `docs/feedback/items/` (searched for the thread ID, "gallery" and "margin"). Creating PF-20261118-F02 in the completion commit.
+Feedback item: none matched in `docs/feedback/items/` (searched for the thread ID, "gallery" and "margin"). Created [PF-20261118-F02](../../feedback/items/PF-20261118-F02.txt) in the completion commit.
 
 ## Outcome and work type
 
@@ -45,12 +45,31 @@ None in the concept inventory.
 
 Starting revision and branch: `31e16b066774dbdf8f4d3709ae4ad021bfff9516` on `main`; branch `feat/gallery_reading_margins`.
 
-Planning commit: pending.
+Planning commit: `2231b4fc` (2026-11-18T07:19Z), containing only this record and its index link.
 
 ## Dated execution history
 
 - 2026-11-18T07:18Z: plan written after reading `TemplateRenderer`, `reading_margins.md`, the gallery CSS in `site.css` and `theme-midnight.css`, and the smoke test.
+- 2026-11-18T07:20Z: planning commit `2231b4fc` confirmed. Dropped `gallery.php` from the exclusion; smoke test now expects the ruler on `/gallery/`.
+- 2026-11-18T07:25Z: discovery from the browser check. Flex themes never overflowed, but the narrowest column (320px) left one tile per row at the desktop 12rem row height, and Midnight/Word97 kept four 66px cells with captions cut to "Figure 1: A...". Addition within scope: `gallery.php`'s section gets `gallery-page` (a size container), and below 36rem the gallery takes its existing phone layout through `@container` copies of the phone rules (`site.css` row height, caption size and gap; Midnight/Word97 two columns). The default column (712px/812px) is unchanged; 36rem sits below it.
 
 ## Study history
 
 - Intake, 2026-11-18T07:18Z: **0.04** whole-cycle projection, scope v1, R1/P2. Recorded after inspecting the files above (not a blind intake). Single exposed rater (Claude).
+- Execution entry, 2026-11-18T07:20Z: 0.04 reaffirmed.
+- Closeout, 2026-11-18T07:35Z: delivered scope v1 plus the narrow-column layout found in verification. Retrospective **0.05**. Maintainer fit and acceptance pending.
+
+## Outcome
+
+Delivered: the reading-margins ruler on `/gallery/`; a chosen column narrows the gallery, and below 36rem it uses the phone layout (smaller rows; two columns in Midnight and Word97). Not delivered: nothing in scope left.
+
+## Verification
+
+- `./v3 test --smoke GalleryPageTest LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnLayoutPagesWhenFlagEnabled`: 481 of 481.
+- Scratch browser check (headless Chrome, 1280px; tiles of ratios 0.6 to 2.2 injected into `/gallery/` in gallery.php's markup because the fixture has no images) in Gloss, Light, Midnight, Word97 and Bubblegum, at the normal column and the narrowest choice: ruler present, no sideways scroll, every tile inside the column, normal-column tile widths unchanged by the container. Screenshots reviewed.
+- `./v3 feedback check`: 0 problems; `./v3 feedback index` regenerated.
+- Not run: the full suite (maintainer runs it); `tests/browser/reading_margins.mjs` (it has no gallery images either; not extended); the other 12 themes; Safari and real devices; a gallery with real uploaded images.
+
+## Final review
+
+Diff limited to `TemplateRenderer.php` (one list entry), `gallery.php` (one class), `site.css`, `theme-midnight.css` and `theme-word97.css` (`@container` copies of existing phone rules), `LocalAppSmokeTest.php`, `reading_margins.md`, this record and its index line, the feedback item and index, the ledger and debug log. No new component, copy, route, schema or dependency.

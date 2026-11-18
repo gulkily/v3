@@ -22,7 +22,7 @@ final class TemplateRenderer
     // Reading margins show on every page rendered with layout.php except these:
     // the gallery lays its rows out for the normal column width, and a redirect
     // page is gone before anyone reads it.
-    private const READING_MARGINS_EXCLUDED_PAGE_TEMPLATES = ['gallery.php', 'redirect.php'];
+    private const READING_MARGINS_EXCLUDED_PAGE_TEMPLATES = ['redirect.php'];
     /** @var array<string, list<string>> */
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],
