@@ -15,7 +15,9 @@
   padding: 0.1rem 0.6rem;
   border: 1.5px solid var(--ink-soft, var(--line, currentColor));
   border-radius: 999px;
-  background: var(--panel, Canvas);
+  /* The page's own background and ink, which every theme keeps readable
+     together; the ruler's hairline stops behind the label. */
+  background: var(--page-bg, Canvas);
   color: inherit;
   font: inherit;
   font-size: 0.75rem;
@@ -29,10 +31,12 @@
   border-color: var(--active-line, currentColor);
 }
 
+/* On: a heavy ring in the ruler's colour and a bold label. The colours are not
+   swapped, because some themes' ruler colour is their text colour too. */
 .reading-margins .reading-margins__beside[aria-pressed="true"] {
   border-color: var(--active-line, currentColor);
-  background: var(--active-line, currentColor);
-  color: var(--panel, Canvas);
+  box-shadow: inset 0 0 0 1.5px var(--active-line, currentColor);
+  font-weight: 700;
 }
 
 .reading-margins .reading-margins__beside:focus-visible {

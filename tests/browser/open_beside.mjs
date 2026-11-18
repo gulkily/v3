@@ -27,6 +27,10 @@ const playwright = await import(process.env.PLAYWRIGHT_MODULE || 'playwright-cor
 // follows a theme change, and ignores a saved value that is not a site path.
 // With the ruler's flag off, the Preferences row alone switches the mode, and
 // Reset all preferences turns it off and forgets the pane.
+// Last, the reported case: at 2048px in Gloss Dark with the column narrowed to
+// the left, a prompt's title clicked on the Prompts page opens its thread in
+// the space beside the list. With a screenshot directory, every theme is shot
+// with a pane at 2048px and 1280px and without one on a phone.
 // Usage: node tests/browser/open_beside.mjs [screenshot-dir]
 // BROWSER=firefox runs it in Firefox (needs `npx playwright-core install firefox`).
 const project = resolve(new URL('../..', import.meta.url).pathname);
@@ -479,7 +483,7 @@ try {
     const postEnv = { ...process.env, FORUM_SITE_ID: 'zenmemes', SIGNED_REACTION_TEST_ROOT: postRoot,
       FORUM_SECRETS_PATH: join(postRoot, 'absent-secrets.php'), VISITOR_STATISTICS_DATABASE_PATH: join(postRoot, 'visitors.sqlite3'),
       FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED: 'true', FORUM_READING_MARGINS_ENABLED: 'true', FORUM_OPEN_BESIDE_ENABLED: 'true' };
-    const seeded = spawnSync('php', [join(project, 'tests/Support/signed_reaction_browser_fixture.php'), postRoot], { input: JSON.stringify(seedKeys), encoding: 'utf8', env: postEnv });
+    const seeded = spawnSync('php', [join(project, 'tests/Support/prompt_card_like_browser_fixture.php'), postRoot], { input: JSON.stringify(seedKeys), encoding: 'utf8', env: postEnv });
     assert.equal(seeded.status, 0, seeded.stderr);
     const socket = createServer().listen(0, '127.0.0.1'); await once(socket, 'listening');
     const port = socket.address().port; await new Promise(r => socket.close(r));
@@ -519,7 +523,53 @@ try {
     }, null, { timeout: 30000 });
     assert.equal(new URL(page.url()).pathname, '/threads/root-001', 'a like in the pane leaves the main page alone');
     await page.locator('[data-open-beside-close]').click();
-    await toggle.click();
+
+    // --- The reported case (thread-20261116070645-8b937ee9) ---
+    // A 2048px-wide desktop, Gloss Dark, the column narrowed to the left, the
+    // Prompts page: the empty space to the right fills with the clicked page.
+    await page.setViewportSize({ width: 2048, height: 1280 });
+    await page.evaluate(() => window.forumSelectTheme('glossdark'));
+    await page.goto(postBase + '/agent/');
+    assert.equal(await page.evaluate(() => document.documentElement.getAttribute('data-theme')), 'glossdark');
+    await narrowLeft();
+    const emptyBefore = await page.evaluate(() => document.documentElement.clientWidth - document.querySelector('.main').getBoundingClientRect().right);
+    assert.ok(emptyBefore > 1000, `the reported condition: ${Math.round(emptyBefore)}px empty beside the column`);
+    const promptTitle = page.locator('.prompt-card__title a').first();
+    const promptThread = await promptTitle.getAttribute('href');
+    await promptTitle.click();
+    await paneShows(promptThread, 'the prompt\'s thread opened beside the list');
+    assert.equal(new URL(page.url()).pathname, '/agent/', 'the Prompts page stayed');
+    const reported = await paneBox();
+    assert.ok(reported.left >= reported.mainRight && reported.width >= 600, `the pane fills the space beside the column (${Math.round(reported.width)}px)`);
+    assert.equal(await page.evaluate(() => document.querySelector('.open-beside__frame').contentDocument.documentElement.getAttribute('data-theme')), 'glossdark', 'the pane is in the same theme');
+    assert.equal(await sideways(), false);
+    if (shots) await page.screenshot({ path: join(shots, `reported-${browserName}-glossdark-2048.png`) });
+
+    // --- Every theme, with a pane at 2048px and 1280px, and a phone ---
+    if (shots) {
+      const themes = await page.locator('[data-theme-option]').evaluateAll(all => [...new Set(all.map(node => node.value || node.getAttribute('data-theme-option')).filter(name => name && name !== 'auto'))]);
+      assert.ok(themes.length >= 8, `themes found: ${themes}`);
+      for (const theme of themes) {
+        await page.evaluate(name => window.forumSelectTheme(name), theme);
+        for (const [width, height] of [[2048, 1280], [1280, 900]]) {
+          await page.setViewportSize({ width, height });
+          await page.goto(postBase + '/agent/');
+          // The saved column may not fit this theme or width; narrow it again from the stops that do.
+          if (await page.evaluate(() => !document.documentElement.hasAttribute('data-reading-margins'))) await narrowLeft();
+          await paneShows(promptThread, `${theme} ${width}: the pane is back`);
+          assert.equal(await sideways(), false, `${theme} ${width}: no sideways scrolling`);
+          const shown = await paneBox();
+          assert.ok(shown && shown.right <= shown.window, `${theme} ${width}: the pane is inside the window`);
+          await page.waitForTimeout(250);
+          await page.screenshot({ path: join(shots, `theme-${theme}-${width}.png`) });
+        }
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.goto(postBase + '/agent/');
+        assert.equal(await page.locator('[data-open-beside-pane]:not([hidden])').count(), 0, `${theme} phone: no pane`);
+        assert.equal(await sideways(), false, `${theme} phone: no sideways scrolling`);
+        await page.screenshot({ path: join(shots, `theme-${theme}-390.png`) });
+      }
+    }
   }
 
   assert.deepEqual(errors, [], 'no page errors');

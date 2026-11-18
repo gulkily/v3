@@ -2,10 +2,11 @@
 
 Design notes for a second pane: on a wide screen, a click opens the link beside
 the current page. This is not a Railspike artifact and approves no
-implementation. Step 1 was drafted on 2026-11-17 (it recommends one extra
-pane first, with the strip as the next cycle) and awaits Approved Step 1;
-staged plans are committed after Approved Step 3. "Open beside" is a working
-label.
+implementation. The first cycle is built: [open beside](open_beside/open_beside_step4_implementation_summary.md)
+ships one extra pane (Step 1 Option A), described in the
+[open beside concept](../concepts/open_beside.md). The strip of panes and the
+other recommendations below remain for later cycles. "Open beside" is a
+working label.
 
 Requested by the maintainer on 2026-11-16 in
 [thread-20261116070645-8b937ee9](https://zenmemes.com/threads/thread-20261116070645-8b937ee9)
@@ -166,10 +167,11 @@ a second page load.
 
 ## Next
 
-- Try a rough two-pane prototype on three tasks: read the board and a thread
-  together, reply while reading another thread, and compare two threads.
-- The maintainer confirms or changes the recommendations, and approves or
-  revises Step 1.
+- The maintainer tries the built pane on three tasks: read the board and a
+  thread together, reply while reading another thread, and compare two
+  threads.
+- Then decide whether a strip of panes is wanted, and which of the
+  recommendations above go into it.
 
 ## Related, not part of this
 

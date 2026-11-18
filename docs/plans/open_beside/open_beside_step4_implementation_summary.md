@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/open_beside`; [host ledger](../effort_est
 
 Extended estimates: enabled, inherited from Step 3.
 
-Status: Step 4 in progress on `feat/open_beside`, branched from `origin/main` at `55082575` plus the unpushed docs commit `b007b32f` (design notes and PF-20261117-F10). Planning commit `0dae1b9c`.
+Status: Step 4 technically complete on `feat/open_beside`, rebased onto `origin/main` at `31e16b06` after Stage 6 (commit names below are the rebased ones), on top of the unpushed docs commit `dbc105ef` (design notes and PF-20261117-F10). Planning commit `d3d46872`.
 
 **Cycle estimate: 0.60**
 
@@ -125,5 +125,35 @@ Link rules answered in session before approval (the maintainer asked which links
 - Notes:
   - A race in the test itself (changing the saved page by hand while the pane was still reloading for a theme change) was removed by waiting for that reload.
 - Estimate details: original scope as Step 3, plus the pre-existing test fix. No revisions.
+
+## Stage 6 - The reported case, documentation and closeout
+
+**Original estimate: 0.10**
+**Retrospective stage work: 0.10**
+
+- Status: complete.
+- Changes:
+  - `tests/browser/open_beside.mjs`: the reported case. At 2048px in Gloss Dark, with the column narrowed to the left on the Prompts page (more than 1000px empty beside it), a click on a prompt's title opens its thread in the pane, in the same theme, and the Prompts page stays. With a screenshot directory, every theme is shot with a pane at 2048px and 1280px and without one at 390px.
+  - `open-beside.css`: the pressed Beside toggle no longer swaps colours. In Arena and Sticker the ruler's colour is also the text colour, so the pressed toggle was a blank white pill. It now keeps the page's background and ink and shows a heavy ring and a bold label.
+  - New `docs/concepts/open_beside.md`. The design notes, the plans index and PF-20261117-F10 point at the built cycle. Ledger closeout.
+- Verification:
+  - `node tests/browser/open_beside.mjs <dir>` in Chrome and `BROWSER=firefox … <dir>` in Firefox 146: both pass, including the reported case and all 18 themes at three widths with no sideways scrolling.
+  - Screenshots checked by eye: the reported case in Chrome and in Firefox; contact sheets of all 18 themes at 1280px; the toggle cropped in eight themes after the fix.
+  - `node tests/browser/reading_margins.mjs`, `draggable_windows.mjs` and `preferences.mjs`: pass.
+  - `./v3 test --smoke PresentationProfileMatrixTest PreferencesPageTest FeatureFlagEvaluatorTest BrowserRuntimeProfileTest`: 488 run, 488 passed. The full suite was not run; the maintainer runs it.
+  - `./v3 feedback check`: no problems.
+  - Final read of the whole diff against the base.
+- Notes:
+  - Not verified: real Firefox outside automation (see the Stage 3 focus note), physical phones, production. Not pushed: the session has no push access to the repository.
+  - In Word97 the pane's lower edge covers the right end of the theme's status bar. Left as it is.
+  - Engagify shows its parody popups inside the pane too, as on any page.
+  - Concepts checked: window controls, no-script presentation, static publication and theme script still read true; none changed.
+- Estimate details: original scope as Step 3. No revisions.
+
+## Step 4 closeout
+
+- Completion Contract: met locally for entry, outcome and recovery. External verification in Firefox is done under automation. Release (merge, deploy with the flag on, the maintainer's check) is pending and needs the maintainer.
+- Study: entry projection 0.60; **retrospective scope assessment 0.65**. Stage retrospectives 0.08, 0.13, 0.16, 0.12, 0.07, 0.10, not summed. The difference is Stage 3's Firefox focus finding and second fixture. Maintainer comfortable-fit judgment pending. Same R1/P2, single exposed rater.
+- Follow-ups, not started: refresh the main page after a post in the pane; a strip of panes, pin, a pane list and spines (design notes); the pane's lower edge over Word97's status bar.
 
 *— Claude · 2026-11-18 UTC · Model: claude-fable-5-2*

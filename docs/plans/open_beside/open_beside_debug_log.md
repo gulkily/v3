@@ -55,3 +55,23 @@
 - "Stages about <=1 hour or <=50 lines": Stages 2 to 4 are likely larger. They were kept whole because each is one visible behaviour; the draggable windows plan made the same call.
 - Whether a wording correction to an approved Step 2 needs its own approval. It is flagged in the handoff and rides on Step 3 approval.
 - The feature branch is planned on top of an unpushed docs commit, which the planning-commit rule does not cover.
+
+## 2026-11-18T03:29Z — Step 4
+
+**Necessary/useful instructions**
+- Step 2 "Known user or environment" with Step 3's replay stage: made Firefox a requirement, which led to installing it and to the one real surprise of the cycle (a clicked field in a frame not taking focus under automation). Retain.
+- The maintainer's rule that a test failing on the base commit is fixed as part of the work: `preferences.mjs` failed on the base; confirmed in a clean worktree and fixed in Stage 5. Retain.
+- "UI verification: screenshots checked by eye": the per-theme sheets showed the blank pressed toggle in Arena and Sticker, which no assertion caught. Retain.
+- Stage Boundary Protocol: one commit per stage kept each finding with the stage that produced it. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Database, migration and deployment checks; documentation-only fields.
+
+**Uncertain assessments**
+- Step 3 planned the pane's creation in the head script and a possible new theme signal. Both were done another way (deferred script; watching `data-theme`) and recorded as stage notes, not as plan revisions, since the behaviour and the completion criteria did not change.
+- Whether the Firefox focus behaviour is real outside automation could not be settled here.
+- The branch is not pushed, so the Step 4 "after" handoff (PR, thread reply) is incomplete.
+
