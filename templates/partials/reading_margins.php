@@ -36,11 +36,16 @@ $readingMarginLabel = static function (int $position): string {
     <input class="reading-margins__stop" type="radio" name="reading-margin-<?= (int) $index ?>" value="<?= (int) $position ?>" aria-label="<?= $e($readingMarginLabel($position)) ?>" data-reading-margin-stop style="--at: <?= (int) $position ?>"<?= $position === 0 || $position === 5 ? ' checked' : '' ?><?= $position < 0 || $position > 5 ? ' hidden' : '' ?>>
 <?php endforeach; ?>
   </fieldset>
+<?php if ($openBesideEnabled ?? false): ?>
+  <button type="button" class="reading-margins__beside" data-open-beside-toggle aria-pressed="false" title="Open links in a pane beside this page">Beside</button>
+<?php endif; ?>
 </div>
 <script>
   (function () {
     var root = document.documentElement;
     var ruler = document.querySelector('[data-role="reading-margins"]');
+    var beside = ruler.querySelector('[data-open-beside-toggle]');
+    if (beside && root.getAttribute('data-open-beside') === 'on') beside.setAttribute('aria-pressed', 'true');
     var stops = Array.prototype.slice.call(ruler.querySelectorAll('[data-reading-margin-stop]'));
     // Shows the stops that are inside the window and returns which ones are.
     // reading_margins.js calls it again when the window is resized.

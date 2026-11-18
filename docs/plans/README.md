@@ -18,6 +18,10 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Quill rename](quill_rename/quill_rename_one_shot.md) — the posting client `frm.py` becomes `quill.py` (old URL kept), sends its version on every request, and gets an update notice when it is out of date.
 
+[Open beside](open_beside/open_beside_step3_development_plan.md) — with the Beside mode on, a click on a link in a page's content opens it in one pane beside the column; behind `FORUM_OPEN_BESIDE_ENABLED`. Background in the [design notes](open_beside_design_notes.md).
+
+[Open beside design notes](open_beside_design_notes.md) — a second pane on wide screens: with the mode on, a click opens the link beside the current page. Maintainer decisions, review recommendations, Pollyanna prior art and open questions; no Step 1 yet.
+
 [Draggable windows](draggable_windows/draggable_windows_step3_development_plan.md) — in Bubblegum, every window gets a working collapse button, collapsed posts stay collapsed after a reload, and a desktop Float mode lets you drag windows and Reset them; behind `FORUM_DRAGGABLE_WINDOWS_ENABLED`, with a Preferences row.
 
 [Nav speed checklist](nav_speed_checklist.md) — cutting click-to-done time on navbar links, in five cycles. Cycle 2: [nav quick wins](nav_quick_wins/nav_quick_wins_one_shot.md) — navigation preload, an early fetch on tap, and an immediate highlight. Cycle 3: [nav cached copy](nav_cached_copy/nav_cached_copy_one_shot.md) — navbar pages from the last copy, refreshed in the background.
