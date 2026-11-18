@@ -47,3 +47,19 @@ Branch `feature/private_message_local_pull` from `origin/main` `31e16b06`, which
   - A sync-store failure makes the export return an error instead of silently leaving transfers out, so a pull never stores messages and misses their transfers.
   - Transfer size stays bounded by history sync's 100,000-byte upload limit. No separate export cap was added.
   - Retrospective stage-work assessment: **0.10**.
+
+## Stage 3 - Register the local key on the source
+
+**Original estimate: 0.20** (unchanged)
+
+- Changes:
+  - New `ForumRewrite\Support\LocalDevelopmentRemote`. It forwards only the calls in its `PATHS` list to the source address, keeps session cookies in the object only, and never follows redirects. The list also holds the export and acknowledge calls for Stages 4 and 5.
+  - New `LocalDevelopmentRemoteController` at `POST /local/remote`. It sits behind the same loopback guard, token and origin check as the public import, and takes the actions `key_status`, `prepare_identity` and `create_identity`. `key_status` reads the key's username from the key itself, then reports four things: approved keys under that name on the source, whether the source knows and approves this key, whether this clone has the approval, and the key's User Access link on the source.
+  - `Application` routes `/local/remote` and shares one `localDevelopmentImport()` factory with the page.
+  - The local development page gains a **Your messages** card. It checks the browser key and walks through three steps: register, approve on the source, and import. **Register this key on zenmemes.com** signs the prepared record in the browser and relays it. "Identity already exists" counts as registered.
+- Verification:
+  - `./v3 test LocalDevelopmentImportTest`: 4 run, 4 passed. The two new tests cover the wrong token, a foreign origin, an unknown action, refusal outside development mode, a full register run and repeat register against a recording source, a real gpg key through `key_status`, refusal of unlisted paths and bad source addresses, and session cookies that reach only calls made after sign-in.
+  - `python3 tests/browser/local_development.py`: passed, after adding the new runtime files to its list. The first run failed because the new "no key yet" note used `role=alert` and clashed with the import's alert. That note is now plain status.
+- Notes:
+  - The planned browser check against a second real instance is moved to Stage 5, which needs a second instance anyway. That check will cover registration too. A recording stand-in source covers relay behavior here.
+  - Retrospective stage-work assessment: **0.20**.

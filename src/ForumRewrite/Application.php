@@ -198,6 +198,10 @@ final class Application
         }
         $this->ensureReadModel();
 
+        if ($path === '/local/remote' && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {
+            (new \ForumRewrite\Http\LocalDevelopmentRemoteController($this->routeServices(), $this->localDevelopmentImport()))->handle($method);
+            return;
+        }
         if (\ForumRewrite\Support\LocalDevelopmentImport::isEntry($requestUri) && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {
             (new \ForumRewrite\Http\LocalDevelopmentPageController($this->routeServices(),
                 new \ForumRewrite\Support\LocalDevelopmentImport($this->repositoryRoot),
@@ -2997,6 +3001,11 @@ final class Application
             $this->authenticatedViewerProfile(...),
             $this->recordHistoryActivity(...),
         );
+    }
+
+    private function localDevelopmentImport(): \ForumRewrite\Support\LocalDevelopmentImport
+    {
+        return new \ForumRewrite\Support\LocalDevelopmentImport($this->repositoryRoot);
     }
 
     private function privateMessageApiController(): PrivateMessageApiController

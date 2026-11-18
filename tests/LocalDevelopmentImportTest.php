@@ -221,6 +221,88 @@ final class LocalDevelopmentImportTest
         throw new RuntimeException('The import did not finish: ' . substr($body, (int) strpos($body, 'data-import-root'), 3000));
     }
 
+    public function testRemoteRelayRegistersAKeyThroughFixedPathsOnly(): void
+    {
+        $w = new ImportTestWorkspace();
+        $target = $w->repository('target', true);
+        $w->git($target);
+        // A stand-in source that logs each request and answers the registration calls.
+        $w->put($w->root . '/relay-source.php', '<?php
+            $path = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
+            file_put_contents(__DIR__ . "/relay-requests.log", $_SERVER["REQUEST_METHOD"] . " " . $path . "\n", FILE_APPEND);
+            header("Content-Type: application/json");
+            $exists = is_file(__DIR__ . "/relay-created");
+            if ($path === "/api/get_username") { header("Content-Type: text/plain"); echo "Username-Token: ilyag\nApproved-Keys: 1\n"; }
+            elseif ($path === "/api/get_profile") { if (!$exists) { http_response_code(404); echo "profile not found\n"; } else { header("Content-Type: text/plain"); echo "Approved: no\n"; } }
+            elseif ($path === "/api/prepare_identity") { echo $exists ? json_encode(["status" => "error", "error" => "Identity already exists for this fingerprint."]) : json_encode(["status" => "ok", "prepare_token" => "t", "canonical_record" => "record"]); }
+            elseif ($path === "/api/create_identity") { touch(__DIR__ . "/relay-created"); echo json_encode(["status" => "ok", "signature" => $_POST["detached_signature"] ?? ""]); }
+            else { http_response_code(418); echo "{}"; }');
+        $source = new ImportHttpServer($w->root . '/relay-source.php', $w->root . '/relay-source-server.log');
+        $environment = $this->environment($w, $target);
+        $server = new ImportHttpServer(realpath(__DIR__ . '/../public/router.php'), $w->root . '/dev.log', $environment);
+        $token = $this->token($this->request($server->url, '/')[1]);
+        $base = ['token' => $token, 'source' => $source->url];
+
+        [$code, $body] = $this->request($server->url, '/local/remote', ['token' => 'wrong'] + $base + ['action' => 'prepare_identity', 'public_key' => 'k']);
+        assertSame(403, $code, $body);
+        [$code, $body] = $this->request($server->url, '/local/remote', $base + ['action' => 'prepare_identity', 'public_key' => 'k'], ['Origin: https://evil.example']);
+        assertSame(403, $code, $body);
+        [$code, $body] = $this->request($server->url, '/local/remote', $base + ['action' => 'export_everything']);
+        assertSame(400, $code, $body);
+        $normal = new ImportHttpServer(realpath(__DIR__ . '/../public/router.php'), $w->root . '/normal.log', array_merge($environment, ['V3_DEV_LOG' => '0']));
+        assertTrue($this->request($normal->url, '/local/remote', $base + ['action' => 'prepare_identity', 'public_key' => 'k'])[0] !== 200);
+
+        [$code, $body] = $this->request($server->url, '/local/remote', $base + ['action' => 'prepare_identity', 'public_key' => 'k']);
+        assertSame(200, $code, $body);
+        assertSame('record', json_decode($body, true)['canonical_record']);
+        [$code, $body] = $this->request($server->url, '/local/remote', $base + ['action' => 'create_identity', 'prepare_token' => 't', 'canonical_record' => 'record', 'detached_signature' => 'sig']);
+        assertSame(200, $code, $body);
+        assertSame('sig', json_decode($body, true)['signature']);
+        [$code, $body] = $this->request($server->url, '/local/remote', $base + ['action' => 'prepare_identity', 'public_key' => 'k']);
+        assertSame(200, $code, $body);
+        assertSame(true, json_decode($body, true)['exists']);
+        assertSame("POST /api/prepare_identity\nPOST /api/create_identity\nPOST /api/prepare_identity\n", file_get_contents($w->root . '/relay-requests.log'));
+
+        $home = $w->root . '/gpg';
+        mkdir($home, 0700);
+        $gpg = 'gpg --batch --no-tty --pinentry-mode loopback --passphrase "" --homedir ' . escapeshellarg($home);
+        exec($gpg . ' --quick-generate-key ilyag ed25519 sign 0 2>&1');
+        $publicKey = trim((string) shell_exec($gpg . ' --armor --export')) . "\n";
+        [$code, $body] = $this->request($server->url, '/local/remote', $base + ['action' => 'key_status', 'public_key' => $publicKey]);
+        assertSame(200, $code, $body);
+        $state = json_decode($body, true);
+        assertSame('ilyag', $state['username']);
+        assertSame(1, $state['source_approved_keys']);
+        assertSame(['registered' => true, 'approved' => false, 'locally_known' => false, 'locally_approved' => false],
+            array_intersect_key($state, array_flip(['registered', 'approved', 'locally_known', 'locally_approved'])));
+        assertStringContains('/tools/user-access/profiles/openpgp-', $state['source_key_url']);
+    }
+
+    public function testRemoteRefusesUnlistedPathsAndCarriesSessionCookies(): void
+    {
+        $seen = [];
+        $transport = function (string $method, string $url, array $headers, string $body) use (&$seen): array {
+            $seen[] = [$method, $url, $headers];
+            if (str_ends_with(parse_url($url, PHP_URL_PATH), '/auth_challenge')) return ['status' => 200, 'headers' => [], 'body' => "challenge=abc123\n"];
+            if (str_ends_with(parse_url($url, PHP_URL_PATH), '/authenticate_identity')) return ['status' => 200, 'headers' => ['Set-Cookie: forum_session=s1; Path=/; HttpOnly'], 'body' => "status=ok\napproved=1\n"];
+            return ['status' => 200, 'headers' => [], 'body' => json_encode(['status' => 'ok', 'messages' => [], 'transfers' => [], 'next' => null])];
+        };
+        $remote = new \ForumRewrite\Support\LocalDevelopmentRemote('https://source.example', $transport(...));
+        assertSame('abc123', $remote->challenge());
+        assertSame(['approved' => true], $remote->signIn('openpgp:' . str_repeat('a', 40), 'abc123', 'sig'));
+        $remote->export();
+        assertStringContains('Cookie: forum_session=s1', implode("\n", $seen[2][2]));
+        assertStringNotContains('Cookie:', implode("\n", $seen[0][2]));
+        foreach (['https://source.example/x', 'https://source.example?q=1', 'file:///etc/passwd'] as $bad) {
+            try { new \ForumRewrite\Support\LocalDevelopmentRemote($bad, $transport(...)); throw new LogicException('Accepted ' . $bad); }
+            catch (RuntimeException $expected) { /* Expected. */ }
+        }
+        $call = new ReflectionMethod($remote, 'call');
+        try { $call->invoke($remote, 'POST', '/api/private_messages'); throw new LogicException('Forwarded an unlisted path'); }
+        catch (RuntimeException $expected) { assertStringContains('does not forward', $expected->getMessage()); }
+        assertSame(3, count($seen));
+    }
+
     private function environment(ImportTestWorkspace $w, string $target): array
     {
         $w->put($w->root . '/secrets.php', '<?php return [];');
