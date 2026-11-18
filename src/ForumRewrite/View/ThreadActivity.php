@@ -7,9 +7,10 @@ namespace ForumRewrite\View;
 use ForumRewrite\Canonical\PostRecordList;
 use ForumRewrite\ReadModel\TagOnlyLeafFilter;
 use ForumRewrite\Support\ThreadLabels;
+use ForumRewrite\Support\TitleDirective;
 
 /**
- * Entries for a thread page's Activity drawer: one "tagged" entry per tag-only reply that left the
+ * Entries for a thread page's Activity drawer: one "tagged" entry per tag-only (or title-only) reply that left the
  * conversation, then one group per post that has likes or flags. Built only from data the thread
  * page already loaded; the actors are the same SignalActors lists the signal lines show.
  */
@@ -23,12 +24,13 @@ final class ThreadActivity
      * @param list<array<string,mixed>> $replies replies after RetractedLeafFilter, in thread order
      * @param array<string,mixed>|null $signalActors
      * @param array<string,string> $recordIds PostRecordList::reactionRecordIds() result; names with a record link to it
+     * @param bool $titleLines move replies that are only a `title:` line (Title directive in replies is on)
      * @return array{shown: list<array<string,mixed>>, moved: list<array<string,mixed>>, entries: list<array<string,mixed>>}
      */
-    public static function partition(?array $rootPost, array $replies, ?array $signalActors, bool $recordsEnabled, array $recordIds = []): array
+    public static function partition(?array $rootPost, array $replies, ?array $signalActors, bool $recordsEnabled, array $recordIds = [], bool $titleLines = false): array
     {
         try {
-            ['kept' => $shown, 'moved' => $moved] = TagOnlyLeafFilter::split($replies);
+            ['kept' => $shown, 'moved' => $moved] = TagOnlyLeafFilter::split($replies, $titleLines);
 
             return ['shown' => $shown, 'moved' => $moved, 'entries' => self::build($rootPost, $moved, $shown, $signalActors, $recordsEnabled, $recordIds)];
         } catch (\Throwable) {
@@ -38,7 +40,7 @@ final class ThreadActivity
 
     /**
      * @param array<string,mixed>|null $rootPost
-     * @param list<array<string,mixed>> $movedReplies tag-only replies taken out of the conversation
+     * @param list<array<string,mixed>> $movedReplies tag-only and title-only replies taken out of the conversation
      * @param list<array<string,mixed>> $shownReplies replies still in the conversation
      * @param array<string,mixed>|null $signalActors SignalActors::load() result
      * @param array<string,string> $recordIds PostRecordList::reactionRecordIds() result
@@ -53,6 +55,7 @@ final class ThreadActivity
                 'post_id' => (string) $reply['post_id'],
                 'author' => self::author($reply),
                 'labels' => ThreadLabels::fromBody((string) ($reply['body'] ?? '')),
+                'title' => TitleDirective::extract((string) ($reply['body'] ?? '')),
                 'created_at' => (string) ($reply['created_at'] ?? ''),
                 'href' => self::postHref((string) $reply['post_id'], false),
             ];

@@ -19,17 +19,22 @@ final class TitleDirective
             if (preg_match('/^\s*>/', $line) === 1) {
                 continue;
             }
-            if (preg_match('/^\s*title:\s*(.*?)\s*$/i', $line, $match) !== 1) {
-                continue;
+            $value = self::lineValue($line);
+            if ($value !== null) {
+                return $value;
             }
-            $value = $match[1];
-            if ($value === '') {
-                continue;
-            }
-
-            return $value;
         }
 
         return null;
+    }
+
+    /** The title a single unquoted line asks for, or null when the line is not a usable `title:` line. */
+    public static function lineValue(string $line): ?string
+    {
+        if (preg_match('/^\s*title:\s*(.*?)\s*$/i', $line, $match) !== 1 || $match[1] === '') {
+            return null;
+        }
+
+        return $match[1];
     }
 }
