@@ -30,3 +30,20 @@ Branch: `feat/key-approval-api`. Planning commit: `520141a`.
 - Estimate details: original scope as Step 3; unchanged; the spike risk resolved on first try.
 
 *— Claude · 2026-11-18 UTC · Model: Claude Opus 5.5*
+
+## Stage 2 - Author-Identity-ID in post reads
+
+**Original estimate: 0.08**
+**Retrospective stage work: 0.08**
+
+- Changes:
+  - `get_post` adds `Author-Identity-ID: openpgp:<fpr>` after `Author:` when the post names an identity and has a signature file. Unsigned posts that name an identity (for example Quill's unsigned trouble reports) show no line, since the identity there is only a claim.
+  - Scope narrowed from Step 3: `get_thread` post lines are `[post_id] body` with no author field at all, so adding the identity there would have meant a new per-line field inside body text and a format change for line parsers. Agents call `get_post` for the one post they're judging, which is what `quill.py approve` does in Stage 4. Recorded here rather than silently dropped.
+- Verification:
+  - `AgentApiWorkedExampleTest` extended: every signed post from the file publishers (Python, PHP, Perl; existing and generated keys) shows its own `Author-Identity-ID`; an unsigned reply naming that identity shows none.
+  - `./v3 test --smoke AgentApiWorkedExampleTest`: 479 passed. The `get_post` 404 warning in the output is a deliberate missing-post check in `SingleRequestHttpTest`, present before this change. Full suite not run.
+- Notes:
+  - Reuse: `fetchPost` already selects `author_identity_id`, and `withPostSourceMetadata` sets `source_signature_path`; no query change.
+- Estimate details: original scope included `get_thread`; the narrower scope did not change the rating.
+
+*— Claude · 2026-11-18 UTC · Model: Claude Opus 5.5*

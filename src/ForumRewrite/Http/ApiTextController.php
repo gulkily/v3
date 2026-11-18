@@ -123,6 +123,21 @@ final class ApiTextController
         return $tags === [] ? '' : 'Board-Tags: ' . implode(' ', $tags) . "\n";
     }
 
+    /**
+     * `Author-Identity-ID: openpgp:<fpr>` for a post signed by that identity, so a client can tell
+     * which key wrote it when usernames are shared. Unsigned posts carry none: an identity they
+     * name is only a claim. The value is already public in the signed record and on profile pages.
+     *
+     * @param array<string, mixed> $post
+     */
+    private static function authorIdentityHeader(array $post): string
+    {
+        $identityId = (string) ($post['author_identity_id'] ?? '');
+        $signed = (string) ($post['source_signature_path'] ?? '') !== '';
+
+        return $identityId !== '' && $signed ? "Author-Identity-ID: {$identityId}\n" : '';
+    }
+
     public function getPost(string $postId): void
     {
         $post = ($this->fetchPost)($postId);
@@ -133,7 +148,7 @@ final class ApiTextController
 
         $imageNote = str_contains($post['body'], \ForumRewrite\Images\ImageReference::PREFIX) ? "Image-Bytes: separate image backup required\n" : '';
         $this->routeServices->sendText(
-            $imageNote . "Post-ID: {$post['post_id']}\nCreated-At: {$post['created_at']}\nThread-ID: {$post['thread_id']}\nAuthor: {$post['author_label']}\n" . self::boardTagsHeader($post) . "Retracted: " . self::retractedValue($post) . "\nBody-Format: " . (($post['body_format'] ?? null) === 'markdown' ? 'markdown' : 'plain') . "\n" . $this->resolutionHeader($post) . "\n{$post['body']}",
+            $imageNote . "Post-ID: {$post['post_id']}\nCreated-At: {$post['created_at']}\nThread-ID: {$post['thread_id']}\nAuthor: {$post['author_label']}\n" . self::authorIdentityHeader($post) . self::boardTagsHeader($post) . "Retracted: " . self::retractedValue($post) . "\nBody-Format: " . (($post['body_format'] ?? null) === 'markdown' ? 'markdown' : 'plain') . "\n" . $this->resolutionHeader($post) . "\n{$post['body']}",
             200
         );
     }
