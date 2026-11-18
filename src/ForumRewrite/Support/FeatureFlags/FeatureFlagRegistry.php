@@ -23,6 +23,7 @@ final class FeatureFlagRegistry
     public const THREAD_DENSITY_TOGGLE_ENABLED = 'FORUM_THREAD_DENSITY_TOGGLE_ENABLED';
     public const READING_MARGINS_ENABLED = 'FORUM_READING_MARGINS_ENABLED';
     public const DRAGGABLE_WINDOWS_ENABLED = 'FORUM_DRAGGABLE_WINDOWS_ENABLED';
+    public const OPEN_BESIDE_ENABLED = 'FORUM_OPEN_BESIDE_ENABLED';
     public const GUESTBOOK_ENABLED = 'FORUM_GUESTBOOK_ENABLED';
     public const TITLE_DIRECTIVE_ENABLED = 'FORUM_TITLE_DIRECTIVE_ENABLED';
     public const TITLE_DIRECTIVE_APPROVED_MEMBERS = 'FORUM_TITLE_DIRECTIVE_APPROVED_MEMBERS';
@@ -76,7 +77,7 @@ final class FeatureFlagRegistry
             self::DEPLOY_HEADER_PROMPT_ENABLED, self::INSTANCE_IMPORT_PAGE_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER,
             self::ZALGO_THEME_ENABLED, self::PRIVATE_MESSAGE_CACHE_ENABLED,
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
-            self::READING_MARGINS_ENABLED, self::DRAGGABLE_WINDOWS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
+            self::READING_MARGINS_ENABLED, self::DRAGGABLE_WINDOWS_ENABLED, self::OPEN_BESIDE_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
             self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED,
             self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED, self::QDB_QUEUE_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
@@ -467,6 +468,16 @@ final class FeatureFlagRegistry
                 'In the Bubblegum theme, give every window a working collapse button, keep a post collapsed after a reload once a reader collapses it, and let desktop readers turn on Float mode to drag windows around. Readers can turn it off in Preferences.',
                 false,
                 self::DRAGGABLE_WINDOWS_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+                releasedOn: '2026-11-17',
+            ),
+            new FeatureFlagDefinition(
+                self::OPEN_BESIDE_ENABLED,
+                'Open beside',
+                'Let desktop readers turn on a Beside mode, on the reading-margins ruler or in Preferences. With it on, a click on a link in a page\'s content opens that page in a pane beside the column when there is room. Off by default for every reader.',
+                false,
+                self::OPEN_BESIDE_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
                 releasedOn: '2026-11-17',

@@ -17,7 +17,7 @@ Thread so far: Claude found that git already dates each flag (28 of 47 then were
 
 Authorization: the maintainer, 2026-11-18 (Claude session): "Can you please scan Zen memes for anything that's asking for a PR? And if the task seems appropriate for a one-shot, make the PR and reply in the thread." With "Please make a PR?" in the thread, this authorizes a one-shot through an open PR and a thread reply. Exclusions: merge, deployment.
 
-Feedback item: none matched in `docs/feedback/items/` (searched the thread ID, "recent", "release"). Created [PF-20261118-F04](../../feedback/items/PF-20261118-F04.txt) in the completion commit.
+Feedback item: none matched in `docs/feedback/items/` (searched the thread ID, "recent", "release"). Created [PF-20261118-F06](../../feedback/items/PF-20261118-F06.txt) in the completion commit.
 
 ## Outcome and work type
 
@@ -58,6 +58,7 @@ Planning commit: `19980370` (2026-11-18T07:31Z), containing only this record and
 - 2026-11-18T07:32Z: planning commit `19980370` confirmed. Added `releasedOn` to the definition and all 56 registry entries (scripted insertion; a first pass mis-parsed a double-quoted description and dated only 30, caught by count and redone), `recentlyReleased()`, the template section, CSS and the filter-clearing link handler.
 - 2026-11-18T07:38Z: tests. `FeatureFlagsBehaviorTest` gains a date-on-every-flag check and a window test; the toolbar fixture flags get dates (one undated, one old); `tests/browser/feature_flags_toolbar.mjs` checks the list, its order, the filter-clearing click, and that every link on the real registry page hits a row. Its group-heading assertion now scopes to `.feature-flag-group` headings, since the new section reuses the heading class. Correction to an existing test's selector, not to its intent.
 - 2026-11-18T07:40Z: `CONTRIBUTING.md` feature-flag section: set `releasedOn` when adding a flag.
+- 2026-11-18T11:20Z: merged `main` to clear conflicts. Main had added `FORUM_OPEN_BESIDE_ENABLED` (first in the registry in `84e6062d`, 2026-11-17), so it gets `releasedOn: '2026-11-17'`; 57 of 57 flags dated. Reran `./v3 test --smoke FeatureFlagsBehaviorTest` (484 passed) and `tests/browser/feature_flags_toolbar.mjs` (pass); full suite not run. The feedback item was renumbered PF-20261118-F04 → PF-20261118-F06 because main had already used F04 (and #330 uses F01).
 
 ## Study history
 

@@ -8,7 +8,7 @@
  * @var list<array<string, mixed>> $tiles
  */
 ?>
-<section class="stack">
+<section class="stack gallery-page">
 <?php if ($paginationError !== null): ?>
   <p role="alert"><?= $e($paginationError) ?></p>
 <?php elseif ($tiles === []): ?>

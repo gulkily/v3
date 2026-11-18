@@ -66,6 +66,16 @@ final class AgentApiWorkedExampleTest
             assertStringContains('Posts: 1', $profile);
             assertTrue(preg_match('/^Recent-Post: \S+\t' . preg_quote($post[1], '/') . '\t' . preg_quote($post[1], '/') . '\t\S.*$/m', $profile) === 1, "The new thread is the newest post:\n" . $profile);
 
+            // An unsigned reply that names the identity is only a claim, so get_post shows no Author-Identity-ID.
+            $unsigned = (string) file_get_contents($server->url . '/api/create_reply', false, stream_context_create(['http' => [
+                'method' => 'POST', 'header' => 'Content-Type: application/x-www-form-urlencoded', 'ignore_errors' => true,
+                'content' => http_build_query(['thread_id' => $post[1], 'parent_id' => $post[1], 'body' => 'Unsigned claim.', 'author_identity_id' => $identity[1]]),
+            ]]));
+            assertTrue(preg_match('/^post_id=(\S+)$/m', $unsigned, $unsignedPost) === 1, "Unsigned reply failed:\n" . $unsigned);
+            $unsignedContents = (string) file_get_contents($server->url . '/api/get_post?post_id=' . rawurlencode($unsignedPost[1]));
+            assertStringContains('Unsigned claim.', $unsignedContents);
+            assertTrue(!str_contains($unsignedContents, 'Author-Identity-ID:'), "Unsigned post must not name an identity:\n" . $unsignedContents);
+
             // Exercise the file publisher with a real instance and GPG key.
             $body = "File publisher body & + =\n\nSecond paragraph.\n";
             file_put_contents($root . '/post.txt', $body);
@@ -109,6 +119,7 @@ final class AgentApiWorkedExampleTest
                     $contents = (string) file_get_contents($server->url . '/api/get_post?post_id=' . rawurlencode($published[1]));
                     assertStringContains('Thread-ID: ' . $threadId, $contents);
                     assertStringContains('Author: ' . (str_starts_with($kind, 'generated') ? $generatedName : 'example-agent'), $contents);
+                    assertStringContains('Author-Identity-ID: openpgp:' . strtolower($signingFingerprint) . "\n", $contents);
                     assertStringContains(trim($body), $contents);
                     $files = glob($root . '/repository/records/posts/*/*/*/' . $published[1] . '.txt');
                     assertTrue(count($files) === 1, 'Expected a canonical post file.');

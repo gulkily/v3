@@ -31,6 +31,7 @@ final class ApiTextController
      * @param \Closure(string, bool=): (array<string, mixed>|null) $fetchPost
      * @param \Closure(string): (array<string, mixed>|null) $fetchProfileBySlug
      * @param \Closure(array<string, mixed>): string $displayThreadTitle
+     * @param (\Closure(): (array<string, mixed>|null))|null $authenticatedViewerProfile signed-in viewer, for pending_keys
      */
     public function __construct(
         private readonly RouteServices $routeServices,
@@ -40,7 +41,42 @@ final class ApiTextController
         private readonly \Closure $fetchProfileBySlug,
         private readonly \Closure $displayThreadTitle,
         private readonly ?string $sourceRepositoryUrl = null,
+        private readonly ?\Closure $authenticatedViewerProfile = null,
     ) {
+    }
+
+    /**
+     * `/api/pending_keys`: the keys `/users/pending/` lists, as `Key: value` blocks separated by a
+     * blank line, for agents that approve keys. Same query as the page, so the two cannot disagree.
+     * Unlike the page it needs a signed-in session (no identity-hint cookie), since its reader is a
+     * script about to sign approvals.
+     */
+    public function pendingKeys(string $method): void
+    {
+        if ($method !== 'GET') {
+            $this->routeServices->sendText("method not allowed\n", 405, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        $viewer = $this->authenticatedViewerProfile !== null ? ($this->authenticatedViewerProfile)() : null;
+        if ($viewer === null || (int) ($viewer['is_approved'] ?? 0) !== 1) {
+            $this->routeServices->sendText("error=Sign in with an approved key to list pending keys.\n", 403, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        $profiles = \ForumRewrite\ReadModel\ProfileRepository::pendingDirectoryProfiles(
+            $this->routeServices->pdo(),
+            $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),
+        );
+        $blocks = [];
+        foreach ($profiles as $profile) {
+            $username = (string) ($profile['username'] ?? '');
+            $blocks[] = 'Profile-Slug: ' . $profile['profile_slug'] . "\n"
+                . 'Identity-ID: ' . $profile['identity_id'] . "\n"
+                . 'Username: ' . ($username !== '' ? $username : (string) ($profile['fallback_label'] ?? '')) . "\n"
+                . 'Posts: ' . (int) ($profile['post_count'] ?? 0) . "\n"
+                . 'Latest-Activity-At: ' . (string) ($profile['latest_activity_at'] ?? '') . "\n"
+                . 'Latest-Post-ID: ' . (string) ($profile['latest_activity_post_id'] ?? '') . "\n";
+        }
+        $this->routeServices->sendText('Pending-Count: ' . count($blocks) . "\n\n" . implode("\n", $blocks), 200, $this->routeServices->noStoreHeaders());
     }
 
     public function index(): void
@@ -123,6 +159,21 @@ final class ApiTextController
         return $tags === [] ? '' : 'Board-Tags: ' . implode(' ', $tags) . "\n";
     }
 
+    /**
+     * `Author-Identity-ID: openpgp:<fpr>` for a post signed by that identity, so a client can tell
+     * which key wrote it when usernames are shared. Unsigned posts carry none: an identity they
+     * name is only a claim. The value is already public in the signed record and on profile pages.
+     *
+     * @param array<string, mixed> $post
+     */
+    private static function authorIdentityHeader(array $post): string
+    {
+        $identityId = (string) ($post['author_identity_id'] ?? '');
+        $signed = (string) ($post['source_signature_path'] ?? '') !== '';
+
+        return $identityId !== '' && $signed ? "Author-Identity-ID: {$identityId}\n" : '';
+    }
+
     public function getPost(string $postId): void
     {
         $post = ($this->fetchPost)($postId);
@@ -133,7 +184,7 @@ final class ApiTextController
 
         $imageNote = str_contains($post['body'], \ForumRewrite\Images\ImageReference::PREFIX) ? "Image-Bytes: separate image backup required\n" : '';
         $this->routeServices->sendText(
-            $imageNote . "Post-ID: {$post['post_id']}\nCreated-At: {$post['created_at']}\nThread-ID: {$post['thread_id']}\nAuthor: {$post['author_label']}\n" . self::boardTagsHeader($post) . "Retracted: " . self::retractedValue($post) . "\nBody-Format: " . (($post['body_format'] ?? null) === 'markdown' ? 'markdown' : 'plain') . "\n" . $this->resolutionHeader($post) . "\n{$post['body']}",
+            $imageNote . "Post-ID: {$post['post_id']}\nCreated-At: {$post['created_at']}\nThread-ID: {$post['thread_id']}\nAuthor: {$post['author_label']}\n" . self::authorIdentityHeader($post) . self::boardTagsHeader($post) . "Retracted: " . self::retractedValue($post) . "\nBody-Format: " . (($post['body_format'] ?? null) === 'markdown' ? 'markdown' : 'plain') . "\n" . $this->resolutionHeader($post) . "\n{$post['body']}",
             200
         );
     }

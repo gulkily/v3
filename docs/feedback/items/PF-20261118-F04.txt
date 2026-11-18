@@ -1,18 +1,18 @@
 ID: PF-20261118-F04
-Title: Recently released section on the Feature Flags page
+Title: Beside button does not show clearly when it is on
 Kind: feature
 Workflow: blocked
 Created: 2026-11-18
 Evidence: locally-verified
 
 Request:
-feature request: for the feature flags page to have a recently released features section that's easy to find. Follow-up from the maintainer: recent is probably 1-2 days; yes to release dates.
+"i think we just need a better indicator of when beside button is activated, because i could not tell." The maintainer, after trying open beside on the gallery and Recent pages.
 
 Sources:
-- https://zenmemes.com/threads/thread-20261117184223-e6485eca
+- Session: Claude chat with the maintainer, 2026-11-18
 
 Done when:
-Tools, Feature Flags opens with a Recently released list of the newest flags, each with its release date and a link to its row; every flag carries a release date.
+On the reading-margins ruler, the Beside button looks plainly different when the mode is on than when it is off, in every theme.
 
 Notes:
-2026-11-18: one-shot on feat/recent_feature_flags (record docs/plans/recent_feature_flags/recent_feature_flags_one_shot.md); verified locally; awaiting review and deployment. Window counted from the newest release, not today (open question in the thread).
+2026-11-18: one-shot on feat/beside_toggle_state (record docs/plans/beside_toggle_state/beside_toggle_state_one_shot.md). On is now a filled pill with a check mark and a bold label; off stays outlined. Verified locally in Chrome and Firefox in all 18 themes (tests/browser/open_beside.mjs). Blocked on review, merge and deployment.

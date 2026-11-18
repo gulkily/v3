@@ -22,7 +22,7 @@ final class TemplateRenderer
     // Reading margins show on every page rendered with layout.php except these:
     // the gallery lays its rows out for the normal column width, and a redirect
     // page is gone before anyone reads it.
-    private const READING_MARGINS_EXCLUDED_PAGE_TEMPLATES = ['gallery.php', 'redirect.php'];
+    private const READING_MARGINS_EXCLUDED_PAGE_TEMPLATES = ['redirect.php'];
     /** @var array<string, list<string>> */
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],
@@ -270,6 +270,9 @@ final class TemplateRenderer
             'showThreadDensityToggle' => $showThreadDensityToggle,
             'showReadingMargins' => $showReadingMargins,
             'draggableWindowsEnabled' => $draggableWindowsEnabled,
+            'openBesideEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::OPEN_BESIDE_ENABLED),
+            'openBesideScriptPath' => $this->assetPath('/assets/open_beside.js'),
+            'openBesideCssPath' => $this->assetPath('/assets/open-beside.css'),
             'siteName' => SiteConfig::displayName(),
             'appVersion' => $this->appVersion,
             'versionEndpoint' => $this->versionEndpoint,
@@ -279,6 +282,7 @@ final class TemplateRenderer
             'navIconsCssPath' => $this->assetPath('/assets/theme-nav-icons.css'),
             'faviconPath' => $this->versionEndpoint === '/api/docs-version'
                 ? '/docs/_assets/' . basename(FaviconRegistry::resolve($profile)) : FaviconRegistry::resolve($profile),
+            'touchIconPath' => $this->versionEndpoint === '/api/docs-version' ? null : FaviconRegistry::touchIcon($profile),
             'browserRuntimeAssetPaths' => [
                 'openpgpV6' => $this->assetPath('/assets/openpgp.min.js'),
                 'openpgpV5' => $this->assetPath('/assets/openpgp.v5.11.3.min.js'),
@@ -690,6 +694,7 @@ final class TemplateRenderer
             'scriptPaths' => $assetScriptPaths,
             'siteCssPath' => $this->assetPath('/assets/site.css'),
             'faviconPath' => FaviconRegistry::resolve($profile),
+            'touchIconPath' => FaviconRegistry::touchIcon($profile),
             'additionalCssPaths' => $assetAdditionalCssPaths,
             'themeStorageKey' => BrowserRuntimeProfile::fromProfile($profile)['themeStorageKey'],
             'defaultTheme' => $this->defaultThemeName($profile, array_column($themes, 'name')),

@@ -320,6 +320,112 @@ final class QuillClientTest
             foreach (glob(self::stateDir($root,'image').'/*/keyring') as $home) \ForumRewrite\Security\GpgHomeCleaner::dispose($home);
         } finally {$server->close();}
     }
+    /**
+     * An approved approver key and two pending keys that share one username, each with one thread.
+     * Returns [server, repo, db, root, script, approverBase, [pendingBase, pendingBase], [identity => post ID]].
+     */
+    private static function approvalFixture(): array
+    {
+        [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
+        $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
+        file_put_contents($root.'/body.txt',"Hello from a test key.\n");
+        $bases=[]; $posts=[];
+        foreach (['approver'=>'approver-agent','one'=>'shared-agent','two'=>'shared-agent'] as $label=>$name) {
+            $base=['--site',$server->url,'--state-dir',self::stateDir($root,$label),'--retries','0'];
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Hi '.$label,'--body-file',$root.'/body.txt','--name',$name,'--no-report']));
+            assertSame(0,$code,$out);
+            preg_match('/Identity-ID: (openpgp:[0-9a-f]{40})/',$out,$i); preg_match('/Post-ID: (\S+)/',$out,$p);
+            $bases[$label]=$base; $posts[$i[1]]=$p[1];
+            if ($label==='approver') {
+                $seed=\ForumRewrite\Canonical\CanonicalPathResolver::approvalSeed(substr($i[1],8));
+                @mkdir(dirname($repo.'/'.$seed),0777,true);
+                file_put_contents($repo.'/'.$seed,"Approved-Identity-ID: {$i[1]}\nSeed-Reason: Quill approval test\n\n");
+                $tx=new \ForumRewrite\Write\SignedPostTransaction($repo);$tx->git(['add',$seed]);$tx->git(['commit','-qm','Approve Quill approver']);
+                (new \ForumRewrite\ReadModel\ReadModelBuilder($repo,$db,new \ForumRewrite\Canonical\CanonicalRecordRepository($repo)))->rebuild();
+            }
+        }
+        return [$server,$repo,$db,$root,$script,$bases['approver'],[$bases['one'],$bases['two']],$posts];
+    }
+
+    private static function disposeKeyrings(string $root): void
+    {
+        foreach (['approver','one','two'] as $label) {
+            foreach (glob(self::stateDir($root,$label).'/*/keyring') as $home) \ForumRewrite\Security\GpgHomeCleaner::dispose($home);
+        }
+    }
+
+    public function testPendingKeysNeedsAnApprovedSessionAndMatchesThePendingPage(): void
+    {
+        [$server,$repo,$db,$root,$script,$approver,$pending,$posts]=self::approvalFixture();
+        try {
+            [$h,$denied]=AgentPostingApiTest::request($server,'/api/pending_keys');
+            assertStringContains('403',$h[0]); assertStringContains('Sign in with an approved key',$denied);
+            // Sign in through quill's own helper, then read the API and the page with that session.
+            $probe=$root.'/probe.py';
+            file_put_contents($probe,"import argparse, importlib.util, sys\n"
+                ."spec=importlib.util.spec_from_file_location('quill',sys.argv[1]); q=importlib.util.module_from_spec(spec); spec.loader.exec_module(q)\n"
+                ."args=argparse.Namespace(state_dir=sys.argv[3], resume=None, signing_key=None, gpg_home=None)\n"
+                ."key=q.saved_key(args,sys.argv[2]); s=q.sign_in(sys.argv[2],key)\n"
+                ."for route in ('/api/pending_keys','/users/pending/'):\n"
+                ."    status,text,_=q.request(sys.argv[2],route,cookie=s['cookie']); print('=== %s %d' % (route,status)); print(text)\n");
+            [$code,$out]=self::run($probe,[$script,$server->url,self::stateDir($root,'approver')]);
+            assertSame(0,$code,$out);
+            [$api,$page]=explode('=== /users/pending/ ',explode('=== /api/pending_keys ',$out,2)[1],2);
+            assertTrue(str_starts_with($api,'200'),$out); assertTrue(str_starts_with($page,'200'),$out);
+            assertStringContains('Pending-Count: 2',$api);
+            $approverId=array_key_first($posts);
+            foreach ($posts as $identity=>$post) {
+                $slug=str_replace(':','-',$identity);
+                $listed=str_contains($api,'Identity-ID: '.$identity."\n");
+                assertSame($identity!==$approverId,$listed,$api);
+                assertSame($identity!==$approverId,str_contains($page,$slug),'The API and /users/pending/ must list the same keys');
+                if ($listed) { assertStringContains('Profile-Slug: '.$slug."\nIdentity-ID: ".$identity."\nUsername: shared-agent\n",$api); assertStringContains('Latest-Post-ID: '.$post,$api); }
+            }
+        } finally {self::disposeKeyrings($root); $server->close();}
+    }
+
+    public function testApproveByPostPicksTheRightKeyAmongSharedNames(): void
+    {
+        [$server,$repo,$db,$root,$script,$approver,$pending,$posts]=self::approvalFixture();
+        try {
+            [$approverId,$oneId,$twoId]=array_keys($posts);
+            $oneSlug=str_replace(':','-',$oneId); $twoSlug=str_replace(':','-',$twoId);
+            $profile=fn(string $slug): string => (string) file_get_contents($server->url.'/api/get_profile?profile_slug='.$slug);
+            // A pending key can neither list nor approve.
+            [$code,$out]=self::run($script,array_merge($pending[1],['approve',$posts[$oneId]]));
+            assertSame(2,$code,$out); assertStringContains('is not approved here',$out);
+            [$code,$out]=self::run($script,array_merge($pending[1],['pending']));
+            assertSame(2,$code,$out); assertStringContains('is not approved here',$out);
+            // The approver lists both shared-name keys.
+            [$code,$out]=self::run($script,array_merge($approver,['pending']));
+            assertSame(0,$code,$out); assertStringContains('Pending-Count: 2',$out); assertStringContains('Identity-ID: '.$oneId,$out);
+            // Approving by post ID approves that post's key and leaves the other with the same username pending.
+            [$code,$out]=self::run($script,array_merge($approver,['approve',$posts[$oneId]]));
+            assertSame(0,$code,$out); assertStringContains('Status: approved',$out); assertStringContains('Post: '.$posts[$oneId].' by shared-agent ('.$oneId.')',$out);
+            assertStringContains('Approved: yes',$profile($oneSlug)); assertStringContains('Approved: no',$profile($twoSlug));
+            // Rerunning is safe.
+            [$code,$out]=self::run($script,array_merge($approver,['approve',$posts[$oneId]]));
+            assertSame(0,$code,$out); assertStringContains('Status: already approved',$out);
+            // Self-approval, unknown targets and unsigned posts are refused with a plain message.
+            [$code,$out]=self::run($script,array_merge($pending[1],['approve',$twoSlug]));
+            assertSame(2,$code,$out); assertStringContains('cannot approve itself',$out);
+            [$code,$out]=self::run($script,array_merge($approver,['approve','openpgp-'.str_repeat('0',40)]));
+            assertSame(2,$code,$out); assertStringContains('No key openpgp:',$out);
+            [$code,$out]=self::run($script,array_merge($approver,['approve','reply-20990101000000-nosuchpost']));
+            assertSame(2,$code,$out); assertStringContains('No post or key called',$out);
+            [$h,$reply]=AgentPostingApiTest::request($server,'/api/create_reply','POST',['thread_id'=>$posts[$twoId],'parent_id'=>$posts[$twoId],'body'=>'Unsigned.','author_identity_id'=>$twoId]);
+            assertTrue(preg_match('/^post_id=(\S+)$/m',$reply,$unsigned)===1,$reply);
+            [$code,$out]=self::run($script,array_merge($approver,['approve',$unsigned[1]]));
+            assertSame(2,$code,$out); assertStringContains('is not signed',$out);
+            assertStringContains('Approved: no',$profile($twoSlug));
+            // Approving by slug works too, and the list is then empty.
+            [$code,$out]=self::run($script,array_merge($approver,['approve',$twoSlug]));
+            assertSame(0,$code,$out); assertStringContains('Status: approved',$out);
+            [$code,$out]=self::run($script,array_merge($approver,['pending']));
+            assertSame(0,$code,$out); assertStringContains('Pending-Count: 0',$out);
+        } finally {self::disposeKeyrings($root); $server->close();}
+    }
+
     public function testDownloadedReaderAndPublicDelivery(): void
     {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server();

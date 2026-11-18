@@ -16,7 +16,15 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Calendar iCal feed](calendar_ics_feed/calendar_ics_feed_step3_development_plan.md) — `/calendar.ics`, tag feeds, a Subscribe panel and per-event "Add to Google Calendar" links, behind `FORUM_CALENDAR_FEED_ENABLED`; Stages 1–6 done ([summary](calendar_ics_feed/calendar_ics_feed_step4_implementation_summary.md)), the production phone check pending.
 
+[Key approval agent API](key_approval_api/key_approval_api_step3_development_plan.md) — `GET /api/pending_keys`, `Author-Identity-ID` on post reads, and `quill.py pending` / `quill.py approve` so agents approve the right key; Stages 1–5 done ([summary](key_approval_api/key_approval_api_step4_implementation_summary.md)), the post-deploy check pending.
+
 [Quill rename](quill_rename/quill_rename_one_shot.md) — the posting client `frm.py` becomes `quill.py` (old URL kept), sends its version on every request, and gets an update notice when it is out of date.
+
+[Beside toggle state](beside_toggle_state/beside_toggle_state_one_shot.md) — one-shot: the ruler's Beside button shows clearly when the mode is on.
+
+[Open beside](open_beside/open_beside_step3_development_plan.md) — with the Beside mode on, a click on a link in a page's content opens it in one pane beside the column; behind `FORUM_OPEN_BESIDE_ENABLED`. Background in the [design notes](open_beside_design_notes.md).
+
+[Open beside design notes](open_beside_design_notes.md) — a second pane on wide screens: with the mode on, a click opens the link beside the current page. Maintainer decisions, review recommendations, Pollyanna prior art and open questions; no Step 1 yet.
 
 [Draggable windows](draggable_windows/draggable_windows_step3_development_plan.md) — in Bubblegum, every window gets a working collapse button, collapsed posts stay collapsed after a reload, and a desktop Float mode lets you drag windows and Reset them; behind `FORUM_DRAGGABLE_WINDOWS_ENABLED`, with a Preferences row.
 
@@ -621,4 +629,7 @@ and repair its navigation and affected references. See the
 
 - [Import output noise](import_output_noise/import_output_noise_one_shot.md) — one-shot: import-instance prints a short log by default; per-file causes move to --verbose.
 - [Invite show mode](invite_show_mode/invite_show_mode_one_shot.md) — one-shot: once an invite is generated, the page shows only the pitch, QR, link, Copy and New invite.
+- [Post file windows](post_file_windows/post_file_windows_one_shot.md) — one-shot: Source, Commit, Signature and Public key on a post page open in small themed windows with a Raw link.
+- [Gallery reading margins](gallery_reading_margins/gallery_reading_margins_one_shot.md) — one-shot: the reading-margins ruler also shows on /gallery/, and tiles refill the chosen column.
+- [App icons](app_icons/app_icons_one_shot.md) — one-shot: home-screen icons for ZenMemes (apple-touch-icon and 192/512 manifest PNGs).
 - [Recently released feature flags](recent_feature_flags/recent_feature_flags_one_shot.md) — one-shot: flags carry a release date, and Feature Flags opens with a "Recently released" list.

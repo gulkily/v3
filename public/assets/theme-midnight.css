@@ -832,6 +832,16 @@ html[data-theme="midnight"] ::-webkit-scrollbar-corner {
   }
 }
 
+/* A narrow reading-margins column gets the phone layout too. */
+@container (max-width: 36rem) {
+  :root[data-theme="midnight"] .gallery-grid {
+    --gallery-columns: 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(max(1, round(nearest, calc(var(--gallery-columns) / var(--gallery-zoom, 1)), 1)), minmax(0, 1fr));
+    padding: 0.75rem calc(0.75rem + 1px) calc(0.75rem + 1px) 0.75rem;
+  }
+}
+
 /* Pagination is a dialog's button row (Back / Next), not a toolbar: raised
    buttons, no grip; site.css puts them at the row's edges. */
 :root[data-theme="midnight"] .pagination-nav {
