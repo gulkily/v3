@@ -29,7 +29,7 @@ foreach (['target', 'root-001'] as $target) {
 }
 echo json_encode($fixtures, JSON_THROW_ON_ERROR);
 `, project], { encoding: 'utf8' }));
-const section = execFileSync('php', ['-r', 'include $argv[1];', project + '/templates/pages/offline_reader.php'], { encoding: 'utf8' });
+const section = execFileSync('php', ['-r', '$tagLinksEnabled = true; include $argv[1];', project + '/templates/pages/offline_reader.php'], { encoding: 'utf8' });
 
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/google-chrome', args: ['--no-sandbox'] });

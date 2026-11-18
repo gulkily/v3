@@ -27,7 +27,7 @@ $add('one-line', 'One line', "Only line here.\\n");
 $add('image-line', 'With image', "Intro line.\\nImage-v1: " . str_repeat('a', 64) . " png 10 10 100\\n\\nAfter the image.\\n");
 echo $path;
 `, project], { encoding: 'utf8' });
-const section = execFileSync('php', ['-r', 'include $argv[1];', project + '/templates/pages/offline_reader.php'], { encoding: 'utf8' });
+const section = execFileSync('php', ['-r', '$tagLinksEnabled = true; include $argv[1];', project + '/templates/pages/offline_reader.php'], { encoding: 'utf8' });
 const styles = ['site', 'sqlite', 'thread-list', 'tags'].map(name => `<link rel="stylesheet" href="/assets/${name}.css">`).join('');
 
 (async () => {

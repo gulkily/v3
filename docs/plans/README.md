@@ -22,6 +22,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Beside toggle state](beside_toggle_state/beside_toggle_state_one_shot.md) — one-shot: the ruler's Beside button shows clearly when the mode is on.
 
+[Offline reader tag links](offline_reader_tag_links/offline_reader_tag_links_one_shot.md) — one-shot fix: the offline reader gets the hashtag-links flag, ending a PHP warning and linking hashtags offline.
+
 [Open beside offline](open_beside_offline/open_beside_offline_one_shot.md) — one-shot: offline, a thread title on the board opens in the pane, and the pane handles the offline reader's pages.
 
 [Open beside](open_beside/open_beside_step3_development_plan.md) — with the Beside mode on, a click on a link in a page's content opens it in one pane beside the column; behind `FORUM_OPEN_BESIDE_ENABLED`. Background in the [design notes](open_beside_design_notes.md).
