@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Quill: portable forum client. Python 3 standard library, curl and GPG; no packages."""
-QUILL_VERSION = "2026-11-16"
+QUILL_VERSION = "2026-11-18"
 FRM_VERSION = QUILL_VERSION  # old name, kept for scripts that read it
 
 import argparse
@@ -71,10 +71,12 @@ def site_url(value):
     return value.rstrip('/')
 
 
-def request(site, route, fields=None, timeout=60, files=None):
-    """One request. Never forward authored data via redirects. No curl config/cookies.
+def request(site, route, fields=None, timeout=60, files=None, cookie=None):
+    """One request. Never forward authored data via redirects. No curl config or cookie jar.
 
-    files maps a form field to (path, content type) and sends the request as multipart."""
+    files maps a form field to (path, content type) and sends the request as multipart.
+    cookie is a 'name=value' session cookie held in memory for this run (see sign_in);
+    the returned headers carry every Set-Cookie value under 'set-cookies'."""
     if not shutil.which('curl'):
         raise ClientError('curl is required. Install it using your operating system tools.')
     TRACE['route'] = route.split('?', 1)[0]
@@ -84,6 +86,8 @@ def request(site, route, fields=None, timeout=60, files=None):
         command = ['curl', '--disable', '--silent', '--show-error', '--max-time', str(timeout),
                    '--proto', '=http,https', '--output', str(body), '--dump-header', str(headers),
                    '--write-out', '%{http_code}', '--user-agent', USER_AGENT]
+        if cookie:
+            command += ['--header', 'Cookie: ' + header(cookie)]
         data = None
         if files:
             # Field values go through files so curl never reads @ or < at the start of authored text.
@@ -105,10 +109,14 @@ def request(site, route, fields=None, timeout=60, files=None):
         except (ValueError, UnicodeError):
             raise ClientError('Malformed response; keep any saved operation and check the instance URL.')
         values = {}
+        cookies = []
         for line in headers.read_text(encoding='iso-8859-1').splitlines():
             if ':' in line:
                 key, value = line.split(':', 1)
                 values[key.lower()] = value.strip()
+                if key.lower() == 'set-cookie':
+                    cookies.append(value.strip())
+        values['set-cookies'] = cookies
         notice = values.get('x-quill-update')
         if notice and notice not in NOTICES:
             NOTICES.add(notice)
@@ -220,9 +228,50 @@ def sign(operation, key, source, target):
     gpg_run(key['Home'], arguments)
 
 
-def api(site, route, fields, args, operation=None, files=None):
+SESSION_COOKIES = ('__Host-v3_session', 'v3_session')
+
+
+def saved_key(args, site):
+    """The key this client already posts with; never generates one (approving needs an approved key)."""
+    if getattr(args, 'signing_key', None):
+        directory = state_directory(args, site)
+        directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+        return identity(args, directory)
+    file = state_directory(args, site) / 'identity.txt'
+    if not file.exists():
+        raise ClientError('No key for this site yet. Post once with this state directory, or pass --signing-key FINGERPRINT.')
+    return load_meta(file)
+
+
+def sign_in(site, key, timeout=60):
+    """Sign the server's challenge and return the session cookie ('name=value') for this run only.
+
+    The cookie is never written to disk; each run signs in again."""
+    status, text, _ = request(site, '/api/auth_challenge', timeout=timeout)
+    values = dict(line.split('=', 1) for line in text.splitlines() if '=' in line)
+    if status != 200 or not values.get('challenge'):
+        raise ClientError('HTTP %s: %s' % (status, values.get('error') or 'no sign-in challenge'))
+    identity_id = 'openpgp:' + key['Fingerprint'].lower()
+    with tempfile.TemporaryDirectory(prefix='quill-signin-') as directory:
+        folder = Path(directory)
+        (folder / 'challenge.txt').write_bytes(values['challenge'].encode('ascii'))
+        sign(folder, key, 'challenge', 'challenge-signature')
+        signature = (folder / 'challenge-signature.txt').read_text(encoding='ascii')
+    status, text, headers = request(site, '/api/authenticate_identity', {
+        'challenge': values['challenge'], 'identity_id': identity_id, 'detached_signature': signature}, timeout)
+    result = dict(line.split('=', 1) for line in text.splitlines() if '=' in line)
+    if status != 200 or result.get('status') != 'ok':
+        raise ClientError('Sign-in failed (HTTP %s): %s' % (status, result.get('error') or 'unexpected response'))
+    for value in headers.get('set-cookies', []):
+        pair = value.split(';', 1)[0].strip()
+        if pair.split('=', 1)[0] in SESSION_COOKIES and '=' in pair:
+            return {'cookie': pair, 'identity_id': identity_id, 'approved': result.get('approved') == '1'}
+    raise ClientError('Signed in, but the server set no session cookie.')
+
+
+def api(site, route, fields, args, operation=None, files=None, cookie=None):
     for attempt in range(args.retries + 1):
-        status, text, headers = request(site, route, fields, args.timeout, files)
+        status, text, headers = request(site, route, fields, args.timeout, files, cookie)
         try:
             result = json.loads(text)
         except ValueError:
@@ -851,6 +900,95 @@ def _report_trouble(args, site, error):
         print('Trouble-report: sent ' + site + '/threads/' + thread_id + ' (post ' + post_id + ')', file=sys.stderr)
 
 
+def headers_of(text):
+    """Key: value lines before the first blank line."""
+    return dict(line.split(': ', 1) for line in text.split('\n\n', 1)[0].splitlines() if ': ' in line)
+
+
+def read_profile(site, slug, timeout):
+    status, text, _ = request(site, '/api/get_profile?' + urlencode({'profile_slug': slug}), timeout=timeout)
+    if status == 404:
+        return None
+    if status != 200 or 'Profile-Slug: ' not in text:
+        raise response_error(status, text)
+    return headers_of(text)
+
+
+def approval_target(site, target, timeout):
+    """A profile slug, an identity ID or a post ID, resolved to the slug of the key to approve."""
+    if re.fullmatch(r'openpgp-[0-9a-f]{40}', target):
+        return target
+    if re.fullmatch(r'openpgp:[0-9a-f]{40}', target):
+        return target.replace(':', '-', 1)
+    text = read_post(site, target, timeout)
+    if text is None:
+        raise ClientError('No post or key called ' + target + '. Give a profile slug (openpgp-...), an identity ID or a post ID.')
+    identity_id = headers_of(text).get('Author-Identity-ID', '')
+    if not identity_id:
+        raise ClientError('Post ' + target + ' is not signed, so it names no key to approve. (Guest posts join the shared guest account; see PF-20261111-F49.)')
+    print('Post: ' + target + ' by ' + headers_of(text).get('Author', '?') + ' (' + identity_id + ')')
+    return identity_id.replace(':', '-', 1)
+
+
+def list_pending(args, site):
+    key = saved_key(args, site)
+    session = sign_in(site, key, args.timeout)
+    if not session['approved']:
+        raise ClientError('Your key (' + session['identity_id'] + ') is not approved here, so it cannot list pending keys.')
+    status, text, _ = request(site, '/api/pending_keys', timeout=args.timeout, cookie=session['cookie'])
+    if status != 200:
+        raise ClientError('HTTP %s: %s' % (status, text.strip().split('=', 1)[-1] or 'pending keys unavailable'))
+    print(text, end='')
+    return 0
+
+
+def approve(args, site):
+    """Approve one key as this client's key. Safe to rerun: an approved key reports success."""
+    slug = approval_target(site, args.target, args.timeout)
+    target_id = 'openpgp:' + slug[len('openpgp-'):]
+    profile = read_profile(site, slug, args.timeout)
+    if profile is None:
+        raise ClientError('No key ' + target_id + ' on this site.')
+    print('Key: ' + target_id + ' (' + profile.get('Username', '') + ')')
+    if profile.get('Approved') == 'yes':
+        print('Status: already approved')
+        return 0
+    key = saved_key(args, site)
+    mine = 'openpgp:' + key['Fingerprint'].lower()
+    if mine == target_id:
+        raise ClientError('A key cannot approve itself.')
+    session = sign_in(site, key, args.timeout)
+    if not session['approved']:
+        raise ClientError('Your key (' + mine + ') is not approved here, so it cannot approve others.')
+    try:
+        prepared = api(site, '/api/prepare_approval', {'profile_slug': slug}, args, cookie=session['cookie'])
+    except ClientError as error:
+        if 'already approved' in str(error):
+            print('Status: already approved')
+            return 0
+        raise
+    review = prepared.get('approval_review') or {}
+    if prepared.get('author_identity_id', mine) != mine or review.get('target_identity_id') != target_id:
+        raise ClientError('The prepared approval names a different key; nothing was signed.')
+    if review.get('label'):
+        print('Review: ' + review['label'] + '. ' + review.get('consequence', ''))
+    with tempfile.TemporaryDirectory(prefix='quill-approve-') as directory:
+        folder = Path(directory)
+        (folder / 'record.txt').write_bytes(prepared['canonical_record'].encode('utf-8'))
+        sign(folder, key, 'record', 'signature')
+        signature = (folder / 'signature.txt').read_text(encoding='ascii')
+    api(site, '/api/create_prepared_approval', {
+        'prepare_token': prepared['prepare_token'], 'post_id': prepared['post_id'], 'record_path': prepared['record_path'],
+        'author_identity_id': mine, 'canonical_record': prepared['canonical_record'], 'detached_signature': signature,
+    }, args, cookie=session['cookie'])
+    after = read_profile(site, slug, args.timeout) or {}
+    if after.get('Approved') != 'yes':
+        raise ClientError('The approval was sent but the profile does not show it yet. Rerun this command to check; it is safe.')
+    print('Status: approved')
+    print('Approval: ' + site + '/posts/' + prepared['post_id'])
+    return 0
+
+
 def write_post(args, site):
     operation = Path(args.resume).expanduser().resolve() if args.resume else None
     state = state_directory(args, site)
@@ -914,6 +1052,13 @@ def parser():
         q.add_argument('--gpg-home', help='Keyring for --signing-key; otherwise GNUPGHOME/default GPG home')
         q.add_argument('--report-thread', default=setting('REPORT_THREAD'), help='Thread for automatic trouble reports (default: QUILL_REPORT_THREAD, then FRM_REPORT_THREAD); reports are printed and carry no draft, key or path')
         q.add_argument('--no-report', action='store_true', help='Never post trouble reports')
+    for name in ('pending', 'approve'):
+        q = sub.add_parser(name, help='List keys waiting for approval (approved key; signs in for this run only)' if name == 'pending'
+                           else 'Approve a waiting key, given its profile slug, identity ID or a signed post of its. Needs an approved key; safe to rerun')
+        if name == 'approve':
+            q.add_argument('target', metavar='TARGET')
+        q.add_argument('--signing-key', help='Approve with one existing primary secret key instead of the one this state directory posts with')
+        q.add_argument('--gpg-home', help='Keyring for --signing-key; otherwise GNUPGHOME/default GPG home')
     return p
 
 
@@ -941,6 +1086,10 @@ def main():
             result = write_post(args, site)
             report_trouble(args, site)
             return result
+        if args.command == 'pending':
+            return list_pending(args, site)
+        if args.command == 'approve':
+            return approve(args, site)
         if args.command == 'index':
             status, text, _ = request(site, '/api/list_index', timeout=args.timeout)
             if status != 200:

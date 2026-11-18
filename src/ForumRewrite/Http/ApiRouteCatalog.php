@@ -75,6 +75,7 @@ final class ApiRouteCatalog
             ['POST', '/api/prepare_key_retirement', 'signed', 'json', 'Review permanent retirement of target_identity_id by actor_identity_id.'],
             ['POST', '/api/finalize_key_retirement', 'signed', 'json', 'Accept reviewed retirement with prepare_token, canonical_record and detached_signature.'],
             ['GET', '/api/key_retirement_status', 'public', 'json', 'Check accepted retirement for target_identity_id.'],
+            ['GET', '/api/pending_keys', 'member', 'text', 'Keys waiting for approval, as Key: value blocks; needs a signed-in approved session.'],
             ['POST', '/api/prepare_approval', 'signed', 'json', 'Prepare a signed approval of profile_slug.'],
             ['POST', '/api/create_prepared_approval', 'signed', 'json', 'Publish a prepared approval.'],
             ['POST', '/api/prepare_invitation', 'member', 'json', 'Prepare an invitation to sign.'],
