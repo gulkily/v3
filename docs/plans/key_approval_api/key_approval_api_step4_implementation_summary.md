@@ -87,3 +87,35 @@ Branch: `feat/key-approval-api`. Planning commit: `520141a`.
 - Estimate details: original scope as Step 3; unchanged.
 
 *— Claude · 2026-11-18 UTC · Model: Claude Opus 5.5*
+
+## Stage 5 - Docs and end-to-end
+
+**Original estimate: 0.10**
+**Retrospective stage work: 0.10**
+
+- Changes:
+  - `docs/reference/agent_api.md`: new "Approving keys" section with the Quill commands, the same six steps over the raw API, and the guest-account limit (PF-20261111-F49).
+  - `llms.txt` (`LlmsTxtRenderer`): new "Approving keys" section linking to it; the old line "Members-only authentication/session automation is not provided by Quill" now says Quill signs in only for `pending` and `approve`.
+  - Quill's `pending` and `approve` help text (Stage 4).
+- Verification:
+  - End-to-end: the Stage 4 test runs exactly the documented commands against a real local instance (two keys sharing one username, approve by post ID, rerun, refusals, approve by slug, empty list). It passed.
+  - `./v3 test --smoke QuillClientTest AgentApiWorkedExampleTest ApiRouteCatalogTest LlmsTxtRendererTest`: 509 passed, 0 failed. `python3 tests/quill_client_test.py`: 38 passed. Full suite not run; the maintainer runs it.
+  - `git diff --check` against `origin/main`: clean.
+  - Final diff review against the implementation standards: 14 files. Reuse holds (one pending query; existing approval routes and signing). No new dependency, record format or flag. The only server read change besides the new route is one extra selected column in `pendingDirectoryProfiles`.
+  - Concepts: Approval acceptance, Key retirement and Replaced key read unchanged; no inventory update needed.
+  - **Pending:** after deploy, `quill.py pending` on zenmemes.com compared with `/users/pending/`. zenmemes.com doesn't have the route until Ilya deploys.
+- Notes:
+  - After merge and deploy, the #specialoffer scheduled task's prompt should switch to `quill.py approve <post_id>`; that prompt lives outside the repo.
+
+*— Claude · 2026-11-18 UTC · Model: Claude Opus 5.5*
+
+## Cycle retrospective
+
+- Projected total: 0.55 (Step 3, reaffirmed at Step 4 entry).
+- Retrospective scope assessment: **0.50**. Delivered scope was slightly smaller than planned (`get_thread` unchanged), and the sign-in risk resolved on the first try against production.
+- Planned stages: 5; completed: 5, each with its own commit.
+- Omissions: `Author-Identity-ID` on `get_thread` lines (format reason in Stage 2); post-deploy check pending.
+- Maintainer comfortable-fit judgment: pending.
+- Ledger: [v3/key_approval_api](../effort_ledger/key_approval_api.md).
+
+*— Claude · 2026-11-18 UTC · Model: Claude Opus 5.5*
