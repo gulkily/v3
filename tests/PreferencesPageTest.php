@@ -11,6 +11,7 @@ final class PreferencesPageTest
 putenv('FORUM_THREAD_DENSITY_TOGGLE_ENABLED=1');
 putenv('FORUM_READING_MARGINS_ENABLED=1');
 putenv('FORUM_DRAGGABLE_WINDOWS_ENABLED=1');
+putenv('FORUM_OPEN_BESIDE_ENABLED=1');
 putenv('FORUM_USAGE_REPORTS_ENABLED=1');
 $on = page($application(), 'GET', '/tools/preferences/');
 expect(http_response_code() === 200, 'status ' . var_export(http_response_code(), true));
@@ -19,7 +20,7 @@ expect(str_contains($on, '/assets/preferences.') && str_contains($on, '/assets/a
 foreach (ForumRewrite\View\ThemeRegistry::permitted(ForumRewrite\SiteProfileRegistry::active()['permittedThemes'], new \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator()) as $theme) {
     expect(str_contains($on, '<option value="' . $theme['name'] . '">'), 'theme option ' . $theme['name']);
 }
-foreach (['id="preference-thread-view"', 'id="preference-window-controls"', 'data-preference-reset="reading-margins"', 'data-preference-reset="table-size"', 'data-preference-reset="gallery-size"',
+foreach (['id="preference-thread-view"', 'id="preference-window-controls"', 'id="preference-open-beside"', 'data-preference-reset="reading-margins"', 'data-preference-reset="table-size"', 'data-preference-reset="gallery-size"',
     'data-preference-reset="phone-tabs"', 'data-preference-reset="page-themes"', 'data-preference-reset="welcome-note"',
     'href="/tools/usage-log/"', 'data-preference-reset="all"', 'window.forumPreferences'] as $hook) {
     expect(str_contains($on, $hook), 'missing ' . $hook);
@@ -39,10 +40,11 @@ PHP);
 putenv('FORUM_THREAD_DENSITY_TOGGLE_ENABLED=0');
 putenv('FORUM_READING_MARGINS_ENABLED=0');
 putenv('FORUM_DRAGGABLE_WINDOWS_ENABLED=0');
+putenv('FORUM_OPEN_BESIDE_ENABLED=0');
 putenv('FORUM_USAGE_REPORTS_ENABLED=0');
 $off = page($application(), 'GET', '/tools/preferences');
 expect(str_contains($off, '<h1>Preferences</h1>'), 'no-slash route');
-foreach (['id="preference-thread-view"', 'id="preference-window-controls"', 'data-preference-reset="reading-margins"', 'href="/tools/usage-log/"'] as $hook) {
+foreach (['id="preference-thread-view"', 'id="preference-window-controls"', 'id="preference-open-beside"', 'data-preference-reset="reading-margins"', 'href="/tools/usage-log/"'] as $hook) {
     expect(!str_contains($off, $hook), 'flag off but shown: ' . $hook);
 }
 $tools = page($application(), 'GET', '/tools/');

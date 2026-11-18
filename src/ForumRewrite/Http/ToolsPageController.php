@@ -144,6 +144,7 @@ final class ToolsPageController
                 'threadDensityEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED),
                 'readingMarginsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::READING_MARGINS_ENABLED),
                 'draggableWindowsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::DRAGGABLE_WINDOWS_ENABLED),
+                'openBesideEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::OPEN_BESIDE_ENABLED),
                 'usageLogEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED),
                 'toolNavOptions' => ToolsPageSupport::navOptions('preferences'),
             ],

@@ -72,7 +72,7 @@ Request: add the ruler to listing pages too.
 - READING_MARGINS_PAGE_TEMPLATES now covers board.php (/), board_list.php (/threads/),
   board_search.php (/search), tag.php (/tags/<tag>/) and recent.php (/recent/) besides
   thread.php. The saved choice is shared, so one setting applies to threads and lists.
-- Not included: gallery.php (its justified rows are laid out for the normal width), tag
+- Not included: gallery.php (its justified rows are laid out for the normal width; added 2026-11-18), tag
   index, profiles, tools and other pages.
 Verification: ./v3 test --smoke
 LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnLayoutPagesWhenFlagEnabled
@@ -120,3 +120,17 @@ node tests/browser/reading_margins.mjs now loads 13 pages in all 17 themes, plus
 minimum check.
 Not checked: pages that need a signed-in member (Unread and Messages were seen only in their
 signed-out state), Safari, real devices.
+
+Follow-up (2026-11-18): gallery
+Request: "please add margin support to gallery view"
+(https://zenmemes.com/threads/thread-20261117215425-c1f4cc8b). One-shot record:
+[gallery_reading_margins](gallery_reading_margins/gallery_reading_margins_one_shot.md).
+- READING_MARGINS_EXCLUDED_PAGE_TEMPLATES is now only redirect.php; /gallery/ shows the ruler.
+  The justified rows refill any width (wrapping flex row, tiles with min-width: 0).
+- gallery.php's section is a size container. Below 36rem the gallery takes its phone layout:
+  7rem rows in the flex themes, two columns in Midnight and Word97.
+Verification: ./v3 test --smoke GalleryPageTest
+LocalAppSmokeTest::testReadingMarginsAreHiddenByDefaultAndShownOnLayoutPagesWhenFlagEnabled
+(481 passed); full suite not run. Scratch browser check at 1280px in Gloss, Light, Midnight,
+Word97 and Bubblegum, normal column and the narrowest (20rem): ruler present, no sideways
+scroll, every tile inside the column; screenshots reviewed.
