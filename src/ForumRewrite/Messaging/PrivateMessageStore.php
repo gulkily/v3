@@ -292,6 +292,39 @@ final class PrivateMessageStore
     public const EXPORT_PAGE_SIZE = 25;
 
     /**
+     * Stores a pulled envelope under its original ID without ever replacing a local one.
+     * @param array<string, mixed> $row one message from exportPage()
+     * @return 'added'|'existing'|'mismatch'
+     */
+    public function importEnvelope(array $row): string
+    {
+        $fields = ['message_id', 'created_at', 'sender_username_token', 'recipient_username_token', 'sender_identity_id', 'encrypted_envelope'];
+        $attempt = [];
+        foreach ($fields as $field) {
+            if (!is_string($row[$field] ?? null) || $row[$field] === '') throw new InvalidArgumentException('Pulled message is missing ' . $field . '.');
+            $attempt[$field] = $row[$field];
+        }
+        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/D', $attempt['message_id']) !== 1) throw new InvalidArgumentException('Pulled message ID is invalid.');
+        $stmt = $this->pdo->prepare('INSERT INTO private_messages (' . implode(', ', $fields) . ')
+            VALUES (:' . implode(', :', $fields) . ') ON CONFLICT(message_id) DO NOTHING');
+        $stmt->execute($attempt);
+        if ($stmt->rowCount() === 1) return 'added';
+        $existing = $this->pdo->prepare('SELECT ' . implode(', ', $fields) . ' FROM private_messages WHERE message_id = ?');
+        $existing->execute([$attempt['message_id']]);
+        $local = $existing->fetch();
+        foreach ($fields as $field) {
+            if (!is_array($local) || !hash_equals((string) $local[$field], $attempt[$field])) return 'mismatch';
+        }
+        return 'existing';
+    }
+
+    /** Copies "already read" for a pulled received message; boundaries only move forward. */
+    public function importReadMark(string $viewer, string $sender, string $messageId): void
+    {
+        $this->readState->mark($viewer, $sender, $messageId);
+    }
+
+    /**
      * The account's own sent and received envelopes, oldest first, after a readable
      * (created_at, message_id) position. A received message is read when it sits at or
      * below the tracking baseline or the viewer's seen boundary for its sender.

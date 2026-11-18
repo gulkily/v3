@@ -63,3 +63,21 @@ Branch `feature/private_message_local_pull` from `origin/main` `31e16b06`, which
 - Notes:
   - The planned browser check against a second real instance is moved to Stage 5, which needs a second instance anyway. That check will cover registration too. A recording stand-in source covers relay behavior here.
   - Retrospective stage-work assessment: **0.20**.
+
+## Stage 4 - Pull messages, transfers and read state
+
+**Original estimate: 0.20** (unchanged; scope note from Stage 2 applies)
+
+- Changes:
+  - `PrivateMessageStore::importEnvelope()` inserts under the original ID and returns added, existing or mismatch. It never replaces a local row. `importReadMark()` moves the local seen boundary forward through the existing `PrivateMessageReadState::mark()`.
+  - `PrivateMessageHistorySyncStore::importTransfer()` inserts under the original transfer ID and returns added, existing or mismatch. Local transfers and items win.
+  - New `ForumRewrite\Support\LocalMessagePull` pulls up to 10 export pages per local request. It saves progress in `state/private/local_pull_progress.json` (0600) and deletes the file once the pass ends. It refuses a sign-in that comes back as a different account.
+  - `/local/remote` gains `challenge` and `pull`. A pull first checks that this clone has approved the key. It then signs in with the browser's fresh signature, checks approval on the source, and pulls. `Application` passes in the local stores and the progress path.
+  - The page gains **Pull my messages from zenmemes.com**. It repeats challenge, sign and pull until the pass ends, with a running summary: new, already here, kept local, history keys.
+- Verification:
+  - `./v3 test LocalMessagePullTest PrivateMessageExportTest LocalDevelopmentImportTest`: 12 run, 12 passed. The new `LocalMessagePullTest` runs the real export service as the source. It covers original IDs, one transfer spanning two pages arriving once under its original ID, another member's mail staying out, a clean repeat, resume after a one-page interruption, a local same-ID copy being kept and reported, read state, and refusal of a different account. The relay test adds "pull before this clone knows the approval", which stops before any sign-in reaches the source.
+  - `python3 tests/browser/local_development.py`: passed.
+- Notes:
+  - **New understanding:** each pass deletes its progress file at the end, so the next press rescans the whole mailbox. That is how transfers that arrive later for old messages get picked up, at the cost of re-reading envelopes that are already here. A personal mailbox stays small enough for that, and the export pages stay bounded.
+  - The planned two-instance browser check, including pulling twice, runs with Stage 5's end-to-end check.
+  - Retrospective stage-work assessment: **0.20**.

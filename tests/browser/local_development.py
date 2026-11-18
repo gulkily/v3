@@ -28,6 +28,7 @@ RUNTIME = [
     'templates/partials/import_run.php', 'public/assets/import_control.js',
     'public/assets/local_message_pull.js',
     'src/ForumRewrite/Support/LocalDevelopmentRemote.php', 'src/ForumRewrite/Http/LocalDevelopmentRemoteController.php',
+    'src/ForumRewrite/Support/LocalMessagePull.php',
 ]
 
 

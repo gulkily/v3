@@ -108,6 +108,11 @@ if ($sameRun && $result['seconds'] !== null) {
       </li>
       <li data-local-pull-step="approve"><span data-local-pull-step-text></span></li>
       <li data-local-pull-step="import"><span data-local-pull-step-text></span></li>
+      <li data-local-pull-step="pull">
+        <span data-local-pull-step-text></span>
+        <div class="button-row"><button type="button" data-local-pull-start hidden>Pull my messages from <span data-local-pull-host></span></button></div>
+        <p class="meta" data-local-pull-summary role="status" hidden></p>
+      </li>
     </ol>
   </article>
   <article class="card stack">

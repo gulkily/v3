@@ -199,7 +199,12 @@ final class Application
         $this->ensureReadModel();
 
         if ($path === '/local/remote' && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {
-            (new \ForumRewrite\Http\LocalDevelopmentRemoteController($this->routeServices(), $this->localDevelopmentImport()))->handle($method);
+            (new \ForumRewrite\Http\LocalDevelopmentRemoteController($this->routeServices(), $this->localDevelopmentImport(),
+                pullFactory: fn (): \ForumRewrite\Support\LocalMessagePull => new \ForumRewrite\Support\LocalMessagePull(
+                    $this->privateMessageStore(),
+                    new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore(\ForumRewrite\Messaging\PrivateMessageHistorySyncDatabaseConfig::open($this->projectRoot, PrivateConfig::load($this->projectRoot))),
+                    dirname(PrivateMessageDatabaseConfig::path($this->projectRoot, PrivateConfig::load($this->projectRoot))) . '/local_pull_progress.json',
+                )))->handle($method);
             return;
         }
         if (\ForumRewrite\Support\LocalDevelopmentImport::isEntry($requestUri) && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {

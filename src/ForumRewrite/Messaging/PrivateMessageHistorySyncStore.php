@@ -179,6 +179,39 @@ final class PrivateMessageHistorySyncStore
         } catch (\Throwable $e) { $this->pdo->rollBack();throw $e; }
     }
     /**
+     * Stores a pulled transfer under its original ID. Local transfers and items always win.
+     * @param array{transfer_id:string,source:string,target:string,ciphertext:string,items:list<array{message_id:string,digest:string}>} $transfer
+     * @return 'added'|'existing'|'mismatch'
+     */
+    public function importTransfer(string $account, array $transfer): string
+    {
+        foreach (['transfer_id', 'source', 'target', 'ciphertext'] as $field) {
+            if (!is_string($transfer[$field] ?? null) || $transfer[$field] === '') throw new \InvalidArgumentException('Pulled transfer is missing ' . $field . '.');
+        }
+        if (preg_match('/^[a-f0-9]{64}$/D', $transfer['transfer_id']) !== 1 || !is_array($transfer['items'] ?? null)) {
+            throw new \InvalidArgumentException('Pulled transfer is malformed.');
+        }
+        $this->pdo->beginTransaction();
+        try {
+            $q = $this->pdo->prepare('INSERT INTO history_sync_transfers (transfer_id, account, source, target, ciphertext) VALUES (?,?,?,?,?) ON CONFLICT(transfer_id) DO NOTHING');
+            $q->execute([$transfer['transfer_id'], $account, $transfer['source'], $transfer['target'], $transfer['ciphertext']]);
+            $outcome = $q->rowCount() === 1 ? 'added' : 'existing';
+            if ($outcome === 'existing') {
+                $q = $this->pdo->prepare('SELECT 1 FROM history_sync_transfers WHERE transfer_id=? AND account=? AND source=? AND target=? AND ciphertext=?');
+                $q->execute([$transfer['transfer_id'], $account, $transfer['source'], $transfer['target'], $transfer['ciphertext']]);
+                if ($q->fetchColumn() === false) { $this->pdo->rollBack(); return 'mismatch'; }
+            }
+            $q = $this->pdo->prepare('INSERT INTO history_sync_items (account, source, target, message_id, digest, transfer_id) VALUES (?,?,?,?,?,?) ON CONFLICT(account,source,target,message_id) DO NOTHING');
+            foreach ($transfer['items'] as $item) {
+                if (!is_string($item['message_id'] ?? null) || !is_string($item['digest'] ?? null)) throw new \InvalidArgumentException('Pulled transfer item is malformed.');
+                $q->execute([$account, $transfer['source'], $transfer['target'], $item['message_id'], $item['digest'], $transfer['transfer_id']]);
+            }
+            $this->pdo->commit();
+            return $outcome;
+        } catch (\Throwable $e) { if ($this->pdo->inTransaction()) $this->pdo->rollBack(); throw $e; }
+    }
+
+    /**
      * Transfers whose destination is this account, for the given messages. Each carries
      * only the items for those messages; a transfer spanning pages repeats on each page.
      *

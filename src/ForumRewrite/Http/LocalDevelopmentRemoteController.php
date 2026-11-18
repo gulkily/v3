@@ -24,6 +24,7 @@ final class LocalDevelopmentRemoteController
         private readonly LocalDevelopmentImport $import,
         private readonly ?\Closure $remoteFactory = null,
         private readonly ?\Closure $keyInspector = null,
+        private readonly ?\Closure $pullFactory = null,
     ) {}
 
     public function handle(string $method): void
@@ -43,6 +44,8 @@ final class LocalDevelopmentRemoteController
                 'prepare_identity' => $remote->prepareIdentity($this->field('public_key', 65536)),
                 'create_identity' => $remote->createIdentity($this->field('prepare_token', 4096),
                     $this->field('canonical_record', 65536), $this->field('detached_signature', 65536)),
+                'challenge' => ['challenge' => $remote->challenge()],
+                'pull' => $this->pull($remote),
                 default => throw new InvalidArgumentException('Unknown action.'),
             };
             $this->send(['status' => 'ok'] + $result + ['source' => $remote->source()], 200);
@@ -69,6 +72,22 @@ final class LocalDevelopmentRemoteController
             'locally_known' => $local !== null,
             'locally_approved' => $local !== null && (int) ($local['is_approved'] ?? 0) === 1,
         ];
+    }
+
+    /** Signs in with the browser's fresh signature, then pulls a bounded number of pages. */
+    private function pull(LocalDevelopmentRemote $remote): array
+    {
+        $identityId = strtolower($this->field('identity_id', 128));
+        $local = ProfileRepository::byIdentityId($this->routes->pdo(), $identityId);
+        if ($local === null || (int) ($local['is_approved'] ?? 0) !== 1) {
+            throw new InvalidArgumentException('This clone does not know this key is approved yet. Run Import above, then pull again.');
+        }
+        if ($this->pullFactory === null) throw new \RuntimeException('Message pull is unavailable on this server.');
+        $signedIn = $remote->signIn($identityId, $this->field('challenge', 256), $this->field('signature', 65536));
+        if (!$signedIn['approved']) {
+            throw new InvalidArgumentException('This key is not approved on ' . $remote->source() . ' yet. Approve it there, then pull again.');
+        }
+        return ($this->pullFactory)()->run($remote, (string) $local['username_token']);
     }
 
     private function remote(string $source): LocalDevelopmentRemote

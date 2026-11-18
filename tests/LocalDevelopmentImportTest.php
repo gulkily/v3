@@ -276,6 +276,11 @@ final class LocalDevelopmentImportTest
         assertSame(['registered' => true, 'approved' => false, 'locally_known' => false, 'locally_approved' => false],
             array_intersect_key($state, array_flip(['registered', 'approved', 'locally_known', 'locally_approved'])));
         assertStringContains('/tools/user-access/profiles/openpgp-', $state['source_key_url']);
+
+        [$code, $body] = $this->request($server->url, '/local/remote', $base + ['action' => 'pull', 'identity_id' => $state['identity_id'], 'challenge' => 'c', 'signature' => 's']);
+        assertSame(400, $code, $body);
+        assertStringContains('Run Import above', json_decode($body, true)['error']);
+        assertStringNotContains('authenticate_identity', file_get_contents($w->root . '/relay-requests.log'));
     }
 
     public function testRemoteRefusesUnlistedPathsAndCarriesSessionCookies(): void

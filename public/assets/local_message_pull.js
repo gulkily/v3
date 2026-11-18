@@ -5,6 +5,9 @@
   var statusNode = root.querySelector('[data-local-pull-status]');
   var steps = root.querySelector('[data-local-pull-steps]');
   var registerButton = root.querySelector('[data-local-pull-register]');
+  var pullButton = root.querySelector('[data-local-pull-start]');
+  var summaryNode = root.querySelector('[data-local-pull-summary]');
+  var currentState = null;
   var host = '';
   try { host = new URL(root.dataset.source).host; } catch (error) { host = root.dataset.source; }
   root.querySelectorAll('[data-local-pull-host]').forEach(function (node) { node.textContent = host; });
@@ -72,7 +75,33 @@
     }
     stepText('import', state.locally_approved ? 'This clone knows the approval.'
       : 'After approving, run Import above so this clone learns the approval.', state.locally_approved);
-    setStatus(state.approved && state.locally_approved ? 'This key is ready.' : 'Finish the steps below, then reload this page.');
+    var ready = state.approved && state.locally_approved;
+    stepText('pull', ready ? 'Pull your messages. Pull again any time to fetch new ones.'
+      : 'Pull your messages once the steps above are done.', false);
+    pullButton.hidden = !ready;
+    setStatus(ready ? 'This key is ready.' : 'Finish the steps below, then reload this page.');
+  }
+
+  function summaryText(total) {
+    var parts = [total.added + ' new', total.existing + ' already here'];
+    if (total.mismatched.length) parts.push(total.mismatched.length + ' kept local because they differ (' + total.mismatched.slice(0, 3).join(', ') + ')');
+    parts.push(total.transfers_added + ' history keys');
+    if (total.transfers_mismatched) parts.push(total.transfers_mismatched + ' history keys kept local');
+    return parts.join(' · ');
+  }
+
+  function pullOnce(total) {
+    return relay({ action: 'challenge' }).then(function (challenge) {
+      return signText(String(challenge.challenge)).then(function (signature) {
+        return relay({ action: 'pull', identity_id: currentState.identity_id, challenge: String(challenge.challenge), signature: signature });
+      });
+    }).then(function (result) {
+      ['added', 'existing', 'transfers_added', 'transfers_mismatched', 'read_marked'].forEach(function (key) { total[key] += result[key] || 0; });
+      total.mismatched = total.mismatched.concat(result.mismatched || []);
+      summaryNode.hidden = false;
+      summaryNode.textContent = (result.done ? 'Pulled: ' : 'Pulling… ') + summaryText(total);
+      return result.done ? total : pullOnce(total);
+    });
   }
 
   function refresh() {
@@ -82,6 +111,7 @@
       return Promise.resolve(null);
     }
     return relay({ action: 'key_status', public_key: publicKey }).then(function (state) {
+      currentState = state;
       render(state);
       return state;
     }).catch(function (error) { setStatus(error.message, 'error'); });
@@ -100,6 +130,18 @@
     }).then(refresh).catch(function (error) {
       setStatus(error.message + ' Press Register to retry.', 'error');
     }).then(function () { registerButton.removeAttribute('aria-disabled'); });
+  });
+
+  pullButton.addEventListener('click', function () {
+    if (pullButton.getAttribute('aria-disabled') === 'true' || !currentState) return;
+    pullButton.setAttribute('aria-disabled', 'true');
+    setStatus('Pulling your messages from ' + host + '… Keep this page open.');
+    pullOnce({ added: 0, existing: 0, mismatched: [], transfers_added: 0, transfers_mismatched: 0, read_marked: 0 }).then(function () {
+      setStatus('Pull finished. Open Messages to read them.');
+      root.dispatchEvent(new CustomEvent('local-pull:done'));
+    }).catch(function (error) {
+      setStatus(error.message + ' Press Pull to resume.', 'error');
+    }).then(function () { pullButton.removeAttribute('aria-disabled'); });
   });
 
   refresh();
