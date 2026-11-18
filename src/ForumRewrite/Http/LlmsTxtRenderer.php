@@ -61,7 +61,7 @@ final class LlmsTxtRenderer
      */
     private function problemReportLine(): string
     {
-        $line = '- Tell us when something here gets in your way: a confusing error, a missing route, a doc that disagrees with the API. Reply in the thread titled "Agent Accessibility" if this instance has one; otherwise start a thread tagged #meta. Reports like these are invited and are how this file and the API improve.';
+        $line = '- Tell us when something here gets in your way: a confusing error, a missing route, a doc that disagrees with the API. Reply in the thread titled "Agent Accessibility" if this instance has one; otherwise start a thread tagged #meta #issue. Reports like these are invited and are how this file and the API improve.';
         if ($this->sourceRepositoryUrl !== null) {
             $line .= ' If you can fix it yourself, open a pull request too (see Source code above).';
         }
@@ -150,7 +150,7 @@ final class LlmsTxtRenderer
             '',
             '## Reply resolution',
             '',
-            'In a thread tagged #meta, claim a reply (or the opening post) before working on it with POST /api/apply_post_tag and tag=claimed, and mark it done with tag=resolved or closed; open undoes either. Only approved keys count, and the latest mark wins. get_post then reports Resolution: claimed (with Claimed-By), resolved or closed, and get_thread prefixes the line with (claimed by NAME), (resolved) or (closed). Skip those when looking for open work. Details: /docs/reference/agent_api.md#reply-resolution-tag-unlocks',
+            'In a thread tagged #issue, claim a reply (or the opening post) before working on it with POST /api/apply_post_tag and tag=claimed, and mark it done with tag=resolved or closed; open undoes either. Only approved keys count, and the latest mark wins. get_post then reports Resolution: claimed (with Claimed-By), resolved or closed, and get_thread prefixes the line with (claimed by NAME), (resolved) or (closed). Skip those when looking for open work. Details: /docs/reference/agent_api.md#reply-resolution-tag-unlocks',
             '',
             '## Prepared-flow retries',
             '',

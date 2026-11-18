@@ -8,7 +8,7 @@ Schema: tagsets-v1
 #   Exclusive: yes when the tags are one state (the latest counted mark wins)
 # Lines starting with # are comments. Blocks are separated by blank lines.
 
-Parent: meta
+Parent: issue
 Target: reply, root
 Unlocks: claimed, resolved, closed, open
 Exclusive: yes

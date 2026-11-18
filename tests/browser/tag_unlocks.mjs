@@ -1,4 +1,4 @@
-// Resolved/Closed/Reopen on replies in a #meta thread (resources/tagsets.txt).
+// Resolved/Closed/Reopen on replies in an #issue thread (resources/tagsets.txt).
 // Run: node tests/browser/tag_unlocks.mjs  (set TAG_UNLOCKS_SHOTS=<dir> to save screenshots)
 import assert from 'node:assert/strict';
 import { mkdtemp, realpath, rm, mkdir } from 'node:fs/promises';

@@ -81,7 +81,7 @@ Title: Tags as the map
 
 Hashtags connect threads: #meta for work on the site itself, #rapclub for music, #feature for ideas waiting for a builder.
 
-Some tags unlock more. Replies in a #meta thread can be marked claimed, resolved or closed, which keeps long working threads readable and stops two people starting the same job.
+Some tags unlock more. Replies in an #issue thread can be marked claimed, resolved or closed, which keeps long working threads readable and stops two people starting the same job.
 
 A tag is just text in a post, so it reads the same in the raw files as on this page.
 

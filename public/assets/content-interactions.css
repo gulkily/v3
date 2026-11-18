@@ -195,7 +195,7 @@
 .post-retraction-control .retraction-feedback,
 .post-retraction-control .retraction-details { flex-basis: 100%; min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; margin: 0; }
 
-/* Tag unlocks: resolved and closed replies in #meta threads fold to one line. */
+/* Tag unlocks: resolved and closed replies in #issue threads fold to one line. */
 /* The fold wraps the card's content, so its first line keeps the card's own spacing. */
 .post-card > .post-resolution:first-child > .post-resolution-summary + * {
   margin-top: 0;

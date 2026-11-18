@@ -9,22 +9,22 @@ use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\Write\LocalWriteService;
 
-/** Tags unlocked by a thread tag (resources/tagsets.txt): resolved/closed/open on #meta replies. */
+/** Tags unlocked by a thread tag (resources/tagsets.txt): resolved/closed/open on #issue replies. */
 final class TagUnlocksTest
 {
     private const IDENTITY = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
     private const APPROVED = self::IDENTITY;
 
-    public function testStateTagsApplyOnlyToRepliesInMetaThreads(): void
+    public function testStateTagsApplyOnlyToRepliesInIssueThreads(): void
     {
         $this->withWriter(function (LocalWriteService $writer, string $root): void {
             $result = $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'Resolved', 'author_identity_id' => self::APPROVED]);
             assertSame('yes', $result['wrote_record']);
             assertSame('resolved', $result['tag']);
 
-            // The opening post of a #meta thread takes the same tags (Target: reply, root).
+            // The opening post of an #issue thread takes the same tags (Target: reply, root).
             assertSame('yes', $writer->applyPostTag(['post_id' => 'root-001', 'tag' => 'closed', 'author_identity_id' => self::APPROVED])['wrote_record']);
-            foreach (['reply-rules' => 'posts in threads tagged #meta', 'thread-zenmemes-rules' => 'posts in threads tagged #meta'] as $postId => $message) {
+            foreach (['reply-rules' => 'posts in threads tagged #issue', 'thread-zenmemes-rules' => 'posts in threads tagged #issue'] as $postId => $message) {
                 $error = '';
                 try {
                     $writer->applyPostTag(['post_id' => $postId, 'tag' => 'closed', 'author_identity_id' => self::APPROVED]);
@@ -157,7 +157,7 @@ final class TagUnlocksTest
         });
     }
 
-    public function testThreadPageOffersStateButtonsOnlyOnMetaReplies(): void
+    public function testThreadPageOffersStateButtonsOnlyOnIssueReplies(): void
     {
         $this->withWriter(function (LocalWriteService $writer, string $root, string $database): void {
             $app = new Application(dirname(__DIR__), $root, $database, dirname($database, 2) . '/public');
@@ -224,7 +224,7 @@ final class TagUnlocksTest
             $app = new Application(dirname(__DIR__), $root, $database, dirname($database, 2) . '/public');
             $html = $this->render($app, '/tools/tag-unlocks/');
             assertStringContains('<h1>Tag Unlocks</h1>', $html);
-            assertStringContains('href="/tags/meta">#meta</a>', $html);
+            assertStringContains('href="/tags/issue">#issue</a>', $html);
             foreach (['claimed', 'resolved', 'closed', 'open'] as $tag) {
                 assertStringContains('<span class="tag-unlocks-tag">' . $tag . '</span>', $html);
             }
@@ -292,8 +292,11 @@ final class TagUnlocksTest
         mkdir($artifacts, 0777, true);
         try {
             exec('cp -R ' . escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1') . ' ' . escapeshellarg($root));
+            // The fixture's root-001 is a #meta thread; marks need #issue (resources/tagsets.txt).
+            $rootPost = $root . '/records/posts/root-001.txt';
+            file_put_contents($rootPost, str_replace("Board-Tags: general meta\n", "Board-Tags: general meta issue\n", (string) file_get_contents($rootPost)));
             file_put_contents($root . '/records/posts/reply-rules.txt',
-                "Post-ID: reply-rules\nCreated-At: 2026-05-30T00:05:00Z\nBoard-Tags: general\nThread-ID: thread-zenmemes-rules\nParent-ID: thread-zenmemes-rules\n\nA reply outside #meta.\n");
+                "Post-ID: reply-rules\nCreated-At: 2026-05-30T00:05:00Z\nBoard-Tags: general\nThread-ID: thread-zenmemes-rules\nParent-ID: thread-zenmemes-rules\n\nA reply outside #issue.\n");
             if (!$approved) {
                 exec('rm -rf ' . escapeshellarg($root . '/records/approval-seeds'));
             }

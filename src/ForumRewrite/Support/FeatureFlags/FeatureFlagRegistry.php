@@ -346,7 +346,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::TAG_UNLOCKS_ENABLED,
                 'Tag unlocks',
-                'A thread tag listed in resources/tagsets.txt offers extra tags on its replies; on #meta threads, Resolved and Closed fold a reply to one line. Only approved keys change the state.',
+                'A thread tag listed in resources/tagsets.txt offers extra tags on its replies; on #issue threads, Resolved and Closed fold a reply to one line. Only approved keys change the state.',
                 true,
                 self::TAG_UNLOCKS_ENABLED,
                 siteMutable: true,
