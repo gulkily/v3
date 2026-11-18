@@ -2899,7 +2899,7 @@ PHP;
             assertStringNotContains('data-reading-margin-edge', $thread);
             // The ruler sits between the header and the column it moves.
             assertTrue(strpos($thread, 'data-role="reading-margins"') < strpos($thread, '<main class="main">'));
-            // Every page in the main layout gets the ruler, except the gallery.
+            // Every page in the main layout gets the ruler, the gallery included.
             foreach (['/', '/threads/?view=all', '/tags/bug/', '/recent/', '/search?q=hello', '/users/', '/unread',
                 '/messages/', '/about/', '/tools/', '/docs/', '/tools/bookmarklets'] as $rulerPath) {
                 $page = $this->render($application, $rulerPath);
@@ -2916,8 +2916,8 @@ PHP;
                 putenv('FORUM_IMAGE_GALLERY_ENABLED');
             }
             assertStringContains('<main class="main">', $gallery);
-            assertStringNotContains('data-role="reading-margins"', $gallery);
-            assertStringNotContains('reading_margins', $gallery);
+            assertStringContains('data-role="reading-margins"', $gallery);
+            assertFingerprintedAsset($gallery, 'reading_margins.js');
 
             $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/reading-margins.css');
             assertStringContains(':root[data-reading-margins] .main', $css);
