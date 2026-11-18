@@ -31,6 +31,8 @@ const playwright = await import(process.env.PLAYWRIGHT_MODULE || 'playwright-cor
 // the left, a prompt's title clicked on the Prompts page opens its thread in
 // the space beside the list. With a screenshot directory, every theme is shot
 // with a pane at 2048px and 1280px and without one on a phone.
+// In every theme the Beside toggle is filled and check-marked when on,
+// outlined when off, and its label is readable in both states.
 // Usage: node tests/browser/open_beside.mjs [screenshot-dir]
 // BROWSER=firefox runs it in Firefox (needs `npx playwright-core install firefox`).
 const project = resolve(new URL('../..', import.meta.url).pathname);
@@ -545,10 +547,59 @@ try {
     assert.equal(await sideways(), false);
     if (shots) await page.screenshot({ path: join(shots, `reported-${browserName}-glossdark-2048.png`) });
 
+    // --- The Beside toggle shows its state in every theme ---
+    // Off is an outlined pill on the page's background; on is filled, with a
+    // check mark, and its label must be readable against the fill.
+    const themes = await page.locator('[data-theme-option]').evaluateAll(all => [...new Set(all.map(node => node.value || node.getAttribute('data-theme-option')).filter(name => name && name !== 'auto'))]);
+    assert.ok(themes.length >= 8, `themes found: ${themes}`);
+    const toggleLook = () => toggle.evaluate(button => {
+      const rgb = value => { const probe = document.createElement('canvas').getContext('2d'); probe.fillStyle = value; probe.fillRect(0, 0, 1, 1); return Array.from(probe.getImageData(0, 0, 1, 1).data.slice(0, 3)); };
+      const luminance = ([r, g, b]) => [r, g, b].map(c => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }).reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0);
+      const label = button.querySelector('.reading-margins__beside-label');
+      // On, the fill is a layer under the label (button::before); off, it is the button's background.
+      const layer = getComputedStyle(button, '::before');
+      const fill = rgb(layer.content !== 'none' && layer.content !== 'normal' ? layer.backgroundColor : getComputedStyle(button).backgroundColor);
+      const ink = rgb(getComputedStyle(label).color);
+      const [light, dark] = [luminance(fill), luminance(ink)].sort((a, b) => b - a);
+      return { fill: fill.join(','), contrast: (light + 0.05) / (dark + 0.05), mark: getComputedStyle(label, '::before').content, pressed: button.getAttribute('aria-pressed') };
+    });
+    const toggleShots = [];
+    await page.setViewportSize({ width: 1280, height: 900 });
+    for (const theme of themes) {
+      await page.evaluate(name => window.forumSelectTheme(name), theme);
+      await page.goto(postBase + '/agent/');
+      if (await toggle.getAttribute('aria-pressed') !== 'true') await toggle.click();
+      await page.mouse.move(10, 400);
+      const onLook = await toggleLook();
+      if (shots) toggleShots.push([theme, 'on', await toggle.screenshot()]);
+      // Hovered, the button stays under the pointer (a theme's hover effect must not move it away).
+      await toggle.hover();
+      await page.waitForTimeout(150);
+      assert.equal(await toggle.evaluate(button => button.matches(':hover')), true, `${theme}: the toggle stays under the pointer`);
+      await toggle.click();
+      await page.mouse.move(10, 400);
+      const offLook = await toggleLook();
+      if (shots) toggleShots.push([theme, 'off', await toggle.screenshot()]);
+      assert.equal(onLook.pressed, 'true'); assert.equal(offLook.pressed, 'false');
+      assert.notEqual(onLook.fill, offLook.fill, `${theme}: on and off are filled differently`);
+      assert.ok(onLook.contrast >= 3, `${theme}: the pressed label is readable on its fill (${onLook.contrast.toFixed(2)}:1)`);
+      assert.ok(offLook.contrast >= 3, `${theme}: the unpressed label is readable (${offLook.contrast.toFixed(2)}:1)`);
+      assert.match(onLook.mark, /\u2713/, `${theme}: on shows a check mark`);
+      assert.ok(offLook.mark === 'none' || offLook.mark === 'normal' || offLook.mark === '""', `${theme}: off shows no mark (${offLook.mark})`);
+      await toggle.click();
+    }
+    if (shots) {
+      const { writeFile } = await import('node:fs/promises');
+      for (const [theme, state, image] of toggleShots) await writeFile(join(shots, `toggle-${theme}-${state}.png`), image);
+    }
+    // Turning the mode off closed the pane; open it again for the screenshots below.
+    await page.setViewportSize({ width: 2048, height: 1280 });
+    await page.goto(postBase + '/agent/');
+    await promptTitle.click();
+    await paneShows(promptThread);
+
     // --- Every theme, with a pane at 2048px and 1280px, and a phone ---
     if (shots) {
-      const themes = await page.locator('[data-theme-option]').evaluateAll(all => [...new Set(all.map(node => node.value || node.getAttribute('data-theme-option')).filter(name => name && name !== 'auto'))]);
-      assert.ok(themes.length >= 8, `themes found: ${themes}`);
       for (const theme of themes) {
         await page.evaluate(name => window.forumSelectTheme(name), theme);
         for (const [width, height] of [[2048, 1280], [1280, 900]]) {

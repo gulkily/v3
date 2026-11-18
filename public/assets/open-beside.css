@@ -6,12 +6,17 @@
    1.5rem keeps clear of a scrollbar. */
 .reading-margins .reading-margins__beside {
   position: absolute;
-  top: 50%;
+  /* Centred on the ruler by auto margins, not a transform: some themes move
+     their buttons with a transform on hover (Sticker), which would replace a
+     centring transform and throw the button out from under the pointer. */
+  top: 0;
+  bottom: 0;
   right: calc((100% - 100vw) / 2 + 1.5rem);
   width: auto;
+  height: max-content;
   min-width: 0;
   min-height: 0;
-  margin: 0;
+  margin: auto 0;
   padding: 0.1rem 0.6rem;
   border: 1.5px solid var(--ink-soft, var(--line, currentColor));
   border-radius: 999px;
@@ -23,7 +28,6 @@
   font-size: 0.75rem;
   line-height: 1.3;
   box-shadow: none;
-  transform: translateY(-50%);
   cursor: pointer;
 }
 
@@ -31,12 +35,36 @@
   border-color: var(--active-line, currentColor);
 }
 
-/* On: a heavy ring in the ruler's colour and a bold label. The colours are not
-   swapped, because some themes' ruler colour is their text colour too. */
+/* On: the off state's two colours swapped, plus a check mark so the state does
+   not rest on colour alone. Off is the page's ink on the page's background,
+   which every theme keeps readable, so the swap is readable too. The fill is
+   a layer of the button's own ink (currentColor) under the label, and the
+   label takes the background colour. The fill is a layer, not the button's
+   background, because themes set button backgrounds with selectors that
+   outrank this one (Sticker). Theme accents are not used: in Arena and
+   Sticker --active-line, --panel and --page-bg coincide in ways that left a
+   blank pill. open_beside.mjs checks the contrast in every theme. */
 .reading-margins .reading-margins__beside[aria-pressed="true"] {
-  border-color: var(--active-line, currentColor);
-  box-shadow: inset 0 0 0 1.5px var(--active-line, currentColor);
+  isolation: isolate;
+  overflow: hidden;
+  border-color: currentColor;
   font-weight: 700;
+}
+
+.reading-margins .reading-margins__beside[aria-pressed="true"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: currentColor;
+}
+
+.reading-margins .reading-margins__beside[aria-pressed="true"] .reading-margins__beside-label {
+  color: var(--page-bg, Canvas);
+}
+
+.reading-margins .reading-margins__beside[aria-pressed="true"] .reading-margins__beside-label::before {
+  content: "\2713\00a0";
 }
 
 .reading-margins .reading-margins__beside:focus-visible {
