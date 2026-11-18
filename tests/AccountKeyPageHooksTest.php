@@ -86,6 +86,9 @@ final class AccountKeyPageHooksTest
             ->renderPageTemplate('account_key.php', ['notice' => null, 'error' => null], 'Account', 'account');
         preg_match('/<button\b[^>]*data-action="rename-profile"[^>]*>/', $default, $button);
         assertStringContains(' hidden', $button[0]);
+        // A guest's first name reads "Choose a name"; the label is picked by CSS from the pre-paint hint.
+        assertStringContains('<span class="account-name-action--change">Change</span><span class="account-name-action--choose">Choose a name</span>', $default);
+        assertStringContains("window.location.hash !== '#choose-name'", $default);
     }
 
     public function testPageChoosesItsStateBeforeFirstPaint(): void

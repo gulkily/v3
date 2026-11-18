@@ -304,3 +304,12 @@ button.account-row {
 html[data-account-initial-name="1"] [data-action="rename-profile"][hidden] {
   display: inline-block;
 }
+
+/* A guest choosing a first name sees "Choose a name"; a rename says "Change". */
+.account-name-action--choose,
+html[data-account-initial-name="1"] .account-name-action--change {
+  display: none;
+}
+html[data-account-initial-name="1"] .account-name-action--choose {
+  display: inline;
+}

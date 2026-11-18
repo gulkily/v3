@@ -3,7 +3,7 @@ Debug mode: enabled (project marker `.railspike_debug_on`)
 Effort study: `railspike-effort` / `v3/guest_name_visibility`; [cycle ledger](../effort_ledger/guest_name_visibility.md); standing enrollment under protocol P2
 Extended estimates: enabled (no real alternatives or work units; no unit estimates)
 **Cycle estimate: 0.10**
-Status: planned; next permitted action: implement on `feat/guest-name-visibility`
+Status: implemented and verified locally; next permitted action: push and PR (merging and deploying are the maintainer's)
 
 ## Original request
 
@@ -30,7 +30,7 @@ Not doing: changing the "You" menu label, the flag, the server write path, or gu
 ## Approach and risks
 
 - Head script in `templates/layout.php`, beside the existing `data-member` / `data-visitor` checks: set `data-viewer-named` on `<html>` when a keypair is stored and either `forum_pki_username` is not `guest` or a `forum_pending_profile_name:openpgp:<fingerprint>` value exists (the same keys `forumAccountInitialNameHint` reads).
-- CSS in `compose.css`: `html[data-viewer-named] .compose-guest-note { display: none; }`.
+- CSS: `:root[data-viewer-named] .compose-guest-note { display: none; }` (placed in `site.css`, see history).
 - Account: caption and empty prefill in the existing `syncSimpleUI` / `bindNameEditor`; hash handling in `initAccountKeySimpleUi`.
 
 Risks:
@@ -61,14 +61,44 @@ None in the inventory (`docs/concepts/` has no guest-identity or composer entry)
 - Recovery: revert the commit; no records or schema touched.
 
 Starting revision and branch: `7d9b4b4d` on `main`; branch `feat/guest-name-visibility`.
-Planning commit: pending.
+Planning commit: `2b08b2a7`.
 
 ## Dated execution history
 
-- 2026-11-18: plan written.
+- 2026-11-18: plan written and committed (`2b08b2a7`).
+- 2026-11-18, discovery: a composer "Post as {name} · Change" row existed and was removed on 2026-10-28 at the maintainer's request ("takes up way too much space"; `9b6e5065`, `ui_copy_audit_checklist.md`). Weighed a zero-space alternative (append " as guest" to the Post button, "Choose a name" in the ··· menu) and dropped it: the usage log records the submit button's text, browser tests click `Post` by exact name, and the ··· menu hides the link. Kept the plan: one meta line, guests only, so named members (the maintainer included) never see it. Flagged in the PR.
+- 2026-11-18, correction: the hide rule went into `site.css` rather than `compose.css`, since not every page with a composer loads `compose.css` (QDB add, calendar day) and a missed page would show the line to a named member.
+- 2026-11-18: on phones the collapsed inline reply box shows only its body until focused (existing `compose.css` rule); the guest line follows that, like Post.
+- 2026-11-18, pre-existing failure fixed in scope: `tests/browser/invite_zero_click.mjs` failed on `7d9b4b4d` looking for "Expires 30 days after creation.", which `8e6f232c` (2026-11-17) moved into the QR caption "Scan to join · valid 30 days". The test now looks for the caption.
+- 2026-11-18: new browser test `tests/browser/guest_name_visibility.mjs`.
+
+## Outcome
+
+Delivered as planned:
+- `templates/partials/composer.php`: "Posting as guest · Choose a name" under the action row in every composer, linking to `/account/key/#choose-name`.
+- `templates/layout.php` head script: `data-viewer-named` on `<html>` when a keypair is stored and its name is not `guest` or a chosen name is pending; `site.css` hides the line then.
+- `templates/pages/account_key.php` + `account.css`: the Name action reads "Choose a name" while the pre-paint guest-naming hint is set, otherwise "Change"; the editor opens empty for a guest; `#choose-name` focuses the guest card's Name field or opens the member card's editor.
+
+Limitations: a browser with a stored name but no keypair counts as guest (it does post as guest). The line shows without JavaScript too; Account itself needs JavaScript to name a key, as before.
+
+## Verification
+
+- `./v3 test --smoke AccountKeyPageHooksTest LocalAppSmokeTest`: 485 run, 485 passed (new assertions for the composer line, the head check, the Account label and hash handler).
+- Browser (Chrome headless, 390px): `guest_name_visibility.mjs` PASS (fresh browser sees the line on New post and on a focused reply; the link lands on Account with the Name field focused; a registered key named guest sees "Choose a name" and an empty editor; after saving a name and on a named browser from the start, the line is hidden). `account_initial_name.mjs` PASS (public, private). `invite_zero_click.mjs` PASS after the fix (includes the username-changes-disabled hidden-button check). `composers.mjs` PASS on rerun; one earlier run failed and a rerun on base also failed once, so treated as an existing flake, not investigated further.
+- Looked at screenshots: Gloss (default) composer and Account at 390px; Chicago composer.
+- Full suite not run (maintainer runs it).
+
+## Final review
+
+Diff checked: no duplicated components (reuses the shared composer, Account editor and head-script pattern), files within scope plus the one pre-existing test fix, UI copy checklist line added. No concepts touched.
+
+Commit/merge/publication status: completion commit pending at time of writing; PR to follow. Not merged or deployed.
 
 ## Study history
 
 - 2026-11-18 intake: **0.10** (exposed, after reading the composer, Account page and the guest-name write gate). Single rater Claude (claude-opus-5-5).
+- 2026-11-18 closeout retrospective: 0.12 (pre-existing test fix and the removed-row history added work).
+
+Debug report: [debug log](guest_name_visibility_debug_log.md)
 
 *— Claude · 2026-11-18 UTC · Model: Claude Opus 5.5*
