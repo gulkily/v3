@@ -204,7 +204,10 @@ final class Application
                     $this->privateMessageStore(),
                     new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore(\ForumRewrite\Messaging\PrivateMessageHistorySyncDatabaseConfig::open($this->projectRoot, PrivateConfig::load($this->projectRoot))),
                     dirname(PrivateMessageDatabaseConfig::path($this->projectRoot, PrivateConfig::load($this->projectRoot))) . '/local_pull_progress.json',
-                )))->handle($method);
+                ),
+                localStores: fn (): array => [$this->privateMessageStore(),
+                    new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore(\ForumRewrite\Messaging\PrivateMessageHistorySyncDatabaseConfig::open($this->projectRoot, PrivateConfig::load($this->projectRoot)))],
+            ))->handle($method);
             return;
         }
         if (\ForumRewrite\Support\LocalDevelopmentImport::isEntry($requestUri) && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {

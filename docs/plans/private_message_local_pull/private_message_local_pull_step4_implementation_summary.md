@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/private_message_local_pull`; [host ledger
 
 Extended estimates: enabled
 
-**Cycle estimate: 0.95**
+**Cycle estimate: 1.10** (revised from 0.95 at Stage 5; see Cycle Revision)
 
 Branch `feature/private_message_local_pull` from `origin/main` `31e16b06`, which is newer than the planning baseline `6bdc52d7`. Planning commit `1f3a8157`.
 
@@ -81,3 +81,49 @@ Branch `feature/private_message_local_pull` from `origin/main` `31e16b06`, which
   - **New understanding:** each pass deletes its progress file at the end, so the next press rescans the whole mailbox. That is how transfers that arrive later for old messages get picked up, at the cost of re-reading envelopes that are already here. A personal mailbox stays small enough for that, and the export pages stay bounded.
   - The planned two-instance browser check, including pulling twice, runs with Stage 5's end-to-end check.
   - Retrospective stage-work assessment: **0.20**.
+
+## Stage 5 - Verify locally, trust keys here, confirm on the source
+
+**Original estimate: 0.20**
+
+**Revised estimate: 0.35** (2026-11-18T06:40Z; changed scope; Claude, single exposed rater). Adds the one-click trust step the maintainer chose after the blocking discovery below.
+
+- Changes:
+  - `PrivateMessageHistorySyncStore::unverifiedFor()` lists pulled transfers to this key that are not yet covered locally. `sourcesFor()` lists their donor keys. `PrivateMessageStore::senderIdentitiesFor()` lists the keys that signed the account's messages.
+  - `/local/remote` gains four actions:
+    - `trust_candidates` offers this browser's key, the signers of pulled messages and transfer donors, but only keys the source approves and this clone has not approved. It reports separately any keys this clone has not imported yet.
+    - `trust` rechecks each key against the source. It gives this browser's key a local approval seed, then approves the others with that key. Both go through the existing `LocalWriteService` writers, so the approvals stay in this clone.
+    - `verify_list` sends each pulled transfer with its original envelopes, the donor key and the senders' keys.
+    - `confirm` signs in fresh, confirms on the source in batches of 10, and records local coverage only after the source accepts a batch.
+  - A pull now needs only that this clone knows the key, not that it has approved it.
+  - The page:
+    - After a pull, it lists the keys to trust and waits for one click on **Trust these keys here**.
+    - It then verifies each transfer in the browser with `ForumPrivateMessageHistoryCrypto`: unwrap, digest, and the original sender's signature. It confirms what passed.
+    - It follows the import form's source field and accepts `/local/?source=`. **Check again** reruns the key check.
+    - A pull before the import ends with "Run Import above, then pull again."
+  - New end-to-end check `tests/browser/local_message_pull.mjs`, with two real instances.
+- Verification:
+  - `node tests/browser/local_message_pull.mjs` passed. It runs with `playwright-core` resolvable; the run here used a temporary `tests/browser/node_modules` link, not committed. The flow:
+    - Register through the relay, which hides the button once registered. Pull is unavailable before approval.
+    - Approve on the source with Alice's old key. Her old device's natural visit donates 8 of 8.
+    - **Replay:** pull before the import. It gets 8 new messages, then stops with "Run Import above".
+    - Import, pull, then **Trust these keys here** lists 3 keys (this browser, old Alice, Bob). After trusting, the summary shows 8 confirmed and nothing unreadable.
+    - The local store holds exactly 8 messages; Carol's message stays on the source. The source records 8 covered transfers for the new key.
+    - A repeat pull reports 0 new and 8 already here.
+    - At 390 px there is no overflow. Local Messages shows all 8 with a verified sender, and the page logged no errors.
+    - Screenshots are in the run's temporary folder.
+  - `./v3 test --smoke LocalDevelopmentImportTest LocalMessagePullTest PrivateMessageExportTest PrivateMessageHistorySyncTest PrivateMessageStoreTest`: 516 run, 516 passed.
+  - `python3 tests/browser/local_development.py`: passed.
+- Notes:
+  - **Blocking discovery (resolved by the maintainer):** the public import deliberately excludes approvals (`docs/runbooks/instance_content_import.md`), so Step 2's "rerun the import so the clone learns the approval" was wrong. Local Messages needs an approved viewer and approved sender keys. The maintainer chose one-click trust from three options: one-click trust, automatic trust, and relaxed reading rules. See Enhancement Requests.
+  - Your own key becomes a local root through its seed. Correspondents become ordinary approved members, approved by your key. None of this leaves the clone, since imports exclude approvals and seeds.
+  - The browser key is already known locally before the import, because ordinary local pages publish it. Step 3 of the card is therefore an instruction about correspondents' keys, not a check mark.
+  - Retrospective stage-work assessment: **0.40**. The revised 0.35 underestimated reworking the pull order.
+
+## Enhancement Requests
+
+- 2026-11-18T06:35Z, maintainer: "One-click trust (Recommended)". Asked after the discovery that imports carry no approvals. Disposition: implemented in Stage 5. This is a renewed scope approval for a dev-clone trust step, covering only keys that the source approves.
+
+## Cycle Revision
+
+2026-11-18T06:40Z: **1.10 projected total**, up from 0.95. Reason: changed scope (the local trust step), approved by the maintainer. Claude, single exposed rater; earlier snapshots kept above.

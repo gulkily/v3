@@ -318,6 +318,15 @@ final class PrivateMessageStore
         return 'existing';
     }
 
+    /** @return list<string> distinct identities that signed this account's messages */
+    public function senderIdentitiesFor(string $account): array
+    {
+        $q = $this->pdo->prepare('SELECT DISTINCT sender_identity_id FROM private_messages
+            WHERE (sender_username_token = :a OR recipient_username_token = :a) AND sender_identity_id LIKE \'openpgp:%\' ORDER BY 1');
+        $q->execute(['a' => strtolower(trim($account))]);
+        return $q->fetchAll(PDO::FETCH_COLUMN);
+    }
+
     /** Copies "already read" for a pulled received message; boundaries only move forward. */
     public function importReadMark(string $viewer, string $sender, string $messageId): void
     {

@@ -211,6 +211,39 @@ final class PrivateMessageHistorySyncStore
         } catch (\Throwable $e) { if ($this->pdo->inTransaction()) $this->pdo->rollBack(); throw $e; }
     }
 
+    /** @return list<string> donor key fingerprints of transfers to this target */
+    public function sourcesFor(string $account, string $target): array
+    {
+        $q = $this->pdo->prepare('SELECT DISTINCT source FROM history_sync_transfers WHERE account = ? AND target = ? ORDER BY source');
+        $q->execute([$account, $target]);
+        return $q->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    /**
+     * Transfers to this target key that still hold items without matching coverage, by transfer ID.
+     * @return array{transfers:list<array<string, mixed>>,next:?string}
+     */
+    public function unverifiedFor(string $account, string $target, string $after = '', int $limit = 10): array
+    {
+        $q = $this->pdo->prepare('SELECT DISTINCT t.transfer_id, t.source, t.target, t.ciphertext FROM history_sync_transfers t
+            JOIN history_sync_items i ON i.transfer_id = t.transfer_id AND i.account = t.account
+            WHERE t.account = ? AND t.target = ? AND t.transfer_id > ?
+              AND NOT EXISTS (SELECT 1 FROM history_sync_coverage c WHERE c.account = i.account AND c.target = i.target
+                AND c.message_id = i.message_id AND c.digest = i.digest AND c.transfer_id = i.transfer_id)
+            ORDER BY t.transfer_id LIMIT ' . (max(1, min(25, $limit)) + 1));
+        $q->execute([$account, $target, $after]);
+        $rows = $q->fetchAll();
+        $more = count($rows) > $limit;
+        $rows = array_slice($rows, 0, $limit);
+        $items = $this->pdo->prepare('SELECT message_id, digest FROM history_sync_items WHERE account = ? AND transfer_id = ? ORDER BY message_id');
+        foreach ($rows as &$row) {
+            $items->execute([$account, $row['transfer_id']]);
+            $row['items'] = $items->fetchAll();
+        }
+        unset($row);
+        return ['transfers' => $rows, 'next' => $more && $rows !== [] ? (string) $rows[count($rows) - 1]['transfer_id'] : null];
+    }
+
     /**
      * Transfers whose destination is this account, for the given messages. Each carries
      * only the items for those messages; a transfer spanning pages repeats on each page.

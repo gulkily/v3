@@ -101,6 +101,7 @@ if ($sameRun && $result['seconds'] !== null) {
     <h2>Your messages</h2>
     <p>Read your own private messages here. This browser's key joins your account on the source, then pulls your mail. Your private key stays in this browser.</p>
     <p data-local-pull-status role="status">Checking this browser's key…</p>
+    <div class="button-row"><button type="button" data-local-pull-check>Check again</button></div>
     <ol class="stack" data-local-pull-steps hidden>
       <li data-local-pull-step="register">
         <span data-local-pull-step-text></span>
@@ -112,6 +113,11 @@ if ($sameRun && $result['seconds'] !== null) {
         <span data-local-pull-step-text></span>
         <div class="button-row"><button type="button" data-local-pull-start hidden>Pull my messages from <span data-local-pull-host></span></button></div>
         <p class="meta" data-local-pull-summary role="status" hidden></p>
+        <div class="stack" data-local-pull-trust hidden>
+          <p>To read this mail here, this clone needs to approve these keys. <span data-local-pull-host></span> approves each of them. Approval stays in this clone.</p>
+          <ul data-local-pull-trust-list></ul>
+          <div class="button-row"><button type="button" data-local-pull-trust-button>Trust these keys here</button></div>
+        </div>
       </li>
     </ol>
   </article>
