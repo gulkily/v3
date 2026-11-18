@@ -153,3 +153,17 @@ Branch `feature/private_message_local_pull` from `origin/main` `31e16b06`, which
 - Notes:
   - The page's message for an unapproved sign-in comes from the controller and has no direct test. Its inputs (`approved=0`) are tested, and the browser check covers the earlier "no Pull before approval" state.
   - Retrospective stage-work assessment: **0.10**.
+
+## Stage 7 - Release and production replay (pending)
+
+**Original estimate: 0.15** (unchanged)
+
+- Status: pending. It needs the maintainer to merge and deploy, then replay on his laptop against zenmemes.com. This session could not push the branch (no GitHub write access), so the commits were handed over as a git bundle.
+- Replay checklist (production only; fixture passes do not count):
+  1. Deploy, then confirm that `GET https://zenmemes.com/api/private_messages/export` answers 401 when signed out, not 404.
+  2. On the laptop, run `./v3 start` and open `/local/`. **Your messages** shows the key as unregistered. Press **Register this key on zenmemes.com**.
+  3. Before approving, press **Check again**: it shows "Approve it on zenmemes.com". Pull is not offered yet.
+  4. Approve the key from an existing device (Tools → User Access link on the card). Visit zenmemes.com on that device and leave the tab open until history sync settles.
+  5. Press Pull before importing: it ends with "Run Import above". Run Import, then Pull. Trust the listed keys. Check that nothing is "not readable yet", or note how many and why.
+  6. Compare the local Messages conversation count with zenmemes.com. Pull again: it should say "0 new".
+- Ledger entry written to `docs/plans/effort_estimation_trial.md`. Closeout retrospective pending.
