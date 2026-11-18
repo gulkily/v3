@@ -1101,6 +1101,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/pending_keys') {
+            $this->apiTextController()->pendingKeys($method);
+            return;
+        }
+
         if ($path === '/api/get_profile') {
             $this->apiTextController()->getProfile((string) ($query['profile_slug'] ?? ''));
             return;
@@ -2555,7 +2560,7 @@ final class Application
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',
             '/account/key', '/account/key/', '/invites', '/invites/',
             '/api', '/api/', '/api/version', '/api/list_index',
-            '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username', '/api/get_username_claim_cta',
+            '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username', '/api/get_username_claim_cta', '/api/pending_keys',
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
             '/api/key_bootstrap_status', '/api/prepare_key_bootstrap', '/api/finalize_key_bootstrap',
@@ -2735,6 +2740,7 @@ final class Application
             $this->fetchProfileBySlug(...),
             $this->displayThreadTitle(...),
             \ForumRewrite\Support\SourceRepository::fromProjectRoot($this->projectRoot),
+            $this->authenticatedViewerProfile(...),
         );
     }
 

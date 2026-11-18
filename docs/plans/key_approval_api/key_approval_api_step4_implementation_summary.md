@@ -47,3 +47,23 @@ Branch: `feat/key-approval-api`. Planning commit: `520141a`.
 - Estimate details: original scope included `get_thread`; the narrower scope did not change the rating.
 
 *— Claude · 2026-11-18 UTC · Model: Claude Opus 5.5*
+
+## Stage 3 - GET /api/pending_keys
+
+**Original estimate: 0.10**
+**Retrospective stage work: 0.10**
+
+- Changes:
+  - `ApiTextController::pendingKeys` returns `Pending-Count: N`, then one `Key: value` block per waiting key: `Profile-Slug`, `Identity-ID`, `Username` (fallback label when unnamed), `Posts`, `Latest-Activity-At`, `Latest-Post-ID`. No-store headers.
+  - It reads `ProfileRepository::pendingDirectoryProfiles`, the page's own query, which now also selects `identity_id`. Retired keys stay out, as on the page.
+  - Access: an approved, signed-in session; otherwise 403 with a plain error. Stricter than the page, which also accepts the unauthenticated identity-hint cookie; the API's reader is a script about to sign approvals, so it gets the session check (`authenticatedViewerProfile`, passed into the controller). Approved members already pass the members-only gate for every path, so no allow-list change was needed there.
+  - Route added to `Application.php` routing and `isApplicationRoute`, and to `ApiRouteCatalog` as `member`.
+- Verification:
+  - New `QuillClientTest::testPendingKeysNeedsAnApprovedSessionAndMatchesThePendingPage` on a real local server: an approved approver key and two pending keys sharing the username `shared-agent`. Without a session: 403. With a session from Quill's `sign_in`: `Pending-Count: 2`, both pending keys listed with the right slug, identity, username and latest post, the approver absent, and `/users/pending/` listing exactly the same keys.
+  - `ApiRouteCatalogTest`: 3 passed (catalog matches router paths).
+  - `./v3 test --smoke` with those: 479 passed. Full suite not run.
+- Notes:
+  - The shared fixture (`approvalFixture`) is reused by Stage 4.
+- Estimate details: original scope as Step 3; unchanged.
+
+*— Claude · 2026-11-18 UTC · Model: Claude Opus 5.5*
