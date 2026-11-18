@@ -7,7 +7,7 @@ $authorPublicKeyHref = trim((string) ($post['author_public_key_href'] ?? ''));
 <section class="stack">
   <article class="card">
     <h1>Post <?= $e($post['post_id']) ?></h1>
-    <table class="codebase-facts post-facts">
+    <table class="codebase-facts post-facts" data-file-windows>
       <tbody>
         <tr><th scope="row">Thread</th><td><a href="/threads/<?= $e($post['thread_id']) ?>"><?= $e($post['thread_id']) ?></a></td></tr>
         <tr><th scope="row">Score</th><td><?= (int) ($post['post_score_total'] ?? 0) ?></td></tr>

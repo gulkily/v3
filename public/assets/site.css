@@ -2319,6 +2319,66 @@ pre {
   background: var(--button-bg);
 }
 
+/* File windows on a post's details page (file_windows.js): non-modal, so
+   several stay open, placed beside the clicked link. Same specificity fix as
+   the pending dialog above, against themes' `.card { position: relative }`. */
+.file-window {
+  width: min(34rem, calc(100vw - 1rem));
+  max-height: calc(100vh - 1rem);
+  overflow: auto;
+  color: var(--ink);
+  z-index: 50;
+}
+
+:root dialog.file-window.card {
+  position: fixed;
+  inset: auto;
+  top: 0;
+  left: 0;
+  margin: 0;
+}
+
+.file-window__head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.file-window__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-window__raw {
+  flex: none;
+}
+
+.file-window__head .file-window__close {
+  flex: none;
+  width: 2.75rem;
+  min-width: 0;
+  height: 2.75rem;
+  min-height: 0;
+  margin: -0.5rem -0.5rem 0 0;
+  padding: 0;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.file-window__text {
+  max-height: min(24rem, 60vh);
+  margin: 0.5rem 0 0;
+  overflow: auto;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 /* Photo details the poster chose to attach, under the post's image (ImageReference::photoDetails).
    Two or more fold behind a closed "Photo details" row; one stays visible. */
 .post-photo-details-disclosure { display: block; }

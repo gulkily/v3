@@ -37,6 +37,7 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261114-F04](items/PF-20261114-F04.txt) | Deploy page buttons: one row, clearer main action | blocked | locally-verified | — | 1 |
 | [PF-20261117-F01](items/PF-20261117-F01.txt) | Useful local first page and browser import | blocked | locally-verified | — | 1 |
 | [PF-20261117-F02](items/PF-20261117-F02.txt) | Offer known public instances as import sources | blocked | locally-verified | — | 1 |
+| [PF-20261118-F05](items/PF-20261118-F05.txt) | Post file links open in small themed windows | blocked | locally-verified | — | 1 |
 | [PF-20261117-F10](items/PF-20261117-F10.txt) | Second pane: open a link beside the current page on wide screens | blocked | locally-verified | — | 1 |
 | [PF-20261118-F02](items/PF-20261118-F02.txt) | Reading margins on the gallery | blocked | locally-verified | — | 1 |
 | [PF-20261118-F03](items/PF-20261118-F03.txt) | Home-screen app icons (apple-touch-icon and manifest PNGs) | blocked | locally-verified | — | 1 |

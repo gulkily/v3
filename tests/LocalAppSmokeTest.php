@@ -2536,6 +2536,9 @@ PHP;
         assertStringContains($href, $post);
         assertSame(1, substr_count($post, $href));
         assertOrdered($post, '<th scope="row">Signature</th>', '<th scope="row">Public key</th>');
+        // The file links open in small windows (file_windows.js); the links stay plain links.
+        assertStringContains('<table class="codebase-facts post-facts" data-file-windows>', $post);
+        assertFingerprintedAsset($post, 'file_windows.js');
     }
 
     public function testThreadRootCardOmitsDuplicateTitleLine(): void
