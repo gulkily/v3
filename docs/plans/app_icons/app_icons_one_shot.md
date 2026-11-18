@@ -7,7 +7,7 @@ Extended estimates: enabled (no real alternatives or work units, so no unit esti
 
 **Cycle estimate: 0.08**
 
-Status: planned on `feat/app_icons`; next permitted action: implement and verify.
+Status: technically complete on `feat/app_icons`; pushed for review, not merged or deployed. Next action: maintainer review, merge, deployment and a real-phone install check.
 
 ## Request and authorization
 
@@ -17,7 +17,7 @@ Context from the thread (Claude, 2026-11-18): on prod the manifest lists only th
 
 Authorization: the maintainer, 2026-11-18 (Claude session): "Can you please scan Zen memes for anything that's asking for a PR? And if the task seems appropriate for a one-shot, make the PR and reply in the thread." With "go all the way to a PR" in the thread, this authorizes a one-shot through an open PR and a thread reply. Exclusions: merge, deployment, web push itself, changing `start_url`.
 
-Feedback item: none matched in `docs/feedback/items/` (searched for the thread ID, "icon", "manifest", "home screen"). Creating PF-20261118-F03 in the completion commit.
+Feedback item: none matched in `docs/feedback/items/` (searched for the thread ID, "icon", "manifest", "home screen"). Created [PF-20261118-F03](../../feedback/items/PF-20261118-F03.txt) in the completion commit.
 
 ## Outcome and work type
 
@@ -43,19 +43,39 @@ None in the concept inventory.
 ## Completion conditions and verification plan
 
 - Normal entry: on an iPhone, Share, Add to Home Screen on zenmemes.com shows the Z icon; Chrome on Android offers install with the Z icon.
-- `LocalAppSmokeTest::testFrontControllerDerivesManifestAndWorkerFromTheActiveProfile` extended: the ZenMemes manifest lists the PNGs, and other profiles do not; layout test that the board carries the touch-icon link.
+- `LocalAppSmokeTest::testFrontControllerDerivesManifestAndWorkerFromTheActiveProfile` extended: profiles on the default favicon slot (ZenMemes) list the PNGs, others do not; layout test that the board carries the touch-icon link.
 - `./v3 test --smoke` plus those tests. Full suite not run.
 - Headless Chrome: manifest parses, every icon URL returns 200 with the right size.
 - Not checkable here: a real iPhone or Android install.
 
 Starting revision and branch: `31e16b066774dbdf8f4d3709ae4ad021bfff9516` on `main`; branch `feat/app_icons`.
 
-Planning commit: pending.
+Planning commit: `f228896a` (2026-11-18T07:26Z), containing only this record and its index link.
 
 ## Dated execution history
 
 - 2026-11-18T07:25Z: plan written after reading `BrowserRuntimeAssetRenderer`, `FaviconRegistry`, `TemplateRenderer`, `layout.php`, `router.php`, `.htaccess` and the manifest tests; icon drafts drawn in a scratch directory.
+- 2026-11-18T07:27Z: planning commit `f228896a` confirmed. Added the PNGs, `FaviconRegistry::touchIcon` and `::manifestIcons`, the manifest change, the `apple-touch-icon` link in both layouts, and test assertions.
+- 2026-11-18T07:31Z: discovery. `testFourthProfileFixtureUsesTheSameRuntimeAndSharedStateMatrix` reruns the manifest test with a fourth profile that uses the default favicon slot, so keying the expectation on the profile ID failed. The test now keys it on the favicon slot (and still checks ZenMemes is on it). Correction to the test, not to scope.
+- 2026-11-18T07:33Z: the generated icons are produced by a scratch script (vector Z drawn at 2048 px, gold glow, downsampled); the PNGs are committed, the script is not, since nothing rebuilds them.
 
 ## Study history
 
 - Intake, 2026-11-18T07:25Z: **0.08** whole-cycle projection, scope v1, R1/P2. Recorded after inspecting the files above (not a blind intake). Single exposed rater (Claude).
+- Execution entry, 2026-11-18T07:27Z: 0.08 reaffirmed.
+- Closeout, 2026-11-18T07:36Z: delivered scope v1. Retrospective **0.07**. Maintainer fit and acceptance pending.
+
+## Outcome
+
+Delivered: ZenMemes pages link a 180 px `apple-touch-icon`; the manifest lists the favicon plus 192 and 512 px PNGs, the 512 also as `maskable`. Not delivered (out of scope): icons for QDB, chouse.club and the Rap Club (they keep the favicon-only manifest), a root `/apple-touch-icon.png`, and any `start_url` change.
+
+## Verification
+
+- `./v3 test --smoke LocalAppSmokeTest::testPublicLayoutRegistersTheNormalNavigationOfflineWorker LocalAppSmokeTest::testFrontControllerDerivesManifestAndWorkerFromTheActiveProfile LocalAppSmokeTest::testPrivateLayoutDoesNotRegisterOfflineReaderPwa`: 478 of 478 (smoke set includes the fourth-profile test).
+- Scratch headless-Chrome check on a thread page: the touch icon loads at 180x180; every manifest icon loads at its declared size; `Page.getAppManifest` reports no errors and `Page.getInstallabilityErrors` reports only `in-incognito` (the headless context), no icon errors.
+- `./v3 feedback check`: 0 problems; `./v3 feedback index` regenerated.
+- Not run: the full suite; a real iPhone or Android install (needs deployment).
+
+## Final review
+
+Diff limited to three PNGs in `public/assets/`, `FaviconRegistry.php`, `BrowserRuntimeAssetRenderer.php`, `TemplateRenderer.php` (one key in each of two data arrays), `layout.php` and `standalone_layout.php` (one link), `LocalAppSmokeTest.php`, this record and its index line, the feedback item and index, the ledger and debug log. No routing, `.htaccess`, dependency or copy change. `public/manifest.webmanifest` (a static file the front controller does not serve) left as is.

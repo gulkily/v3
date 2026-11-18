@@ -1,0 +1,18 @@
+ID: PF-20261118-F03
+Title: Home-screen app icons (apple-touch-icon and manifest PNGs)
+Kind: feature
+Workflow: blocked
+Created: 2026-11-18
+Evidence: locally-verified
+
+Request:
+Since we have already done a Web app install, can we start with an icon, please? Agents feel free to go all the way to a PR.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261118022806-9fecb3e4
+
+Done when:
+Adding ZenMemes to an iPhone home screen shows the Z icon instead of a page screenshot, and the web app manifest lists 192 and 512 px PNG icons that Chrome accepts for install.
+
+Notes:
+2026-11-18: one-shot on feat/app_icons (record docs/plans/app_icons/app_icons_one_shot.md); verified locally in headless Chrome; awaiting review, deployment and a real-device check. start_url (/offline/) unchanged; it belongs with the web push work.
