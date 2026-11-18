@@ -64,4 +64,26 @@ Link rules answered in session before approval (the maintainer asked which links
   - The fixture's `/` answers 503 in the test server, so the test uses `/threads/` as the board.
 - Estimate details: original scope as Step 3; the header moving with the column caused no trouble. No revisions.
 
+## Stage 3 - The pane's bar and the kinds of link
+
+**Original estimate: 0.12**
+**Retrospective stage work: 0.16**
+
+- Status: complete.
+- Changes:
+  - `open_beside.js`: the pane gets a bar with the page's title, Open alone (a real link to the pane's page, which also forgets the pane) and Close. The bar, the saved page and Open alone follow the pane whenever its page changes, including links followed and forms posted inside it. A page with no title shows its address. Opening is announced through a `role="status"` line; focus stays on the clicked link.
+  - The click handler moved from the document to the window, so a link another page script already handles (the inline reply link) is left alone.
+  - In a framed page: a link to another site takes the whole tab; a clicked field takes focus (see Notes).
+  - `open-beside.css`: the bar and its two actions, styled the same in every theme.
+- Verification:
+  - `node tests/browser/open_beside.mjs` in Chrome and `BROWSER=firefox`: both pass. Bar title, focus on the link, the announcement; a link followed in the pane; Ctrl-click and middle-click; `target="_blank"`, download and same-page links; a text file and a compose page in the pane; a header link changes the main page; a link to another site from the page and from the pane; Open alone; Close by keyboard.
+  - Posting, on the signing fixture (`signed_reaction_browser_router.php`, the one `first_post_identity.mjs` uses): a reply typed and posted in the pane is accepted, shows in the pane, the pane's page is still framed, and the main page does not move. A like in the pane is applied there.
+  - Screenshot of the bar at 2048px checked by eye.
+- Notes:
+  - The Step 3 risk (signing scripts assuming top level) did not appear: posting and liking work in the frame unchanged.
+  - Found in Firefox under Playwright: when something in the main page has focus, the first click on a field inside any frame focuses the frame but not the field. Reproduced without this feature's code, with a plain frame and a focused link. It is probably an automation artifact, not real Firefox, but that could not be checked here. Because the main page's clicked link always keeps focus, the framed page now focuses a clicked field itself; that is harmless where the browser already did. The maintainer's Firefox check should include one click into the pane's reply box.
+  - The parity fixture's server cannot accept posts (`create_identity` answers 400 at top level too), which is why posting uses the signing fixture.
+  - The main page is not refreshed after a post in the pane. Known limitation, as Step 2 says; the test asserts it so a later cycle changes it on purpose.
+- Estimate details: original scope as Step 3; the retrospective is higher because of the Firefox focus finding and the second fixture. No scope change.
+
 *— Claude · 2026-11-18 UTC · Model: claude-fable-5-2*

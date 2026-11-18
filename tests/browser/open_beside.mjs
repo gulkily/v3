@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { cp, mkdtemp, mkdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { runInThisContext } from 'node:vm';
 import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:net';
 import { once } from 'node:events';
@@ -15,6 +17,11 @@ const playwright = await import(process.env.PLAYWRIGHT_MODULE || 'playwright-cor
 // beside the column, a click on a content link opens the page in the pane and
 // leaves the main page where it was; with no room, on a phone, or with the
 // mode off the click navigates. Turning the mode off removes the pane.
+// The pane's bar shows the page's title, Open alone and Close; focus stays on
+// the clicked link and the opening is announced. Links inside the pane load
+// in the pane, and so does a reply posted there. Ctrl-click, middle-click,
+// new-tab, download and same-page links are left alone; a link to another
+// site takes the whole tab, from the page or from the pane.
 // Usage: node tests/browser/open_beside.mjs [screenshot-dir]
 // BROWSER=firefox runs it in Firefox (needs `npx playwright-core install firefox`).
 const project = resolve(new URL('../..', import.meta.url).pathname);
@@ -93,7 +100,7 @@ try {
     return { pane: { ...await read(pane), first: first['forum-open-beside'] }, other: { ...await read(other), first: first['something-else'] } };
   }
 
-  let seen = await frames(on.base); if (process.env.DEBUG) console.log(JSON.stringify(seen));
+  let seen = await frames(on.base);
   assert.equal(seen.pane.framed, true, 'the pane\'s frame is marked');
   for (const selector of CHROME) {
     assert.equal(seen.pane.first[selector], false, `${selector} hidden in the pane at first paint`);
@@ -136,6 +143,19 @@ try {
     });
     return page.evaluate(() => { const at = document.querySelector('.open-beside__frame').contentWindow.location; return at.pathname + at.search; });
   };
+  // Waits until the pane shows this page.
+  const paneShows = async (address, message) => {
+    try {
+      await page.waitForFunction(expected => {
+        const frame = document.querySelector('.open-beside__frame');
+        if (!frame || frame.contentDocument.readyState !== 'complete') return false;
+        const at = frame.contentWindow.location;
+        return at.pathname + at.search === expected;
+      }, address, { timeout: 15000 });
+    } catch (error) {
+      assert.fail(`${message || 'the pane shows ' + address} (pane at ${await paneAt().catch(() => 'nothing')})`);
+    }
+  };
   // Narrow the column to the left of the window: its edges at stops -8... whatever fits, then 0.
   const narrowLeft = async () => {
     const stops = await page.locator('[data-reading-margin-stop]:not([hidden])').evaluateAll(all => all.map(stop => Number(stop.value)));
@@ -166,7 +186,7 @@ try {
   await page.evaluate(() => window.scrollTo(0, 40));
   const before = await page.evaluate(() => ({ url: location.href, y: scrollY }));
   await firstThread.click();
-  assert.equal(await paneAt(), threadPath.split('#')[0], 'the thread opened in the pane');
+  await paneShows(threadPath.split('#')[0], 'the thread opened in the pane');
   assert.deepEqual(await page.evaluate(() => ({ url: location.href, y: scrollY })), before, 'the main page stayed where it was');
   let box = await paneBox();
   assert.ok(box.left >= box.mainRight + 8, 'the pane starts right of the column');
@@ -210,6 +230,115 @@ try {
   assert.equal(await page.locator('[data-open-beside-pane]').count(), 0, 'mode off removes the pane');
   assert.equal(await toggle.getAttribute('aria-pressed'), 'false');
 
+  // --- The bar and the kinds of link ---
+  const keys = await page.evaluate(() => window.forumBrowserRuntime);
+  const stored = key => page.evaluate(k => localStorage.getItem(k), key);
+  const paneCount = () => page.locator('[data-open-beside-pane]:not([hidden])').count();
+  // Another site, answered locally so the test needs no network.
+  await context.route('https://elsewhere.example/**', route => route.fulfill({ contentType: 'text/html', body: '<title>Elsewhere</title><p id="elsewhere">elsewhere</p>' }));
+  const addLink = (where, attrs) => where.evaluate(attributes => {
+    const link = document.createElement('a');
+    Object.entries(attributes).forEach(([name, value]) => { if (name === 'text') link.textContent = value; else link.setAttribute(name, value); });
+    link.setAttribute('data-test-link', attributes.text);
+    document.querySelector('.main').prepend(link, ' ');
+  }, attrs);
+  const testLink = (where, text) => where.locator(`[data-test-link="${text}"]`);
+  const openBoardWithPane = async () => {
+    await page.goto(on.base + '/threads/');
+    if (await toggle.getAttribute('aria-pressed') !== 'true') await toggle.click();
+    await firstThread.click();
+    await paneShows(threadPath);
+  };
+
+  await page.goto(on.base + '/threads/');
+  await toggle.click();
+  await firstThread.click();
+  await paneShows(threadPath);
+  // The bar names the page; focus stayed on the link; the opening was announced.
+  const bar = page.locator('.open-beside__bar');
+  await page.waitForFunction(() => document.querySelector('.open-beside__title').textContent !== '');
+  const threadTitle = await paneFrame().title();
+  assert.equal(await bar.locator('.open-beside__title').textContent(), threadTitle, 'the bar shows the page\'s title');
+  assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.getAttribute('href')), threadPath, 'focus stays on the clicked link');
+  assert.equal(await page.locator('[data-open-beside-status]').textContent(), 'Opened beside: ' + threadTitle, 'the opening is announced');
+  assert.equal(await page.locator('[data-open-beside-pane]').getAttribute('aria-label'), 'Beside');
+  if (shots) await page.screenshot({ path: join(shots, 'stage3-bar-2048.png') });
+
+  // A link followed inside the pane loads in the pane; the bar and the saved page follow.
+  await paneFrame().locator('a[href="/tags/bug"]').first().click();
+  await page.waitForFunction(() => document.querySelector('.open-beside__frame').contentWindow.location.pathname === '/tags/bug');
+  await page.waitForFunction(() => document.querySelector('[data-open-beside-alone]').getAttribute('href') === '/tags/bug');
+  assert.equal(await stored(keys.openBesidePaneStorageKey), '/tags/bug', 'the saved page follows the pane');
+  assert.equal(new URL(page.url()).pathname, '/threads/', 'the main page did not move');
+  assert.notEqual(await bar.locator('.open-beside__title').textContent(), threadTitle, 'the bar\'s title follows the pane');
+
+  // Ctrl-click and middle-click keep their browser meaning: no pane change, main page stays.
+  await page.goto(on.base + '/threads/');
+  for (const how of [{ modifiers: ['Control'] }, { button: 'middle' }]) {
+    const opened = context.waitForEvent('page', { timeout: 5000 }).catch(() => null);
+    await firstThread.click(how);
+    const tab = await opened; if (tab) await tab.close();
+    assert.equal(await paneCount(), 0, `${JSON.stringify(how)}: no pane`);
+    assert.equal(new URL(page.url()).pathname, '/threads/', `${JSON.stringify(how)}: main page stays`);
+  }
+
+  // Links that ask for something else are left alone.
+  await addLink(page, { href: threadPath, target: '_blank', text: 'new-tab' });
+  const newTab = context.waitForEvent('page');
+  await testLink(page, 'new-tab').click();
+  await (await newTab).close();
+  assert.equal(await paneCount(), 0, 'a new-tab link opens no pane');
+  await addLink(page, { href: '#somewhere', text: 'same-page' });
+  await testLink(page, 'same-page').click();
+  assert.equal(await paneCount(), 0, 'a same-page link opens no pane');
+  assert.equal(new URL(page.url()).hash, '#somewhere', 'a same-page link still scrolls the main page');
+  await addLink(page, { href: '/llms.txt', download: '', text: 'download' });
+  const download = page.waitForEvent('download');
+  await testLink(page, 'download').click();
+  await (await download).cancel();
+  assert.equal(await paneCount(), 0, 'a download link opens no pane');
+
+  // A file that is not a page, and a compose page, open in the pane.
+  await addLink(page, { href: '/llms.txt', text: 'text-file' });
+  await testLink(page, 'text-file').click();
+  await paneShows('/llms.txt', 'a text file opens in the pane');
+  assert.equal(await bar.locator('.open-beside__title').textContent(), '/llms.txt', 'a page without a title shows its address');
+  await addLink(page, { href: '/compose/thread', text: 'compose' });
+  await testLink(page, 'compose').click();
+  await paneShows('/compose/thread', 'a compose page opens in the pane');
+
+  // Header links change the main page.
+  await page.locator('.site-header a[href^="/recent"], .site-header a[href*="recent"]').first().click();
+  await page.waitForURL('**/recent**');
+
+  // A link to another site: from the main page it navigates as always; from the pane it takes the whole tab.
+  await openBoardWithPane();
+  await addLink(page, { href: 'https://elsewhere.example/a', text: 'external' });
+  await testLink(page, 'external').click();
+  await page.waitForURL('https://elsewhere.example/a');
+  await openBoardWithPane();
+  await addLink(paneFrame(), { href: 'https://elsewhere.example/b', text: 'external' });
+  await testLink(paneFrame(), 'external').click();
+  await page.waitForURL('https://elsewhere.example/b');
+  assert.equal(await page.locator('#elsewhere').count(), 1, 'the other site took the whole tab');
+
+  // Open alone: the pane's page becomes the main page and the pane is forgotten.
+  await openBoardWithPane();
+  await page.waitForFunction(() => document.querySelector('[data-open-beside-alone]').getAttribute('href') !== null);
+  await page.locator('[data-open-beside-alone]').click();
+  await page.waitForURL('**' + threadPath);
+  assert.equal(await stored(keys.openBesidePaneStorageKey), null, 'Open alone forgets the pane');
+  assert.equal(await page.evaluate(() => document.documentElement.hasAttribute('data-open-beside-framed')), false, 'opened alone, the page has its header');
+
+  // Close, by keyboard.
+  await openBoardWithPane();
+  await page.locator('[data-open-beside-close]').focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await page.locator('[data-open-beside-pane]').count(), 0, 'Close removes the pane');
+  assert.equal(await stored(keys.openBesidePaneStorageKey), null, 'Close forgets the pane');
+  await toggle.click();
+  assert.equal(await toggle.getAttribute('aria-pressed'), 'false');
+
   // A phone has no ruler and no mode.
   await page.evaluate(key => localStorage.setItem(key, 'on'), (await page.evaluate(() => window.forumBrowserRuntime)).openBesideStorageKey);
   await page.setViewportSize({ width: 390, height: 844 });
@@ -220,10 +349,61 @@ try {
   assert.equal(await page.locator('[data-open-beside-pane]:not([hidden])').count(), 0, 'phone: no pane');
   await page.evaluate(key => localStorage.removeItem(key), (await page.evaluate(() => window.forumBrowserRuntime)).openBesideStorageKey);
 
+  // --- Posting in the pane (the signing fixture, which can accept posts) ---
+  {
+    runInThisContext(readFileSync(join(project, 'public/assets/openpgp.min.js'), 'utf8'));
+    const seedKeys = await globalThis.openpgp.generateKey({ type: 'ecc', curve: 'ed25519', userIDs: [{ name: 'seed' }], format: 'armored' });
+    const postRoot = await mkdtemp(join(tmpdir(), 'open-beside-post-'));
+    const postEnv = { ...process.env, FORUM_SITE_ID: 'zenmemes', SIGNED_REACTION_TEST_ROOT: postRoot,
+      FORUM_SECRETS_PATH: join(postRoot, 'absent-secrets.php'), VISITOR_STATISTICS_DATABASE_PATH: join(postRoot, 'visitors.sqlite3'),
+      FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED: 'true', FORUM_READING_MARGINS_ENABLED: 'true', FORUM_OPEN_BESIDE_ENABLED: 'true' };
+    const seeded = spawnSync('php', [join(project, 'tests/Support/signed_reaction_browser_fixture.php'), postRoot], { input: JSON.stringify(seedKeys), encoding: 'utf8', env: postEnv });
+    assert.equal(seeded.status, 0, seeded.stderr);
+    const socket = createServer().listen(0, '127.0.0.1'); await once(socket, 'listening');
+    const port = socket.address().port; await new Promise(r => socket.close(r));
+    const postBase = `http://127.0.0.1:${port}`;
+    const postServer = spawn('php', ['-d', `session.save_path=${postRoot}/sessions`, '-S', `127.0.0.1:${port}`, join(project, 'tests/Support/signed_reaction_browser_router.php')], { env: postEnv, stdio: 'ignore' });
+    servers.push({ stop: () => { postServer.kill(); return rm(postRoot, { recursive: true, force: true }); } });
+    for (let i = 0; i < 60; i++) { try { await fetch(postBase + '/api/version'); break; } catch { await new Promise(r => setTimeout(r, 100)); } }
+    await page.setViewportSize({ width: 2048, height: 1280 });
+    // The normal column at this width leaves room for a pane without touching the ruler.
+    await page.goto(postBase + '/threads/root-001');
+    await toggle.click();
+    await addLink(page, { href: '/threads/root-001', text: 'thread' });
+    await testLink(page, 'thread').click();
+    await paneShows('/threads/root-001');
+    const pane = paneFrame();
+    assert.equal(await pane.evaluate(() => document.documentElement.hasAttribute('data-open-beside-framed')), true);
+    const replyForm = pane.locator('[data-compose-kind="reply"]').first();
+    // The fixture makes a guest key on first visit; wait for it as first_post_identity.mjs does.
+    await pane.waitForFunction(() => window.__forumBrowserIdentity && window.__forumBrowserIdentity.storedVoteIdentityReadinessState() !== 'idle');
+    // Click and type as a reader would: the form shows its buttons once the box has focus.
+    await replyForm.locator('textarea[name="body"]').click();
+    await page.keyboard.type('Written beside the thread');
+    const created = page.waitForResponse(r => /\/api\/create_prepared_post$/.test(r.url()), { timeout: 45000 });
+    created.catch(() => {}); // a failure before the await below reports itself, not this
+    await replyForm.locator('.compose-form-actions > button[type="submit"]').click();
+    assert.match(await (await created).text(), /ok/, 'the reply posted from the pane was accepted');
+    await page.waitForFunction(() => /Written beside the thread/.test(document.querySelector('.open-beside__frame').contentDocument.body.textContent), null, { timeout: 30000 });
+    assert.equal(await page.evaluate(() => document.querySelector('.open-beside__frame').contentDocument.documentElement.hasAttribute('data-open-beside-framed')), true, 'after posting, the pane\'s page is still framed');
+    assert.equal(new URL(page.url()).pathname, '/threads/root-001', 'posting in the pane leaves the main page alone');
+    assert.equal(await page.locator('.main').evaluate(main => /Written beside the thread/.test(main.textContent)), false, 'the main page is not refreshed (known limitation)');
+    // A like in the pane stays in the pane.
+    const like = page.frames().find(frame => frame.name() === 'forum-open-beside').locator('button[data-tag="like"]').first();
+    await like.evaluate(button => button.click());
+    await page.waitForFunction(() => {
+      const button = document.querySelector('.open-beside__frame').contentDocument.querySelector('button[data-tag="like"]');
+      return button && button.getAttribute('aria-pressed') === 'true';
+    }, null, { timeout: 30000 });
+    assert.equal(new URL(page.url()).pathname, '/threads/root-001', 'a like in the pane leaves the main page alone');
+    await page.locator('[data-open-beside-close]').click();
+    await toggle.click();
+  }
+
   assert.deepEqual(errors, [], 'no page errors');
   console.log(`open_beside (${browserName}): ok`);
 } finally {
   if (browser) await browser.close();
-  servers.forEach(server => server.stop());
+  for (const server of servers) await server.stop();
   await rm(root, { recursive: true, force: true });
 }

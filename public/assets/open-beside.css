@@ -58,6 +58,54 @@
   display: none;
 }
 
+/* The pane's bar. */
+.open-beside__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.3rem 0.6rem;
+  border-bottom: 1px solid var(--line, currentColor);
+  background: var(--panel, Canvas);
+  font-size: 0.85rem;
+}
+
+.open-beside__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* `.open-beside` in the selector outranks themes' general button and link
+   styling, so both actions look alike in every theme. */
+.open-beside .open-beside__action {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--line, currentColor);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.3;
+  text-decoration: none;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.open-beside .open-beside__action:hover {
+  border-color: var(--active-line, currentColor);
+}
+
+.open-beside .open-beside__action:focus-visible {
+  outline: 2px solid var(--active-line, currentColor);
+  outline-offset: 2px;
+}
+
 .open-beside__frame {
   flex: 1 1 auto;
   width: 100%;
