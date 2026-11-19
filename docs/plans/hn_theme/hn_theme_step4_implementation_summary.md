@@ -111,3 +111,37 @@ Stage 3 open question (hide board excerpts): not answered at approval; the plan'
 - Estimate details: original scope as Step 3; no revision.
 
 *— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Documentation and closeout
+
+**Original estimate: 0.08**
+
+**Retrospective stage work: 0.08**
+
+- Changes:
+  - New concept entry `docs/concepts/ochre_theme.md`; `theme_script.md` points to it.
+  - `theme_development_guide.md` gains an Ochre section, including the static rebuild on deploy and both tests.
+  - The deferred default on ported threads is recorded in the concept entry and in [Step 2's enhancement requests](./hn_theme_step2_feature_description.md#enhancement-requests).
+  - Effort ledger closeout.
+- Verification:
+  - Every selector in `theme-ochre.css` names Ochre (only the three `@media` wrappers do not).
+  - Gloss, Word 97 and Bubblegum: 30 screenshots (board, Recent, a thread, a ported thread and Tools, at 1280px and 380px) are byte-identical between `origin/main` and this branch.
+  - `git diff --check origin/main..HEAD`: clean. The concept and guide paths resolve.
+  - The full suite (`./v3 fulltest`) was not run; the maintainer runs it.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+- Completion Contract:
+  - Normal entry: passed. Ochre is in the `zenmemes` theme menu, and `theme: ochre` from an operator applies it before first paint.
+  - End-to-end outcome: passed in headless Chrome for the board, Recent, a thread, a ported thread and Tools at 1280px and 380px. Folds and parent/next work on a port nested nine deep.
+  - Recovery: passed. Leaving for Gloss leaves no Ochre element, and a revisit stays on Gloss; JavaScript off shows every reply.
+  - Deployment: **pending**. Production needs `php scripts/build_static_artifacts.php` after deploy; verified on a local build only.
+  - Release: **pending** merge, deploy and the maintainer's production try.
+- Unverified: the Activity drawer in Ochre (no fixture entries); real iPhone Safari (only Chrome's mobile emulation was used).
+- Enhancement requests: the ported-thread default stays deferred as separate work.
+- Retrospective cycle scope: **0.60**. Delivered scope v2 plus the site-profile list and the live-reply observer, minus the Activity drawer check. Six stages, seven commits after the planning commit. Claude, same exposed rater.
+- Maintainer comfortable-fit judgment: pending.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
