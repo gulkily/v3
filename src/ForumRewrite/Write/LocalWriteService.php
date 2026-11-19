@@ -187,6 +187,131 @@ class LocalWriteService
     }
 
     /**
+     * Writes a ported thread (docs/concepts/ported_thread.md): the root, every comment as a
+     * reply under its parent, and a #ported label, all in one commit. A source already ported
+     * returns its existing thread instead.
+     *
+     * @return array{status:string, thread_id:string, existing:bool, post_count:int, commit_sha?:string, timings?:array<string, float>}
+     */
+    public function createPortedThread(\ForumRewrite\Port\PortFile $port, string $porterIdentityId): array
+    {
+        return $this->withTimedWriteLock(function () use ($port, $porterIdentityId): array {
+            $this->assertWritableRepository();
+            $totalStartedAt = hrtime(true);
+            $root = $port->root();
+            $rootSource = \ForumRewrite\Port\PortFile::itemAddress($root->id);
+            $existing = $this->readModelPdo()->prepare('SELECT post_id FROM posts WHERE ported_from = :from AND post_id = thread_id AND retracted_at IS NULL LIMIT 1');
+            $existing->execute(['from' => $rootSource]);
+            $existingId = $existing->fetchColumn();
+            if (is_string($existingId) && $existingId !== '') {
+                return ['status' => 'ok', 'thread_id' => $existingId, 'existing' => true, 'post_count' => 0];
+            }
+
+            $createdAt = $this->canonicalTimestampNow();
+            $threadId = $this->generateRecordId('thread');
+            // One random part and a counter keep the replies' file names in port order, so a rebuild keeps it.
+            $stamp = gmdate('YmdHis');
+            $run = bin2hex(random_bytes(2));
+            $postIds = [$root->id => $threadId];
+            $paths = [];
+            $records = [];
+            foreach ($port->items as $index => $item) {
+                $isRoot = $index === 0;
+                $postId = $isRoot ? $threadId : sprintf('reply-%s-%s%04x', $stamp, $run, $index);
+                $postIds[$item->id] = $postId;
+                $ported = 'Ported-From: ' . \ForumRewrite\Port\PortFile::itemAddress($item->id) . "\n"
+                    . 'Ported-Author: ' . $item->author . "\n"
+                    . 'Ported-Created-At: ' . $item->createdAt . "\n"
+                    . 'Ported-By: ' . $porterIdentityId . "\n";
+                if ($isRoot) {
+                    $subject = $this->portedLine($port->threadTitle !== '' ? $port->threadTitle : $item->title);
+                    $context = $item->title !== '' ? ($item->link !== '' ? $item->link : '') : $port->threadTitle . "\n" . $port->threadLink;
+                    $body = $this->portedBody(trim($context . "\n\n" . $item->text));
+                    $contents = "Post-ID: {$threadId}\nCreated-At: {$createdAt}\nBoard-Tags: general\n"
+                        . ($subject !== '' ? "Subject: {$subject}\n" : '') . $ported . "Body-Format: plain\n\n{$body}";
+                } else {
+                    $body = $this->portedBody($item->text);
+                    $contents = "Post-ID: {$postId}\nCreated-At: {$createdAt}\nBoard-Tags: general\nThread-ID: {$threadId}\nParent-ID: {$postIds[(string) $item->parent]}\n"
+                        . $ported . "Body-Format: plain\n\n{$body}";
+                }
+                $records[] = (new PostRecordParser())->parse($contents);
+                $paths[$postId] = [CanonicalPathResolver::datedPost($postId, $createdAt), $contents];
+            }
+            [$labelPath, $labelContents] = $this->buildReactionRecord(ReactionRecordParser::THREAD, $threadId, ['ported'], $porterIdentityId, $createdAt);
+
+            $phaseStartedAt = hrtime(true);
+            foreach ($paths as [$path, $contents]) {
+                $this->writeFile($path, $contents);
+            }
+            $this->writeFile($labelPath, $labelContents);
+            $timings = ['write_file' => $this->elapsedMilliseconds($phaseStartedAt)];
+            $commitResult = $this->commitCanonicalWrite([...array_column(array_values($paths), 0), $labelPath], 'Port thread ' . $threadId . ' from ' . $rootSource);
+            $timings = array_merge($timings, $commitResult['timings']);
+            $commitSha = $commitResult['commit_sha'];
+
+            $phaseStartedAt = hrtime(true);
+            foreach ($records as $index => $record) {
+                $result = $this->synchronizePostDerivedState($record, $commitSha, $index === 0);
+                // A rebuild reads every committed record, so the remaining posts are already in it.
+                if (array_filter(array_keys($result), static fn (string $key): bool => str_contains($key, 'rebuild')) !== []) {
+                    break;
+                }
+            }
+            $timings['read_model'] = $this->elapsedMilliseconds($phaseStartedAt);
+            $this->invalidator()->invalidateBoardThread($threadId);
+            $timings['total'] = $this->elapsedMilliseconds($totalStartedAt);
+
+            return ['status' => 'ok', 'thread_id' => $threadId, 'existing' => false, 'post_count' => count($records), 'commit_sha' => $commitSha, 'timings' => $timings];
+        }, true);
+    }
+
+    /** Ported text follows this site's text rules; a character they refuse becomes "?" instead of refusing the port. */
+    private function portedBody(string $text): string
+    {
+        $text = $text === '' ? '[deleted]' : $text;
+        try {
+            return $this->normalizeAuthoredBody($text, 'body');
+        } catch (\RuntimeException) {
+            return $this->normalizeAuthoredBody($this->replaceRefusedCharacters($text, fn (string $c): string => $this->normalizeAuthoredBody('a' . $c, 'body')), 'body');
+        }
+    }
+
+    private function portedLine(string $text): string
+    {
+        if ($text === '') {
+            return '';
+        }
+        try {
+            return $this->normalizeAuthoredLine($text, 'subject');
+        } catch (\RuntimeException) {
+            return $this->normalizeAuthoredLine($this->replaceRefusedCharacters($text, fn (string $c): string => $this->normalizeAuthoredLine('a' . $c, 'subject')), 'subject');
+        }
+    }
+
+    /** @param callable(string): string $check throws for a refused character */
+    private function replaceRefusedCharacters(string $text, callable $check): string
+    {
+        $allowed = [];
+        $out = '';
+        foreach (mb_str_split(mb_convert_encoding($text, 'UTF-8', 'UTF-8')) as $character) {
+            if ($character === "\n") {
+                $out .= $character;
+                continue;
+            }
+            if (!isset($allowed[$character])) {
+                try {
+                    $check($character);
+                    $allowed[$character] = true;
+                } catch (\RuntimeException) {
+                    $allowed[$character] = false;
+                }
+            }
+            $out .= $allowed[$character] ? $character : '?';
+        }
+        return $out;
+    }
+
+    /**
      * @param array<string, mixed> $input
      * @param (callable(string): string)|null $signer returns a detached signature of the record by its author
      * @return array<string, string>

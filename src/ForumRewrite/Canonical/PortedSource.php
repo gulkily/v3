@@ -50,8 +50,8 @@ final class PortedSource
             throw new CanonicalRecordParseException('Ported-Created-At must use RFC 3339 UTC format like 2026-04-13T12:34:56Z.');
         }
         $by = $headers['Ported-By'];
-        if ($by === '' || preg_match('/[^A-Za-z0-9._:-]/', $by) === 1) {
-            throw new CanonicalRecordParseException('Ported-By must be an ASCII token.');
+        if (preg_match('/^openpgp:[a-f0-9]{40}$/D', $by) !== 1) {
+            throw new CanonicalRecordParseException('Ported-By must be a member identity like openpgp:<40 lowercase hex digits>.');
         }
         return new self($from, $author, $createdAt, $by);
     }

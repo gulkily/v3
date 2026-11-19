@@ -11,7 +11,7 @@ require __DIR__ . '/../autoload.php';
 /** Ported-* headers: a ported post names its source, its source author and who ported it. */
 final class ThreadPortRecordTest
 {
-    private const PORTED = "Ported-From: https://news.ycombinator.com/item?id=8863\nPorted-Author: dhouston\nPorted-Created-At: 2007-04-04T19:16:40Z\nPorted-By: openpgp:abc123\n";
+    private const PORTED = "Ported-From: https://news.ycombinator.com/item?id=8863\nPorted-Author: dhouston\nPorted-Created-At: 2007-04-04T19:16:40Z\nPorted-By: openpgp:abababababababababababababababababababab\n";
 
     public function testParserReadsPortedHeadersOnARootAndAReply(): void
     {
@@ -19,7 +19,7 @@ final class ThreadPortRecordTest
         threadPortAssertSame('dhouston', $root->ported?->author);
         threadPortAssertSame('https://news.ycombinator.com/item?id=8863', $root->ported?->from);
         $reply = (new PostRecordParser())->parse("Post-ID: r1\nCreated-At: 2026-11-19T12:00:00Z\nBoard-Tags: general\nThread-ID: t1\nParent-ID: t1\n" . str_replace('8863', '8869', self::PORTED) . "\nhi\n");
-        threadPortAssertSame('openpgp:abc123', $reply->ported?->by);
+        threadPortAssertSame('openpgp:abababababababababababababababababababab', $reply->ported?->by);
         threadPortAssertSame(null, (new PostRecordParser())->parse("Post-ID: t2\nCreated-At: 2026-11-19T12:00:00Z\nBoard-Tags: general\n\nplain\n")->ported);
     }
 

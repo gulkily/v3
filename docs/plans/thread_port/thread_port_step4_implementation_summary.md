@@ -50,3 +50,23 @@ Step 4 entry (2026-11-19 UTC): Step 3 projection **0.95** reaffirmed after the p
 - Estimate details: original scope as Step 3; no revision.
 
 *— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - One-commit write
+
+**Original estimate: 0.18**
+
+**Retrospective: 0.18**
+
+- Changes:
+  - New `Port\PortFile` and `Port\PortItem` read and write the plain-text port file (`hn-v1`). The reader refuses a file over 500 comments, a comment whose parent comes later or is missing, and malformed items, before anything is written.
+  - `LocalWriteService::createPortedThread(PortFile, porterIdentityId)` writes all records plus one `ported` thread label in one commit. It then runs `synchronizePostDerivedState` per record and stops early if one falls back to a rebuild. A repeat port returns the existing thread.
+  - Refused characters become `?` instead of refusing the port.
+  - `Ported-By` now requires the `openpgp:<40 hex>` identity form, the same rule reaction records use.
+  - `ported_thread.md` describes the file and the write.
+- Verification:
+  - `./v3 test ThreadPortWriteTest ThreadPortRecordTest`: 7 passed. These cover one commit for 3 and for 300 comments, every parent pair, the `ported` label, a repeat port, a full rebuild keeping parents and order, a missing parent refused with no commit, `%` escaping round-trips, and an emoji replaced by `?`.
+  - Timing probe: 300 comments took 3.6 s in total (read model 3.5 s, about 12 ms per post), incremental path, no rebuild.
+- Notes: production may be slower than this workspace. If needed, a later cycle can batch the incremental update.
+- Estimate details: original scope as Step 3; no revision.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
