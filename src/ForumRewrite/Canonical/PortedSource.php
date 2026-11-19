@@ -42,8 +42,8 @@ final class PortedSource
             throw new CanonicalRecordParseException('Ported-From must be a Hacker News item address like https://news.ycombinator.com/item?id=123.');
         }
         $author = $headers['Ported-Author'];
-        if (preg_match('/^[A-Za-z0-9_-]{1,40}$/', $author) !== 1) {
-            throw new CanonicalRecordParseException('Ported-Author must be 1 to 40 letters, digits, underscores or hyphens.');
+        if (preg_match('/^(?:[A-Za-z0-9_-]{1,40}|\[deleted\])$/D', $author) !== 1) {
+            throw new CanonicalRecordParseException('Ported-Author must be 1 to 40 letters, digits, underscores or hyphens, or [deleted].');
         }
         $createdAt = $headers['Ported-Created-At'];
         if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', $createdAt) !== 1) {

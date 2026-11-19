@@ -142,6 +142,23 @@ final class ThreadPortPageTest
         threadPortPageAssertSame(404, http_response_code());
     }
 
+    public function testBookmarkletsPageListsPortHnOnlyWithTheFlag(): void
+    {
+        $this->root = '';
+        foreach ([true => 2, false => 0] as $enabled => $expected) {
+            $this->site((bool) $enabled, false);
+            $application = new Application(dirname(__DIR__), $this->root, $this->root . '.sqlite3', $this->root . '-public');
+            http_response_code(200);
+            ob_start();
+            try {
+                $application->handle('GET', '/tools/bookmarklets/');
+            } finally {
+                $html = (string) ob_get_clean();
+            }
+            threadPortPageAssertSame($expected, substr_count($html, 'data-bookmarklet-kind="hn-port"'));
+        }
+    }
+
     private function portedCount(): int
     {
         return (int) (new PDO('sqlite:' . $this->root . '.sqlite3'))->query('SELECT COUNT(*) FROM posts WHERE ported_from IS NOT NULL')->fetchColumn();

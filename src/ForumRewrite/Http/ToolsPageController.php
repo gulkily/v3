@@ -202,6 +202,20 @@ final class ToolsPageController
                         'description' => 'Tweet text, author, and link from x.com.',
                         'bookmarklet_kind' => 'tweet',
                     ],
+                    ...($this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_PORT_ENABLED) ? [
+                        [
+                            'label' => 'Port HN',
+                            'mode' => 'same-window',
+                            'description' => 'The Hacker News thread, nested, or the comment holding your selection and its replies.',
+                            'bookmarklet_kind' => 'hn-port',
+                        ],
+                        [
+                            'label' => 'Port HN',
+                            'mode' => 'new-window',
+                            'description' => 'The Hacker News thread, nested, or the comment holding your selection and its replies.',
+                            'bookmarklet_kind' => 'hn-port',
+                        ],
+                    ] : []),
                 ],
                 'toolNavOptions' => ToolsPageSupport::navOptions('bookmarklets'),
             ],

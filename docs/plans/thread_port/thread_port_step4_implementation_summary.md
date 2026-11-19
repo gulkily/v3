@@ -94,3 +94,26 @@ Step 4 entry (2026-11-19 UTC): Step 3 projection **0.95** reaffirmed after the p
 - Estimate details: retrospective 0.18 above the original 0.15 because of the unplanned rollback; scope unchanged.
 
 *— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Hacker News bookmarklet
+
+**Original estimate: 0.15**
+
+**Retrospective: 0.15**
+
+- Changes:
+  - `hnPortSubmit` in `tools_bookmarklets.js` reads a story page, a comment's own page or a selection into a `hn-v1` port file and submits it by `POST` to `/port`, same-window or `target=_blank`. `bookmarkletScript` serializes it for the new kind `hn-port`. The host prefix and copy code are reused unchanged.
+  - `ToolsPageController::bookmarklets` lists **Port HN** in both modes while `FORUM_THREAD_PORT_ENABLED` is on.
+  - `[deleted]` is accepted as `Ported-Author` and port-file author.
+  - Synthetic Hacker News pages in `tests/fixtures/hn/` copy the markup with invented users and text, so no real comments are kept in the repository.
+- Verification:
+  - `node tests/browser/thread_port_bookmarklet.mjs` (Chrome, Playwright): ok. It covers the story page (8 items, every parent pair, full links, deleted author, `%%` text, no reply links) and a comment's own page (root plus story title and link, new-window). It also covers a selection in a nested comment (that subtree only) and a non-Hacker-News page (alert, nothing sent). Every sent file is parsed by `PortFile`.
+  - Ad-hoc run, not committed, on the real pages saved during planning: item 8863 gave 71 comments, matching the page's 71 rows; item 9224 gave the comment chain 9224 → 9272 → 9479.
+  - `./v3 test ThreadPortPageTest ThreadPortRecordTest ThreadPortWriteTest`: 11 passed, including the Bookmarklets page listing Port HN twice with the flag on and never with it off.
+  - `node tests/browser/bookmarklet_copy.cjs`: pass, so the existing seven are unchanged.
+- Notes:
+  - `npm install` added the already-approved `playwright-core` to the ignored `node_modules`; no dependency change.
+  - Hacker News splits very long threads into pages ("More"). The bookmarklet ports the page it is on.
+- Estimate details: original scope as Step 3; no revision.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*

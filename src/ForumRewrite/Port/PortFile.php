@@ -88,7 +88,7 @@ final class PortFile
                 throw new RuntimeException('Comment ' . $id . ' replies to a comment that is not in the port.');
             }
             $author = $fields['Author'] ?? '';
-            if (preg_match('/^[A-Za-z0-9_-]{1,40}$/D', $author) !== 1) {
+            if (preg_match('/^(?:[A-Za-z0-9_-]{1,40}|\[deleted\])$/D', $author) !== 1) {
                 throw new RuntimeException('Comment ' . $id . ' has no valid author.');
             }
             $createdAt = $fields['Created-At'] ?? '';
