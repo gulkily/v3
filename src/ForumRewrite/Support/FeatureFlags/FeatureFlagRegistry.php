@@ -35,6 +35,7 @@ final class FeatureFlagRegistry
     public const AGENT_PROMPT_ENABLED = 'FORUM_AGENT_PROMPT_ENABLED';
     public const ENGAGIFY_PASSWORD_NEWSLETTER = 'FORUM_ENGAGIFY_PASSWORD_NEWSLETTER';
     public const ZALGO_THEME_ENABLED = 'FORUM_ZALGO_THEME_ENABLED';
+    public const VAPORGEIST_THEME_ENABLED = 'FORUM_VAPORGEIST_THEME_ENABLED';
     public const MEDIA_EMBEDS_ENABLED = 'FORUM_MEDIA_EMBEDS_ENABLED';
     public const MEDIA_EMBEDS_INLINE_PLAYER_ENABLED = 'FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED';
     public const TAG_LINKS_ENABLED = 'FORUM_TAG_LINKS_ENABLED';
@@ -75,7 +76,7 @@ final class FeatureFlagRegistry
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
             self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED,
             self::DEPLOY_HEADER_PROMPT_ENABLED, self::INSTANCE_IMPORT_PAGE_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER,
-            self::ZALGO_THEME_ENABLED, self::PRIVATE_MESSAGE_CACHE_ENABLED,
+            self::ZALGO_THEME_ENABLED, self::VAPORGEIST_THEME_ENABLED, self::PRIVATE_MESSAGE_CACHE_ENABLED,
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
             self::READING_MARGINS_ENABLED, self::DRAGGABLE_WINDOWS_ENABLED, self::OPEN_BESIDE_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
             self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED,
@@ -511,6 +512,16 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 group: 'EXPERIENCE',
                 releasedOn: '2026-11-16',
+            ),
+            new FeatureFlagDefinition(
+                self::VAPORGEIST_THEME_ENABLED,
+                'Vaporgeist theme',
+                'Offer the Vaporgeist theme: Vapor\'s pink, cyan and purple with a sinking sun and grid, corrupted as heavily as Zalgo. Off by default; while it is off, anyone who chose Vaporgeist sees the site default.',
+                false,
+                self::VAPORGEIST_THEME_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+                releasedOn: '2026-11-19',
             ),
             new FeatureFlagDefinition(
                 self::MEDIA_EMBEDS_ENABLED,

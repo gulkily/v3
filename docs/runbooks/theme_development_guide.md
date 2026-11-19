@@ -110,6 +110,14 @@ the theme while the flag is off, so the menu, `/themes`, Preferences, the
 composer's theme choice and thread `theme:` lines all follow it. A reader who
 chose the theme sees the site default until the flag is on again.
 
+Zalgo's corruption (dripping marks, colour split, glitch slices, tilted cards,
+scanlines, tear lines) is written once in `theme-zalgo.css` against
+`--glitch-*` tokens. Vaporgeist reuses it with `'stylesheet' => 'zalgo'` and
+its own token block. A new heavily corrupted theme does the same: set the
+`--glitch-*` tokens, add its name to the shared selector
+(`:root:is([data-theme="zalgo"], [data-theme="vaporgeist"])`), and add a
+`/* Theme: <name> */` header line.
+
 ## Colour palettes
 
 A theme may offer colours, as LCD, Console and Gloss do. Set `'palettes' =>

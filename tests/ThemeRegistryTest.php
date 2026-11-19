@@ -68,6 +68,20 @@ final class ThemeRegistryTest
         }
     }
 
+    public function testVaporgeistIsOfferedOnlyWhileItsFlagIsOnAndSharesZalgosStylesheet(): void
+    {
+        $names = ['auto', 'zalgo', 'vaporgeist'];
+        $zalgoOnly = new FeatureFlagEvaluator(siteValues: [FeatureFlagRegistry::ZALGO_THEME_ENABLED => true]);
+        $both = new FeatureFlagEvaluator(siteValues: [
+            FeatureFlagRegistry::ZALGO_THEME_ENABLED => true,
+            FeatureFlagRegistry::VAPORGEIST_THEME_ENABLED => true,
+        ]);
+
+        assertSame(['auto', 'zalgo'], array_column(ThemeRegistry::permitted($names, $zalgoOnly), 'name'));
+        assertSame(['auto', 'zalgo', 'vaporgeist'], array_column(ThemeRegistry::permitted($names, $both), 'name'));
+        assertSame('/assets/theme-zalgo.css', ThemeRegistry::stylesheetPaths()['vaporgeist']);
+    }
+
     public function testExplicitThemeAssetsAndHintCookieHaveCanonicalContracts(): void
     {
         $paths = ThemeRegistry::stylesheetPaths();
@@ -279,8 +293,9 @@ final class ThemeRegistryTest
             ['chicago', 'vapor'],
             ['bubblegum', 'forge'],
             ['spearmint', 'zalgo'],
-            ['engagify', 'chouse'],
-            ['qdb', 'mitrapclub'],
+            ['engagify', 'vaporgeist'],
+            ['qdb', 'chouse'],
+            [null, 'mitrapclub'],
         ], self::layoutNames($layout, 'unpaired'));
     }
 
