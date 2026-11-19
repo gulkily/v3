@@ -81,5 +81,6 @@ None recorded.
 
 - 2026-11-19 UTC, intake after code inspection (`ThemeRegistry`, `ThreadTheme::forThread`, `page_theme.md`, `theme_development_guide.md`, `theme_navigation_icons.md`): 0.45 projected total for the recommended scope. No pristine intake. Claude, single exposed rater; R1 hashes not re-verified this session; baseline `origin/main` `7d9b4b4d`.
 - Step 1 handoff: 0.45 for Option B (alternatives A 0.30, C 0.80; not summed). No implementation. Awaiting `Approved Step 1`.
+- 2026-11-19 UTC: **Approved Step 1** by the maintainer with Option C and the name Ochre. The default on ported threads is deferred; the maintainer applies the theme by hand for now. Recorded in [Step 2](./hn_theme_step2_feature_description.md#enhancement-requests).
 
 *— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
