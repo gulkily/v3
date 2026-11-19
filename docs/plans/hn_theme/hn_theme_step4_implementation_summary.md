@@ -53,3 +53,22 @@ Stage 3 open question (hide board excerpts): not answered at approval; the plan'
 - Estimate details: original scope as Step 3; no revision.
 
 *— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Board, Recent and Tools
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.08**
+
+- Changes:
+  - `theme-ochre.css`: `thread-rows` lose their box and number their rows with a CSS counter in a narrow grey column. Each row is a 13.33px title (grey once visited), an 11px grey line, and the reply count as small grey text at the right. Hidden rows take no number. The pinned and latest lists number separately.
+  - Excerpts and thumbnails are hidden, per the plan's default for the open question.
+  - Board controls, pagination and Tools launchers become plain small words instead of buttons; the current one is bold.
+- Verification:
+  - Screenshots at 1280px and 380px of the board (`/threads/`), Recent and Tools.
+  - Board composer at 380px: focusing it expands it, showing Post, Post anonymously, Save to Outbox and Discard draft.
+  - Contrast audit: Ochre OK.
+- Notes: the excerpt question was not answered at Step 3 approval; one rule restores excerpts if the maintainer wants them.
+- Estimate details: original scope as Step 3; no revision.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
