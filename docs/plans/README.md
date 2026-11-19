@@ -640,3 +640,4 @@ and repair its navigation and affected references. See the
 - [App icons](app_icons/app_icons_one_shot.md) — one-shot: home-screen icons for ZenMemes (apple-touch-icon and 192/512 manifest PNGs).
 - [Recently released feature flags](recent_feature_flags/recent_feature_flags_one_shot.md) — one-shot: flags carry a release date, and Feature Flags opens with a "Recently released" list.
 - [Image eligibility cache](image_eligibility_cache/image_eligibility_cache_one_shot.md) — one-shot: Attach image shows right away for a key already confirmed allowed; the check still runs behind it.
+- [Vaporgeist theme](vaporgeist_theme/vaporgeist_theme_one_shot.md) — one-shot: Vapor's look at Zalgo's intensity, sharing Zalgo's stylesheet, behind its own feature flag.
