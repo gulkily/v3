@@ -158,3 +158,24 @@ Step 4 entry (2026-11-19 UTC): Step 3 projection **0.95** reaffirmed after the p
 - Estimate details: original scope as Step 3; no revision.
 
 *— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Stage 8 - Replay and closeout
+
+**Original estimate: 0.08**
+
+**Retrospective: pending** (the iPhone replay needs the maintainer's deploy)
+
+- Changes: none to the application. Feedback item PF-20261104-F50 is set to `blocked` until the production replay.
+- Verification:
+  - Agent half, done locally: a Quill reply (`quill.py reply --parent`) to a depth-2 ported comment on a local server got `Status: accepted` and rendered at depth 3, beside that comment's other reply. Every ported byline read "name on Hacker News".
+  - Known environment, **pending**: Ilya ports a real Hacker News thread from iPhone Safari with the same-window Port HN bookmarklet, in three taps or fewer, after deploying with `FORUM_THREAD_PORT_ENABLED` on. Evidence will be that thread on zenmemes.com. Desktop Chrome passing is not counted as this evidence.
+  - Final diff review against `origin/main`: 53 files; `git diff --check` clean; no debug output left. `/port` reaches `index.php` through the existing `.htaccess` catch-all, so no routing change is needed.
+  - Tests: the smoke set plus every changed test, as recorded per stage (last run 519 passed, 0 failed). `node tests/browser/thread_port_bookmarklet.mjs` ok. The full suite was not run.
+- Notes: deploying rebuilds the read model once (schema 56).
+- Estimate details: original scope as Step 3.
+
+## Cycle retrospective
+
+**Retrospective cycle assessment: 1.00**, against the Step 3 projection of 0.95. Unplanned work: rolling back a failed write, showing the source time in bylines, and fixing the pre-existing `ToolsRegistryTest` failure. Scope did not change. Maintainer comfortable-fit judgment: pending.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
