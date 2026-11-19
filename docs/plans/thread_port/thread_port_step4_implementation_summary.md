@@ -70,3 +70,27 @@ Step 4 entry (2026-11-19 UTC): Step 3 projection **0.95** reaffirmed after the p
 - Estimate details: original scope as Step 3; no revision.
 
 *— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Hand-off, preview and flags
+
+**Original estimate: 0.15**
+
+**Retrospective: 0.18**
+
+- Changes:
+  - `PortPageController` handles `POST /port`, which holds the file and answers 303 to `/port/<id>`. `GET /port/<id>` shows the preview, and `POST /port/<id>` runs Port. Port needs `RouteServices::signedInApproved` and `SameOriginRequest`.
+  - The routes sit behind `FORUM_THREAD_PORT_ENABLED` in `Application` and are listed as application routes.
+  - `Port\HeldPortStore` is a private folder keyed by repository, like the staged store. IDs are 12 hex digits from the file's hash, so sending the same file twice returns the same preview. Held ports expire after 7 days, with at most 200 held.
+  - Two flags in `FeatureFlagRegistry` (EXPERIENCE group, off by default) and in `FeatureFlagEvaluatorTest`'s order lists.
+  - `createPortedThread` now takes back every written file and unstages them if writing or the commit fails.
+  - `templates/pages/port.php` shows Port, Try again, Already ported, waiting-for-a-member, members-only or Sign in.
+- Verification:
+  - `./v3 test ThreadPortPageTest`: 3 passed. These cover a cross-site POST held and redirected, the preview, a cross-site Port refused with nothing written, a same-origin Port writing 3 posts, and the held port removed afterwards. A repeat shows Already ported. A guest sees Sign in, or Waiting with the guest flag on. A failing pre-commit hook returns 409 with Try again, the error is kept, the tree stays clean, and the retry then succeeds. A malformed form gets 422. The real `Application` route answers 303 to a cross-site POST, and 404 with the flag off.
+  - `./v3 test --smoke` plus all port tests, `FeatureFlagEvaluatorTest`, `FeatureFlagsBehaviorTest` and `StagedPageTest`: 497 passed, 0 failed.
+- Notes:
+  - On an approved-members-only site, the members-only gate turns away the signed-out cross-site POST. Porting there would need a gate exception; not in scope.
+  - `docs/concepts/feature_flags.md` describes the registry, not individual flags, so it is unchanged. The flags are documented in `ported_thread.md`.
+  - The rollback was not planned. It closes the "nothing half-written" recovery from the Completion Contract.
+- Estimate details: retrospective 0.18 above the original 0.15 because of the unplanned rollback; scope unchanged.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*

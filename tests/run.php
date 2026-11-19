@@ -39,6 +39,7 @@ $testFiles = [
     __DIR__ . '/EventWhenRecordTest.php',
     __DIR__ . '/ThreadPortRecordTest.php',
     __DIR__ . '/ThreadPortWriteTest.php',
+    __DIR__ . '/ThreadPortPageTest.php',
     __DIR__ . '/EventStatusTest.php',
     __DIR__ . '/ThreadThemeTest.php',
     __DIR__ . '/PledgeCampaignTest.php',

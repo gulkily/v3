@@ -391,6 +391,15 @@ final class Application
             return;
         }
 
+        if ($path === '/port' || $path === '/port/' || preg_match('#^/port/([a-f0-9]{12})$#D', $path, $portMatch) === 1) {
+            if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::THREAD_PORT_ENABLED)) {
+                $this->routeServices()->notFound();
+                return;
+            }
+            isset($portMatch[1]) ? $this->portPageController()->preview($method, $portMatch[1], $query) : $this->portPageController()->receive($method, $query);
+            return;
+        }
+
         if ($path === '/messages' || $path === '/messages/') {
             $this->privateMessagePageController()->conversations($method);
             return;
@@ -2521,7 +2530,7 @@ final class Application
 
     private function isApplicationRoute(string $path): bool
     {
-        if (str_starts_with($path, '/images/') || str_starts_with($path, '/messages/conversation/')) {
+        if (str_starts_with($path, '/images/') || str_starts_with($path, '/messages/conversation/') || str_starts_with($path, '/port/') || $path === '/port') {
             return true;
         }
 
@@ -2790,6 +2799,16 @@ final class Application
             $this->authenticatedViewerProfile(...),
             $this->privateMessageStore(...),
             $this->recordHistoryActivity(...),
+        );
+    }
+
+    private function portPageController(): \ForumRewrite\Http\PortPageController
+    {
+        return new \ForumRewrite\Http\PortPageController(
+            $this->routeServices(),
+            $this->resolveViewerProfileFromIdentityHint(...),
+            fn (string $flag): bool => $this->featureFlags()->isEnabled($flag),
+            $this->routeServices()->writer()->heldPorts(),
         );
     }
 

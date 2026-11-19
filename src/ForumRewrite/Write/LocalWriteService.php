@@ -240,12 +240,25 @@ class LocalWriteService
             [$labelPath, $labelContents] = $this->buildReactionRecord(ReactionRecordParser::THREAD, $threadId, ['ported'], $porterIdentityId, $createdAt);
 
             $phaseStartedAt = hrtime(true);
-            foreach ($paths as [$path, $contents]) {
-                $this->writeFile($path, $contents);
+            $written = [...array_column(array_values($paths), 0), $labelPath];
+            try {
+                foreach ($paths as [$path, $contents]) {
+                    $this->writeFile($path, $contents);
+                }
+                $this->writeFile($labelPath, $labelContents);
+                $timings = ['write_file' => $this->elapsedMilliseconds($phaseStartedAt)];
+                $commitResult = $this->commitCanonicalWrite($written, 'Port thread ' . $threadId . ' from ' . $rootSource);
+            } catch (\Throwable $throwable) {
+                // Hundreds of uncommitted files would reappear on the next rebuild: take them all back.
+                try {
+                    $this->runGitCommand(['reset', '-q', '--', ...$written], 'Unable to unstage the failed port');
+                } catch (\Throwable) {
+                }
+                foreach ($written as $path) {
+                    @unlink($this->repositoryRoot . '/' . $path);
+                }
+                throw $throwable;
             }
-            $this->writeFile($labelPath, $labelContents);
-            $timings = ['write_file' => $this->elapsedMilliseconds($phaseStartedAt)];
-            $commitResult = $this->commitCanonicalWrite([...array_column(array_values($paths), 0), $labelPath], 'Port thread ' . $threadId . ' from ' . $rootSource);
             $timings = array_merge($timings, $commitResult['timings']);
             $commitSha = $commitResult['commit_sha'];
 
@@ -835,6 +848,12 @@ class LocalWriteService
             // The post is published; a leftover copy is hidden from /staged/ and removed on retry.
             error_log('Published staged post; discard failed: ' . $error->getMessage());
         }
+    }
+
+    /** Port files waiting for the preview's Port button (docs/concepts/ported_thread.md). */
+    public function heldPorts(): \ForumRewrite\Port\HeldPortStore
+    {
+        return new \ForumRewrite\Port\HeldPortStore(dirname($this->databasePath) . '/private/held-ports-' . substr(hash('sha256', $this->repositoryRoot), 0, 16));
     }
 
     public function stagedSubmissions(): StagedSubmissionStore
