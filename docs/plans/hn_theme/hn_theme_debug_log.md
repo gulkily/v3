@@ -56,3 +56,23 @@
 ### Uncertain assessments
 
 - A mockup made between Steps 2 and 3 raised a styling choice (hiding board excerpts) that Step 2 did not state. Recorded as a Stage 3 open question rather than as scope.
+
+## 2026-11-19T17:25Z — Step 4
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md`, planning commit gate: kept the plans in one commit before any code, which made each stage diff easy to read. Retain.
+- `implementation_standards.md`, inspect existing surfaces before adding: surfaced the per-site `permittedThemes` list that Step 2's inventory missed. Without it, Ochre would never have appeared on ZenMemes. Retain.
+- `implementation_standards.md`, check affected shared consumers: led to the byte-identical comparison of Gloss, Word 97 and Bubblegum. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- Known user or environment replay: none named.
+
+### Uncertain assessments
+
+- Step 2's inventory step did not prompt a search for per-site allow-lists. A hint to check every list that names existing themes might help.
