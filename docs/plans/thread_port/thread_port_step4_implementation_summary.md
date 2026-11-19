@@ -29,3 +29,24 @@ Step 4 entry (2026-11-19 UTC): Step 3 projection **0.95** reaffirmed after the p
 - Estimate details: original scope as Step 3; no revision.
 
 *— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Ported bylines
+
+**Original estimate: 0.10**
+
+**Retrospective: 0.10**
+
+- Changes:
+  - The read model stores a ported post's `author_label` as "name on Hacker News" in the full rebuild and both incremental paths. Every view that prints a byline shows it with no further change, offline included.
+  - `TemplateRenderer::renderAuthorHtml` links the site name to `ported_from`. The 11 queries that select `posts.author_label` also select `posts.ported_from`.
+  - `RecentPostRepository` lists a ported thread by its root only.
+  - `post_presentation.md` gains a Ported line.
+- Verification:
+  - `./v3 test ThreadPortRecordTest`: 4 passed. The new test checks both bylines link to Hacker News, no `/user/` or `/profiles/` link appears, and Recent shows the root but not the reply.
+  - `./v3 test --smoke ThreadPortRecordTest RecentPostTest`: 489 passed, 0 failed.
+- Notes:
+  - Profiles needed no change: a ported post has no `Author-Identity-ID`, so `linkPostAuthors` and profile counts never see it. Signal actors count reactions, not authorship, so they are unchanged.
+  - The offline snapshot copies `author_label`, so it shows the ported byline without the link.
+- Estimate details: original scope as Step 3; no revision.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*

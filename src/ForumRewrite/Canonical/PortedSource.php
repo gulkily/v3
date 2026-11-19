@@ -56,6 +56,12 @@ final class PortedSource
         return new self($from, $author, $createdAt, $by);
     }
 
+    /** The byline the read model stores: "dang on Hacker News". */
+    public function authorLabel(): string
+    {
+        return $this->author . ' on ' . self::siteLabel($this->from);
+    }
+
     /** The source site's reader-facing name, or null when the address is not a supported item page. */
     public static function siteLabel(string $from): ?string
     {

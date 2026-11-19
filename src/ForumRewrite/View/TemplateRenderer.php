@@ -898,6 +898,14 @@ final class TemplateRenderer
             $authorLabel = 'guest';
         }
 
+        // A ported post's label is "name on Site" (set by the read model); the site links to the original.
+        $portedFrom = (string) ($record['ported_from'] ?? '');
+        $site = $portedFrom !== '' ? \ForumRewrite\Canonical\PortedSource::siteLabel($portedFrom) : null;
+        if ($site !== null && str_ends_with($authorLabel, ' on ' . $site)) {
+            $name = substr($authorLabel, 0, -strlen(' on ' . $site));
+            return '<span class="ported-author">' . $escape($name) . ' on <a href="' . $escape($portedFrom) . '" rel="nofollow noopener">' . $escape($site) . '</a></span>';
+        }
+
         if (((int) ($record['attribution_counted'] ?? 1)) === 0) {
             return $escape($authorLabel) . ' <span class="meta">(unsigned)</span>';
         }

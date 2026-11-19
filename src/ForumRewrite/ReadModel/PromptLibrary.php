@@ -41,7 +41,7 @@ final class PromptLibrary
 
         $sql = 'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview,
                     threads.reply_count, threads.score_total, threads.board_tags_json, threads.thread_labels_json, threads.retracted_at,
-                    posts.body, posts.body_format, posts.author_label, posts.author_profile_slug, posts.attribution_counted,
+                    posts.body, posts.body_format, posts.author_label, posts.ported_from, posts.author_profile_slug, posts.attribution_counted,
                     (SELECT profiles.username_token FROM profiles WHERE profiles.identity_id = posts.author_identity_id) AS author_username_token,
                     COALESCE(' . $authorIsApproved . ', 0) AS author_is_approved,
                     CASE WHEN (' . $authorApproved . ') OR ' . $labelApproved . ' THEN 1 ELSE 0 END AS prompt_approved'

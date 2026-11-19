@@ -55,6 +55,21 @@ final class ThreadPortRecordTest
         threadPortAssertSame(['ported-reply' => 'pg', 'ported-root' => 'dhouston'], $columns());
     }
 
+    public function testPortedPostsShowTheirSourceAuthorAndOnlyTheRootReachesRecent(): void
+    {
+        $root = $this->environment();
+        $application = new Application(dirname(__DIR__), $root, $root . '.sqlite3', $root . '-public');
+        $thread = $this->get($application, '/threads/ported-root');
+        threadPortAssertContains('<span class="ported-author">dhouston on <a href="https://news.ycombinator.com/item?id=8863" rel="nofollow noopener">Hacker News</a></span>', $thread);
+        threadPortAssertContains('<span class="ported-author">pg on <a href="https://news.ycombinator.com/item?id=8869"', $thread);
+        threadPortAssertSame(false, str_contains($thread, '/user/dhouston') || str_contains($thread, '/profiles/dhouston'));
+
+        $recent = $this->get($application, '/recent/');
+        threadPortAssertContains('My YC app: Dropbox', $recent);
+        threadPortAssertSame(false, str_contains($recent, 'ported-reply'));
+        threadPortAssertSame(1, substr_count($recent, '<span class="ported-author">'));
+    }
+
     private function assertRejected(string $contents, string $message): void
     {
         try {

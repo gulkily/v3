@@ -151,7 +151,7 @@ class IncrementalReadModelUpdater
                     'theme' => $record->theme,
                     'author_identity_id' => $record->authorIdentityId,
                     'author_profile_slug' => $author['profile_slug'],
-                    'author_label' => $author['label'],
+                    'author_label' => $record->ported?->authorLabel() ?? $author['label'],
                     'sequence_number' => $sequenceNumber,
                 ] + \ForumRewrite\Canonical\PortedSource::columns($record->ported));
             });
@@ -1241,7 +1241,7 @@ class IncrementalReadModelUpdater
                     'theme' => $record->theme,
             'author_identity_id' => $record->authorIdentityId,
             'author_profile_slug' => $author['profile_slug'],
-            'author_label' => $author['label'],
+            'author_label' => $record->ported?->authorLabel() ?? $author['label'],
             'sequence_number' => $sequenceNumber,
         ] + \ForumRewrite\Canonical\PortedSource::columns($record->ported));
     }

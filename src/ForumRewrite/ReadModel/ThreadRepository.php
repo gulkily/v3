@@ -43,7 +43,7 @@ final class ThreadRepository
     public static function boardRowsSql(): string
     {
         return 'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview, threads.retracted_at, threads.retraction_class, threads.retraction_attribution,
-                    threads.reply_count, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug, posts.attribution_counted,
+                    threads.reply_count, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.ported_from, posts.author_profile_slug, posts.attribution_counted,
                     posts.body AS root_post_body, posts.body_format AS root_post_body_format,
                     posts.post_score_total AS root_post_score_total,
                     threads.event_date, threads.event_location, threads.event_link, threads.event_time, threads.event_end_date, threads.event_when,
@@ -69,7 +69,7 @@ final class ThreadRepository
     {
         $stmt = $pdo->prepare(
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview, threads.retracted_at, threads.retraction_class, threads.retraction_attribution,
-                    threads.reply_count, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.author_profile_slug, posts.attribution_counted,
+                    threads.reply_count, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.ported_from, posts.author_profile_slug, posts.attribution_counted,
                     posts.body AS root_post_body, posts.body_format AS root_post_body_format,
                     posts.post_score_total AS root_post_score_total,
                     threads.event_date, threads.event_location, threads.event_link, threads.event_time, threads.event_end_date, threads.event_when,
@@ -94,7 +94,7 @@ final class ThreadRepository
     public static function replyPostsByThreadId(PDO $pdo, string $threadId): array
     {
         $stmt = $pdo->prepare(
-            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.body_format, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_identity_id, posts.author_label,
+            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.body_format, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_identity_id, posts.author_label, posts.ported_from,
                     posts.created_at, posts.board_tags_json, posts.resolution_state, (SELECT COALESCE(NULLIF(profiles.username, \'\'), profiles.fallback_label) FROM profiles WHERE profiles.identity_id = posts.resolution_set_by) AS resolution_set_by_username,
                     posts.author_profile_slug, posts.attribution_counted, profiles.username_token AS author_username_token,
                     COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved,
