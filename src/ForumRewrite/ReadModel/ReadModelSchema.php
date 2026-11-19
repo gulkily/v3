@@ -53,6 +53,10 @@ final class ReadModelSchema
                 retracted_at TEXT NULL,
                 retraction_class TEXT NULL,
                 retraction_attribution TEXT NULL,
+                ported_from TEXT NULL,
+                ported_author TEXT NULL,
+                ported_created_at TEXT NULL,
+                ported_by TEXT NULL,
                 sequence_number INTEGER NOT NULL
             )',
             'CREATE INDEX posts_recent_idx ON posts (created_at DESC, post_id DESC) WHERE is_hidden = 0 AND retracted_at IS NULL',

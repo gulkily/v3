@@ -131,10 +131,10 @@ class IncrementalReadModelUpdater
                 $stmt = $pdo->prepare(
                     'INSERT INTO posts (
                         post_id, created_at, thread_id, parent_id, subject, body, board_tags_json,
-                        thread_type, agent_response_json, body_format, theme, author_identity_id, author_profile_slug, author_label, sequence_number
+                        thread_type, agent_response_json, body_format, theme, author_identity_id, author_profile_slug, author_label, ported_from, ported_author, ported_created_at, ported_by, sequence_number
                      ) VALUES (
                         :post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json,
-                        :thread_type, :agent_response_json, :body_format, :theme, :author_identity_id, :author_profile_slug, :author_label, :sequence_number
+                        :thread_type, :agent_response_json, :body_format, :theme, :author_identity_id, :author_profile_slug, :author_label, :ported_from, :ported_author, :ported_created_at, :ported_by, :sequence_number
                      )'
                 );
                 $stmt->execute([
@@ -153,7 +153,7 @@ class IncrementalReadModelUpdater
                     'author_profile_slug' => $author['profile_slug'],
                     'author_label' => $author['label'],
                     'sequence_number' => $sequenceNumber,
-                ]);
+                ] + \ForumRewrite\Canonical\PortedSource::columns($record->ported));
             });
 
             $verified = $this->measure($timings, 'mark_post_attribution', fn (): bool => $this->markPostAttribution($pdo, $record));
@@ -243,7 +243,7 @@ class IncrementalReadModelUpdater
 
                 $this->measure($timings, 'write_placeholder_post', function () use ($pdo, $postId, $meta, $retraction): void {
                     $pdo->prepare('UPDATE posts SET subject = NULL, body = \'\', board_tags_json = \'[]\', thread_type = :thread_type,
-                            agent_response_json = NULL, body_format = NULL, theme = NULL, retracted_at = :at, retraction_class = :class,
+                            agent_response_json = NULL, body_format = NULL, theme = NULL, ported_from = NULL, ported_author = NULL, ported_created_at = NULL, ported_by = NULL, retracted_at = :at, retraction_class = :class,
                             retraction_attribution = :attribution WHERE post_id = :id')
                         ->execute(['thread_type' => $meta['thread_type'] ?? null, 'id' => $postId] + $retraction);
                 });
@@ -1221,10 +1221,10 @@ class IncrementalReadModelUpdater
         $stmt = $pdo->prepare(
             'INSERT INTO posts (
                 post_id, created_at, thread_id, parent_id, subject, body, board_tags_json,
-                thread_type, agent_response_json, body_format, theme, author_identity_id, author_profile_slug, author_label, sequence_number
+                thread_type, agent_response_json, body_format, theme, author_identity_id, author_profile_slug, author_label, ported_from, ported_author, ported_created_at, ported_by, sequence_number
              ) VALUES (
                 :post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json,
-                :thread_type, :agent_response_json, :body_format, :theme, :author_identity_id, :author_profile_slug, :author_label, :sequence_number
+                :thread_type, :agent_response_json, :body_format, :theme, :author_identity_id, :author_profile_slug, :author_label, :ported_from, :ported_author, :ported_created_at, :ported_by, :sequence_number
              )'
         );
         $stmt->execute([
@@ -1243,7 +1243,7 @@ class IncrementalReadModelUpdater
             'author_profile_slug' => $author['profile_slug'],
             'author_label' => $author['label'],
             'sequence_number' => $sequenceNumber,
-        ]);
+        ] + \ForumRewrite\Canonical\PortedSource::columns($record->ported));
     }
 
     private function insertThread(PDO $pdo, PostRecord $record, string $boardTagsJson): void
