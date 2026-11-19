@@ -177,3 +177,112 @@
     font-size: 12px;
   }
 }
+
+/* Content column: a little wider than the default, still a readable line. */
+:root[data-theme="ochre"] .shell {
+  width: min(100%, 880px);
+}
+
+:root[data-theme="ochre"] .meta {
+  font-size: 12px;
+}
+
+/* Threads: posts are plain text blocks, not boxes. The title, a grey line
+   naming who and when, the text, then small action links. */
+:root[data-theme="ochre"] .post-card {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  padding: 0.15rem 0 0.15rem 0.1rem;
+}
+
+:root[data-theme="ochre"] .post-card + .post-card {
+  margin-top: 0.7rem;
+}
+
+:root[data-theme="ochre"] .post-card.continuation {
+  margin-top: 0.25rem;
+}
+
+:root[data-theme="ochre"] .thread-root-card h1 {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.35;
+  margin-bottom: 0.3rem;
+}
+
+:root[data-theme="ochre"] .post-card > .body,
+:root[data-theme="ochre"] .post-card .body {
+  font-size: 13.33px;
+  line-height: 1.45;
+  margin: 0.2rem 0;
+}
+
+:root[data-theme="ochre"] .post-card > .meta,
+:root[data-theme="ochre"] .post-card > .meta a {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+:root[data-theme="ochre"] .post-card > .meta a:hover {
+  color: var(--ink);
+}
+
+:root[data-theme="ochre"] .post-card-actions {
+  gap: 0.6rem;
+  margin-top: 0.15rem;
+}
+
+:root[data-theme="ochre"] .post-card-actions > a,
+:root[data-theme="ochre"] .post-card-actions button.thread-reaction-button {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  min-height: 0;
+  font-size: 11px;
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+/* A permalink jump: a pale orange wash, like the bar. */
+:root[data-theme="ochre"] .post-card:target {
+  background: #ffe9d9;
+  outline: none;
+}
+
+/* Composers, the Activity drawer and other cards stay framed, thinly. */
+:root[data-theme="ochre"] .card:not(.post-card) {
+  border: 1px solid #d6d6c8;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+:root[data-theme="ochre"] textarea,
+:root[data-theme="ochre"] input[type="text"],
+:root[data-theme="ochre"] input[type="search"],
+:root[data-theme="ochre"] input[type="url"],
+:root[data-theme="ochre"] input:not([type]) {
+  font-family: var(--body-font);
+  font-size: 13px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--input-bg);
+}
+
+:root[data-theme="ochre"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.thread-reaction-button):not(.account-row) {
+  border-radius: 2px;
+}
+
+:root[data-theme="ochre"] .post-card .body > :first-child {
+  margin-top: 0;
+}
+
+:root[data-theme="ochre"] .post-card .body > p {
+  margin: 0 0 0.45rem;
+}
+
+:root[data-theme="ochre"] .post-card .body > :last-child {
+  margin-bottom: 0;
+}

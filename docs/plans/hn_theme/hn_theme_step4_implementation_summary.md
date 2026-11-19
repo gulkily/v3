@@ -34,3 +34,22 @@ Stage 3 open question (hide board excerpts): not answered at approval; the plan'
 - Estimate details: original scope as Step 3, plus the profile list; no revision.
 
 *— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Thread styling
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.08**
+
+- Changes:
+  - `theme-ochre.css`: posts become plain text blocks (no border or panel). Each has a grey 12px line naming who and when, 13.33px text, and small underlined Reply, Like and Flag. The root title is 15px and regular weight. Continuations sit closer to the post they continue. A `:target` jump gets a pale orange wash.
+  - The content column widens from 760px to 880px. Composers, the Activity drawer and other cards keep a thin beige frame; inputs are white with a grey border.
+  - The shared depth indent (1rem per level, capped by `ReplyTree::MAX_INDENT_DEPTH`) is kept unchanged as Ochre's thin indent.
+- Verification:
+  - Screenshots at 1280px and 380px of a thread and a ported thread nested 9 deep: every action stays visible.
+  - Computed styles: metadata colour `rgb(107, 107, 107)`, 12px from the grey line to the text.
+  - Contrast audit: Ochre OK.
+- Notes: no markup changed. The Activity drawer only appears with title-only replies, which the fixture lacks; it is covered by the general `.card` rule and checked again in Stage 5.
+- Estimate details: original scope as Step 3; no revision.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
