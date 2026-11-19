@@ -72,3 +72,25 @@ Stage 3 open question (hide board excerpts): not answered at approval; the plan'
 - Estimate details: original scope as Step 3; no revision.
 
 *— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Fold toggles and parent/next links
+
+**Original estimate: 0.15**
+
+**Retrospective stage work: 0.15**
+
+- Changes:
+  - New `public/assets/theme-ochre.js`, registered with `forumThemeScripts`, and `'script' => true` on Ochre's registry entry. On a thread page (one with `.thread-root-card`), each reply's grey line gains "| parent | next" and a `[–]` button. A top-level reply's parent is the thread's first post. A reply with no grey line gets one of its own.
+  - A branch is the run of following cards whose `data-reply-depth` is deeper. Folding hides them with a class and shows `[+N]`, where N counts the reply and everything below it. Folds are kept per post ID until reload; unfolding an outer branch keeps inner folds. The button carries `aria-expanded` and a spoken label.
+  - A MutationObserver on the reply list rebuilds the controls once per frame when a card is added or removed, such as a reply posted without a reload. `stop` disconnects it and removes every element and class.
+  - `theme-ochre.css`: fold rules, inline toggle, and a 44px tap target on coarse pointers.
+  - New VM test `tests/browser/theme_ochre_script.cjs`, run by `ThemeToggleScriptTest::testOchreFoldsWholeBranchesAndStopRemovesEverything`.
+- Verification:
+  - `node tests/browser/theme_ochre_script.cjs`: passed (links, fold and nested fold, added line, stop leaves nothing, restart).
+  - `./v3 test --smoke ThemeToggleScriptTest ThemeRegistryTest LocalAppSmokeTest`: 483 run, 483 passed.
+  - Headless Chrome on the 9-deep port: 15 toggles; folding the second reply hides its 8 replies as `[+9]`; folding the first shows `[+11]`; reopening it keeps `[+9]`; leaving with `forumExitTheme('light')` leaves no Ochre element or class.
+  - Screenshot at 380px with two folds: toggles sit at the end of the grey line.
+- Notes: the base button rules made the toggle a block on phones; Ochre's toggle rule is scoped to `.post-card` to win. Bubblegum's window controls were not reused, as planned.
+- Estimate details: original scope as Step 3, plus the observer for live replies; no revision.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*

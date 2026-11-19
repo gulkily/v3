@@ -81,7 +81,7 @@ final class ThemeRegistry
             ['name' => 'chouse', 'label' => 'Chouse', 'mode' => 'dark'],
             ['name' => 'qdb', 'label' => 'QDB', 'mode' => 'light'],
             ['name' => 'mitrapclub', 'label' => 'MIT Rap Club', 'mode' => 'dark'],
-            ['name' => 'ochre', 'label' => 'Ochre', 'mode' => 'light'],
+            ['name' => 'ochre', 'label' => 'Ochre', 'mode' => 'light', 'script' => true],
         ];
     }
 

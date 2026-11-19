@@ -401,3 +401,46 @@
   font-weight: 400;
   color: var(--ink-soft);
 }
+
+/* Folding (theme-ochre.js): a folded reply keeps only its grey line; the
+   replies below it are hidden. Without JavaScript nothing folds. */
+:root[data-theme="ochre"] .post-card.ochre-hidden {
+  display: none !important;
+}
+
+:root[data-theme="ochre"] .post-card.ochre-collapsed > :not(.ochre-keep) {
+  display: none !important;
+}
+
+:root[data-theme="ochre"] .ochre-nav a {
+  color: var(--ink-soft);
+}
+
+:root[data-theme="ochre"] .ochre-nav a:hover {
+  color: var(--ink);
+}
+
+:root[data-theme="ochre"] .post-card .ochre-toggle {
+  display: inline;
+  width: auto;
+  vertical-align: baseline;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0 0.15rem;
+  min-height: 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+/* Phones: a 44px tap target without changing the line's height. */
+@media (pointer: coarse) {
+  :root[data-theme="ochre"] .post-card .ochre-toggle {
+    display: inline-block;
+    min-width: 44px;
+    padding: 0.6rem 0.3rem;
+    margin: -0.6rem 0;
+  }
+}
