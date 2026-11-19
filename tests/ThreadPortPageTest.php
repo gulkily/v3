@@ -159,6 +159,39 @@ final class ThreadPortPageTest
         }
     }
 
+    public function testMembersSeePortsWaitingOnlyWhileGuestsMayPort(): void
+    {
+        $this->root = '';
+        $member = ['identity_id' => self::MEMBER, 'username_token' => 'ilyag', 'is_approved' => 1, '_authenticated_identity' => true];
+        $this->site(true, true);
+        $this->call(null, 'receive', 'POST', ['port' => self::PORT]);
+        [$status, $html] = $this->call($member, 'receive', 'GET');
+        threadPortPageAssertSame(200, $status);
+        threadPortPageAssertContains('Ports waiting', $html);
+        threadPortPageAssertContains('Ask HN: Test</a>', $html);
+        threadPortPageAssertContains('2 comments', $html);
+        threadPortPageAssertSame(false, str_contains($this->call(null, 'receive', 'GET')[1], 'Ask HN: Test'));
+        $tools = $this->page('/tools/bookmarklets/');
+        threadPortPageAssertContains('<a href="/port/">Ports waiting</a>', $tools);
+
+        $this->site(true, false);
+        threadPortPageAssertSame(false, str_contains($this->call($member, 'receive', 'GET')[1], 'Ask HN: Test'));
+        threadPortPageAssertSame(false, str_contains($this->page('/tools/bookmarklets/'), 'Ports waiting'));
+    }
+
+    private function page(string $path): string
+    {
+        $application = new Application(dirname(__DIR__), $this->root, $this->root . '.sqlite3', $this->root . '-public');
+        http_response_code(200);
+        ob_start();
+        try {
+            $application->handle('GET', $path);
+        } finally {
+            $html = (string) ob_get_clean();
+        }
+        return $html;
+    }
+
     private function portedCount(): int
     {
         return (int) (new PDO('sqlite:' . $this->root . '.sqlite3'))->query('SELECT COUNT(*) FROM posts WHERE ported_from IS NOT NULL')->fetchColumn();

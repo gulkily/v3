@@ -217,6 +217,8 @@ final class ToolsPageController
                         ],
                     ] : []),
                 ],
+                'portsWaitingLink' => $this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_PORT_ENABLED)
+                    && $this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_PORT_GUESTS_ENABLED),
                 'toolNavOptions' => ToolsPageSupport::navOptions('bookmarklets'),
             ],
             'Bookmarklets',

@@ -137,3 +137,24 @@ Step 4 entry (2026-11-19 UTC): Step 3 projection **0.95** reaffirmed after the p
 - Estimate details: retrospective 0.14 above the original 0.12 because of the byline time fix; scope unchanged.
 
 *— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - Ports waiting and the agent invitation
+
+**Original estimate: 0.08**
+
+**Retrospective: 0.08**
+
+- Changes:
+  - `GET /port/` lists held ports for approved, signed-in members while `FORUM_THREAD_PORT_GUESTS_ENABLED` is on. Everyone else gets a one-line pointer to the bookmarklet. New template `port_waiting.php`.
+  - Tools → Bookmarklets shows a "Ports waiting" link only while both flags are on.
+  - `LlmsTxtRenderer` adds one Agent policy line about `#ported` threads. `docs/reference/agent_api.md` gains "Ported threads".
+  - Pre-existing failure fixed: `ToolsRegistryTest` expected 20 tools, but the registry has had 22 since Usage Log and Usage Reports were added. It failed on base `7d9b4b4d` too. The count is now 22, and the uniqueness and group-order assertions that never ran after it pass.
+- Verification:
+  - `ThreadPortPageTest::testMembersSeePortsWaitingOnlyWhileGuestsMayPort`: a member sees the held guest port, a guest does not, the Bookmarklets link appears with guests on, and the list and link disappear with guests off.
+  - `LlmsTxtRendererTest`: the `#ported` line is present.
+  - `./v3 test ToolsRegistryTest`: 2 passed, after failing before the fix on this branch and on base.
+  - `./v3 test --smoke` with `ThreadPortPageTest`, `LlmsTxtRendererTest`, `PlatformDocsCatalogTest`, `PlatformDocsPageTest`, `PlatformDocsStaticTest` and `ToolsRegistryTest`: 519 passed, 0 failed.
+- Notes: the plan allowed a Tools button with nav icons for the list. The list lives at `/port/`, linked from Bookmarklets, so no nav icon sets change.
+- Estimate details: original scope as Step 3; no revision.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*

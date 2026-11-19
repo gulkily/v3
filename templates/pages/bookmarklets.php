@@ -2,6 +2,9 @@
   <article class="card tool-launcher bookmarklets-page">
     <h1>Bookmarklets</h1>
     <p class="bookmarklets-hint meta">Drag a button to your bookmarks bar, then click it while viewing another page.</p>
+<?php if ($portsWaitingLink ?? false): ?>
+    <p class="meta"><a href="/port/">Ports waiting</a></p>
+<?php endif; ?>
 <?php
 $bookmarkletSections = [
     [

@@ -36,7 +36,7 @@ final class PortPageController
     public function receive(string $method, array $query): void
     {
         if ($method !== 'POST') {
-            $this->message('Port a thread', 'Use the Hacker News bookmarklet on Tools → Bookmarklets to port a thread.', 405);
+            $this->waiting();
             return;
         }
         try {
@@ -86,6 +86,20 @@ final class PortPageController
             'guestsMayPort' => ($this->flagEnabled)(FeatureFlagRegistry::THREAD_PORT_GUESTS_ENABLED),
             'error' => $error,
         ], 'Port a thread', 'tools'), $method === 'POST' && $error !== '' ? 409 : 200, $this->routeServices->noStoreHeaders());
+    }
+
+    /** GET /port/: ports guests sent, for an approved member to open and port. Only while guests may port. */
+    private function waiting(): void
+    {
+        $viewer = ($this->viewerProfile)();
+        if (!($this->flagEnabled)(FeatureFlagRegistry::THREAD_PORT_GUESTS_ENABLED) || !RouteServices::signedInApproved($viewer)) {
+            $this->message('Port a thread', 'Use the Port HN bookmarklet on Tools → Bookmarklets on a Hacker News thread.', 200);
+            return;
+        }
+        $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('port_waiting.php', [
+            'viewerProfile' => $viewer,
+            'items' => $this->store->all(time()),
+        ], 'Ports waiting', 'tools'), 200, $this->routeServices->noStoreHeaders());
     }
 
     private function existingThreadId(PortFile $port): ?string
