@@ -94,3 +94,20 @@ Stage 3 open question (hide board excerpts): not answered at approval; the plan'
 - Estimate details: original scope as Step 3, plus the observer for live replies; no revision.
 
 *— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Deep ported thread end to end
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.08**
+
+- Changes:
+  - New browser test `tests/browser/theme_ochre.mjs` with its fixture `tests/browser/theme_ochre_fixture.php`. The fixture ports a thread nested nine deep through `createPortedThread`, then adds a `theme: ochre` reply from the fixture's operator.
+  - The test covers a reader with no saved theme seeing Ochre before first paint, then 16 toggles. It checks `[+9]` and `[+11]`, an inner fold kept when its outer branch reopens, the keyboard, parent/next and the `:target` jump, and leaving for Gloss with no Ochre left. It then checks that a revisit stays on Gloss, a plain thread shows the usual theme, all 17 posts show with JavaScript off, and on a phone the toggle is 44px wide on the grey line and folds on tap.
+- Verification:
+  - `CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/theme_ochre.mjs <dir>`: passed. Like `draggable_windows.mjs`, it runs by hand, not in `./v3 test`.
+  - `./v3 test`: smoke set passed.
+- Notes: the Activity drawer is **unverified** in Ochre. Its entries come from reactions and title-only replies, which this fixture does not create. It falls under the general `.card` rule from Stage 2. The maintainer's production try is the check.
+- Estimate details: original scope as Step 3; no revision.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
