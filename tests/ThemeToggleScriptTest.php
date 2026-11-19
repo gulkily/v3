@@ -26,6 +26,11 @@ final class ThemeToggleScriptTest
         $this->assertScriptPasses('theme_exit.cjs');
     }
 
+    public function testOchreFoldsWholeBranchesAndStopRemovesEverything(): void
+    {
+        $this->assertScriptPasses('theme_ochre_script.cjs');
+    }
+
     private function assertScriptPasses(string $script): void
     {
         $command = 'cd ' . escapeshellarg(dirname(__DIR__)) . ' && node '
