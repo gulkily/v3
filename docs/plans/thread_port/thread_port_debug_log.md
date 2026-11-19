@@ -58,3 +58,24 @@
 ### Uncertain assessments
 
 - Stage sizing "<=50 lines of change": Stage 3 and Stage 5 may run past 50 lines with tests. Kept as single stages because each is one testable outcome.
+
+## 2026-11-19T14:35Z — Step 4
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md`, Planning Docs Commit Gate: kept the plans as the branch's first commit, separate from code. Retain.
+- `step4_implementation_do.md`, Stage Boundary Protocol: one commit per stage made the per-stage tests and summaries easy to review. Retain.
+- `implementation_standards.md` (via AGENTS.md), reuse before adding: led to moving `buildReplyTree` instead of copying it, and to `author_label` carrying the ported byline instead of new template branches. Retain.
+- Host preference, pre-existing failures are fixed: `ToolsRegistryTest` failed on base and was fixed in Stage 7. Retain.
+
+### Redundant/unnecessary instructions
+
+- `step4_implementation_do.md`, "keeping each stage <2 hours": not checkable by an agent without timing; the stage estimates already cover size. Suggest dropping it or tying it to the estimate.
+
+### Inapplicable instructions
+
+- Documentation-only stage checks: application work.
+
+### Uncertain assessments
+
+- Known-environment replay (Stage 8): the required evidence depends on the maintainer's deploy and device. The instructions don't say how to close a cycle whose last stage waits on someone else; recorded as pending rather than complete.
