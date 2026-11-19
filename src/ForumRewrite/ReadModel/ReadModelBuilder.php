@@ -188,8 +188,8 @@ final class ReadModelBuilder
     private function indexPosts(PDO $pdo): array
     {
         $insertPost = $pdo->prepare(
-            'INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, thread_type, agent_response_json, body_format, theme, author_identity_id, retracted_at, retraction_class, retraction_attribution, sequence_number)
-             VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :agent_response_json, :body_format, :theme, :author_identity_id, :retracted_at, :retraction_class, :retraction_attribution, :sequence_number)'
+            'INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, thread_type, agent_response_json, body_format, theme, author_identity_id, retracted_at, retraction_class, retraction_attribution, ported_from, ported_author, ported_created_at, ported_by, author_label, sequence_number)
+             VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :agent_response_json, :body_format, :theme, :author_identity_id, :retracted_at, :retraction_class, :retraction_attribution, :ported_from, :ported_author, :ported_created_at, :ported_by, :author_label, :sequence_number)'
         );
         $insertThread = $pdo->prepare(
             'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link, event_time, event_end_date, event_when, retracted_at, retraction_class, retraction_attribution)
@@ -234,6 +234,8 @@ final class ReadModelBuilder
                 'event_time' => $isRetracted ? null : $record->eventTime,
                 'event_end_date' => $isRetracted ? null : $record->eventEndDate,
                 'event_when' => $isRetracted ? null : $record->eventWhen,
+                'author_label' => (!$isRetracted ? $record->ported?->authorLabel() : null) ?? 'guest',
+            ] + \ForumRewrite\Canonical\PortedSource::columns($isRetracted ? null : $record->ported) + [
                 'source_path' => $relativePath,
                 'source_commit_sha' => $this->sourceCommitShaForPath($relativePath),
                 'source_order' => $index + 1,
@@ -301,6 +303,11 @@ final class ReadModelBuilder
                 'retracted_at' => $post['retracted_at'],
                 'retraction_class' => $post['retraction_class'],
                 'retraction_attribution' => $post['retraction_attribution'],
+                'ported_from' => $post['ported_from'] ?? null,
+                'ported_author' => $post['ported_author'] ?? null,
+                'ported_created_at' => $post['ported_created_at'] ?? null,
+                'ported_by' => $post['ported_by'] ?? null,
+                'author_label' => $post['author_label'] ?? 'guest',
                 'sequence_number' => $post['sequence_number'],
             ]);
 

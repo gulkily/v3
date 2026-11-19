@@ -188,6 +188,7 @@ final class PostRecordParser
             $eventEndDate,
             $theme,
             $eventWhen,
+            PortedSource::fromHeaders($record->headers),
         );
     }
 

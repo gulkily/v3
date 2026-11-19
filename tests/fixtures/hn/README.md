@@ -1,0 +1,1 @@
+Synthetic Hacker News pages for the thread port bookmarklet check (`tests/browser/thread_port_bookmarklet.mjs`). The markup copies Hacker News's structure as of 2026-11-19; users and text are invented.

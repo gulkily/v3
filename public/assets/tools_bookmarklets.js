@@ -95,7 +95,115 @@
     );
   }
 
+
+  // Reads a Hacker News item page (a story, a comment's own page, or the
+  // comment holding the selection) into a port file and sends it to /port.
+  // Self-contained: its source text is the bookmarklet.
+  function hnPortSubmit(baseOrigin, mode) {
+    function fail(message) { alert(message); }
+    if (location.hostname !== "news.ycombinator.com" || location.pathname !== "/item") {
+      fail("Open a Hacker News thread first, then tap this bookmarklet.");
+      return;
+    }
+    function textOf(el) {
+      var out = "";
+      (function walk(n) {
+        if (n.nodeType === 3) { out += n.nodeValue; return; }
+        if (n.nodeType !== 1) return;
+        var tag = n.tagName;
+        if (tag === "P") out += "\n\n";
+        if (tag === "BR") { out += "\n"; return; }
+        if (tag === "A" && n.getAttribute("href")) {
+          var href = n.href, shown = n.textContent;
+          out += href.indexOf(shown.replace(/\.\.\.$/, "")) === 0 || shown === "" ? href : shown + " (" + href + ")";
+          return;
+        }
+        if (tag === "DIV" && /(^| )reply( |$)/.test(n.className)) return;
+        for (var c = n.firstChild; c; c = c.nextSibling) walk(c);
+        if (tag === "PRE") out += "\n";
+      })(el);
+      return out.replace(/ /g, " ").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+    }
+    function itemOf(row) {
+      var head = row.querySelector(".subline, span.comhead:not(.sitebit)") || (row.nextElementSibling && row.nextElementSibling.querySelector(".subline"));
+      var user = head && head.querySelector('a[href^="user?id="]');
+      var age = head && head.querySelector(".age");
+      var when = age ? String(age.getAttribute("title") || "").split(" ")[0] : "";
+      return {
+        id: row.id,
+        author: user ? user.textContent.trim() : "[deleted]",
+        createdAt: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(when) ? when + "Z" : when
+      };
+    }
+    function block(fields, text) {
+      var out = "%%\n";
+      for (var i = 0; i < fields.length; i++) {
+        if (fields[i][1] !== "" && fields[i][1] !== null) out += fields[i][0] + ": " + String(fields[i][1]).replace(/\s+/g, " ") + "\n";
+      }
+      return out + "\n" + text.replace(/^%/gm, "%%") + "\n";
+    }
+
+    var fat = document.querySelector("table.fatitem tr.athing");
+    if (!fat) { fail("No Hacker News item found on this page."); return; }
+    var isStory = /(^| )submission( |$)/.test(fat.className);
+    var titleLink = document.querySelector("table.fatitem .titleline > a");
+    var onStory = document.querySelector("table.fatitem .onstory a");
+    var threadTitle = isStory ? (titleLink ? titleLink.textContent : "") : (onStory ? onStory.getAttribute("title") || onStory.textContent : "");
+    var storyId = isStory ? fat.id : (onStory ? (onStory.getAttribute("href").match(/id=(\d+)/) || [])[1] : fat.id);
+
+    var rows = [].slice.call(document.querySelectorAll("table.comment-tree tr.athing.comtr"));
+    var root = null;
+    var sel = window.getSelection ? window.getSelection() : null;
+    if (sel && sel.rangeCount && sel.toString().trim() !== "") {
+      var node = sel.getRangeAt(0).commonAncestorContainer;
+      if (node.nodeType !== 1) node = node.parentNode;
+      var chosen = node && node.closest ? node.closest("tr.athing.comtr") : null;
+      if (chosen) {
+        var start = rows.indexOf(chosen), depth = +chosen.querySelector("td.ind").getAttribute("indent"), end = start + 1;
+        while (end < rows.length && +rows[end].querySelector("td.ind").getAttribute("indent") > depth) end++;
+        root = chosen;
+        rows = rows.slice(start + 1, end);
+        isStory = false;
+      }
+    }
+
+    var rootItem = itemOf(root || fat);
+    var rootText = root ? textOf(root.querySelector(".commtext") || root) : textOf(document.querySelector("table.fatitem " + (isStory ? ".toptext" : ".commtext")) || document.createElement("div"));
+    var text = "Port-Format: hn-v1\nThread-Title: " + threadTitle.replace(/\s+/g, " ").trim()
+      + "\nThread-Link: https://news.ycombinator.com/item?id=" + storyId + "\n";
+    text += block([["Item", rootItem.id], ["Author", rootItem.author], ["Created-At", rootItem.createdAt],
+      ["Title", isStory ? threadTitle : ""], ["Link", isStory && titleLink && /^https?:/.test(titleLink.href) && titleLink.href.indexOf("https://news.ycombinator.com/item?id=") !== 0 ? titleLink.href : ""]], rootText);
+
+    var stack = [rootItem.id], base = rows.length ? +rows[0].querySelector("td.ind").getAttribute("indent") : 0;
+    if (rows.length > 500) { fail("This thread has " + rows.length + " comments; ports take up to 500. Select text in one comment to port it and its replies."); return; }
+    for (var r = 0; r < rows.length; r++) {
+      var d = +rows[r].querySelector("td.ind").getAttribute("indent") - base;
+      if (d < 0 || d > stack.length - 1) { fail("Couldn't read how comment " + rows[r].id + " is nested. Nothing was sent."); return; }
+      stack.length = d + 1;
+      var item = itemOf(rows[r]);
+      var body = rows[r].querySelector(".commtext");
+      text += block([["Item", item.id], ["Parent", stack[d]], ["Author", item.author], ["Created-At", item.createdAt || rootItem.createdAt]], body ? textOf(body) : "[deleted]");
+      stack.push(item.id);
+    }
+
+    var form = document.createElement("form");
+    form.method = "post";
+    form.action = baseOrigin + "/port";
+    form.acceptCharset = "UTF-8";
+    if (mode === "new-window") form.target = "_blank";
+    var field = document.createElement("textarea");
+    field.name = "port";
+    field.value = text;
+    form.appendChild(field);
+    form.style.display = "none";
+    document.body.appendChild(form);
+    form.submit();
+  }
+
   function bookmarkletScript(baseOrigin, kind, mode) {
+    if (kind === "hn-port") {
+      return "(function(){(" + hnPortSubmit.toString() + ")(" + JSON.stringify(baseOrigin) + "," + JSON.stringify(mode) + ");})()";
+    }
     var fn = kind === "tweet" ? tweetComposeUrl : composeUrl;
 
     if (mode === "new-window") {
