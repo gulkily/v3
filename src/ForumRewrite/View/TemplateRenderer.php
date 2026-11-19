@@ -929,13 +929,20 @@ final class TemplateRenderer
         return '<a href="' . $profilesBase . $escape($authorProfileSlug) . '"' . $summaryAttrs . '>' . $escape($authorLabel) . '</a> <span class="meta">(unapproved)</span>';
     }
 
+    /** A ported post's byline shows when it was written on its source site, not when it was ported. */
+    private function portedTime(array $record): ?string
+    {
+        $at = (string) ($record['ported_created_at'] ?? '');
+        return $at !== '' && (string) ($record['ported_from'] ?? '') !== '' ? $at : null;
+    }
+
     /**
      * @param callable(mixed): string $escape
      */
     private function renderContentMeta(array $record, string $timeField, string $timeLabel, callable $escape, bool $forteTarget = false): string
     {
         $authorHtml = $this->renderAuthorHtml($record, $escape, $forteTarget);
-        $timestampHtml = $this->renderTimestampHtml((string) ($record[$timeField] ?? ''), $escape);
+        $timestampHtml = $this->renderTimestampHtml((string) ($this->portedTime($record) ?? $record[$timeField] ?? ''), $escape);
         $prefix = trim($timeLabel);
 
         if ($timestampHtml !== '') {
@@ -957,7 +964,7 @@ final class TemplateRenderer
         $authorHtml = $this->renderAuthorHtml($record, $escape);
         $authorHtml = str_replace(' <span class="meta">(unapproved)</span>', '', $authorHtml, $unapproved);
         $parts = $withAuthor ? [$authorHtml] : [];
-        $dateHtml = $this->renderShortDateHtml((string) ($record[$timeField] ?? ''), $escape);
+        $dateHtml = $this->renderShortDateHtml((string) ($this->portedTime($record) ?? $record[$timeField] ?? ''), $escape);
         if ($dateHtml !== '') {
             $parts[] = $dateHtml;
         }

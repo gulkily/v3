@@ -12,6 +12,8 @@ require __DIR__ . '/../autoload.php';
 /** A port file becomes one thread, every comment under its parent, in one commit. */
 final class ThreadPortWriteTest
 {
+    private const PORTER = 'openpgp:abababababababababababababababababababab';
+
     public function testSmallPortWritesOneCommitWithParentsAndLabel(): void
     {
         [$root, $service] = $this->environment();
@@ -76,6 +78,33 @@ final class ThreadPortWriteTest
         $body = (string) (new PDO('sqlite:' . $root . '.sqlite3'))->query("SELECT body FROM posts WHERE ported_from = 'https://news.ycombinator.com/item?id=1002'")->fetchColumn();
         threadPortWriteAssertContains('Nice ? work', $body);
         threadPortWriteAssertSame(false, $result['existing']);
+    }
+
+    public function testThreadPageNestsPortedRepliesAndANativeReplyUnderItsParent(): void
+    {
+        [$root, $service] = $this->environment();
+        $result = $service->createPortedThread(PortFile::parse($this->portText(6)), self::PORTER);
+        $pdo = new PDO('sqlite:' . $root . '.sqlite3');
+        $idFor = static fn (int $item): string => (string) $pdo->query("SELECT post_id FROM posts WHERE ported_from = 'https://news.ycombinator.com/item?id=" . $item . "'")->fetchColumn();
+        $native = $service->createReply(['thread_id' => $result['thread_id'], 'parent_id' => $idFor(1003), 'body' => 'A native reply to user3.']);
+
+        $application = new Application(dirname(__DIR__), $root, $root . '.sqlite3', $root . '-public');
+        http_response_code(200);
+        ob_start();
+        try {
+            $application->handle('GET', '/threads/' . rawurlencode($result['thread_id']));
+        } finally {
+            $html = (string) ob_get_clean();
+        }
+        preg_match_all('#<article id="[^"]*" class="card post-card[^"]*"[^>]*data-post-id="([^"]+)"(?: data-reply-depth="(\d+)")?#', $html, $m, PREG_SET_ORDER);
+        $order = array_values(array_filter(array_map(static fn (array $hit): array => [$hit[1], (int) ($hit[2] ?? 0)], $m), static fn (array $row): bool => $row[0] !== $result['thread_id']));
+        // Items 1001 and 1002 answer the story; 1003 answers 1001; 1004 and 1005 answer 1002; 1006 answers 1003.
+        $expected = [
+            [$idFor(1001), 0], [$idFor(1003), 1], [$idFor(1006), 2], [$native['post_id'], 2],
+            [$idFor(1002), 0], [$idFor(1004), 1], [$idFor(1005), 1],
+        ];
+        threadPortWriteAssertSame($expected, $order);
+        threadPortWriteAssertContains('data-reply-depth="2" style="margin-left:2rem"', $html);
     }
 
     /** A story with $comments comments: each comment replies to the root or to an earlier comment. */

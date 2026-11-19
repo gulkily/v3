@@ -117,3 +117,23 @@ Step 4 entry (2026-11-19 UTC): Step 3 projection **0.95** reaffirmed after the p
 - Estimate details: original scope as Step 3; no revision.
 
 *— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Tree on the thread page
+
+**Original estimate: 0.12**
+
+**Retrospective: 0.14**
+
+- Changes:
+  - New `View\ReplyTree` holds `build`, moved from `ForteBoardController::buildReplyTree`, which now calls it. It also has `flatten`: reading order plus depth.
+  - `thread.php` arranges a ported thread's replies by `ReplyTree::flatten` and turns off same-author merging there. `post_card.php` takes an optional `replyDepth` and adds `data-reply-depth` and an inline left margin, up to 6 rem. The Forte tree already indents this way. No new card markup.
+  - Found during the visual check: bylines showed the port time. Bylines and row dates now use `ported_created_at` for ported posts. The six queries with `posts.ported_from` also select it.
+- Verification:
+  - `ThreadPortWriteTest::testThreadPageNestsPortedRepliesAndANativeReplyUnderItsParent`: reading order and depths for 6 ported comments, plus a native `createReply` under a ported comment, which lands under its parent one level deeper.
+  - `ThreadPortRecordTest`: the byline carries the Hacker News time, not the port time.
+  - `./v3 test --smoke` plus all port tests, `ForteBoardReaderTest`, `ThreadActivityTest` and `RecentPostTest`: 505 passed, 0 failed.
+  - Visual check at 380px in Gloss and Bubblegum (Chrome, local `php -S`, 12-comment port): nesting is clear, there is no horizontal scroll, and Bubblegum's window chrome stays intact. Screenshots were not committed.
+- Notes: the activity drawer and continuation still run on the reordered list. A hashtag-only reply under a ported comment moves to the drawer as before.
+- Estimate details: retrospective 0.14 above the original 0.12 because of the byline time fix; scope unchanged.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*

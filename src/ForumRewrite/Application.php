@@ -2052,7 +2052,7 @@ final class Application
     {
         $stmt = $this->pdo()->prepare(
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview, threads.retracted_at, threads.retraction_class, threads.retraction_attribution,
-                    threads.reply_count, threads.last_post_id, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.ported_from, posts.author_profile_slug, posts.attribution_counted,
+                    threads.reply_count, threads.last_post_id, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.ported_from, posts.ported_created_at, posts.author_profile_slug, posts.attribution_counted,
                     threads.event_date, threads.event_location, threads.event_link, threads.event_time, threads.event_end_date, threads.event_when,
                     profiles.username_token AS author_username_token, COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved
              FROM threads
@@ -2076,7 +2076,7 @@ final class Application
     private function fetchThreadPosts(string $threadId): array
     {
         $stmt = $this->pdo()->prepare(
-            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.body_format, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_identity_id, posts.author_label, posts.ported_from,
+            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.body_format, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_identity_id, posts.author_label, posts.ported_from, posts.ported_created_at,
                     posts.created_at, posts.board_tags_json, posts.agent_response_json, posts.resolution_state, (SELECT COALESCE(NULLIF(profiles.username, \'\'), profiles.fallback_label) FROM profiles WHERE profiles.identity_id = posts.resolution_set_by) AS resolution_set_by_username,
                     posts.author_profile_slug, posts.attribution_counted, profiles.username_token AS author_username_token,
                     COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved,
@@ -2099,7 +2099,7 @@ final class Application
     {
         $hiddenWhere = $includeHidden ? '' : ' AND posts.is_hidden = 0';
         $stmt = $this->pdo()->prepare(
-            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_label, posts.ported_from,
+            'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_label, posts.ported_from, posts.ported_created_at,
                     posts.created_at, posts.board_tags_json, posts.post_score_total, posts.is_hidden, posts.hidden_reason, posts.resolution_state, (SELECT COALESCE(NULLIF(profiles.username, \'\'), profiles.fallback_label) FROM profiles WHERE profiles.identity_id = posts.resolution_set_by) AS resolution_set_by_username,
                     posts.author_identity_id, posts.author_profile_slug, posts.attribution_counted, posts.agent_response_json, posts.body_format, profiles.username_token AS author_username_token,
                     COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved,

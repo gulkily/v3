@@ -63,6 +63,9 @@ final class ThreadPortRecordTest
         threadPortAssertContains('<span class="ported-author">dhouston on <a href="https://news.ycombinator.com/item?id=8863" rel="nofollow noopener">Hacker News</a></span>', $thread);
         threadPortAssertContains('<span class="ported-author">pg on <a href="https://news.ycombinator.com/item?id=8869"', $thread);
         threadPortAssertSame(false, str_contains($thread, '/user/dhouston') || str_contains($thread, '/profiles/dhouston'));
+        // The byline shows when it was written on Hacker News, not when it was ported.
+        threadPortAssertContains('datetime="2007-04-04T19:16:40Z"', $thread);
+        threadPortAssertSame(false, str_contains($thread, 'datetime="2026-11-19T12:00:00Z"'));
 
         $recent = $this->get($application, '/recent/');
         threadPortAssertContains('My YC app: Dropbox', $recent);
