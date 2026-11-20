@@ -86,7 +86,8 @@ Concepts touched: [visitor intro](../../concepts/visitor_intro.md) (moved below 
 
 - 2026-11-19 UTC: **Approved Step 1** by the maintainer with Option B.
 - 2026-11-19 UTC, Step 2 handoff: **0.70** projected total, reaffirmed from Step 1's Option B. Offline is now out of scope, but the pair-of-tags route and the performance check weigh about the same. Claude, single exposed rater. Scope v2. Reference R1, hashes not re-verified this session. Baseline `origin/main` `eb0f5177`.
-- 2026-11-20 UTC revision: the maintainer dropped the tagline and kept /tags/zen+meme open to anyone's tags. Projected total **0.70**, unchanged; the tagline was a few lines of profile text. Awaiting `Approved Step 2`.
+- 2026-11-20 UTC revision: the maintainer dropped the tagline and kept /tags/zen+meme open to anyone's tags. Projected total **0.70**, unchanged; the tagline was a few lines of profile text.
+- 2026-11-20 UTC: **Approved Step 2** by the maintainer.
 
 *— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
 

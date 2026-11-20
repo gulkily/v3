@@ -37,3 +37,22 @@
 ### Uncertain assessments
 
 - The 10% render-time budget is a judgment, not a measured baseline. Recorded as a success criterion for the maintainer to change.
+
+## 2026-11-20T16:40Z — Step 3
+
+### Necessary/useful instructions
+
+- `step3_development_plan_do.md`, canonical components per stage: checking `BoardPageController` showed zenmemes.com renders `board_list.php`, not the `board.php` named in Steps 1 and 2. Retain.
+- `step3_development_plan_do.md`, Key Risks near the top: surfaced the board cache refresh on label changes as the main risk. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- `step3_development_plan_do.md`, replaying a reported user failure: Step 2 names no reported failure.
+
+### Uncertain assessments
+
+- `step3_development_plan_before.md`, keep Steps 1–3 uncommitted: this cycle followed the hn_theme precedent of committing and pushing each step, because the maintainer reviews from the attached files across sessions.
