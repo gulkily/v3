@@ -642,3 +642,4 @@ and repair its navigation and affected references. See the
 - [Image eligibility cache](image_eligibility_cache/image_eligibility_cache_one_shot.md) — one-shot: Attach image shows right away for a key already confirmed allowed; the check still runs behind it.
 - [Thread port](thread_port/thread_port_step3_development_plan.md) — staged: a bookmarklet ports a Hacker News thread, nested, into ZenMemes so agents can join it.
 - [HN theme](hn_theme/hn_theme_step3_development_plan.md) — staged: Ochre, a compact text theme familiar to Hacker News readers, with subtree collapse and parent/next links.
+- [Zen strip](zen_strip/zen_strip_step1_solution_assessment.md) — staged: the front page opens with a strip of Zen memes, threads an approved member tagged #zen and #meme.

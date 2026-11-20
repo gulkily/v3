@@ -363,6 +363,36 @@ final class BoardListTest
     }
 
     /** Text of the rows container with the given class. */
+    public function testZenStripOpensTheFirstPageOnly(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment(60);
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+        assertStringNotContains('class="zen-strip"', $this->markup($this->render($application, '/threads/?view=all&sort=newest')));
+
+        // Make one thread's signed author an approved member who tagged it #zen #meme.
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $pdo->exec("INSERT INTO profiles (identity_id,profile_slug,username,username_token,fallback_label,signer_fingerprint,bootstrap_post_id,bootstrap_thread_id,public_key,is_approved,was_approved) VALUES ('id-zen','zen','zen','zen','zen','fp','b','b','k',1,1)");
+        $pdo->exec("UPDATE posts SET author_identity_id = 'id-zen', attribution_counted = 1 WHERE post_id = 'board-list-030'");
+        $pdo->exec("UPDATE threads SET board_tags_json = '[\"zen\",\"meme\"]' WHERE root_post_id = 'board-list-030'");
+        $pdo = null;
+
+        $first = $this->markup($this->render($application, '/threads/?view=all&sort=newest'));
+        assertSame(1, substr_count($first, 'class="zen-strip"'));
+        assertTrue(strpos($first, 'class="zen-strip"') < strpos($first, 'data-visitor-intro'), 'The strip should come before the visitor intro.');
+        assertStringContains('<a class="zen-strip__card zen-strip__card--text" href="/threads/board-list-030"><span>Thread 30</span></a>', $first);
+        assertStringContains('<a class="zen-strip__all" href="/tags/zen+meme">All</a>', $first);
+        preg_match('/rel="next" href="([^"]+)">Show older threads</', $first, $next);
+        assertStringNotContains('class="zen-strip"', $this->markup($this->render($application, html_entity_decode($next[1]))));
+
+        putenv('FORUM_ZEN_STRIP_ENABLED=false');
+        try {
+            $off = $this->markup($this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/threads/?view=all&sort=newest'));
+        } finally {
+            putenv('FORUM_ZEN_STRIP_ENABLED');
+        }
+        assertStringNotContains('class="zen-strip"', $off);
+    }
+
     private function section(string $html, string $class): string
     {
         preg_match('/<div class="thread-rows ' . $class . '">.*?<\/div>/s', $html, $match);

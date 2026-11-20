@@ -37,6 +37,8 @@ final class SiteProfileRegistry
                 ],
                 // The thread whose top-level replies /guestbook/ shows as a book; null until it exists.
                 'guestbookThread' => null,
+                // Threads an approved member tagged with every one of these open the board as Zen memes.
+                'zenStripTags' => ['zen', 'meme'],
                 'presentationSlots' => ['navigation' => 'app', 'boardCard' => 'list', 'compose' => 'thread', 'about' => 'default', 'editorial' => 'zenmemes', 'brandedStylesheet' => 'site'],
             ],
             'chouse' => [
@@ -136,6 +138,19 @@ final class SiteProfileRegistry
         return is_string($threadId) && $threadId !== '' ? $threadId : null;
     }
 
+    /**
+     * The tags a thread needs, all of them, to open the board in the Zen strip; empty when the
+     * active site has no strip.
+     *
+     * @return list<string>
+     */
+    public static function zenStripTags(): array
+    {
+        $tags = self::active()['zenStripTags'] ?? [];
+
+        return is_array($tags) ? array_values($tags) : [];
+    }
+
     /** The page theme for a request path on the active site, or null. */
     public static function pageThemeFor(string $path): ?string
     {
@@ -218,6 +233,18 @@ final class SiteProfileRegistry
 
             if (isset($profile['guestbookThread']) && (!is_string($profile['guestbookThread']) || preg_match('/^[A-Za-z0-9._-]+$/', $profile['guestbookThread']) !== 1)) {
                 throw new \RuntimeException("Site profile {$siteId} has an invalid guestbook thread ID.");
+            }
+
+            if (isset($profile['zenStripTags'])) {
+                $stripTags = $profile['zenStripTags'];
+                if (!is_array($stripTags) || $stripTags === [] || !array_is_list($stripTags) || count(array_unique($stripTags)) !== count($stripTags)) {
+                    throw new \RuntimeException("Site profile {$siteId} Zen strip tags must be a list of different tags.");
+                }
+                foreach ($stripTags as $stripTag) {
+                    if (!is_string($stripTag) || preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $stripTag) !== 1) {
+                        throw new \RuntimeException("Site profile {$siteId} has an invalid Zen strip tag.");
+                    }
+                }
             }
 
             $browserNamespace = $profile['browserNamespace'];
