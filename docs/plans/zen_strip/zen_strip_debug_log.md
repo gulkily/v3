@@ -56,3 +56,24 @@
 ### Uncertain assessments
 
 - `step3_development_plan_before.md`, keep Steps 1–3 uncommitted: this cycle followed the hn_theme precedent of committing and pushing each step, because the maintainer reviews from the attached files across sessions.
+
+## 2026-11-20T17:00Z — Step 4
+
+### Necessary/useful instructions
+
+- `step4_implementation_do.md`, stage boundary protocol: one commit per stage kept each change reviewable (five stage commits).
+- `implementation_standards.md`, replay the reported condition: the maintainer's question about deploying from the web UI led to reading `AppUpdate::runDeploy` and fetching production's board, which removed a wrong `./v3 build-static` step from Step 3 before implementation.
+- `AGENTS.md`, inspect existing implementations first: found `board_list.php` as zenmemes' real board, and `PromptLibrary.php` as the approval rule to copy.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- `AGENTS.md`, navigation icons: no navigation destination added.
+- `step4_implementation_before.md`, planning commit contains only Steps 1–3: the steps had already been committed and pushed one by one at the maintainer's review pace, so the gate was met by the existing commits; recorded in the summary.
+
+### Uncertain assessments
+
+- Step 3's "deploy the branch with Deploy now" check could not be run, because Deploy now only fast-forwards `main`. Replaced by code reading and a live render from the existing read model.
