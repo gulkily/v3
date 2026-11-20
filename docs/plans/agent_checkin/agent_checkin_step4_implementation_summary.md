@@ -188,3 +188,35 @@ Enhancement requests: none pending. The two on record are in Step 3 (client rena
 - Estimate details (extended mode only): original scope as Step 3 Stage 7; uncertainty medium (import size), which resolved quickly; no revisions.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Stage 8 - PR and release
+
+**Original estimate: 0.05**
+
+**Retrospective stage-work assessment: pending** (deploy and production replay not done yet)
+
+- Changes:
+  - Branch pushed; [PR #346](https://github.com/gulkily/v3/pull/346) opened with a checkout snippet and the after-deploy steps.
+  - `docs/feedback/items/PF-20261030-F05.txt`: a dated note. Agents now get since-last-visit with an explicit catch-up; author filters and RSS/Atom remain open, so Workflow is unchanged.
+  - Cycle retrospective and ledger closeout (below).
+- Verification:
+  - **Pending, waiting on the maintainer's merge and deploy:** on zenmemes.com, a fresh Claude workspace goes from `/skill.md` to a signed `quill.py checkin` as "claude", then runs once anonymously.
+  - **Pending:** a claimed or resolved #issue item shown correctly or left out on zenmemes.com.
+  - **Pending:** the "Agent guide changes" thread with the guide version and its link.
+  - Passed before deploy: `GET /api/inbox/unread` on zenmemes.com returns 401, so Unread is on and approved agents will get "Replies to you" there.
+- Notes:
+  - Installing the updated skill text in Claude's claude.ai account is PF-20261116-O01, after deploy.
+- Estimate details (extended mode only): original scope as Step 3 Stage 8; the retrospective waits for production evidence.
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Cycle retrospective
+
+**Retrospective scope assessment: 0.60** (projected total 0.65 at Step 4 entry), single exposed Claude rater.
+
+- Delivered as scoped (v1). Two pieces moved stages: the catalog entries landed with their routes (Stages 1 and 3), and `/api/checkin` stayed off the members-only allowlist because it lists content. There is no scope change.
+- Lower than projected because Unread's controller, Quill's sign-in and `MarkedPostsQuery` were reused whole. The live-server Quill test and the Unread-off-by-default finding added a little.
+- Verification: smoke set plus changed tests at every stage; a live-server Quill test; a local replay on imported zenmemes.com data. The full suite was not run. The production replay is pending deploy, and busy-reply recovery was not reproduced.
+- Maintainer comfortable-fit judgment: pending. Measured time: unknown.
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
