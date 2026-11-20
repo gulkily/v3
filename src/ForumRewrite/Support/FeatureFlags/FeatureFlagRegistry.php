@@ -315,7 +315,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::EVENT_SUPPORT_ENABLED,
                 'Event support',
-                'Allow threads to include and display optional event date, location, and link details.',
+                'Allow event date, location, and link details on threads and show the calendar.',
                 false,
                 self::EVENT_SUPPORT_ENABLED,
                 siteMutable: true,
