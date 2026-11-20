@@ -98,6 +98,7 @@ Feedback: [PF-20261111-F58](../../feedback/items/PF-20261111-F58.txt). Concepts 
 ## Study snapshot and approval
 
 - 2026-11-20 UTC: **Approved Step 2** by the maintainer ("Approve step 2"), with the colour-code rule as written.
-- 2026-11-20 UTC, Step 3 handoff: **0.55** projected total, reaffirmed. Planning confirmed that one write function covers every path and labels are stored records, so no rebuild work. The second rule method and the server-rendered Tags line are new understanding, not new scope. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified. Baseline `origin/main` `597f5328f`. Stage estimates are not summed. Awaiting `Approved Step 3`.
+- 2026-11-20 UTC, Step 3 handoff: **0.55** projected total, reaffirmed. Planning confirmed that one write function covers every path and labels are stored records, so no rebuild work. The second rule method and the server-rendered Tags line are new understanding, not new scope. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified. Baseline `origin/main` `597f5328f`. Stage estimates are not summed.
+- 2026-11-20 UTC: **Approved Step 3** by the maintainer ("approved step 3").
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
