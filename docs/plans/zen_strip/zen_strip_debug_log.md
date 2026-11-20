@@ -18,3 +18,22 @@
 ### Uncertain assessments
 
 - Whether the seed images belong in this cycle. Recorded as an enhancement request handled outside the code change.
+
+## 2026-11-20T00:10Z — Step 2
+
+### Necessary/useful instructions
+
+- `step2_feature_description.md`, Risks with earliest validation: surfaced that the existing tag pages count anyone's tags, so the "All" page could disagree with the strip. Retain.
+- `step2_feature_description.md`, Shared component inventory: led to reusing `ListThumbnails` and the `PromptLibrary.php` rule instead of a new query shape. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- `step2_feature_description.md`, Known user or environment: the iPhone SE is named in success criteria, but no failure on it was reported, so no recovery condition applies.
+
+### Uncertain assessments
+
+- The 10% render-time budget is a judgment, not a measured baseline. Recorded as a success criterion for the maintainer to change.

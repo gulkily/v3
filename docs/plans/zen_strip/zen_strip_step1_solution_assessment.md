@@ -93,6 +93,7 @@ Vertical slice: on an iPhone SE, open zenmemes.com signed out. The first screen 
 
 - 2026-11-19 UTC, intake after code inspection (`board.php`, `PromptLibrary.php`, `ApprovalLabel.php`, `TagsPageController.php`, `visitor_intro.md`, `site_description.md`): 0.50 projected total for the recommended scope. No pristine intake. Claude, single exposed rater; R1 hashes not re-verified this session; baseline `origin/main` `eb0f5177`.
 - Step 1 handoff: 0.50 for Option A (alternatives B 0.70, C 0.90; not summed). No implementation.
-- 2026-11-19 UTC revision: the maintainer switched the direction to Option B. Projected total **0.70** for Option B, unchanged from its original option estimate; this is a change of chosen scope, not new understanding. Not yet approved. Awaiting `Approved Step 1`.
+- 2026-11-19 UTC revision: the maintainer switched the direction to Option B. Projected total **0.70** for Option B, unchanged from its original option estimate; this is a change of chosen scope, not new understanding. Awaiting `Approved Step 1`.
+- 2026-11-19 UTC: **Approved Step 1** by the maintainer with Option B. Recorded in [Step 2](./zen_strip_step2_feature_description.md#approved-direction).
 
 *— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
