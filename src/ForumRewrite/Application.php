@@ -367,6 +367,15 @@ final class Application
             return;
         }
 
+        if ($path === '/api/inbox/catch_up') {
+            if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::INBOX_ENABLED)) {
+                $this->sendJson(['status' => 'error', 'code' => 'inbox_disabled', 'error' => 'Unread is disabled on this server.'], 404, $this->routeServices()->noStoreHeaders());
+                return;
+            }
+            $this->inboxPageController()->apiCatchUp($method, $query);
+            return;
+        }
+
         // Inbox was the page's first name; its old address keeps working.
         if ($path === '/inbox' || $path === '/inbox/') {
             if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::INBOX_ENABLED)) {
@@ -2574,7 +2583,7 @@ final class Application
             '/tools/usage-log', '/tools/usage-log/', '/tools/usage-log/upload', '/tools/usage-reports', '/tools/usage-reports/',
             '/tools/tag-unlocks', '/tools/tag-unlocks/',
             '/compose/thread', '/compose/reply',
-            '/unread', '/unread/', '/inbox', '/inbox/', '/api/inbox/unread', '/staged', '/staged/',
+            '/unread', '/unread/', '/inbox', '/inbox/', '/api/inbox/unread', '/api/inbox/catch_up', '/staged', '/staged/',
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',
             '/account/key', '/account/key/', '/invites', '/invites/',
             '/api', '/api/', '/api/version', '/api/list_index', '/api/checkin',

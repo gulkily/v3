@@ -142,6 +142,59 @@ final class AgentCheckinTest
         });
     }
 
+    public function testCatchUpApiMovesTheRepliesMark(): void
+    {
+        $this->withProfiles(function (\PDO $pdo, string $database): void {
+            $viewer = $this->profile($pdo, 'openpgp:ilyag');
+            $this->post($pdo, 'my-thread', '2026-11-07T11:00:00Z', 'openpgp:ilyag');
+            $this->post($pdo, 'alice-reply', '2026-11-07T12:01:00Z', 'openpgp:alice', 'my-thread');
+            $this->post($pdo, 'bob-reply', '2026-11-07T12:02:00Z', 'openpgp:bob', 'my-thread');
+            $guard = ['HTTP_X_REQUESTED_WITH' => 'ForumInbox', 'CONTENT_TYPE' => 'application/json'];
+            $replies = $this->section($this->checkin($database, $viewer), 'Replies to you');
+            assertStringContains('caught-up --section replies alice-reply bob-reply (or POST /api/inbox/catch_up; see /api/).', $replies);
+
+            foreach ([
+                'no guard header' => ['CONTENT_TYPE' => 'application/json'],
+                'form post' => ['HTTP_X_REQUESTED_WITH' => 'ForumInbox', 'CONTENT_TYPE' => 'application/x-www-form-urlencoded'],
+                'cross-site' => $guard + ['HTTP_SEC_FETCH_SITE' => 'cross-site'],
+                'same-site' => $guard + ['HTTP_SEC_FETCH_SITE' => 'same-site'],
+            ] as $case => $headers) {
+                [$status, $data] = $this->catchUp($database, $viewer, ['section' => 'replies', 'post_ids' => ['alice-reply']], $headers);
+                assertSame(403, $status, $case);
+                assertSame('Send JSON with the header X-Requested-With: ForumInbox.', $data['error'], $case);
+            }
+            assertStringContains('Replies to you: 2', $this->checkin($database, $viewer), 'A refused catch-up marks nothing.');
+
+            [$status, $data] = $this->catchUp($database, $viewer, ['section' => 'replies', 'post_ids' => ['nope', 'alice-reply']], $guard + ['HTTP_SEC_FETCH_SITE' => 'same-origin']);
+            assertSame(200, $status);
+            assertSame(['status' => 'ok', 'section' => 'replies', 'unread' => 1], $data);
+            $replies = $this->section($this->checkin($database, $viewer), 'Replies to you');
+            assertStringContains('Replies to you: 1', $replies);
+            assertStringNotContains('alice-reply', $replies);
+
+            assertSame(['status' => 'ok', 'section' => 'replies', 'unread' => 0], $this->catchUp($database, $viewer, ['section' => 'replies', 'post_ids' => ['bob-reply']], $guard)[1]);
+            assertStringContains("Replies to you: 0\n\n", $this->checkin($database, $viewer));
+        });
+    }
+
+    public function testCatchUpApiRefusesOthersAndBadInput(): void
+    {
+        $this->withProfiles(function (\PDO $pdo, string $database): void {
+            $guard = ['HTTP_X_REQUESTED_WITH' => 'ForumInbox', 'CONTENT_TYPE' => 'application/json'];
+            $input = ['section' => 'replies', 'post_ids' => ['x']];
+            assertSame(401, $this->catchUp($database, null, $input, $guard)[0]);
+            $pdo->exec("UPDATE profiles SET is_approved = 0 WHERE identity_id = 'openpgp:bob'");
+            assertSame(403, $this->catchUp($database, $this->profile($pdo, 'openpgp:bob'), $input, $guard)[0]);
+            $viewer = $this->profile($pdo, 'openpgp:ilyag');
+            foreach ([['section' => 'old', 'post_ids' => []], ['section' => 'replies', 'post_ids' => 'x'], ['section' => 'replies', 'post_ids' => [1]], ['section' => 'replies']] as $bad) {
+                [$status, $data] = $this->catchUp($database, $viewer, $bad, $guard);
+                assertSame(400, $status, json_encode($bad));
+                assertSame('Send section (replies or new) and post_ids, a list of post IDs.', $data['error']);
+            }
+            assertSame(405, $this->catchUp($database, $viewer, $input, $guard, 'GET')[0]);
+        });
+    }
+
     public function testSectionsAreCapped(): void
     {
         $this->withSite(function (Application $app): void {
@@ -259,6 +312,25 @@ final class AgentCheckinTest
         (new AgentCheckinController($services, static fn (array $thread): string => (string) $thread['subject'], 'test-version', true, $viewerFn, $inboxFn))->show('GET', $query);
         unset($_SERVER['HTTP_HOST']);
         return (string) ob_get_clean();
+    }
+
+    /**
+     * @param array<string, mixed>|null $viewer @param array<string, mixed> $input @param array<string, string> $headers
+     * @return array{0:int,1:array<string,mixed>}
+     */
+    private function catchUp(string $database, ?array $viewer, array $input, array $headers, string $method = 'POST'): array
+    {
+        $server = $_SERVER;
+        foreach ($headers as $name => $value) $_SERVER[$name] = $value;
+        $viewerFn = static fn (): ?array => $viewer;
+        $services = new RouteServices($database, new TemplateRenderer(__DIR__ . '/../templates', 'test'), 'test', false, $viewerFn,
+            __DIR__ . '/fixtures/parity_minimal_v1', dirname(__DIR__), null, null,
+            FeatureFlagEvaluator::forApplication(__DIR__ . '/fixtures/parity_minimal_v1', dirname(__DIR__)), $viewerFn);
+        ob_start();
+        (new InboxPageController($services, $viewerFn, null, fn (): InboxMarkStore => $this->marks))->apiCatchUp($method, $input);
+        $body = (string) ob_get_clean();
+        $_SERVER = $server;
+        return [(int) http_response_code(), json_decode($body, true, flags: JSON_THROW_ON_ERROR)];
     }
 
     /** @return array<string, mixed> */

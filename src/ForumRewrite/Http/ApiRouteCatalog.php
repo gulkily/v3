@@ -99,6 +99,7 @@ final class ApiRouteCatalog
             ['GET', '/api/private_messages/recipient_keys?username_token=<username>', 'member', 'json', 'Recipient encryption keys.'],
             ['GET', '/api/private_messages/unread?counterparts[]=<optional-username>', 'member', 'json', 'Unread state.'],
             ['GET', '/api/inbox/unread', 'member', 'json', 'Unread link count: unread conversations plus unread replies. Requires the Unread flag.'],
+            ['POST', '/api/inbox/catch_up', 'member', 'json', 'Mark posts caught up, like Unread\'s Caught up: JSON {"section": "replies" or "new", "post_ids": [...]} with X-Requested-With: ForumInbox; returns the section\'s unread count. Requires the Unread flag.'],
             ['POST', '/api/private_messages', 'member', 'json', 'Send an encrypted message.'],
             ['POST', '/api/private_messages/read', 'member', 'json', 'Acknowledge read messages.'],
             ['POST', '/api/private_messages/history_sync/work', 'member', 'json', 'Combined bounded history-sync discovery and scan progress.'],

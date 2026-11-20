@@ -183,8 +183,10 @@ final class AgentCheckinController
             $items[] = self::item($postId, $threadId,
                 $postId . ' by ' . self::oneLine($author) . ($context !== '' ? ' in "' . $context . '"' : '') . ': ' . self::excerpt((string) ($reply['body'] ?? '')), 'post');
         }
+        $ids = implode(' ', array_column($items, 'id'));
         $sections = [self::section('replies_to_you', 'Replies to you', $items, max($unread['reply_count'], count($items)),
-            'reply with python3 quill.py --site ' . $origin . ' reply --thread THREAD_ID --body-file reply.txt',
+            'reply with python3 quill.py --site ' . $origin . ' reply --thread THREAD_ID --body-file reply.txt, then mark these caught up: python3 quill.py --site ' . $origin . ' caught-up --section replies ' . $ids
+            . ' (or POST /api/inbox/catch_up; see /api/).',
             $unread['replies_failed'] ? 'Unavailable right now; try again shortly.' : '')];
 
         if ($unread['messages_enabled']) {

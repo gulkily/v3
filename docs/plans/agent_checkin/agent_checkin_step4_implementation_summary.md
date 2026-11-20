@@ -66,3 +66,25 @@ Enhancement requests: none pending. The two on record are in Step 3 (client rena
 - Estimate details (extended mode only): original scope as Step 3 Stage 2; uncertainty low; no revisions.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Catch-up API
+
+**Original estimate: 0.08**
+
+**Retrospective stage-work assessment: 0.07**
+
+- Changes:
+  - `POST /api/inbox/catch_up` [member, json] (`InboxPageController::apiCatchUp`): takes `{section: "replies"|"new", post_ids: [...]}` and calls the existing `InboxFeed::catchUp`. It returns `{status: ok, section, unread}`, the section's remaining unread count. IDs that are not currently unread are ignored, as on the Unread page.
+  - Guard: the `/api/private_messages/read` one, with its own header value. It needs `X-Requested-With: ForumInbox` and `application/json`, and refuses `Sec-Fetch-Site: cross-site` or `same-site`. A refusal returns 403 with `Send JSON with the header X-Requested-With: ForumInbox.`
+  - Other replies: 401 with no session, 403 for an unapproved key, 400 with one fix line for a bad section or `post_ids`, 405 for anything but POST, and 503 "Nothing was marked read; try again." if the mark store fails. With Unread off, the route returns 404 `inbox_disabled`, like `/api/inbox/unread`.
+  - The check-in's "Replies to you" `Next:` line names the reply command, then `quill.py … caught-up --section replies ID…` with the shown IDs in order, then the raw route.
+  - `Application.php` (route and `isApplicationRoute`) and an `ApiRouteCatalog` entry.
+- Verification:
+  - `./v3 test AgentCheckinTest`: 13 run, 13 passed. New: four refused requests that each leave the mark unchanged, an accepted catch-up with an unknown ID ignored, a second catch-up down to zero, 401, 403 unapproved, four bad inputs, and 405.
+  - `./v3 test --smoke AgentCheckinTest InboxPageTest InboxFeedTest ApiRouteCatalogTest`: 519 run, 519 passed. Full suite not run.
+- Notes:
+  - These tests pass the fields as request data. The raw JSON body path (`RouteServices::requestData` reading `php://input`) is tested against a live server with Quill in Stage 5.
+  - The `caught-up` command named in `Next:` arrives in Stage 5. Until then only the raw route works; the stages ship together.
+- Estimate details (extended mode only): original scope as Step 3 Stage 3; uncertainty low; no revisions. Retrospective slightly lower because the guard was copied whole.
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
