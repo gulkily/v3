@@ -1300,7 +1300,7 @@ final class Application
             return;
         }
 
-        if (preg_match('#^/tags/([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)/?$#', $path, $matches) === 1) {
+        if (preg_match('#^/tags/([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*(?:\+[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*)*)/?$#', $path, $matches) === 1) {
             $location = $this->tagsPageController()->tagWithLocation($matches[1], $query['with'] ?? null);
             if ($location !== null) {
                 $this->sendRedirect($location, 'Opening that thread in this tag.', 303, activeSection: 'board');

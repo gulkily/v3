@@ -61,3 +61,25 @@ Branch `zen-strip`, based on `origin/main` `eb0f5177`. Planning commits: Steps 1
 - Estimate details (extended mode only): original scope as Step 3 Stage 2; uncertainty medium; no revisions.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Pair-of-tags page
+
+**Original estimate: 0.15**
+
+**Retrospective stage-work assessment: 0.10**
+
+- Changes:
+  - `Application.php`: the `/tags/` route accepts tags joined by `+`.
+  - `TagPage::page()` and `pageOf()` take one tag or a list; each tag adds one "board tag or label" condition, so a thread must carry all of them. Anyone's tags count, as on single-tag pages.
+  - `TagsPageController`: splits the path on `+`, up to four tags, no repeats; the title reads "#zen + #meme"; pagination and `with` links keep the pair.
+- Verification:
+  - `./v3 test --smoke TagPaginationTest ZenStripTest BoardListTest`: 490 run, 490 passed. The full suite was not run.
+  - New `TagPaginationTest::testAPairOfTagsListsThreadsCarryingBoth`: a pair lists only threads with both tags (board tag or label, any case); the single tag is unchanged; a `with` link keeps the pair; a repeated tag, five tags, a trailing `+` and an unknown pair are 404.
+  - Local copy: /tags/zen+meme returns 200, titled "#zen + #meme", with the six seed threads and the local label-check thread.
+- Notes:
+  - Changed from the plan: page 2 is /tags/zen+meme?page=2, as every tag page already pages with `?page=`, not /tags/zen+meme/2.
+  - Changed from the plan: /tags/meme+zen shows the same list instead of redirecting. A redirect would need one canonical order, which would make the strip's link /tags/meme+zen. Recorded as a possible follow-up, not done.
+  - Pair pages aren't pre-built; `FrontController` only serves static copies of single-tag pages, so pairs always render live.
+- Estimate details (extended mode only): original scope as Step 3 Stage 3; uncertainty low; no revisions. Retrospective lower because `TagPage` was already one query builder.
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
