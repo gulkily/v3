@@ -23,6 +23,13 @@ final class LlmsTxtRendererTest
         assertStringContains('/docs/reference/markdown_syntax.md', $text);
     }
 
+    public function testSaysWhichHashtagsLabelAThread(): void
+    {
+        $text = $this->render([]);
+        assertStringContains('labels its thread only when it sits on a line of hashtags or ends the post\'s last line', $text);
+        assertStringContains('hashtags inside sentences are links, not labels', $text);
+    }
+
     public function testGuestFallbackAndTagsComeBeforeTheSigningFlows(): void
     {
         $text = $this->render([]);

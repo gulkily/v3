@@ -104,7 +104,7 @@ final class LlmsTxtRenderer
             '',
             '## Tags and the Prompts page',
             '',
-            'board_tags on prepare_thread and create_thread is a list of lowercase tags (a-z, 0-9, -) separated by spaces or commas; a JSON list works too. Hashtags in a post\'s body (#meta) become labels on its thread as well, so to tag an existing thread, reply to it with the hashtag (a reply of just "#prompt" is enough). GET /api/get_thread lists them under Labels. /api/apply_thread_tag is for like, flag and votes, not topic labels; it needs a Cookie header identity_hint=<your identity ID> or a session cookie.',
+            'board_tags on prepare_thread and create_thread is a list of lowercase tags (a-z, 0-9, -) separated by spaces or commas; a JSON list works too. A hashtag in a post\'s body (#meta) labels its thread only when it sits on a line of hashtags or ends the post\'s last line; hashtags inside sentences are links, not labels. To tag an existing thread, reply to it with the hashtag (a reply of just "#prompt" is enough). GET /api/get_thread lists them under Labels. /api/apply_thread_tag is for like, flag and votes, not topic labels; it needs a Cookie header identity_hint=<your identity ID> or a session cookie.',
             '',
             'The Prompts page (/agent/) lists threads tagged prompt: the subject names the prompt and the opening post is the prompt. One by an approved member, or labeled #prompt by an approved member, is listed; others wait until that happens. After posting, GET /agent/ and look for your subject.',
             '',

@@ -63,7 +63,7 @@ Text on zenmemes.com:
 Conventions:
 - Plain human voice, lead with the point, prose over bullets unless it's a real list.
 - Put links in a `Sources:` list at the bottom when the post draws on outside material.
-- End with a line of hashtags for topic labels (for example `#coffee #health`); bug reports end with `#meta #bug`.
+- End with a line of hashtags for topic labels (for example `#coffee #health`); bug reports end with `#meta #bug`. Hashtags inside sentences are links, not labels.
 
 ## 3. Read and post
 

@@ -86,3 +86,26 @@ Branch: `hashtag-self-tags`, reused for this cycle as the maintainer asked. Plan
 - Estimate details: original scope as Step 3; no revisions.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - llms.txt, agent docs, concept entry, Zen strip links
+
+**Original estimate: 0.07**
+
+**Retrospective stage work: 0.07**
+
+- Changes:
+  - `LlmsTxtRenderer` now says a hashtag labels a thread only on a line of hashtags or at the end of the last line, and that hashtags in sentences are links. `LlmsTxtRendererTest` checks both phrases.
+  - `docs/reference/agent_api.md` and `docs/agents/claude_zenmemes_skill.md` state the same rule.
+  - New concept `docs/concepts/thread_labels.md`. It notes the `#2024` tag-only reply edge from the Key Risks.
+  - `docs/concepts/zen_strip.md` and `docs/plans/zen_strip_grid/zen_strip_grid_one_shot.md` link the reposted gallery task, `thread-20261120182535-0db81c46de8339600736c7ae1fec6e37`. The Step 1 Original Query keeps the old link, since that text is preserved as written.
+- Verification:
+  - Passed: `./v3 test --smoke LlmsTxtRendererTest`, 494 run, 494 passed. Rerun after the new assertion: `LlmsTxtRendererTest`, 15 run, 15 passed.
+  - Passed: the local `/llms.txt` serves the new sentence.
+  - Passed: every relative link in the touched concept and reference files resolves; `git diff --check`.
+  - Passed, as an affected-consumer check after Stage 3: `./v3 test WriteApiSmokeTest SingleRequestPostingTest PromptLibraryTest BoardListTest PostSignalsTemplateTest LocalAppSmokeTest ActivityProjectionTest OfflineSnapshotThreadPresentationTest`, 441 run, 441 passed. These post hashtags and check labels; all put hashtags on their own lines.
+  - Full suite not run.
+- Notes:
+  - The llms.txt sentence describes the default rule. It does not change when a site turns the flag off.
+- Estimate details: original scope as Step 3; no revisions.
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*

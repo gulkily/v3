@@ -585,8 +585,11 @@ characters are dropped, and repeats are kept once. `get_post` shows a thread's
 tags as `Board-Tags:` after `Author:`.
 
 Hashtags in a post's body also become labels on its thread, which `get_thread`
-lists under `Labels:`. That is how an existing thread gets a tag: reply to it
-with the hashtag (a reply of just `#prompt` is enough). `apply_thread_tag` and
+lists under `Labels:`. Only hashtags on a line of hashtags, or at the end of the
+post's last line, do this; hashtags inside sentences, code, URLs and quotes are
+links only (see [thread labels](../concepts/thread_labels.md)). That is how an
+existing thread gets a tag: reply to it with the hashtag (a reply of just
+`#prompt` is enough). `apply_thread_tag` and
 `apply_post_tag` are for `like`, `flag`, votes and the
 [reply resolution](#reply-resolution-tag-unlocks) marks, not topic labels. They
 need to know who is asking: send a `Cookie` header

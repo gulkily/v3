@@ -29,7 +29,7 @@ Concepts touched: [Zen strip](../../concepts/zen_strip.md) (changed: grid instea
 
 Verification and recovery plan: `./v3 test --smoke BoardListTest ZenStripTest` plus a new assertion that cards carry the full image in `srcset`; screenshots at 380px and 1280px in Gloss, Bubblegum, Ochre and Word97; `scrollWidth <= clientWidth` on the module. Recovery: the existing flag turns the module off.
 
-Task logged for later: All should open an image gallery view with full-size images. Logged as a ZenMemes #issue #meta thread: https://zenmemes.com/threads/thread-20261120173657-2cb6e813e62a6457e4cde6eccd4c5828
+Task logged for later: All should open an image gallery view with full-size images. Logged as a ZenMemes #issue #meta thread: https://zenmemes.com/threads/thread-20261120182535-0db81c46de8339600736c7ae1fec6e37
 
 Starting revisions and branch: `zen-strip-grid` from `origin/main` `a552a6ab3`.
 
