@@ -102,3 +102,31 @@ Branch `zen-strip`, based on `origin/main` `eb0f5177`. Planning commits: Steps 1
 - Estimate details (extended mode only): original scope as Step 3 Stage 4; uncertainty low; no revisions.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Docs and final review
+
+**Original estimate: 0.10**
+
+**Retrospective stage-work assessment: 0.10**
+
+- Changes:
+  - New concept entry `docs/concepts/zen_strip.md`.
+  - `docs/concepts/tag_browsing.md`: pairs of tags joined by `+`.
+  - `docs/concepts/visitor_intro.md`: the intro sits below the Zen strip where a site has one.
+  - The flag's description is in `FeatureFlagRegistry` (Stage 1).
+- Verification:
+  - `./v3 test --smoke PlatformDocsCatalogTest ZenStripTest BoardListTest TagPaginationTest FeatureFlagEvaluatorTest`: 490 run, 490 passed. Smoke set alone: 479 run, 479 passed. The full suite was not run.
+  - `git diff --check`: clean. Concept source links resolve.
+  - Render time on the local copy of zenmemes.com, median of 15 requests for /threads/: 0.110 s with the flag off, 0.115 s and 0.116 s with it on (about 5 ms, under the 10% budget).
+  - Final diff review against Step 2's requirements: approved-only rule per tag, first page only, image and text cards, All link, pair page, same HTML for every viewer, profile setting and flag. No dependency changes. Code touches 16 files (422 insertions, 19 deletions).
+- Notes:
+  - Six seed threads on production already qualify, so the strip fills as soon as the code deploys.
+- Estimate details (extended mode only): original scope as Step 3 Stage 5; uncertainty low; no revisions.
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Cycle retrospective
+
+- Retrospective scope assessment: **0.55**, against the 0.70 projection. Delivered as approved, with two recorded deviations (pages use `?page=`; no redirect between pair orders) and one planned check replaced by reasoning (Deploy now only fast-forwards `main`). Claude, single exposed rater.
+- Maintainer comfortable-fit judgment: pending.
+- Measured time: unknown.
