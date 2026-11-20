@@ -12,6 +12,43 @@ final class ThreadLabelsTest
         assertSame([], ThreadLabels::fromBody('no tags here'));
     }
 
+    public function testSelfTagsMatchesTheSharedExamples(): void
+    {
+        $examples = self::selfTagExamples();
+        assertTrue(count($examples) >= 15, 'examples file parsed');
+        foreach ($examples as $example) {
+            assertSame($example['tags'], ThreadLabels::selfTags($example['body']), $example['name']);
+        }
+    }
+
+    public function testSelfTagsKeepsEveryLabelOnAHashtagLineThatFromBodyFinds(): void
+    {
+        foreach (["#bug #ux\n#bug", "intro\n#needs-review\nmore", "#meta"] as $body) {
+            assertSame(ThreadLabels::fromBody($body), ThreadLabels::selfTags($body), $body);
+        }
+    }
+
+    /** @return list<array{name:string,tags:list<string>,body:string}> */
+    public static function selfTagExamples(): array
+    {
+        $chunks = explode("\n%%%\n", (string) file_get_contents(__DIR__ . '/fixtures/hashtag_self_tags_examples.txt'));
+        array_shift($chunks);
+        $examples = [];
+        foreach ($chunks as $chunk) {
+            if (trim($chunk) === '' || trim($chunk) === '%%%') continue;
+            [$head, $body] = array_pad(explode("\n\n", $chunk, 2), 2, '');
+            preg_match('/^Name: (.*)$/m', $head, $name);
+            preg_match('/^Tags:(.*)$/m', $head, $tags);
+            $examples[] = [
+                'name' => $name[1] ?? '?',
+                'tags' => array_values(array_filter(explode(' ', trim($tags[1] ?? '')), static fn ($t) => $t !== '')),
+                'body' => $body,
+            ];
+        }
+
+        return $examples;
+    }
+
     public function testIsTagOnlyBodies(): void
     {
         $reply = static fn (string $body, array $extra = []): array => ['body' => $body] + $extra;

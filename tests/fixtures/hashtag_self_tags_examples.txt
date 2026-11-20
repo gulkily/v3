@@ -1,0 +1,119 @@
+Format: each example is Name and Tags lines, a blank line, then the post body up to a line of %%%.
+Format: Tags lists the labels the post gives its thread, in order; empty means none.
+Format: ThreadLabelsTest (PHP) and HashtagTagsTest (public/assets/hashtag_tags.js) both read this file.
+%%%
+Name: hashtag-only last line
+Tags: issue meta
+
+Please add a gallery view.
+
+#issue #meta
+%%%
+Name: hashtag-only line at the top
+Tags: question
+
+#question
+What is this picture?
+%%%
+Name: run of hashtags ending the last line
+Tags: meta
+
+All should open an image gallery view #meta
+%%%
+Name: mentions in prose are references
+Tags: issue meta
+
+This put a task in the strip (#zen and #meme).
+
+#issue #meta
+%%%
+Name: hashtag inside a sentence only
+Tags:
+
+I like #zen posts a lot.
+%%%
+Name: hashtag ending an earlier line
+Tags:
+
+This line ends with #zen
+and this one does not.
+%%%
+Name: inline code
+Tags:
+
+Write `#meta` to tag a thread.
+`#bug`
+%%%
+Name: fenced code
+Tags:
+
+```
+#include <stdio.h>
+#meta
+```
+%%%
+Name: hashtag inside a URL
+Tags:
+
+See https://zenmemes.com/threads/x#meta
+%%%
+Name: Markdown link text
+Tags:
+
+[#zen](https://zenmemes.com/tags/zen)
+%%%
+Name: quoted lines
+Tags:
+
+> #zen #meme
+I agree.
+> #meta
+%%%
+Name: all-digit hashtags
+Tags: meta
+
+#1 #2024 #meta
+%%%
+Name: colour-like hashtags
+Tags: bad1 meta
+
+#fff #c0ffee #bad #bad1 #meta
+%%%
+Name: invalid label is text
+Tags: meta
+
+#Bug #meta
+%%%
+Name: punctuation after the last hashtag
+Tags:
+
+Thanks #meta.
+%%%
+Name: order and duplicates
+Tags: ux bug a-b
+
+#ux #bug
+Some text.
+#bug #a-b
+%%%
+Name: tag-only reply
+Tags: prompt
+
+#prompt
+%%%
+Name: trailing blank lines
+Tags: meta
+
+Text #meta
+
+
+%%%
+Name: comma between hashtags
+Tags: ux
+
+#bug, #ux
+%%%
+Name: no body
+Tags:
+
+%%%
