@@ -99,7 +99,8 @@ Correction to Steps 1 and 2: zenmemes.com's board is `board_list.php` (the profi
 
 - 2026-11-20 UTC: **Approved Step 2** by the maintainer, after dropping the tagline and keeping tag pages open.
 - 2026-11-20 UTC, Step 3 handoff: **0.70** projected total, reaffirmed. Moving the strip to `board_list.php` and the cache check add work; dropping the tagline and the offline strip removed about as much. Claude, single exposed rater. Scope v2. Reference R1, hashes not re-verified this session. Baseline `origin/main` `eb0f5177`. 
-- 2026-11-20 UTC revision: removed the `./v3 build-static` deploy step after checking that production renders the board live; Deploy now is enough. Projected total **0.70**, unchanged. Awaiting `Approved Step 3`.
+- 2026-11-20 UTC revision: removed the `./v3 build-static` deploy step after checking that production renders the board live; Deploy now is enough. Projected total **0.70**, unchanged.
+- 2026-11-20 UTC: **Approved Step 3** by the maintainer.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
 
