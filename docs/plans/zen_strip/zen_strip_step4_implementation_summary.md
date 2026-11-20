@@ -83,3 +83,22 @@ Branch `zen-strip`, based on `origin/main` `eb0f5177`. Planning commits: Steps 1
 - Estimate details (extended mode only): original scope as Step 3 Stage 3; uncertainty low; no revisions. Retrospective lower because `TagPage` was already one query builder.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Themes, keyboard and no JavaScript
+
+**Original estimate: 0.10**
+
+**Retrospective stage-work assessment: 0.05**
+
+- Changes:
+  - None. Every check passed with the shared `.zen-strip__*` rules, which use only theme variables.
+- Verification:
+  - Screenshots of /threads/ on the local copy at 380px and 1280px in Gloss, Gloss Dark, Bubblegum, Ochre, Word97 and Console (Playwright with the system Chrome, theme set through `forum-zenmemes-theme`). The row sits in the content column in each; the text card picks up each theme's panel, line and ink colours; no overlap with the header or the visitor intro.
+  - Keyboard: Tab moves card to card in order, and the focused card shows a visible outline (Gloss, 1280px).
+  - JavaScript off (380px): all seven cards render and the row scrolls sideways (`scrollWidth > clientWidth`).
+  - Not applicable: navigation icons, because no navigation destination was added or renamed.
+- Notes:
+  - The seed images have a light background, so in dark themes they read as light tiles. That is content, not a styling fault.
+- Estimate details (extended mode only): original scope as Step 3 Stage 4; uncertainty low; no revisions.
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
