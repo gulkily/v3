@@ -66,3 +66,21 @@ No supported findings.
 
 ### Uncertain assessments
 - `RAILSPIKE.md` › approval rules: there is no named way to revise an unapproved step after a long pause when merged work changes its inputs but not its scope, or to record a wording correction to an already approved step. I used a dated "Revision" section in Step 3 and an Enhancement Requests line in Step 2. Possibly name this case.
+
+## 2026-11-20 UTC — Step 4 (planning commit `c9c37fc9`, stages `c84fcedf`…`9e8ba128`, PR #346)
+
+### Necessary/useful instructions
+- `step4_implementation_before.md` › Planning Docs Commit Gate: the plan files came from a scratchpad with links written for `docs/plans/`. The organization allowance let me repair them (`../concepts/` → `../../concepts/`, and the frozen-ledger link) in the planning commit without touching approved content. Retain.
+- `implementation_standards.md` › "replay that condition or explicitly report it unverified": led to the local import replay with Claude's derived key (the Step 2 known environment), and to reporting the busy reply as not reproduced instead of passed. Retain.
+- `AGENTS.md` › Tests (smoke plus changed): `ApiRouteCatalogTest` in the smoke set caught the missing catalog entry in Stage 1, which the plan had put in Stage 4. Retain.
+- `step4_implementation_do.md` › Stage Boundary Protocol: "capture commands/results" exposed a summary written before its test run finished (Stage 3, 519 vs 505); it was corrected in the next stage commit. Retain.
+
+### Redundant/unnecessary instructions
+No supported findings.
+
+### Inapplicable instructions
+- `step4_implementation_do.md` › documentation-only checks: this is an application change.
+
+### Uncertain assessments
+- `step4_implementation_do.md` › "Commit the stage artifact plus the Step 4 summary update … before beginning the next stage": Stage 8's own verification (the production replay) needs a deploy only the maintainer can do, so Stage 8 was committed with its checks marked pending. The workflow doesn't say whether a stage whose remaining checks wait on someone else counts as completed. Possibly name that case.
+- `step4_implementation_after.md` › item 7 says the handoff should open with anything unverified. The production replay and the busy reply are unverified; the handoff leads with them.
