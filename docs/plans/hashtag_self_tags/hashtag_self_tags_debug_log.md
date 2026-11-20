@@ -58,3 +58,26 @@
 
 - `RAILSPIKE.md`, the exact `Approved Step N` phrase: the maintainer wrote "Approve step 2". It was treated as approval and recorded with its wording.
 - The page limit: the plan runs past one page because it has five stages with estimate fields.
+
+## 2026-11-20T22:55Z — Step 4
+
+### Necessary/useful instructions
+
+- `implementation_standards.md`, replay the outcome through the ordinary entry: running the recount on a real import turned the high-usability risk into evidence. It found 26 real tags the approved rule would drop, 12 of them hidden by the `Image-v1` line.
+- `RAILSPIKE.md`, Enhancement Requests, changed scope: stopping for the maintainer's choice, and recording Revision 1 in Steps 2 and 3, kept the rule change approved and visible. The maintainer took one of three proposed additions.
+- `implementation_standards.md`, inspect existing implementations: led to reusing `PostHashtags`' pattern and `ImageReference::withoutReference` instead of new parsers.
+- `step4_implementation_do.md`, stage boundary protocol: running checks before each commit caught a test file that never ran (not listed in `tests/run.php`) and a trailing-whitespace failure.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- `step4_implementation_before.md`, organize plans into the feature folder: they were already there from Step 1.
+- Host `AGENTS.md`, navigation icons: no destination changed.
+
+### Uncertain assessments
+
+- `step4_implementation_before.md`, the planning commit: Steps 1–3 were already committed at the maintainer's request. The planning commit added only the Step 3 approval line. Whether that satisfies "approved plans only" as intended is unclear.
+- `RAILSPIKE.md`, stage identities with a mid-cycle addition: Stage 5's scope was narrowed and Stage 6 added, rather than splitting Stage 5. The rules allow either; the choice kept stage numbers stable.
