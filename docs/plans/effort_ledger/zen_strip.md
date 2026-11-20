@@ -9,3 +9,5 @@
 2026-11-19 — Maintainer switched Step 1 to Option B (scope v2). Projected total **0.70**, single exposed Claude rater. Awaiting approval.
 
 2026-11-19 — Step 1 approved with Option B. Step 2 handoff **0.70** reaffirmed, single exposed Claude rater. Offline strip deferred.
+
+2026-11-20 — Step 2 revised: tagline dropped, tag pages unchanged. Projected total **0.70** unchanged.
