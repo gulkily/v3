@@ -8,7 +8,7 @@ Extended estimates: enabled. No alternatives or work units, so no unit estimates
 
 **Cycle estimate: 0.25**
 
-Status: planning commit; next permitted action: implement.
+Status: implemented and committed; next permitted action: maintainer review (PR).
 
 Original request: "Please expand the strip into a full module without horizontal scrolling. Let it be as tall as it needs to be. The images need to be viewable without clicking on them. Please also log a task that the All button needs to go to an image gallery view with full-size images."
 
@@ -29,13 +29,36 @@ Concepts touched: [Zen strip](../../concepts/zen_strip.md) (changed: grid instea
 
 Verification and recovery plan: `./v3 test --smoke BoardListTest ZenStripTest` plus a new assertion that cards carry the full image in `srcset`; screenshots at 380px and 1280px in Gloss, Bubblegum, Ochre and Word97; `scrollWidth <= clientWidth` on the module. Recovery: the existing flag turns the module off.
 
-Task logged for later: All should open an image gallery view with full-size images. Logged as a ZenMemes #issue thread (link added below once posted).
+Task logged for later: All should open an image gallery view with full-size images. Logged as a ZenMemes #issue #meta thread: https://zenmemes.com/threads/thread-20261120173657-2cb6e813e62a6457e4cde6eccd4c5828
 
 Starting revisions and branch: `zen-strip-grid` from `origin/main` `a552a6ab3`.
 
-Planning commit: pending.
+Planning commit: `32568d5e6` (plan only, before any implementation).
 
 Study history:
 - 2026-11-20 UTC, intake and execution entry: **0.25**, before implementation, after reading the merged strip code. Claude, single exposed rater (wrote the code being changed). Scope v1. Reference R1, hashes not re-verified.
 
-*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+Dated execution history:
+- 2026-11-20: `ListThumbnails` gives each thumbnail a `full` URL (`/images/<file>`). Addition to a shared component; the list rows and gallery don't use it.
+- 2026-11-20: `partials/zen_strip.php` is now a `zen-strip__grid` list. Image cards use the tile with `srcset` "tile 480w, original <width>w" and `sizes="(min-width: 48rem) 22rem, 100vw"`. All moved out of the grid into a right-aligned link below it.
+- 2026-11-20: `site.css` replaces the sideways row with a grid (`auto-fill`, columns at least 18rem), images at `height: auto` (no crop), text cards at least 9rem tall with a larger title.
+- 2026-11-20: logged the gallery task on ZenMemes (link above). Disposition: separate work, not built here.
+- Discovery: on a phone the module is about 2,300px for the seven local cards (about 2,000px for production's six), roughly three screens before the threads. Lower than the plan's worry; accepted as asked.
+
+Study history, when enrolled:
+- 2026-11-20 UTC, closeout: retrospective scope assessment **0.20**. Delivered as planned. Claude, single exposed rater. Maintainer judgment pending; measured time unknown.
+
+Outcome: delivered. The strip is a wrapping grid, as tall as it needs, with whole images readable on the board. The gallery for All is logged, not built.
+
+Verification:
+- `./v3 test --smoke BoardListTest ZenStripTest GalleryPageTest`: 487 run, 487 passed. New `BoardListTest::testZenStripImageCardsShowTheWholeImageWithTheOriginalForSharpScreens`; `testZenStripOpensTheFirstPageOnly` updated for the All link. The full suite was not run.
+- Local import of zenmemes.com, Playwright with the system Chrome, /threads/: no horizontal overflow at 380px or 1280px in Gloss, Bubblegum, Ochre and Word97. One column at 380px (348px), two at 1280px (350px each; 400–410px in Word97 and Ochre). Seed captions readable at both widths.
+- Image choice: at 380px with 2x density the browser loads the original; at 1280px with 1x density it loads the 480px tile.
+- Not rerun: JavaScript off (the module is plain HTML and CSS, as before).
+
+Final review: the diff touches `ListThumbnails.php`, `zen_strip.php`, `site.css`, `BoardListTest.php`, the concept entry and this record. No duplicated component, no dependency change, no schema change. Deploy now is enough.
+
+Commit/merge/publication status: completion commit pending at time of writing; branch `zen-strip-grid`; not merged.
+
+Attribution: Claude · 2026-11-20 UTC · Model: claude-opus-5-5

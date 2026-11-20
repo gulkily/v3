@@ -380,7 +380,7 @@ final class BoardListTest
         assertSame(1, substr_count($first, 'class="zen-strip"'));
         assertTrue(strpos($first, 'class="zen-strip"') < strpos($first, 'data-visitor-intro'), 'The strip should come before the visitor intro.');
         assertStringContains('<a class="zen-strip__card zen-strip__card--text" href="/threads/board-list-030"><span>Thread 30</span></a>', $first);
-        assertStringContains('<a class="zen-strip__all" href="/tags/zen+meme">All</a>', $first);
+        assertStringContains('<p class="zen-strip__more"><a href="/tags/zen+meme">All</a></p>', $first);
         preg_match('/rel="next" href="([^"]+)">Show older threads</', $first, $next);
         assertStringNotContains('class="zen-strip"', $this->markup($this->render($application, html_entity_decode($next[1]))));
 
@@ -391,6 +391,40 @@ final class BoardListTest
             putenv('FORUM_ZEN_STRIP_ENABLED');
         }
         assertStringNotContains('class="zen-strip"', $off);
+    }
+
+    public function testZenStripImageCardsShowTheWholeImageWithTheOriginalForSharpScreens(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);
+        $imageRoot = $repositoryRoot . '-images';
+        $flag = \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_CONTENT_ENABLED;
+        $old = getenv($flag);
+        try {
+            $source = $repositoryRoot . '-meme.png';
+            $canvas = imagecreatetruecolor(900, 600);
+            imagefill($canvas, 0, 0, imagecolorallocate($canvas, 240, 235, 225));
+            imagepng($canvas, $source);
+            $reference = \ForumRewrite\Images\ImageStore::inspect($source, 'A calm pond');
+            (new \ForumRewrite\Images\ImageStore($repositoryRoot))->put($source, $reference);
+            file_put_contents($repositoryRoot . '/records/posts/zen-image.txt', "Post-ID: zen-image\nCreated-At: 2026-07-01T00:00:00Z\nBoard-Tags: zen meme\nSubject: Pond\n\n" . \ForumRewrite\Images\ImageReference::line($reference) . "\n");
+            $this->runCommand($repositoryRoot, 'git add .');
+            $this->runCommand($repositoryRoot, 'git commit -m "Add a Zen meme"');
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            putenv($flag . '=true');
+            $this->render($application, '/threads/?view=all&sort=newest');
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $pdo->exec("INSERT INTO profiles (identity_id,profile_slug,username,username_token,fallback_label,signer_fingerprint,bootstrap_post_id,bootstrap_thread_id,public_key,is_approved,was_approved) VALUES ('id-zen','zen','zen','zen','zen','fp','b','b','k',1,1)");
+            $pdo->exec("UPDATE posts SET author_identity_id = 'id-zen', attribution_counted = 1 WHERE post_id = 'zen-image'");
+            $pdo = null;
+
+            $tile = '/images/thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, 'tile');
+            $full = '/images/' . \ForumRewrite\Images\ImageReference::filename($reference);
+            $board = $this->markup($this->render($application, '/threads/?view=all&sort=newest'));
+            assertStringContains('<a class="zen-strip__card zen-strip__card--image" href="/threads/zen-image"><img src="' . $tile . '" srcset="' . $tile . ' 480w, ' . $full . ' 900w" sizes="(min-width: 48rem) 22rem, 100vw" alt="A calm pond" width="900" height="600"', $board);
+        } finally {
+            putenv($old === false ? $flag : $flag . '=' . $old);
+            exec('rm -rf ' . escapeshellarg($imageRoot) . ' ' . escapeshellarg($imageRoot . '-thumbs') . ' ' . escapeshellarg($repositoryRoot . '-meme.png'));
+        }
     }
 
     private function section(string $html, string $class): string

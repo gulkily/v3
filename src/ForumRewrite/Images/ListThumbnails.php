@@ -15,7 +15,7 @@ final class ListThumbnails
 {
     /**
      * @param list<string> $postIds
-     * @return array<string, array{src:string, srcset:?string, preview:string, width:int, height:int, description:string}>
+     * @return array<string, array{src:string, srcset:?string, preview:string, full:string, width:int, height:int, description:string}>
      */
     public static function forPosts(PDO $pdo, ImageStore $store, array $postIds): array
     {
@@ -35,7 +35,7 @@ final class ListThumbnails
      * has one, otherwise the earliest reply's. Hidden replies are skipped.
      *
      * @param list<string> $threadIds
-     * @return array<string, array{src:string, srcset:?string, preview:string, width:int, height:int, description:string}>
+     * @return array<string, array{src:string, srcset:?string, preview:string, full:string, width:int, height:int, description:string}>
      */
     public static function forThreads(PDO $pdo, ImageStore $store, array $threadIds): array
     {
@@ -53,7 +53,7 @@ final class ListThumbnails
 
     /**
      * @param list<array{key_id:string, body:string}> $rows in preference order
-     * @return array<string, array{src:string, srcset:?string, preview:string, width:int, height:int, description:string}>
+     * @return array<string, array{src:string, srcset:?string, preview:string, full:string, width:int, height:int, description:string}>
      */
     private static function firstPerKey(ImageStore $store, array $rows): array
     {
@@ -73,6 +73,7 @@ final class ListThumbnails
             }
             $thumbnails[$key] = self::sources($reference) + [
                 'preview' => ThumbnailStore::url($reference, 'tile'),
+                'full' => '/images/' . ImageReference::filename($reference),
                 'width' => $reference['width'],
                 'height' => $reference['height'],
                 'description' => $reference['description'],
