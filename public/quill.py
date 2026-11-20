@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Quill: portable forum client. Python 3 standard library, curl and GPG; no packages."""
-QUILL_VERSION = "2026-11-18"
+QUILL_VERSION = "2026-11-20"
 FRM_VERSION = QUILL_VERSION  # old name, kept for scripts that read it
 
 import argparse
@@ -71,10 +71,11 @@ def site_url(value):
     return value.rstrip('/')
 
 
-def request(site, route, fields=None, timeout=60, files=None, cookie=None):
+def request(site, route, fields=None, timeout=60, files=None, cookie=None, json_body=None, extra_headers=()):
     """One request. Never forward authored data via redirects. No curl config or cookie jar.
 
     files maps a form field to (path, content type) and sends the request as multipart.
+    json_body sends a JSON document instead of form fields; extra_headers adds 'Name: value' lines.
     cookie is a 'name=value' session cookie held in memory for this run (see sign_in);
     the returned headers carry every Set-Cookie value under 'set-cookies'."""
     if not shutil.which('curl'):
@@ -88,6 +89,8 @@ def request(site, route, fields=None, timeout=60, files=None, cookie=None):
                    '--write-out', '%{http_code}', '--user-agent', USER_AGENT]
         if cookie:
             command += ['--header', 'Cookie: ' + header(cookie)]
+        for line in extra_headers:
+            command += ['--header', header(line)]
         data = None
         if files:
             # Field values go through files so curl never reads @ or < at the start of authored text.
@@ -97,6 +100,9 @@ def request(site, route, fields=None, timeout=60, files=None, cookie=None):
                 command += ['--form', '%s=<%s' % (name, part)]
             for name, (path, kind) in files.items():
                 command += ['--form', '%s=@%s;type=%s' % (name, path, kind)]
+        elif json_body is not None:
+            command += ['--data-binary', '@-', '--header', 'Content-Type: application/json']
+            data = json.dumps(json_body).encode('utf-8')
         elif fields is not None:
             command += ['--data-binary', '@-', '--header', 'Content-Type: application/x-www-form-urlencoded']
             data = urlencode(fields).encode('utf-8')
@@ -930,6 +936,46 @@ def approval_target(site, target, timeout):
     return identity_id.replace(':', '-', 1)
 
 
+def checkin(args, site):
+    """Print what needs attention now (GET /api/checkin). Signs in for this run when this
+    state directory, or --signing-key, has a key; otherwise, or if sign-in fails, prints the
+    public check-in and says why on stderr. Reading the check-in marks nothing."""
+    session = None
+    try:
+        key = saved_key(args, site)
+    except ClientError:
+        key = None  # No key yet: the server's Sign-in line says what to do.
+    if key is not None:
+        try:
+            session = sign_in(site, key, args.timeout)
+        except ClientError as error:
+            print('Sign-in: ' + str(error) + ' Showing the public check-in.', file=sys.stderr)
+    route = '/api/checkin' + ('?format=json' if args.json else '')
+    status, text, _ = request(site, route, timeout=args.timeout, cookie=session['cookie'] if session else None)
+    if status != 200:
+        if args.json:
+            raise response_error(status, text)
+        raise ClientError('HTTP %s: %s' % (status, text.strip().split('=', 1)[-1] or 'check-in unavailable'))
+    print(text, end='' if text.endswith('\n') else '\n')
+    return 0
+
+
+def caught_up(args, site):
+    """Mark posts the check-in listed as caught up (POST /api/inbox/catch_up). Needs an approved key."""
+    key = saved_key(args, site)
+    session = sign_in(site, key, args.timeout)
+    if not session['approved']:
+        raise ClientError('Your key (' + session['identity_id'] + ') is not approved here, so it has no Unread to mark.')
+    status, text, _ = request(site, '/api/inbox/catch_up', timeout=args.timeout, cookie=session['cookie'],
+                              json_body={'section': args.section, 'post_ids': args.post_ids},
+                              extra_headers=('X-Requested-With: ForumInbox',))
+    if status != 200:
+        raise response_error(status, text)
+    payload = json.loads(text)
+    print('Caught up: %d post%s in %s; %s still unread.' % (len(args.post_ids), '' if len(args.post_ids) == 1 else 's', args.section, payload.get('unread', '?')))
+    return 0
+
+
 def list_pending(args, site):
     key = saved_key(args, site)
     session = sign_in(site, key, args.timeout)
@@ -1052,11 +1098,20 @@ def parser():
         q.add_argument('--gpg-home', help='Keyring for --signing-key; otherwise GNUPGHOME/default GPG home')
         q.add_argument('--report-thread', default=setting('REPORT_THREAD'), help='Thread for automatic trouble reports (default: QUILL_REPORT_THREAD, then FRM_REPORT_THREAD); reports are printed and carry no draft, key or path')
         q.add_argument('--no-report', action='store_true', help='Never post trouble reports')
-    for name in ('pending', 'approve'):
-        q = sub.add_parser(name, help='List keys waiting for approval (approved key; signs in for this run only)' if name == 'pending'
-                           else 'Approve a waiting key, given its profile slug, identity ID or a signed post of its. Needs an approved key; safe to rerun')
+    for name in ('pending', 'approve', 'checkin', 'caught-up'):
+        q = sub.add_parser(name, help={
+            'pending': 'List keys waiting for approval (approved key; signs in for this run only)',
+            'approve': 'Approve a waiting key, given its profile slug, identity ID or a signed post of its. Needs an approved key; safe to rerun',
+            'checkin': 'Show what needs attention now: replies to you (approved key), open #issue items, newest threads. Signs in when this state directory has a key; never creates one',
+            'caught-up': 'Mark posts from the check-in caught up so the next check-in skips them. Needs an approved key',
+        }[name])
         if name == 'approve':
             q.add_argument('target', metavar='TARGET')
+        if name == 'checkin':
+            q.add_argument('--json', action='store_true', help='Print the JSON form (?format=json)')
+        if name == 'caught-up':
+            q.add_argument('--section', choices=('replies', 'new'), default='replies', help='Unread section to mark (default: replies)')
+            q.add_argument('post_ids', nargs='+', metavar='POST_ID')
         q.add_argument('--signing-key', help='Approve with one existing primary secret key instead of the one this state directory posts with')
         q.add_argument('--gpg-home', help='Keyring for --signing-key; otherwise GNUPGHOME/default GPG home')
     return p
@@ -1088,6 +1143,10 @@ def main():
             return result
         if args.command == 'pending':
             return list_pending(args, site)
+        if args.command == 'checkin':
+            return checkin(args, site)
+        if args.command == 'caught-up':
+            return caught_up(args, site)
         if args.command == 'approve':
             return approve(args, site)
         if args.command == 'index':

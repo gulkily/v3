@@ -109,3 +109,34 @@ Enhancement requests: none pending. The two on record are in Step 3 (client rena
 - Estimate details (extended mode only): original scope as Step 3 Stage 4, less the catalog entries that moved earlier; uncertainty low; no revisions.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - quill.py checkin and caught-up
+
+**Original estimate: 0.05**
+
+**Retrospective stage-work assessment: 0.07**
+
+- Changes:
+  - `quill.py checkin [--json]`: loads the saved key with `saved_key()` and never creates one. With a key, it signs in with the existing `sign_in()` and sends the cookie for that one request.
+    - With no key, it makes the anonymous request; the server's `Sign-in:` line says what to do.
+    - If sign-in fails, it prints `Sign-in: <reason> Showing the public check-in.` on stderr and shows the public check-in.
+  - `quill.py caught-up [--section replies|new] POST_ID...`: signs in and refuses a key that is not approved. It POSTs the JSON body with `X-Requested-With: ForumInbox` and prints `Caught up: N posts in SECTION; M still unread.`
+  - `request()` gains `json_body` (sends `application/json`) and `extra_headers`, passed through the same control-character check as other headers.
+  - `QUILL_VERSION` moves from 2026-11-18 to **2026-11-20**, so the update notice reaches older copies.
+- Verification:
+  - `QuillClientTest::testCheckinSignsInListsRepliesAndCaughtUpClearsThem` runs against a live test server with Unread on. It covers:
+    - a check-in with no key (public, with the `Sign-in:` line, and no key created);
+    - a pending key (approval notice; `caught-up` refused);
+    - a signed reply to the approver's thread, which the approver's check-in lists with the exact `caught-up` command;
+    - `--json`;
+    - `caught-up` through the real JSON body, after which the next check-in shows `Replies to you: 0`;
+    - a broken fingerprint, which falls back to the public check-in with a stderr reason.
+  - `python3 tests/quill_client_test.py`: 40 run, 40 passed (new: the JSON body and headers, a header refused, and parsing of both commands).
+  - `./v3 test --smoke QuillClientTest AgentCheckinTest LlmsTxtRendererTest`: 526 run, 526 passed. Full suite not run.
+  - On zenmemes.com, `GET /api/inbox/unread` returns 401, not 404, so Unread is on there and approved agents will get "Replies to you".
+- Notes:
+  - Found: Unread (`FORUM_INBOX_ENABLED`) is **off by default**. On an instance without it, approved agents see `Unread: disabled on this server…` and public sections only. This works as designed (Step 2 follows Unread's gate), but it is worth knowing.
+  - Retrospective a little higher than the original because of the live-server test and the flag discovery.
+- Estimate details (extended mode only): original scope as Step 3 Stage 5 (revised 2026-11-19 from 0.12); uncertainty low; no revisions in Step 4.
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*

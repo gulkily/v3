@@ -324,9 +324,9 @@ final class QuillClientTest
      * An approved approver key and two pending keys that share one username, each with one thread.
      * Returns [server, repo, db, root, script, approverBase, [pendingBase, pendingBase], [identity => post ID]].
      */
-    private static function approvalFixture(): array
+    private static function approvalFixture(array $environment=[]): array
     {
-        [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
+        [$server,$repo,$db,$root]=SingleRequestHttpTest::server($environment);
         $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
         file_put_contents($root.'/body.txt',"Hello from a test key.\n");
         $bases=[]; $posts=[];
@@ -423,6 +423,51 @@ final class QuillClientTest
             assertSame(0,$code,$out); assertStringContains('Status: approved',$out);
             [$code,$out]=self::run($script,array_merge($approver,['pending']));
             assertSame(0,$code,$out); assertStringContains('Pending-Count: 0',$out);
+        } finally {self::disposeKeyrings($root); $server->close();}
+    }
+
+    public function testCheckinSignsInListsRepliesAndCaughtUpClearsThem(): void
+    {
+        [$server,$repo,$db,$root,$script,$approver,$pending,$posts]=self::approvalFixture(['FORUM_INBOX_ENABLED'=>'true']);
+        try {
+            [$approverId,$oneId]=array_keys($posts);
+            // No key: the public check-in, and the server says how to see more. Checking in creates no key.
+            $nobody=['--site',$server->url,'--state-dir',self::stateDir($root,'nobody'),'--retries','0'];
+            [$code,$out]=self::run($script,array_merge($nobody,['checkin']));
+            assertSame(0,$code,$out); assertStringContains("Viewer: anonymous\nSign-in: replies to you need a signed-in approved key.",$out);
+            assertStringContains('Newest threads: 5',$out); assertTrue(glob(self::stateDir($root,'nobody').'/*/identity.txt')===[],'checkin must not create a key');
+            // A pending key signs in and is told how to get approved.
+            [$code,$out]=self::run($script,array_merge($pending[0],['checkin']));
+            assertSame(0,$code,$out); assertStringContains('(' . $oneId . ', not approved)',$out); assertStringContains('Approval: replies to you need an approved key.',$out);
+            [$code,$out]=self::run($script,array_merge($pending[0],['caught-up','x']));
+            assertSame(2,$code,$out); assertStringContains('is not approved here, so it has no Unread to mark',$out);
+
+            // A reply to the approver's thread shows up in the approver's check-in.
+            file_put_contents($root.'/reply.txt',"A reply for the approver.\n");
+            [$code,$out]=self::run($script,array_merge($pending[0],['reply','--thread',$posts[$approverId],'--body-file',$root.'/reply.txt','--no-report']));
+            assertSame(0,$code,$out); preg_match('/Post-ID: (\S+)/',$out,$reply);
+            [$code,$out]=self::run($script,array_merge($approver,['checkin']));
+            assertSame(0,$code,$out);
+            assertStringContains("Viewer: approver-agent (approved)\n",$out);
+            assertStringContains("Replies to you: 1\n- ".$reply[1].' by shared-agent in "Hi approver": A reply for the approver.',$out);
+            assertStringContains('caught-up --section replies '.$reply[1].' (or POST /api/inbox/catch_up',$out);
+            [$code,$json]=self::run($script,array_merge($approver,['checkin','--json']));
+            assertSame(0,$code,$json); $data=json_decode($json,true);
+            assertSame('approved',$data['viewer']['status']??null,$json); assertSame($reply[1],$data['sections'][0]['items'][0]['id']??null,$json);
+
+            // caught-up sends the real JSON body and header; the next check-in skips the reply.
+            [$code,$out]=self::run($script,array_merge($approver,['caught-up','--section','replies',$reply[1]]));
+            assertSame(0,$code,$out); assertStringContains('Caught up: 1 post in replies; 0 still unread.',$out);
+            [$code,$out]=self::run($script,array_merge($approver,['checkin']));
+            assertSame(0,$code,$out); assertStringContains("Replies to you: 0\n",$out); assertStringNotContains($reply[1],$out);
+
+            // A failed sign-in still prints the public check-in and says why.
+            $identity=glob(self::stateDir($root,'approver').'/*/identity.txt')[0];
+            $saved=(string) file_get_contents($identity);
+            file_put_contents($identity,preg_replace('/^Fingerprint: .*$/m','Fingerprint: '.str_repeat('0',40),$saved));
+            [$code,$out]=self::run($script,array_merge($approver,['checkin']));
+            assertSame(0,$code,$out); assertStringContains('Sign-in: ',$out); assertStringContains('Showing the public check-in.',$out); assertStringContains('Viewer: anonymous',$out);
+            file_put_contents($identity,$saved);
         } finally {self::disposeKeyrings($root); $server->close();}
     }
 
