@@ -367,6 +367,15 @@ final class Application
             return;
         }
 
+        if ($path === '/api/inbox/catch_up') {
+            if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::INBOX_ENABLED)) {
+                $this->sendJson(['status' => 'error', 'code' => 'inbox_disabled', 'error' => 'Unread is disabled on this server.'], 404, $this->routeServices()->noStoreHeaders());
+                return;
+            }
+            $this->inboxPageController()->apiCatchUp($method, $query);
+            return;
+        }
+
         // Inbox was the page's first name; its old address keeps working.
         if ($path === '/inbox' || $path === '/inbox/') {
             if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::INBOX_ENABLED)) {
@@ -1100,6 +1109,15 @@ final class Application
             return;
         }
 
+        if ($path === '/api/checkin') {
+            if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::AGENT_CHECKIN_ENABLED)) {
+                $this->sendText("error=The agent check-in is disabled on this server.\n", 404, $this->routeServices()->noStoreHeaders());
+                return;
+            }
+            $this->agentCheckinController()->show($method, $query);
+            return;
+        }
+
         if ($path === '/api/get_thread') {
             $this->apiTextController()->getThread((string) ($query['thread_id'] ?? ''));
             return;
@@ -1367,6 +1385,11 @@ final class Application
 
         if ($path === '/llms.txt') {
             $this->sendText($this->renderLlmsTxt(), 200);
+            return;
+        }
+
+        if ($path === '/skill.md') {
+            $this->sendText($this->llmsTxtRenderer()->renderSkill($this->appVersion(), (string) preg_replace('#^https?://#', '', \ForumRewrite\View\TemplateRenderer::requestOrigin())), 200, ['Content-Type: text/markdown; charset=utf-8']);
             return;
         }
 
@@ -1884,12 +1907,17 @@ final class Application
 
     private function renderLlmsTxt(): string
     {
-        return (new \ForumRewrite\Http\LlmsTxtRenderer(
+        return $this->llmsTxtRenderer()->render();
+    }
+
+    private function llmsTxtRenderer(): \ForumRewrite\Http\LlmsTxtRenderer
+    {
+        return new \ForumRewrite\Http\LlmsTxtRenderer(
             $this->featureFlags(),
             \ForumRewrite\Support\SourceRepository::fromProjectRoot($this->projectRoot),
             (string) \ForumRewrite\SiteProfileRegistry::active()['displayName'],
             \ForumRewrite\ProfilePresentationContent::siteDescription(\ForumRewrite\SiteProfileRegistry::active()),
-        ))->render();
+        );
     }
 
     /**
@@ -2490,7 +2518,7 @@ final class Application
         }
 
         // Agent onboarding text: protocol and instance flags only, no content.
-        if ($method === 'GET' && ($path === '/llms.txt' || $path === '/api/' || $path === '/api')) {
+        if ($method === 'GET' && ($path === '/llms.txt' || $path === '/skill.md' || $path === '/api/' || $path === '/api')) {
             return true;
         }
 
@@ -2565,10 +2593,10 @@ final class Application
             '/tools/usage-log', '/tools/usage-log/', '/tools/usage-log/upload', '/tools/usage-reports', '/tools/usage-reports/',
             '/tools/tag-unlocks', '/tools/tag-unlocks/',
             '/compose/thread', '/compose/reply',
-            '/unread', '/unread/', '/inbox', '/inbox/', '/api/inbox/unread', '/staged', '/staged/',
+            '/unread', '/unread/', '/inbox', '/inbox/', '/api/inbox/unread', '/api/inbox/catch_up', '/staged', '/staged/',
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',
             '/account/key', '/account/key/', '/invites', '/invites/',
-            '/api', '/api/', '/api/version', '/api/list_index',
+            '/api', '/api/', '/api/version', '/api/list_index', '/api/checkin',
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username', '/api/get_username_claim_cta', '/api/pending_keys',
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
@@ -2581,7 +2609,7 @@ final class Application
             '/api/prepare_key_retirement', '/api/finalize_key_retirement', '/api/key_retirement_status',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/read_event_phrase', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/prepare_attribution_cutoff', '/api/finalize_attribution_cutoff', '/api/prepare_operator_grant', '/api/finalize_operator_grant', '/api/link_identity', '/api/approve_user',
-            '/forte', '/forte/', '/llms.txt',
+            '/forte', '/forte/', '/llms.txt', '/skill.md',
             '/latest', '/top', '/leetness', '/queue', '/add', '/random', '/search',
         ], true)) {
             return true;
@@ -2815,6 +2843,18 @@ final class Application
     private function stagedPageController(): \ForumRewrite\Http\StagedPageController
     {
         return new \ForumRewrite\Http\StagedPageController($this->routeServices(), $this->authenticatedViewerProfile(...));
+    }
+
+    private function agentCheckinController(): \ForumRewrite\Http\AgentCheckinController
+    {
+        return new \ForumRewrite\Http\AgentCheckinController(
+            $this->routeServices(),
+            $this->displayThreadTitle(...),
+            $this->appVersion(),
+            $this->featureFlags()->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED),
+            $this->authenticatedViewerProfile(...),
+            $this->featureFlags()->isEnabled(FeatureFlagRegistry::INBOX_ENABLED) ? $this->inboxPageController(...) : null,
+        );
     }
 
     private function inboxPageController(): \ForumRewrite\Http\InboxPageController
