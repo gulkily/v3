@@ -165,3 +165,26 @@ Enhancement requests: none pending. The two on record are in Step 3 (client rena
 - Estimate details (extended mode only): original scope as Step 3 Stage 6, plus the two stale-entry corrections; uncertainty low; no revisions.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - Local end-to-end replay
+
+**Original estimate: 0.08**
+
+**Retrospective stage-work assessment: 0.08**
+
+- Changes: none to shipped code; no fixes were needed. Replay files stayed in the session scratchpad and are not committed.
+- Verification (local import of zenmemes.com: `./v3 import-instance zenmemes.com --with-approvals` into a separate repository, 1,948 threads and 4,170 posts. Approvals were restored by seeding Ilya's two `ilyag` keys from `./v3 approval suggest-roots`, locally only. Served by `./v3 start` with `FORUM_INBOX_ENABLED=true`, as on zenmemes.com):
+  - **Anonymous:** `quill.py` downloaded from `/quill.py` (`QUILL_VERSION = "2026-11-20"`). `checkin` with no key showed `Viewer: anonymous`, the `Sign-in:` line, "Open #issue items: 10" (real Agent Accessibility reports plus two new #issue opening posts) and "Newest threads: 10 of 1578". It created no key.
+  - **Known environment:** Claude's stable key, derived with `scripts/derive_agent_key.py` (fingerprint `BA132E21…4C8E` as expected), used through `--signing-key`. Unapproved in the local copy: `Viewer: claude (openpgp:ba13…, not approved)` and the `Approval:` line. After `./v3 approval approve` (local): `Viewer: claude (approved)`, "Replies to you: 0" (the mark starts at first read) and "Unread conversations: 0".
+  - **Replies:** a new key (`replay-visitor`) replied to Claude's newest thread. Claude's check-in showed "Replies to you: 1" with that post and the exact `caught-up … reply-20261120184354-…` command. Claude replied to it, and `caught-up` printed `Caught up: 1 post in replies; 0 still unread.` The next check-in showed "Replies to you: 0". `--json` showed the four sections with totals `0, 0, 10, 1578`.
+  - **Flag off:** a second server with `FORUM_AGENT_CHECKIN_ENABLED=false` returned `404 error=The agent check-in is disabled on this server.`; `/llms.txt` had no "Check in" section, and `/skill.md` was still served.
+  - **Rebuild:** `./v3 rebuild` (2.4 s), with the check-in polled every 0.5 s throughout. Every request returned 200 in about 24 ms, because the rebuild builds a new file and swaps it in. The busy reply (`ApiErrors::busy`, the shared path in `RouteServices::sendText`) was **not reproduced**; this cycle does not change that path.
+  - **Timing:** 18–20 ms per check-in after the first (48 ms), over 5 runs; well under the 300 ms threshold, so the caps stay at 10.
+  - **Diff review:** `git diff origin/main..HEAD` — 28 files, matching Stages 1–6. No stray files and no unrelated changes.
+- Notes:
+  - Found: a generated key in a long state-directory path fails at `gpg-agent` (socket path too long). This is a known limit, noted in `QuillClientTest::stateDir`; a short path worked. It is outside this cycle.
+  - The printed `caught-up` command names `--site` but not the agent's own key options (`--state-dir`, `--signing-key`). The server cannot know them. Claude's skill text says to add the same key options it posts with.
+  - Observation for later, not changed: open items include one-word replies such as `#agenta11y`, a hashtag-only reply in an #issue thread. The thread activity drawer already treats such replies as records; the check-in could skip them later.
+- Estimate details (extended mode only): original scope as Step 3 Stage 7; uncertainty medium (import size), which resolved quickly; no revisions.
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
