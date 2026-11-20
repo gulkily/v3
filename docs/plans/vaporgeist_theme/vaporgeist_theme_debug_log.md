@@ -27,3 +27,17 @@
 
 **Uncertain assessments**
 - No supported findings.
+
+## 2026-11-20T18:40Z — revision on PR feedback
+
+**Necessary/useful instructions**
+- `AGENTS.md` "before any push to an existing branch, check that its PR is still open": PR #341 was open, so the revision stayed on its branch. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- No supported findings.
+
+**Uncertain assessments**
+- The earlier reuse decision (share Zalgo's stylesheet) is what carried Zalgo's personality into Vaporgeist. AGENTS.md's reuse rule pushed toward sharing; when two themes should feel different, reuse of rules can work against the request. A note that shared look is reuse only when the look is meant to be shared may help.

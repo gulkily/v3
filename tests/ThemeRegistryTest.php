@@ -68,7 +68,7 @@ final class ThemeRegistryTest
         }
     }
 
-    public function testVaporgeistIsOfferedOnlyWhileItsFlagIsOnAndSharesZalgosStylesheet(): void
+    public function testVaporgeistIsOfferedOnlyWhileItsFlagIsOn(): void
     {
         $names = ['auto', 'zalgo', 'vaporgeist'];
         $zalgoOnly = new FeatureFlagEvaluator(siteValues: [FeatureFlagRegistry::ZALGO_THEME_ENABLED => true]);
@@ -79,7 +79,7 @@ final class ThemeRegistryTest
 
         assertSame(['auto', 'zalgo'], array_column(ThemeRegistry::permitted($names, $zalgoOnly), 'name'));
         assertSame(['auto', 'zalgo', 'vaporgeist'], array_column(ThemeRegistry::permitted($names, $both), 'name'));
-        assertSame('/assets/theme-zalgo.css', ThemeRegistry::stylesheetPaths()['vaporgeist']);
+        assertSame('/assets/theme-vaporgeist.css', ThemeRegistry::stylesheetPaths()['vaporgeist']);
     }
 
     public function testExplicitThemeAssetsAndHintCookieHaveCanonicalContracts(): void

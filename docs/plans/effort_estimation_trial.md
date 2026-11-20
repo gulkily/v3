@@ -2468,9 +2468,3 @@ Relationship: integration follow-up to v3/local_start_import on open PR #284, no
 | `v3/invite_show_mode` | Implemented; PR open | v1 (one-shot) / R1 / P2 | 0.20 | [One-shot record](./invite_show_mode/invite_show_mode_one_shot.md#study-history) | Follow-up to `v3/invite_qr_pitch`; maintainer acceptance pending |
 
 2026-11-17: one-shot invite show mode; baseline `f05cc945`. Intake and execution entry 0.20; closeout retrospective 0.20. Single exposed rater Claude (claude-opus-5-5). No measured effort or accepted-count increment.
-
-| Cycle ID | Status | Scope / reference | Latest projection | Canonical checkpoints | Parent / acceptance |
-| --- | --- | --- | --- | --- | --- |
-| `v3/vaporgeist_theme` | Implemented; PR open | v1 (one-shot) / R1 / P2 | 0.40 | [one-shot record](./vaporgeist_theme/vaporgeist_theme_one_shot.md#study-history) | New cycle; maintainer acceptance pending |
-
-2026-11-19: standing P2 enrollment, one-shot; baseline `7d9b4b4d`. Execution entry 0.40; closeout retrospective 0.40. Claude single exposed rater; R1 hashes not re-verified.
