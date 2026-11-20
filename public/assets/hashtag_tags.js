@@ -13,6 +13,19 @@
   var fence = /^ {0,3}(?:```|~~~)/;
   var quoted = /^\s*>/;
   var neverTags = /^(?:[0-9]+|[0-9a-f]{3}|[0-9a-f]{6})$/;
+  // An image's Image-v1 line and the photo details after it (ImageReference::withoutReference).
+  var imageLine = /^Image-v1: [a-f0-9]{64} (?:png|jpg) [0-9]+ [0-9]+ [0-9]+(?: \S+)?$/;
+  var photoDetail = /^Photo-(?:Camera|Lens|Exposure|Taken|Location): [^\x00-\x1f\x7f]{1,120}$/;
+
+  function withoutImage(lines) {
+    for (var i = 0; i < lines.length; i++) {
+      if (!imageLine.test(lines[i])) continue;
+      var end = i + 1;
+      while (end < lines.length && photoDetail.test(lines[end])) end++;
+      return lines.slice(0, i).concat(lines.slice(end));
+    }
+    return lines;
+  }
 
   function lineTokens(line) {
     var tokens = [];
@@ -47,7 +60,7 @@
   }
 
   function selfTags(body) {
-    var lines = String(body || "").split(/\r\n|\r|\n/);
+    var lines = withoutImage(String(body || "").split(/\r\n|\r|\n/));
     var last = -1;
     for (var i = 0; i < lines.length; i++) if (lines[i].trim() !== "") last = i;
     var labels = [];

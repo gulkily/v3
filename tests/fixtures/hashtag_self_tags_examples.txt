@@ -113,6 +113,21 @@ Tags: ux
 
 #bug, #ux
 %%%
+Name: image post with closing hashtags
+Tags: meta
+
+users page needs redesign, not easy to scan #meta
+
+Image-v1: f3101611b91901491c0d430b7fcd04492bd521980cb5a9a29a7b4ac4ac524af9 png 54182 747 1012
+Photo-Camera: Pixel 8
+%%%
+Name: image post with no tags
+Tags:
+
+I like #zen posts.
+
+Image-v1: f3101611b91901491c0d430b7fcd04492bd521980cb5a9a29a7b4ac4ac524af9 png 54182 747 1012
+%%%
 Name: no body
 Tags:
 

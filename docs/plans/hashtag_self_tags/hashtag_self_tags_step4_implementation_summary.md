@@ -134,3 +134,39 @@ Branch: `hashtag-self-tags`, reused for this cycle as the maintainer asked. Plan
 - Estimate details: revision recorded above; the recount itself ran here, so the "can't run here" risk did not happen.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Skip the Image-v1 line, end-to-end check, feedback item
+
+**Original estimate: 0.06**: set by Revision 1, 2026-11-20.
+
+**Retrospective stage work: 0.08**
+
+- Changes:
+  - `selfTags` reads the body through `ImageReference::withoutReference`, the existing helper that drops the `Image-v1` line and its photo details. `hashtag_tags.js` drops the same lines.
+  - Two image examples added to the shared file: an image post ending "#meta", and one with only a prose hashtag.
+  - `docs/concepts/thread_labels.md` notes the image line.
+  - PF-20261111-F58: `Workflow: blocked` (on merge, deploy and production acceptance), `Evidence: locally-verified`, and a dated note with the next action.
+- Verification:
+  - Passed: `./v3 test --smoke ThreadLabelsTest HashtagTagsTest LocalWriteServiceSelfTagsTest TagOnlyLeafFilterTest ThreadActivityTest LlmsTxtRendererTest FeatureFlagEvaluatorTest FeatureFlagsBehaviorTest MarkdownDetectTest`, 518 run, 518 passed.
+  - Passed, recount rerun: 801 labelled posts, 698 unchanged, 103 lose a label, none gain one. The 12 image posts keep their labels. The 103 are the references and approved exclusions read in Stage 5, plus the 14 first-line posts the maintainer chose not to recover.
+  - Passed, Contract through the API on a local server: `create_thread` with the prose "(#zen and #meme)" and a closing `#issue #meta`. `get_thread` shows `Labels: issue meta`, the label record holds `issue meta`, and the thread page links all four hashtags to their tag pages.
+  - Passed, Contract through the browser composer (headless Chrome): typing "All should open an image gallery view #meta" showed "Tags: #meta". Post anonymously gave a thread whose labels are `meta`.
+  - Passed, recovery: with `FORUM_HASHTAG_SELF_TAGS_ENABLED=false`, the same API body got `issue meme meta zen`. The composer had no Tags line and did not load the script.
+  - Not checked locally: the Zen strip itself. It counts only approved members' tags, and the local posts were guests. Without zen and meme labels the thread cannot qualify. Production acceptance covers this.
+  - Passed: the branch merges cleanly with `origin/main` `f924dbb0`. The final diff touches only the files named in the plan, plus `tests/run.php` and `compose.css`.
+  - Pending: merge, Deploy now and the maintainer's production check.
+  - Full suite not run.
+- Notes: the local zenmemes.com import stays in this workspace's ignored `state/` directory.
+- Estimate details: no revisions after Revision 1.
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+- Delivered scope: scope v1 plus Revision 1 (skip the `Image-v1` line). Starting revision `597f5328f`. Planning commit `72b56ea3`. Stage commits follow it.
+- Planned stages 5, completed 6. Stage 6 came from Revision 1, a changed-scope request the maintainer approved mid-cycle. There was no corrective work.
+- Declined in Revision 1: tagging hashtags at the end or start of the first line. A follow-up cycle could revisit it with the recount's 14 posts as evidence.
+- **Retrospective cycle scope: 0.62**: Claude, single exposed rater. Projections were 0.55 at Steps 2–4 entry and 0.62 after Revision 1.
+- Maintainer comfortable-fit judgment: pending. Study acceptance pending.
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*

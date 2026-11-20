@@ -1,9 +1,9 @@
 ID: PF-20261111-F58
 Title: Mentioning a hashtag labels the post
 Kind: feature
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-11
-Evidence: unknown
+Evidence: locally-verified
 
 Request:
 Writing about a tag in a post body can label the post by accident; decide which hashtags count as labels.
@@ -14,3 +14,5 @@ Sources:
 Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 Agent-filed (Claude).
+2026-11-20: Implemented on branch hashtag-self-tags (Railspike cycle docs/plans/hashtag_self_tags/). A hashtag labels its thread only on a line of hashtags or at the end of the last line; others stay links. Flag FORUM_HASHTAG_SELF_TAGS_ENABLED, on by default. Locally verified through the API, the browser composer and flag off, and against 801 labelled posts imported from zenmemes.com. Blocked on merge, Deploy now and production acceptance.
+Next action: on production, post a thread whose prose mentions #zen and #meme and ends with #issue #meta; confirm only issue and meta label it and it stays out of the Zen strip.

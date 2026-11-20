@@ -39,14 +39,15 @@ final class ThreadLabels
      * The self-tag rule (FORUM_HASHTAG_SELF_TAGS_ENABLED): a hashtag tags its thread only on a
      * line made of hashtags, or in the run of hashtags that ends the last non-blank line. Other
      * hashtags are references. Code, links, URLs, quoted lines, all-digit and colour-like
-     * hashtags never tag. public/assets/hashtag_tags.js mirrors this for the composer; both
+     * hashtags never tag. An image's Image-v1 line and photo details are not the author's text,
+     * so they never hide the closing hashtags. public/assets/hashtag_tags.js mirrors this for the composer; both
      * are tested against tests/fixtures/hashtag_self_tags_examples.txt.
      *
      * @return list<string> labels in first-seen order
      */
     public static function selfTags(string $body): array
     {
-        $lines = preg_split('/\r\n|\r|\n/', $body) ?: [];
+        $lines = preg_split('/\r\n|\r|\n/', \ForumRewrite\Images\ImageReference::withoutReference($body)) ?: [];
         $last = null;
         foreach ($lines as $index => $line) {
             if (trim($line) !== '') {
