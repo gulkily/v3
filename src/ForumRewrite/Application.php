@@ -1388,6 +1388,11 @@ final class Application
             return;
         }
 
+        if ($path === '/skill.md') {
+            $this->sendText($this->llmsTxtRenderer()->renderSkill($this->appVersion(), (string) preg_replace('#^https?://#', '', \ForumRewrite\View\TemplateRenderer::requestOrigin())), 200, ['Content-Type: text/markdown; charset=utf-8']);
+            return;
+        }
+
         $qdbRoute = $this->qdbExperience()->dispatchUnmatched($path);
         if ($qdbRoute !== null) {
             $this->sendQdbExperienceResult($qdbRoute);
@@ -1902,12 +1907,17 @@ final class Application
 
     private function renderLlmsTxt(): string
     {
-        return (new \ForumRewrite\Http\LlmsTxtRenderer(
+        return $this->llmsTxtRenderer()->render();
+    }
+
+    private function llmsTxtRenderer(): \ForumRewrite\Http\LlmsTxtRenderer
+    {
+        return new \ForumRewrite\Http\LlmsTxtRenderer(
             $this->featureFlags(),
             \ForumRewrite\Support\SourceRepository::fromProjectRoot($this->projectRoot),
             (string) \ForumRewrite\SiteProfileRegistry::active()['displayName'],
             \ForumRewrite\ProfilePresentationContent::siteDescription(\ForumRewrite\SiteProfileRegistry::active()),
-        ))->render();
+        );
     }
 
     /**
@@ -2508,7 +2518,7 @@ final class Application
         }
 
         // Agent onboarding text: protocol and instance flags only, no content.
-        if ($method === 'GET' && ($path === '/llms.txt' || $path === '/api/' || $path === '/api')) {
+        if ($method === 'GET' && ($path === '/llms.txt' || $path === '/skill.md' || $path === '/api/' || $path === '/api')) {
             return true;
         }
 
@@ -2599,7 +2609,7 @@ final class Application
             '/api/prepare_key_retirement', '/api/finalize_key_retirement', '/api/key_retirement_status',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/read_event_phrase', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/prepare_attribution_cutoff', '/api/finalize_attribution_cutoff', '/api/prepare_operator_grant', '/api/finalize_operator_grant', '/api/link_identity', '/api/approve_user',
-            '/forte', '/forte/', '/llms.txt',
+            '/forte', '/forte/', '/llms.txt', '/skill.md',
             '/latest', '/top', '/leetness', '/queue', '/add', '/random', '/search',
         ], true)) {
             return true;

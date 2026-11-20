@@ -81,10 +81,31 @@ Enhancement requests: none pending. The two on record are in Step 3 (client rena
   - `Application.php` (route and `isApplicationRoute`) and an `ApiRouteCatalog` entry.
 - Verification:
   - `./v3 test AgentCheckinTest`: 13 run, 13 passed. New: four refused requests that each leave the mark unchanged, an accepted catch-up with an unknown ID ignored, a second catch-up down to zero, 401, 403 unapproved, four bad inputs, and 405.
-  - `./v3 test --smoke AgentCheckinTest InboxPageTest InboxFeedTest ApiRouteCatalogTest`: 519 run, 519 passed. Full suite not run.
+  - `./v3 test --smoke AgentCheckinTest InboxPageTest InboxFeedTest ApiRouteCatalogTest`: 505 run, 505 passed. Full suite not run. (Corrected in the Stage 4 commit: the Stage 3 commit said 519, which was written before the run finished.)
 - Notes:
   - These tests pass the fields as request data. The raw JSON body path (`RouteServices::requestData` reading `php://input`) is tested against a live server with Quill in Stage 5.
   - The `caught-up` command named in `Next:` arrives in Stage 5. Until then only the raw route works; the stages ship together.
 - Estimate details (extended mode only): original scope as Step 3 Stage 3; uncertainty low; no revisions. Retrospective slightly lower because the guard was copied whole.
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - /skill.md and the Check in section
+
+**Original estimate: 0.07**
+
+**Retrospective stage-work assessment: 0.05**
+
+- Changes:
+  - `LlmsTxtRenderer::renderSkill(version, host)`: frontmatter (`name: <site>-agent-guide`, a `description` that says when to use it, `version` from the application version), then one comment line, then `render()` unchanged. The comment says changes are announced in the thread titled "Agent guide changes" and to refetch when the version changes. The body is `/llms.txt` byte for byte, so the two cannot drift.
+  - A "## Check in" section between "Reply resolution" and "Approving keys" in both files. It covers `GET /api/checkin` and `?format=json`, `quill.py checkin`, section order, the `Next:` lines, and catching up with `quill.py caught-up` or the raw route and its header. With the check-in flag off, the section is left out.
+  - A "More" link: `- [This guide as a skill file](/skill.md)`.
+  - `Application.php`: `/skill.md` is served as `text/markdown; charset=utf-8`, and `renderLlmsTxt()` now goes through a shared `llmsTxtRenderer()`. On members-only instances `/skill.md` is public, like `/llms.txt` (no content), and it has an `isApplicationRoute` entry.
+- Verification:
+  - `./v3 test LlmsTxtRendererTest`: 16 run, 16 passed. New: the Check in section's place and its flag, the skill frontmatter and the byte-for-byte body, generic names when the site has no profile name or host, and members-only serving `/skill.md` while refusing `/api/checkin` (`access_denied`).
+  - `./v3 test --smoke LlmsTxtRendererTest AgentCheckinTest ApiRouteCatalogTest PresentationProfileMatrixTest`: 517 run, 517 passed. Full suite not run.
+- Notes:
+  - Catalog entries for both routes landed in Stages 1 and 3; see their notes.
+  - Correction carried in this commit: Stage 3's smoke count was 505, not 519.
+- Estimate details (extended mode only): original scope as Step 3 Stage 4, less the catalog entries that moved earlier; uncertainty low; no revisions.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
