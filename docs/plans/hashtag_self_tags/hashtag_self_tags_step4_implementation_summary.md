@@ -41,3 +41,24 @@ Branch: `hashtag-self-tags`, reused for this cycle as the maintainer asked. Plan
 - Estimate details: original scope as Step 3; uncertainty about unclosed fences resolved (an unclosed fence hides the rest of the post); no revisions.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Feature flag and write path
+
+**Original estimate: 0.08**
+
+**Retrospective stage work: 0.09**
+
+- Changes:
+  - `FeatureFlagRegistry` adds `FORUM_HASHTAG_SELF_TAGS_ENABLED`. It is on by default, site-mutable, in the AUTHORING group after Calendar feed, and released 2026-11-20.
+  - `LocalWriteService::extractThreadLabelsFromBody` calls `selfTags` when the flag is on and `fromBody` when it is off. The local, prepared, signed and bundle write paths all call it.
+  - `FeatureFlagEvaluatorTest` lists the flag in both orders it checks.
+  - New `LocalWriteServiceSelfTagsTest`, registered in `tests/run.php`. It covers a local thread, a local reply, a signed prepared thread, and the flag turned off.
+- Verification:
+  - Passed: `./v3 test --smoke LocalWriteServiceSelfTagsTest FeatureFlagEvaluatorTest FeatureFlagsBehaviorTest LlmsTxtRendererTest`, 503 run, 503 passed.
+  - Full suite not run.
+- Notes:
+  - A test file runs only when `tests/run.php` lists it. The first run of the new file reported only the smoke set, which is how this showed up.
+  - `docs/concepts/feature_flags.md` lists no flags, so it needs no change.
+- Estimate details: original scope as Step 3; no revisions.
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*

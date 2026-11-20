@@ -4811,7 +4811,9 @@ class LocalWriteService
      */
     private function extractThreadLabelsFromBody(string $body): array
     {
-        return \ForumRewrite\Support\ThreadLabels::fromBody($body);
+        return $this->featureFlags->isEnabled(FeatureFlagRegistry::HASHTAG_SELF_TAGS_ENABLED)
+            ? \ForumRewrite\Support\ThreadLabels::selfTags($body)
+            : \ForumRewrite\Support\ThreadLabels::fromBody($body);
     }
 
     private function reactionJournalDirectory(): string

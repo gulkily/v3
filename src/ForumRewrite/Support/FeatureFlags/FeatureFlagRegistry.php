@@ -19,6 +19,7 @@ final class FeatureFlagRegistry
     public const EVENT_SUPPORT_ENABLED = 'FORUM_EVENT_SUPPORT_ENABLED';
     public const EVENT_WHEN_ENABLED = 'FORUM_EVENT_WHEN_ENABLED';
     public const CALENDAR_FEED_ENABLED = 'FORUM_CALENDAR_FEED_ENABLED';
+    public const HASHTAG_SELF_TAGS_ENABLED = 'FORUM_HASHTAG_SELF_TAGS_ENABLED';
     public const APP_VERSION_NOTIFICATION = 'FORUM_APP_VERSION_NOTIFICATION';
     public const THREAD_DENSITY_TOGGLE_ENABLED = 'FORUM_THREAD_DENSITY_TOGGLE_ENABLED';
     public const READING_MARGINS_ENABLED = 'FORUM_READING_MARGINS_ENABLED';
@@ -74,7 +75,7 @@ final class FeatureFlagRegistry
             self::VERIFIED_ATTRIBUTION, self::SESSION_KEY_BOOTSTRAP_ENABLED, self::SESSION_KEY_BOOTSTRAP_HTTP_ENABLED],
         'AUTHORING' => [self::IMAGE_CONTENT_ENABLED, self::LIST_THUMBNAILS_ENABLED, self::IMAGE_GALLERY_ENABLED, self::UNICODE_AUTHORED_TEXT,
             self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED, self::EVENT_WHEN_ENABLED,
-            self::CALENDAR_FEED_ENABLED],
+            self::CALENDAR_FEED_ENABLED, self::HASHTAG_SELF_TAGS_ENABLED],
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
             self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED,
             self::DEPLOY_HEADER_PROMPT_ENABLED, self::INSTANCE_IMPORT_PAGE_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER,
@@ -343,6 +344,16 @@ final class FeatureFlagRegistry
                 requiresEnabledFlag: self::EVENT_SUPPORT_ENABLED,
                 group: 'AUTHORING',
                 releasedOn: '2026-11-17',
+            ),
+            new FeatureFlagDefinition(
+                self::HASHTAG_SELF_TAGS_ENABLED,
+                'Hashtags tag only at the end',
+                'A hashtag tags its thread only on a line of hashtags or at the end of the last line; hashtags in sentences stay links. Off: every hashtag in a new post tags its thread, as before. Existing labels are kept either way.',
+                true,
+                self::HASHTAG_SELF_TAGS_ENABLED,
+                siteMutable: true,
+                group: 'AUTHORING',
+                releasedOn: '2026-11-20',
             ),
             new FeatureFlagDefinition(
                 self::APP_VERSION_NOTIFICATION,
