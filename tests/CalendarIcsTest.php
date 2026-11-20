@@ -25,6 +25,20 @@ final class CalendarIcsTest
         calendarIcsAssertContains("DTSTART;VALUE=DATE:20261127\r\nDTEND;VALUE=DATE:20261130\r\n", $ics);
     }
 
+    public function testEasternExportPreservesLocalTimeInWinterAndSummer(): void
+    {
+        $zone = new DateTimeZone('America/New_York');
+        foreach ([
+            ['2026-11-20', '20261121T000000Z', '20261121T010000Z'],
+            ['2026-07-20', '20260720T230000Z', '20260721T000000Z'],
+        ] as [$date, $start, $end]) {
+            $event = $this->event(['event_date' => $date, 'event_time' => '19:00']);
+            $ics = CalendarIcs::document([$event], [], 'https://zenmemes.com', 'Calendar', timeZone: $zone);
+            calendarIcsAssertContains("DTSTART:$start\r\nDTEND:$end\r\n", $ics);
+            calendarIcsAssertContains("dates={$start}%2F{$end}", (string) CalendarIcs::googleEventUrl($event, $zone));
+        }
+    }
+
     public function testTimedEventIsFloatingAndLastsAnHour(): void
     {
         $ics = $this->write([$this->event(['event_time' => '19:00'])]);
