@@ -86,6 +86,7 @@ Feedback: [PF-20261111-F58](../../feedback/items/PF-20261111-F58.txt) is this re
 ## Study snapshots and approval
 
 - 2026-11-20 UTC: **Approved Step 1** by the maintainer, Option A, with Option A's defaults for the open questions.
-- 2026-11-20 UTC, Step 2 handoff: **0.55** projected total, reaffirmed. The shared example list and the recount of real posts add work; the composer line already counted in Step 1. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified. Baseline `origin/main` `597f5328f`. Awaiting `Approved Step 2`.
+- 2026-11-20 UTC, Step 2 handoff: **0.55** projected total, reaffirmed. The shared example list and the recount of real posts add work; the composer line already counted in Step 1. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified. Baseline `origin/main` `597f5328f`.
+- 2026-11-20 UTC: **Approved Step 2** by the maintainer ("Approve step 2"), keeping the colour-code rule as written.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*

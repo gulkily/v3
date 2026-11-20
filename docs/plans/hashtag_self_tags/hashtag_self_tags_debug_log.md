@@ -37,3 +37,24 @@
 ### Uncertain assessments
 
 - Step 1's open questions were not answered in the approval; Step 2 takes Option A's stated defaults and says so.
+
+## 2026-11-20T20:40Z — Step 3
+
+### Necessary/useful instructions
+
+- `implementation_standards.md`, identify every surface that already uses the data: found that `ThreadActivity` and `TagOnlyLeafFilter` also call `fromBody`. That led to a separate `selfTags` method so their behaviour can't change.
+- `step3_development_plan_do.md`, Completion Contract with deployment: checking where labels come from showed they are stored records written at post time, so the plan needs no rebuild or migration stage.
+- Host `AGENTS.md`, UI copy, final on first paint: led the composer partial to render the Tags line on the server for a prefilled draft, instead of only in JavaScript.
+
+### Redundant/unnecessary instructions
+
+- `RAILSPIKE.md`, commit discipline, keep Step 1–3 documents uncommitted: the maintainer asked for each step to be committed and pushed to the branch, as Steps 1 and 2 were. The rule and the request conflict, and the request was followed.
+
+### Inapplicable instructions
+
+- `step3_development_plan_do.md`, replay a named user's reported failure: Step 2 names no user or environment failure.
+
+### Uncertain assessments
+
+- `RAILSPIKE.md`, the exact `Approved Step N` phrase: the maintainer wrote "Approve step 2". It was treated as approval and recorded with its wording.
+- The page limit: the plan runs past one page because it has five stages with estimate fields.
