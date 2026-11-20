@@ -89,6 +89,7 @@ Vertical slice: claude posts a thread whose prose says "(#zen and #meme)" and en
 ## Study snapshots and approval
 
 - 2026-11-20 UTC, intake after code inspection (`ThreadLabels.php`, `LocalWriteService.php`, `PostHashtags.php`) and the hashtag count on a local import: 0.55 projected total for the recommended scope. No pristine intake. Claude, single exposed rater; R1 hashes not re-verified; baseline `origin/main` `597f5328f`.
-- Step 1 handoff: 0.55 for Option A (alternatives B 0.35, C 0.45; not summed). No implementation. Awaiting `Approved Step 1`.
+- Step 1 handoff: 0.55 for Option A (alternatives B 0.35, C 0.45; not summed). No implementation.
+- 2026-11-20 UTC: **Approved Step 1** by the maintainer (Option A). Recorded in [Step 2](./hashtag_self_tags_step2_feature_description.md#approved-direction).
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*

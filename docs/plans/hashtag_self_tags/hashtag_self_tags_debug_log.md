@@ -18,3 +18,22 @@
 ### Uncertain assessments
 
 - Whether the composer preview belongs in every option or only the recommended one. Put in every option, since each changes or keeps a rule authors can't see today.
+
+## 2026-11-20T19:45Z — Step 2
+
+### Necessary/useful instructions
+
+- `step2_feature_description.md`, Shared component inventory: found `markdown_detect.js` as the pattern for a composer helper, and confirmed `PostHashtags` needs no change because links stay.
+- `step2_feature_description.md`, Risks with earliest validation: led to a shared example list read by both PHP and JavaScript tests.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- None this step.
+
+### Uncertain assessments
+
+- Step 1's open questions were not answered in the approval; Step 2 takes Option A's stated defaults and says so.
