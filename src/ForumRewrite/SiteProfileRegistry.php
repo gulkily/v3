@@ -14,7 +14,7 @@ final class SiteProfileRegistry
     private static ?array $profilesForTesting = null;
 
     /**
-     * @return array<string, array{name: string, displayName: string, defaultTheme: string, permittedThemes: list<string>, browserNamespace: string, editorialContentKey: string, enabledExperienceKeys: list<string>, composerPrompt: string}>
+     * @return array<string, array{name: string, displayName: string, defaultTheme: string, permittedThemes: list<string>, browserNamespace: string, editorialContentKey: string, enabledExperienceKeys: list<string>, composerPrompt: string, calendarTimeZone?: string}>
      */
     public static function all(): array
     {
@@ -22,6 +22,7 @@ final class SiteProfileRegistry
             'zenmemes' => [
                 'name' => 'zenmemes',
                 'displayName' => 'zenmemes',
+                'calendarTimeZone' => 'America/New_York',
                 'defaultTheme' => 'auto',
                 // What Auto/System shows for a light or dark device setting.
                 'autoThemes' => ['light' => 'gloss', 'dark' => 'glossdark'],
@@ -95,7 +96,7 @@ final class SiteProfileRegistry
     }
 
     /**
-     * @return array{name: string, displayName: string, defaultTheme: string, permittedThemes: list<string>, browserNamespace: string, editorialContentKey: string, enabledExperienceKeys: list<string>, composerPrompt: string}
+     * @return array{name: string, displayName: string, defaultTheme: string, permittedThemes: list<string>, browserNamespace: string, editorialContentKey: string, enabledExperienceKeys: list<string>, composerPrompt: string, calendarTimeZone?: string}
      */
     public static function active(): array
     {
@@ -128,6 +129,13 @@ final class SiteProfileRegistry
         $path = (string) (parse_url($path, PHP_URL_PATH) ?: '/');
 
         return $path === '/' ? '/' : rtrim($path, '/');
+    }
+
+    public static function calendarTimeZone(): ?\DateTimeZone
+    {
+        $zone = self::active()['calendarTimeZone'] ?? null;
+
+        return $zone === null ? null : new \DateTimeZone($zone);
     }
 
     /** The active site's guestbook thread ID, or null when the site has none. */
