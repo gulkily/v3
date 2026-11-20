@@ -1568,6 +1568,78 @@ pre {
   display: none !important;
 }
 
+/* Zen strip: one row of square cards at the top of the board; it scrolls sideways when it doesn't fit. */
+.zen-strip__row {
+  display: flex;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0 0 0.4rem;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+}
+
+.zen-strip__item {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+.zen-strip__card,
+.zen-strip__all {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--zen-strip-card, 9.5rem);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: inherit;
+  text-decoration: none;
+}
+
+.zen-strip__card:hover,
+.zen-strip__card:focus-visible,
+.zen-strip__all:hover,
+.zen-strip__all:focus-visible {
+  border-color: var(--ink-soft);
+}
+
+.zen-strip__card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: var(--line);
+}
+
+.zen-strip__card--text span {
+  padding: 0.8rem;
+  font-size: 1.15rem;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.zen-strip__item--all {
+  display: flex;
+}
+
+.zen-strip__all {
+  width: auto;
+  aspect-ratio: auto;
+  min-width: 4.5rem;
+  padding: 0 1rem;
+  color: var(--ink);
+}
+
+@media (min-width: 48rem) {
+  .zen-strip__row {
+    --zen-strip-card: 11rem;
+  }
+}
+
 .visitor-intro {
   position: relative;
 }

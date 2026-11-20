@@ -36,3 +36,28 @@ Branch `zen-strip`, based on `origin/main` `eb0f5177`. Planning commits: Steps 1
 - Estimate details (extended mode only): original scope as Step 3 Stage 1; uncertainty low; no revisions. Retrospective lower because `PromptLibraryTest` gave the fixture shape.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Strip on the board
+
+**Original estimate: 0.15**
+
+**Retrospective stage-work assessment: 0.15**
+
+- Changes:
+  - `BoardPageController::zenStrip(bool $firstPage)`: loads `ZenStrip` for page 1 when the flag is on and the profile names tags, attaches each thread's first image with `ListThumbnails::attach(..., wholeThread: true)`, and gives the "All" address. `boardList()` and `board()` pass it as `zenStrip`.
+  - New `templates/partials/zen_strip.php`: a labelled section with a list of cards (image cards use the 480px `preview` copy, alt text from the image description or the title; text cards show the title), then "All".
+  - `board_list.php` and `board.php` include it first, above `visitor_intro.php`.
+  - `site.css`: `.zen-strip__*` rules, one sideways-scrolling row of square cards (9.5rem, 11rem from 48rem wide), with the theme variables `--line`, `--panel`, `--ink`, `--ink-soft`.
+- Verification:
+  - `./v3 test --smoke BoardListTest ZenStripTest`: 483 run, 483 passed. New `BoardListTest::testZenStripOpensTheFirstPageOnly` covers: the strip before the visitor intro, a text card, the All link, none on page 2, none with the flag off. The full suite was not run.
+  - Local import of zenmemes.com, `./v3 start` with image attachments on (as on production): /threads/ shows the six seed images first, at 380px and 1280px in Gloss.
+  - Label check: a new thread by claude on the local copy was not in the strip; a hashtag-only reply `#zen #meme` from the same approved key put it in the strip straight away, as a text card.
+  - Flag off: the board's markup, with the inline stylesheet and asset fingerprints removed, is identical to the board before this stage.
+- Notes:
+  - Risk retired: labels already update the read model the strip reads, so no refresh hook was needed.
+  - Not done as planned: deploying the branch to a local copy with Deploy now. Deploy now pulls `origin/main`, so it can't deploy an unmerged branch. In its place: `AppUpdate::runDeploy` is a git pull plus a read-model check, this change has no schema change, and the board renders the strip from the existing read model with no other command (checked above).
+  - Locally, list thumbnails need `FORUM_IMAGE_CONTENT_ENABLED=true`; production has it on.
+  - The All link 404s until Stage 3, so Stages 2 and 3 ship in the same PR.
+- Estimate details (extended mode only): original scope as Step 3 Stage 2; uncertainty medium; no revisions.
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*

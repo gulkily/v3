@@ -111,6 +111,7 @@ final class BoardPageController
                 'qdbPendingCount' => $qdbPendingCount,
                 'pagination' => $pagination,
                 'showGettingStarted' => $fellBackToAll,
+                'zenStrip' => $this->zenStrip($qdbPolicy === null && $page === 1),
             ],
             $qdbPolicy !== null ? match ($activeSection) {
                 'latest' => 'Latest Quotes',
@@ -171,11 +172,38 @@ final class BoardPageController
                 'pagination' => $pagination,
                 'paginationError' => null,
                 'showGettingStarted' => $showGettingStarted,
+                'zenStrip' => $this->zenStrip($number === 1),
             ],
             'Board',
             'board',
             ['/assets/inline_reply_form.js', '/assets/lazy_compose_signing.js', '/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js', '/assets/outbox_sender.js'],
         );
+    }
+
+    /**
+     * The Zen strip for the top of the board's first page: the site profile's strip
+     * threads with their first image, and the address of their tag page. Null on
+     * later pages, with the flag off, or when the site names no strip tags.
+     *
+     * @return array{threads:list<array<string,mixed>>, allHref:string}|null
+     */
+    private function zenStrip(bool $firstPage): ?array
+    {
+        $tags = \ForumRewrite\SiteProfileRegistry::zenStripTags();
+        if (!$firstPage || $tags === [] || !$this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::ZEN_STRIP_ENABLED)) {
+            return null;
+        }
+        $pdo = $this->routeServices->pdo();
+        $threads = \ForumRewrite\ReadModel\ZenStrip::load($pdo, $tags);
+        if ($threads === []) {
+            return null;
+        }
+        $imagesEnabled = $this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED);
+
+        return [
+            'threads' => \ForumRewrite\Images\ListThumbnails::attach($pdo, $this->repositoryRoot, $imagesEnabled, $threads, 'root_post_id', true),
+            'allHref' => '/tags/' . implode('+', $tags),
+        ];
     }
 
     /**
