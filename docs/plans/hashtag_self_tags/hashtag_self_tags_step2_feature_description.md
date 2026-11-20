@@ -83,6 +83,12 @@ Feedback: [PF-20261111-F58](../../feedback/items/PF-20261111-F58.txt) is this re
 
 - **Request:** not-labels. **Disposition:** logged separately ([task thread](https://zenmemes.com/threads/thread-20261120182548-197d13010d7e9459bfb703350158eec0)). **Approval status:** not part of this cycle.
 
+## Revision 1 (2026-11-20, during Step 4)
+
+- **Request:** the Stage 5 recount found 12 image posts whose closing hashtags would not tag, because the body ends with the attachment's `Image-v1` line. **Disposition:** changed scope; added to the core rule. **Approval status:** approved by the maintainer on 2026-11-20 ("Skip the Image-v1 line"). **Outcome:** Step 3 Stage 6.
+- Added requirement: the `Image-v1` line and the photo-detail lines after it are not part of the post's text. The last non-blank line is found without them.
+- Declined on the same date: tagging the run that ends or starts the first line (9 and 5 posts). The rule stays as approved for those.
+
 ## Study snapshots and approval
 
 - 2026-11-20 UTC: **Approved Step 1** by the maintainer, Option A, with Option A's defaults for the open questions.

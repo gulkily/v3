@@ -109,3 +109,28 @@ Branch: `hashtag-self-tags`, reused for this cycle as the maintainer asked. Plan
 - Estimate details: original scope as Step 3; no revisions.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Recount on real posts
+
+**Original estimate: 0.12**
+
+**Revised estimate: 0.10**: scope narrowed by Revision 1. The end-to-end run and the feedback item moved to Stage 6.
+
+**Retrospective stage work: 0.12**
+
+- Changes:
+  - None to the application. Two scripts outside the repository did the work: `recount.php` compares `fromBody` and `selfTags` over every live post, and `variants.php` scores possible additions to the rule.
+- Verification:
+  - Passed: `./v3 import-instance zenmemes.com --with-approvals` into local state, 9,320 records imported. `approval suggest-roots` was not run, since approvals don't change labels.
+  - Recount over 4,171 live posts: 801 have labels under today's rule. 624 have hashtags only on hashtag-only lines, 107 only in prose, and 70 both. That matches the 2026-11-20 count of 616, 107 and 70, plus 8 newer posts.
+  - Under the approved rule, 686 posts keep the same labels, 115 lose at least one, and none gain one.
+  - Every dropped label was read in its line. Most are references: PR and issue numbers, "#1 hack", colours, URL anchors, and mentions inside quotes or brackets.
+  - **Failed against the Step 2 criterion**, before Revision 1: 26 posts lost real tags. 12 were image posts ending "… #meta", because the body ends with the attachment's `Image-v1` line. 9 tagged the end of the first line and then wrote details. 5 started the first line with hashtags. All 26 were checked as real tags.
+  - The 3 posts with hashtags only on hashtag-only lines that still lose a label are `#1111`, an all-digit tag excluded by the approved rule.
+- Notes:
+  - **Enhancement request (Revision 1):** add the three recoveries. **Disposition:** changed scope. **Approval status:** maintainer approved skipping the `Image-v1` line and declined the two first-line additions, 2026-11-20. **Outcome:** Step 2 Revision 1, Step 3 Stage 6.
+  - Without the `Image-v1` fix the composer would show "Tags: #meta" for an image post that the server gives no label. The composer's text box never contains the image line.
+  - After Revision 1, 103 posts lose a label: the 89 references and other approved exclusions, plus the 14 first-line posts the maintainer chose to let go.
+- Estimate details: revision recorded above; the recount itself ran here, so the "can't run here" risk did not happen.
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*

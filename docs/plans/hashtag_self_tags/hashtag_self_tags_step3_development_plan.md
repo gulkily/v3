@@ -86,6 +86,7 @@ Feedback: [PF-20261111-F58](../../feedback/items/PF-20261111-F58.txt). Concepts 
 
 - Goal: show on real posts that the rule keeps the tags it should, and record the result.
 - Dependencies: Stages 2–4.
+- Revised 2026-11-20 (Revision 1): Stage 5 now covers the recount and its record. The end-to-end run and the feedback item move to Stage 6.
 - Expected changes: a script kept outside the repository runs `fromBody` and `selfTags` over every labelled post in a local import. Read every dropped label and record the counts in the Step 4 summary. Run the Contract outcome against a local server: compose, API post, Zen strip, tag links and the flag-off check. Update PF-20261111-F58 to `blocked` until production acceptance, with Evidence and a dated note, and add the `Feedback:` trailer.
 - Verification approach: the counts match the 2026-11-20 figures for hashtag-only lines (the 616 posts keep every label except digit and colour tags), and each dropped label reads as a reference. Report the full suite as not run.
 - Estimate details: driver: reading the 177 posts with prose hashtags; uncertainty: whether the import runs here.
@@ -95,10 +96,25 @@ Feedback: [PF-20261111-F58](../../feedback/items/PF-20261111-F58.txt). Concepts 
   - Mitigation: hand the script to the maintainer and mark the criterion pending.
 - Canonical components/API contracts touched: `docs/feedback/items/PF-20261111-F58.txt`.
 
+## Stage 6
+
+**Estimate: 0.06**
+
+- Goal: closing hashtags tag an image post, and the cycle closes with the outcome checked end to end.
+- Dependencies: Stage 5. Added by Revision 1 of Step 2.
+- Expected changes: `selfTags` reads the body through `ImageReference::withoutReference` first. `hashtag_tags.js` drops an `Image-v1` line and its photo details the same way. Add an image example to the shared file. Rerun the recount. Run the Contract outcome against a local server, and update PF-20261111-F58.
+- Verification approach: `ThreadLabelsTest`, `HashtagTagsTest` and `LocalWriteServiceSelfTagsTest`. The recount keeps the 12 image posts' labels.
+- Estimate details: driver: the JavaScript copy of the image-line rule; uncertainty: low.
+- Risks or open questions: none beyond the Key Risks.
+- Canonical components/API contracts touched: `Images/ImageReference.php` (`withoutReference`, reused unchanged).
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5 (Stage 6 and Stage 5 revision)*
+
 ## Study snapshot and approval
 
 - 2026-11-20 UTC: **Approved Step 2** by the maintainer ("Approve step 2"), with the colour-code rule as written.
 - 2026-11-20 UTC, Step 3 handoff: **0.55** projected total, reaffirmed. Planning confirmed that one write function covers every path and labels are stored records, so no rebuild work. The second rule method and the server-rendered Tags line are new understanding, not new scope. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified. Baseline `origin/main` `597f5328f`. Stage estimates are not summed.
 - 2026-11-20 UTC: **Approved Step 3** by the maintainer ("approved step 3").
+- 2026-11-20 UTC, Revision 1: the maintainer approved skipping the `Image-v1` line and declined the two first-line additions. Stage 6 added. Projected total revised to **0.62**: new understanding from the recount, plus a small changed scope. Claude, single exposed rater; original 0.55 retained.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
