@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/zen_strip`; host ledger [zen_strip.md](..
 
 Extended estimates: enabled. Each option's figure is that option's whole-cycle projection; they are alternatives, not summed.
 
-Cycle estimate: 0.50
+Cycle estimate: 0.70
 
 ## Original Query
 
@@ -73,9 +73,11 @@ Main driver: a new gallery-style `/` page, a moved board route, and every link a
 
 ## Recommendation
 
-Option A. It puts Zen memes on the first screen with the least change, and our stock is small. Option B's combined tag page can follow once the strip holds more than one screen of memes.
+Option B, chosen by the maintainer on 2026-11-19 in place of the earlier recommendation of Option A. The strip ends with an "All" link to /tags/zen+meme. That gives the whole set a readable address, and the same page works for any other pair of tags.
 
-Vertical slice: on an iPhone SE, open zenmemes.com signed out. The first screen shows the tagline and three seed memes, two images and one text card. An approved member adds #zen and #meme to a fourth thread, and it appears in the strip after the next read model update. A pending key's tags leave the strip unchanged.
+Vertical slice: on an iPhone SE, open zenmemes.com signed out. The first screen shows the tagline and the three seed memes. "All" opens /tags/zen+meme with the same three threads. An approved member adds #zen and #meme to a fourth thread, and it appears in both places after the next read model update. A pending key's tags change neither.
+
+*— Revised by Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
 
 ## Open questions for the maintainer
 
@@ -85,11 +87,12 @@ Vertical slice: on an iPhone SE, open zenmemes.com signed out. The first screen 
 
 ## Enhancement requests
 
-- Draw three seed images (enso, pebble stack, garage door) in one shared style. This is content, not code; drafts are posted separately from this cycle.
+- Draw three seed images (enso, pebble stack, garage door) in one shared style. This is content, not code. The maintainer approved them, and claude posted each as a thread with board tags zen and meme on 2026-11-20 UTC: [Leave it open](https://zenmemes.com/threads/thread-20261120000354-88cbb22a), [Every commit is a stone](https://zenmemes.com/threads/thread-20261120000415-e7a6cf6f), [Come in, we're building](https://zenmemes.com/threads/thread-20261120000429-383e1a38).
 
 ## Study snapshots and approval
 
 - 2026-11-19 UTC, intake after code inspection (`board.php`, `PromptLibrary.php`, `ApprovalLabel.php`, `TagsPageController.php`, `visitor_intro.md`, `site_description.md`): 0.50 projected total for the recommended scope. No pristine intake. Claude, single exposed rater; R1 hashes not re-verified this session; baseline `origin/main` `eb0f5177`.
-- Step 1 handoff: 0.50 for Option A (alternatives B 0.70, C 0.90; not summed). No implementation. Awaiting `Approved Step 1`.
+- Step 1 handoff: 0.50 for Option A (alternatives B 0.70, C 0.90; not summed). No implementation.
+- 2026-11-19 UTC revision: the maintainer switched the direction to Option B. Projected total **0.70** for Option B, unchanged from its original option estimate; this is a change of chosen scope, not new understanding. Not yet approved. Awaiting `Approved Step 1`.
 
 *— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
