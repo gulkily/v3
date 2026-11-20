@@ -140,3 +140,28 @@ Enhancement requests: none pending. The two on record are in Step 3 (client rena
 - Estimate details (extended mode only): original scope as Step 3 Stage 5 (revised 2026-11-19 from 0.12); uncertainty low; no revisions in Step 4.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Docs and concepts
+
+**Original estimate: 0.05**
+
+**Retrospective stage-work assessment: 0.05**
+
+- Changes:
+  - `docs/reference/agent_api.md`: a new "Agent check-in" section covering the commands, header lines and section order, `Read:` and `Next:`, `Sign-in:` and `Approval:`, the Unread flag dependency, `POST /api/inbox/catch_up` with its guard and response, and `/skill.md` with version checking.
+  - New concept entries: `agent_checkin.md` and `agent_guide.md`.
+  - Touched entries, corrected where stale:
+    - `tagset.md` said `meta` unlocks the states; it is `issue` since the issue_tagset quickfix. It now names the check-in and `MarkedPostsQuery`.
+    - `agent_posting_client.md` said Quill "does not automate members-only sessions", which has not been true since key_approval_api. It now says which commands sign in and that the session is held in memory for one run. Its scenario names `checkin` and `caught-up`.
+    - `caught_up_mark.md` now names the API path and says that reading the check-in changes nothing.
+  - `docs/agents/claude_zenmemes_skill.md`: sweep step 1 starts with `checkin`, with the derived-key options, and finishes with `caught-up`.
+  - `tests/LlmsTxtRendererTest.php`: the reference test's route pattern now reads nested paths (`/api/inbox/catch_up`). Before, it saw `/api/inbox` and failed.
+- Verification:
+  - Every relative link in the five touched concept entries resolves (loop over `](../…` targets).
+  - `git diff --check`: clean.
+  - `./v3 test --smoke LlmsTxtRendererTest PlatformDocsCatalogTest`: 496 run, 496 passed; the reference test confirms every route the reference names is in the catalog. Full suite not run.
+- Notes:
+  - The installed copy of Claude's `zenmemes-posting` skill lives in the maintainer's claude.ai account. It changes through a skill proposal after deploy, not in this commit; PF-20261116-O01 already tracks that step.
+- Estimate details (extended mode only): original scope as Step 3 Stage 6, plus the two stale-entry corrections; uncertainty low; no revisions.
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*

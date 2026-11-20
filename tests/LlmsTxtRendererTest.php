@@ -130,7 +130,7 @@ final class LlmsTxtRendererTest
     public function testReferenceNamesOnlyCatalogRoutesAndRenders(): void
     {
         $reference = (string) file_get_contents(dirname(__DIR__) . LlmsTxtRenderer::REFERENCE_PATH);
-        preg_match_all('#/api/([a-z_]+)#', $reference, $paths);
+        preg_match_all('#/api/([a-z_]+(?:/[a-z_]+)*)#', $reference, $paths);
         preg_match_all('#`((?:prepare|create|finalize|get|list|inspect|auth|authenticate)_[a-z_]+)`#', $reference, $names);
         $named = array_diff(array_unique(array_merge($paths[1], $names[1])), ['prepare_token']);
         assertTrue(count($named) >= 10, 'Expected the reference to name routes.');
