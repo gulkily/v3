@@ -1100,6 +1100,15 @@ final class Application
             return;
         }
 
+        if ($path === '/api/checkin') {
+            if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::AGENT_CHECKIN_ENABLED)) {
+                $this->sendText("error=The agent check-in is disabled on this server.\n", 404, $this->routeServices()->noStoreHeaders());
+                return;
+            }
+            $this->agentCheckinController()->show($method, $query);
+            return;
+        }
+
         if ($path === '/api/get_thread') {
             $this->apiTextController()->getThread((string) ($query['thread_id'] ?? ''));
             return;
@@ -2568,7 +2577,7 @@ final class Application
             '/unread', '/unread/', '/inbox', '/inbox/', '/api/inbox/unread', '/staged', '/staged/',
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',
             '/account/key', '/account/key/', '/invites', '/invites/',
-            '/api', '/api/', '/api/version', '/api/list_index',
+            '/api', '/api/', '/api/version', '/api/list_index', '/api/checkin',
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username', '/api/get_username_claim_cta', '/api/pending_keys',
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',
             '/api/auth_challenge', '/api/authenticate_identity', '/api/auth_status', '/api/create_thread', '/api/create_quote',
@@ -2815,6 +2824,16 @@ final class Application
     private function stagedPageController(): \ForumRewrite\Http\StagedPageController
     {
         return new \ForumRewrite\Http\StagedPageController($this->routeServices(), $this->authenticatedViewerProfile(...));
+    }
+
+    private function agentCheckinController(): \ForumRewrite\Http\AgentCheckinController
+    {
+        return new \ForumRewrite\Http\AgentCheckinController(
+            $this->routeServices(),
+            $this->displayThreadTitle(...),
+            $this->appVersion(),
+            $this->featureFlags()->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED),
+        );
     }
 
     private function inboxPageController(): \ForumRewrite\Http\InboxPageController

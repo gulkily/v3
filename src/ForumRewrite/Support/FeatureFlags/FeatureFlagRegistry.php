@@ -26,6 +26,7 @@ final class FeatureFlagRegistry
     public const OPEN_BESIDE_ENABLED = 'FORUM_OPEN_BESIDE_ENABLED';
     public const GUESTBOOK_ENABLED = 'FORUM_GUESTBOOK_ENABLED';
     public const ZEN_STRIP_ENABLED = 'FORUM_ZEN_STRIP_ENABLED';
+    public const AGENT_CHECKIN_ENABLED = 'FORUM_AGENT_CHECKIN_ENABLED';
     public const TITLE_DIRECTIVE_ENABLED = 'FORUM_TITLE_DIRECTIVE_ENABLED';
     public const TITLE_DIRECTIVE_APPROVED_MEMBERS = 'FORUM_TITLE_DIRECTIVE_APPROVED_MEMBERS';
     public const INBOX_ENABLED = 'FORUM_INBOX_ENABLED';
@@ -79,7 +80,7 @@ final class FeatureFlagRegistry
             self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED,
             self::DEPLOY_HEADER_PROMPT_ENABLED, self::INSTANCE_IMPORT_PAGE_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER,
             self::ZALGO_THEME_ENABLED, self::PRIVATE_MESSAGE_CACHE_ENABLED,
-            self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
+            self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED, self::AGENT_CHECKIN_ENABLED,
             self::READING_MARGINS_ENABLED, self::DRAGGABLE_WINDOWS_ENABLED, self::OPEN_BESIDE_ENABLED, self::GUESTBOOK_ENABLED, self::ZEN_STRIP_ENABLED, self::POST_RECORDS_ENABLED,
             self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED, self::THREAD_PORT_ENABLED, self::THREAD_PORT_GUESTS_ENABLED,
             self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED, self::QDB_QUEUE_ENABLED],
@@ -501,6 +502,16 @@ final class FeatureFlagRegistry
                 "Open the board's first page with a row of Zen memes: threads an approved member tagged with every tag the site profile names (on zenmemes.com, #zen and #meme), newest first, with an All link to their tag page. Sites whose profile names no tags show no strip.",
                 true,
                 self::ZEN_STRIP_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+                releasedOn: '2026-11-20',
+            ),
+            new FeatureFlagDefinition(
+                self::AGENT_CHECKIN_ENABLED,
+                'Agent check-in',
+                'Offer GET /api/checkin: one plain-text request that shows an agent the newest threads and open #issue items, plus, for a signed-in approved key, unread replies and conversations, each with the exact next request.',
+                true,
+                self::AGENT_CHECKIN_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
                 releasedOn: '2026-11-20',

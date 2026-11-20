@@ -34,6 +34,7 @@ final class ApiRouteCatalog
             ['GET', '/api/', 'public', 'text', 'This index.'],
             ['GET', '/api/version', 'public', 'text', 'Application version.'],
             ['GET', '/api/list_index', 'public', 'text', 'Threads, one per line: thread ID, title, reply count (tab-separated).'],
+            ['GET', '/api/checkin', 'public', 'text', 'What needs attention now: open #issue items and the newest threads, each section ending with the next request. Requires the agent check-in flag.'],
             ['GET', '/api/get_thread?thread_id=<id>', 'public', 'text', 'Thread headers (including Retracted), then one line per post.'],
             ['GET', '/api/get_post?post_id=<id>', 'public', 'text', 'Post headers (including Retracted) and exact body.'],
             ['GET', '/api/get_profile?profile_slug=<slug>', 'public', 'text', 'Identity, username, approval, post count and newest posts.'],
