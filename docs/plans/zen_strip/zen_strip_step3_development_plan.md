@@ -17,12 +17,12 @@ Correction to Steps 1 and 2: zenmemes.com's board is `board_list.php` (the profi
 - Normal entry: a signed-out visitor opens zenmemes.com; an approved member tags a thread #zen and #meme.
 - End-to-end outcome: the first page of the board opens with a row of Zen meme cards, newest first, up to twelve, then "All". "All" opens /tags/zen+meme. The six seed threads show in both.
 - Recovery: removing a tag, or retracting the thread, takes it out of the strip after the next read model update. The flag off, or a profile without the setting, gives today's board HTML.
-- Deployment: no schema change. Production needs `./v3 build-static` so baked board pages carry the strip.
-- Release: merged to main, deployed with the rebuild, and tried on production by the maintainer.
+- Deployment: no schema change and no extra command. The maintainer deploys with Deploy now in Tools, as usual. The board is rendered live: a signed-out request for / on 2026-11-20 showed that day's new threads, and no write path rebuilds static HTML. In high-traffic mode, cached pages keep the old board until their next refresh.
+- Release: merged to main, deployed with Deploy now, and tried on production by the maintainer.
 
 ## Key Risks
 
-- **High risk:** baked or cached board pages don't refresh when a label changes. Impact: a new Zen meme never reaches the first screen, or a removed one stays. Early validation: Stage 2 labels a thread on a local copy and reloads the board, baked and live. Mitigation: use the board's existing rebuild trigger for thread labels; if labels don't trigger it, add them in Stage 2 before styling.
+- **High risk:** the board doesn't change when a label does. Impact: a new Zen meme never reaches the first screen, or a removed one stays. Early validation: Stage 2 labels a thread on a local copy and reloads the board. Mitigation: the strip reads the same read model as the board rows, which labels already update; fix the update in Stage 2 if the check fails, before styling.
 - The strip query slows the board. Impact: the busiest page gets slower for every visitor. Early validation: Stage 1 times the query on a copy of production data. Mitigation: one query with a limit of twelve, the `viewer_tags` lookup `PromptLibrary.php` already uses, and one `ListThumbnails::forThreads` call.
 - Themes restyle the row. Impact: cards overlap or the row breaks at 380px. Early validation: Stage 4 checks four themes at 380px. Mitigation: strip cards get their own classes, so board-row rules don't reach them.
 
@@ -48,7 +48,7 @@ Correction to Steps 1 and 2: zenmemes.com's board is `board_list.php` (the profi
 - Goal: the strip shows first on the board's first page.
 - Dependencies: Stage 1.
 - Expected changes: `BoardPageController` loads the strip for page 1 when the flag is on and the profile has the setting, with images from `ListThumbnails::forThreads`. A new `partials/zen_strip.php` renders a list of cards: image cards show the thumbnail and its description as alt text; text cards show the title. "All" links to /tags/zen+meme (a dead link until Stage 3, so the two stages ship together). `board_list.php` and `board.php` include it above `visitor_intro.php`. Styles in the shared stylesheet scroll the row sideways.
-- Verification approach: `./v3 test --smoke BoardListTest ZenStripTest LocalAppSmokeTest`. The flag-off board HTML matches the board's HTML before the change. Label a thread locally and check the live and baked board both update.
+- Verification approach: `./v3 test --smoke BoardListTest ZenStripTest LocalAppSmokeTest`. The flag-off board HTML matches the board's HTML before the change. Label a thread locally and check the board updates. Deploy the branch to a local copy with Deploy now and check the strip appears with no other command.
 - Estimate details (extended mode only): driver: two board templates and the cache check; uncertainty: medium.
 - Risks or open questions:
   - Impact: the cache risk above.
@@ -89,7 +89,7 @@ Correction to Steps 1 and 2: zenmemes.com's board is `board_list.php` (the profi
 
 - Goal: docs, deploy note and a final diff review.
 - Dependencies: Stages 1–4.
-- Expected changes: `docs/concepts/zen_strip.md` and its inventory entry; `tag_browsing.md` names pairs of tags; the flag's description; the PR names `./v3 build-static` as a deploy step.
+- Expected changes: `docs/concepts/zen_strip.md` and its inventory entry; `tag_browsing.md` names pairs of tags; the flag's description.
 - Verification approach: the docs smoke test; review the whole diff against Step 2's requirements; check the six seed threads on a local import of zenmemes.com.
 - Estimate details (extended mode only): driver: writing; uncertainty: low.
 - Risks or open questions: none.
@@ -98,6 +98,9 @@ Correction to Steps 1 and 2: zenmemes.com's board is `board_list.php` (the profi
 ## Study snapshots and approval
 
 - 2026-11-20 UTC: **Approved Step 2** by the maintainer, after dropping the tagline and keeping tag pages open.
-- 2026-11-20 UTC, Step 3 handoff: **0.70** projected total, reaffirmed. Moving the strip to `board_list.php` and the cache check add work; dropping the tagline and the offline strip removed about as much. Claude, single exposed rater. Scope v2. Reference R1, hashes not re-verified this session. Baseline `origin/main` `eb0f5177`. Awaiting `Approved Step 3`.
+- 2026-11-20 UTC, Step 3 handoff: **0.70** projected total, reaffirmed. Moving the strip to `board_list.php` and the cache check add work; dropping the tagline and the offline strip removed about as much. Claude, single exposed rater. Scope v2. Reference R1, hashes not re-verified this session. Baseline `origin/main` `eb0f5177`. 
+- 2026-11-20 UTC revision: removed the `./v3 build-static` deploy step after checking that production renders the board live; Deploy now is enough. Projected total **0.70**, unchanged. Awaiting `Approved Step 3`.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+*— Revised by Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
