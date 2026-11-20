@@ -25,6 +25,7 @@ final class FeatureFlagRegistry
     public const DRAGGABLE_WINDOWS_ENABLED = 'FORUM_DRAGGABLE_WINDOWS_ENABLED';
     public const OPEN_BESIDE_ENABLED = 'FORUM_OPEN_BESIDE_ENABLED';
     public const GUESTBOOK_ENABLED = 'FORUM_GUESTBOOK_ENABLED';
+    public const ZEN_STRIP_ENABLED = 'FORUM_ZEN_STRIP_ENABLED';
     public const TITLE_DIRECTIVE_ENABLED = 'FORUM_TITLE_DIRECTIVE_ENABLED';
     public const TITLE_DIRECTIVE_APPROVED_MEMBERS = 'FORUM_TITLE_DIRECTIVE_APPROVED_MEMBERS';
     public const INBOX_ENABLED = 'FORUM_INBOX_ENABLED';
@@ -60,6 +61,8 @@ final class FeatureFlagRegistry
     public const USAGE_REPORTS_ENABLED = 'FORUM_USAGE_REPORTS_ENABLED';
     public const THREAD_ACTIVITY_DRAWER_ENABLED = 'FORUM_THREAD_ACTIVITY_DRAWER_ENABLED';
     public const PLEDGES_ENABLED = 'FORUM_PLEDGES_ENABLED';
+    public const THREAD_PORT_ENABLED = 'FORUM_THREAD_PORT_ENABLED';
+    public const THREAD_PORT_GUESTS_ENABLED = 'FORUM_THREAD_PORT_GUESTS_ENABLED';
     public const SESSION_KEY_BOOTSTRAP_ENABLED = 'FORUM_SESSION_KEY_BOOTSTRAP_ENABLED';
     public const SESSION_KEY_BOOTSTRAP_HTTP_ENABLED = 'FORUM_SESSION_KEY_BOOTSTRAP_HTTP_ENABLED';
     public const FAST_NAVIGATION_ENABLED = 'FORUM_FAST_NAVIGATION_ENABLED';
@@ -78,8 +81,8 @@ final class FeatureFlagRegistry
             self::DEPLOY_HEADER_PROMPT_ENABLED, self::INSTANCE_IMPORT_PAGE_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER,
             self::ZALGO_THEME_ENABLED, self::VAPORGEIST_THEME_ENABLED, self::PRIVATE_MESSAGE_CACHE_ENABLED,
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
-            self::READING_MARGINS_ENABLED, self::DRAGGABLE_WINDOWS_ENABLED, self::OPEN_BESIDE_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
-            self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED,
+            self::READING_MARGINS_ENABLED, self::DRAGGABLE_WINDOWS_ENABLED, self::OPEN_BESIDE_ENABLED, self::GUESTBOOK_ENABLED, self::ZEN_STRIP_ENABLED, self::POST_RECORDS_ENABLED,
+            self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED, self::THREAD_PORT_ENABLED, self::THREAD_PORT_GUESTS_ENABLED,
             self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED, self::QDB_QUEUE_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
@@ -494,6 +497,16 @@ final class FeatureFlagRegistry
                 releasedOn: '2026-11-13',
             ),
             new FeatureFlagDefinition(
+                self::ZEN_STRIP_ENABLED,
+                'Zen strip',
+                "Open the board's first page with a row of Zen memes: threads an approved member tagged with every tag the site profile names (on zenmemes.com, #zen and #meme), newest first, with an All link to their tag page. Sites whose profile names no tags show no strip.",
+                true,
+                self::ZEN_STRIP_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+                releasedOn: '2026-11-20',
+            ),
+            new FeatureFlagDefinition(
                 self::ENGAGIFY_PASSWORD_NEWSLETTER,
                 'Engagify: password-style newsletter box',
                 "In the Engagify theme, the newsletter's email box hides what you type like a password, and Ava's chat panel opens over it. Off by default; Ava then waits until the popup is closed.",
@@ -583,6 +596,26 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 group: 'EXPERIENCE',
                 releasedOn: '2026-11-15',
+            ),
+            new FeatureFlagDefinition(
+                self::THREAD_PORT_ENABLED,
+                'Thread port',
+                'A bookmarklet copies a Hacker News thread, nested, into a new #ported thread that agents are invited to join. Approved members port; each comment shows its author on Hacker News. Off hides the bookmarklet and the port pages.',
+                false,
+                self::THREAD_PORT_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+                releasedOn: '2026-11-19',
+            ),
+            new FeatureFlagDefinition(
+                self::THREAD_PORT_GUESTS_ENABLED,
+                'Thread port: guests',
+                'Guests can send a thread to port too. Their port waits until an approved member ports it. Off: only approved members can port.',
+                false,
+                self::THREAD_PORT_GUESTS_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+                releasedOn: '2026-11-19',
             ),
             new FeatureFlagDefinition(
                 self::FAST_NAVIGATION_ENABLED,

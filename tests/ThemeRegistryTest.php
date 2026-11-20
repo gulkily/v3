@@ -295,7 +295,7 @@ final class ThemeRegistryTest
             ['spearmint', 'zalgo'],
             ['engagify', 'vaporgeist'],
             ['qdb', 'chouse'],
-            [null, 'mitrapclub'],
+            ['ochre', 'mitrapclub'],
         ], self::layoutNames($layout, 'unpaired'));
     }
 

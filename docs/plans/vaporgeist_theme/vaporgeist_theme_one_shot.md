@@ -67,6 +67,7 @@ Planning commit: `bf0b83d5` (record, debug log and index only).
 - 2026-11-20: new Vaporgeist look: neon-tube headings and brand (white core, pink and violet glow), cyan glowing thread titles, smoked-glass cards with cyan corner brackets, faint scanlines, a cyan-pink-violet header line, neon nav and buttons, a yellow focus ring. Kept: Vapor's palette and type, the striped sun. The flat grid is replaced, on pages with the app shell, by a real perspective grid on the decorative `.shell-sky` element (behind content, `z-index: -1`) that runs toward the viewer; pages without it keep the flat grid (`:has(.shell-sky)` switches). Motion: the grid run and a rare neon flicker on the brand, both off under reduced motion. Removed: dripping marks, colour split, glitch slices, tilted cards, tear lines and the text fringe.
 - 2026-11-20 correction: wide heading letter-spacing broke a long word at 380px; headings use 0.04em below 40rem.
 - 2026-11-20: ledger entry moved to `docs/plans/effort_ledger/vaporgeist_theme.md` (main froze the shared ledger after this cycle started); the shared ledger is back to the branch point.
+- 2026-11-20: merged `origin/main` `597f5328` into the branch to clear PR #341's conflicts with the new Ochre theme (site profile list, menu-layout test, plans index); kept both sides. Theme and flag tests: 495 passed.
 
 ## Study history
 

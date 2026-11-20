@@ -20,6 +20,10 @@ behind this layer.
 
 ## Schema-change contract
 
+Version 56 adds `posts.ported_from`, `ported_author`, `ported_created_at` and
+`ported_by`, from a ported post's `Ported-*` headers ([ported thread](../concepts/ported_thread.md));
+prior-version startup rebuild is required.
+
 Version 55 adds `posts.resolution_state`, `resolution_set_at` and `resolution_set_by`
 (tag unlocks); prior-version startup rebuild is required.
 
@@ -149,6 +153,10 @@ row matches both branches. Normal startup rebuilds schema-26 and older models.
 | `retracted_at` | TEXT NULL | accepted retraction timestamp |
 | `retraction_class` | TEXT NULL | author or operator authorization classification for an effective retraction |
 | `retraction_attribution` | TEXT NULL | accepted display attribution: author or operator, independent of authorization |
+| `ported_from` | TEXT NULL | `Ported-From`: the original's address on its source site; null when not ported or retracted (schema 56) |
+| `ported_author` | TEXT NULL | `Ported-Author`: the name on the source site, never a ZenMemes username |
+| `ported_created_at` | TEXT NULL | `Ported-Created-At`: when it was posted on the source site |
+| `ported_by` | TEXT NULL | `Ported-By`: identity ID of the member who ported it |
 | `sequence_number` | INTEGER | |
 
 Indexes: `posts_thread_sequence_idx (thread_id, sequence_number)` backing the

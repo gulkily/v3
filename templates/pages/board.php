@@ -1,4 +1,7 @@
 <section class="stack thread-list">
+<?php if (($zenStrip ?? null) !== null): ?>
+<?= $indent($partial('partials/zen_strip.php', $zenStrip), 1) ?>
+<?php endif; ?>
 <?= $indent($partial('partials/visitor_intro.php', []), 1) ?>
 <?php if (!$isQdbInstance): ?>
   <article class="card">

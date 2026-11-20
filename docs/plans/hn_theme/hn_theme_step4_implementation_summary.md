@@ -1,0 +1,147 @@
+> **Feature plan:** [Step 1](./hn_theme_step1_solution_assessment.md) · [Step 2](./hn_theme_step2_feature_description.md) · [Step 3](./hn_theme_step3_development_plan.md) · [Step 4](./hn_theme_step4_implementation_summary.md)
+
+Debug mode: enabled
+
+Effort study: `railspike-effort` / `v3/hn_theme`; host ledger [hn_theme.md](../effort_ledger/hn_theme.md). Standing P2 enrollment.
+
+Extended estimates: enabled. Stage estimates are copied from Step 3, not newly rated.
+
+**Cycle estimate: 0.65**
+
+Branch: `hn-theme`, rebased onto `origin/main` `a1cefffa`; planning commit `aab00ed6`.
+
+Step 4 entry (2026-11-19 UTC): Step 3 projection **0.65** reaffirmed after the planning commit, before implementation. Claude, same exposed rater.
+
+Stage 3 open question (hide board excerpts): not answered at approval; the plan's default, hide, applies.
+
+## Stage 1 - Registry entry, palette and top bar
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.10**
+
+- Changes:
+  - `ThemeRegistry.php`: an `ochre` entry (light), last in the list so other menus keep their order; `ochre` → `dark` in `COUNTERPARTS`. The `script` flag waits for Stage 4.
+  - `SiteProfileRegistry.php`: `ochre` added to the `zenmemes` profile's `permittedThemes`. Step 2's inventory missed this list; it is an in-scope refinement, since a theme a site does not permit is never offered.
+  - New `public/assets/theme-ochre.css`: the palette, swatch and orange bar. On desktop the bar holds the name and plain-text destinations; the current page is white on black. Phones keep the shared bottom tab bar, made beige with an orange rule, and the name gets an orange strip at the top.
+  - `LocalAppSmokeTest.php`: allow-list and option check; `ThemeRegistryTest.php`: Ochre's unpaired menu row.
+- Verification:
+  - `./v3 test --smoke ThemeRegistryTest LocalAppSmokeTest ThemeCatalogPageTest NavIconSetsTest`: passed (478 smoke plus the extra classes; the first run failed only on the expected menu-layout row, then fixed).
+  - `python3 -I tests/theme_contrast_audit.py . report.json`: Ochre OK. Other themes' listed failures predate this change; this is an audit, not a suite test.
+  - `build_static_artifacts.php` with `FORUM_STATIC_DETAIL_PAGES_ENABLED=true` on a fixture with a ported thread: the baked thread page's allow-list includes `ochre` and links `theme-ochre.css`. Without the rebuild, older baked pages keep their old list.
+  - Screenshots at 1280px and 380px of the board, Recent, a thread, a ported thread and Tools (headless Chrome, outside the repository).
+- Notes: the base rules for the app header tie on specificity with Ochre's and load later, so Ochre's header rules use `.site-header.site-header--app`. The phone layout departs from the mockup's wrapping top nav: the shared tab bar stays, so phone navigation keeps working.
+- Estimate details: original scope as Step 3, plus the profile list; no revision.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Thread styling
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.08**
+
+- Changes:
+  - `theme-ochre.css`: posts become plain text blocks (no border or panel). Each has a grey 12px line naming who and when, 13.33px text, and small underlined Reply, Like and Flag. The root title is 15px and regular weight. Continuations sit closer to the post they continue. A `:target` jump gets a pale orange wash.
+  - The content column widens from 760px to 880px. Composers, the Activity drawer and other cards keep a thin beige frame; inputs are white with a grey border.
+  - The shared depth indent (1rem per level, capped by `ReplyTree::MAX_INDENT_DEPTH`) is kept unchanged as Ochre's thin indent.
+- Verification:
+  - Screenshots at 1280px and 380px of a thread and a ported thread nested 9 deep: every action stays visible.
+  - Computed styles: metadata colour `rgb(107, 107, 107)`, 12px from the grey line to the text.
+  - Contrast audit: Ochre OK.
+- Notes: no markup changed. The Activity drawer only appears with title-only replies, which the fixture lacks; it is covered by the general `.card` rule and checked again in Stage 5.
+- Estimate details: original scope as Step 3; no revision.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Board, Recent and Tools
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.08**
+
+- Changes:
+  - `theme-ochre.css`: `thread-rows` lose their box and number their rows with a CSS counter in a narrow grey column. Each row is a 13.33px title (grey once visited), an 11px grey line, and the reply count as small grey text at the right. Hidden rows take no number. The pinned and latest lists number separately.
+  - Excerpts and thumbnails are hidden, per the plan's default for the open question.
+  - Board controls, pagination and Tools launchers become plain small words instead of buttons; the current one is bold.
+- Verification:
+  - Screenshots at 1280px and 380px of the board (`/threads/`), Recent and Tools.
+  - Board composer at 380px: focusing it expands it, showing Post, Post anonymously, Save to Outbox and Discard draft.
+  - Contrast audit: Ochre OK.
+- Notes: the excerpt question was not answered at Step 3 approval; one rule restores excerpts if the maintainer wants them.
+- Estimate details: original scope as Step 3; no revision.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Fold toggles and parent/next links
+
+**Original estimate: 0.15**
+
+**Retrospective stage work: 0.15**
+
+- Changes:
+  - New `public/assets/theme-ochre.js`, registered with `forumThemeScripts`, and `'script' => true` on Ochre's registry entry. On a thread page (one with `.thread-root-card`), each reply's grey line gains "| parent | next" and a `[–]` button. A top-level reply's parent is the thread's first post. A reply with no grey line gets one of its own.
+  - A branch is the run of following cards whose `data-reply-depth` is deeper. Folding hides them with a class and shows `[+N]`, where N counts the reply and everything below it. Folds are kept per post ID until reload; unfolding an outer branch keeps inner folds. The button carries `aria-expanded` and a spoken label.
+  - A MutationObserver on the reply list rebuilds the controls once per frame when a card is added or removed, such as a reply posted without a reload. `stop` disconnects it and removes every element and class.
+  - `theme-ochre.css`: fold rules, inline toggle, and a 44px tap target on coarse pointers.
+  - New VM test `tests/browser/theme_ochre_script.cjs`, run by `ThemeToggleScriptTest::testOchreFoldsWholeBranchesAndStopRemovesEverything`.
+- Verification:
+  - `node tests/browser/theme_ochre_script.cjs`: passed (links, fold and nested fold, added line, stop leaves nothing, restart).
+  - `./v3 test --smoke ThemeToggleScriptTest ThemeRegistryTest LocalAppSmokeTest`: 483 run, 483 passed.
+  - Headless Chrome on the 9-deep port: 15 toggles; folding the second reply hides its 8 replies as `[+9]`; folding the first shows `[+11]`; reopening it keeps `[+9]`; leaving with `forumExitTheme('light')` leaves no Ochre element or class.
+  - Screenshot at 380px with two folds: toggles sit at the end of the grey line.
+- Notes: the base button rules made the toggle a block on phones; Ochre's toggle rule is scoped to `.post-card` to win. Bubblegum's window controls were not reused, as planned.
+- Estimate details: original scope as Step 3, plus the observer for live replies; no revision.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Deep ported thread end to end
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.08**
+
+- Changes:
+  - New browser test `tests/browser/theme_ochre.mjs` with its fixture `tests/browser/theme_ochre_fixture.php`. The fixture ports a thread nested nine deep through `createPortedThread`, then adds a `theme: ochre` reply from the fixture's operator.
+  - The test covers a reader with no saved theme seeing Ochre before first paint, then 16 toggles. It checks `[+9]` and `[+11]`, an inner fold kept when its outer branch reopens, the keyboard, parent/next and the `:target` jump, and leaving for Gloss with no Ochre left. It then checks that a revisit stays on Gloss, a plain thread shows the usual theme, all 17 posts show with JavaScript off, and on a phone the toggle is 44px wide on the grey line and folds on tap.
+- Verification:
+  - `CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/theme_ochre.mjs <dir>`: passed. Like `draggable_windows.mjs`, it runs by hand, not in `./v3 test`.
+  - `./v3 test`: smoke set passed.
+- Notes: the Activity drawer is **unverified** in Ochre. Its entries come from reactions and title-only replies, which this fixture does not create. It falls under the general `.card` rule from Stage 2. The maintainer's production try is the check.
+- Estimate details: original scope as Step 3; no revision.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Documentation and closeout
+
+**Original estimate: 0.08**
+
+**Retrospective stage work: 0.08**
+
+- Changes:
+  - New concept entry `docs/concepts/ochre_theme.md`; `theme_script.md` points to it.
+  - `theme_development_guide.md` gains an Ochre section, including the static rebuild on deploy and both tests.
+  - The deferred default on ported threads is recorded in the concept entry and in [Step 2's enhancement requests](./hn_theme_step2_feature_description.md#enhancement-requests).
+  - Effort ledger closeout.
+- Verification:
+  - Every selector in `theme-ochre.css` names Ochre (only the three `@media` wrappers do not).
+  - Gloss, Word 97 and Bubblegum: 30 screenshots (board, Recent, a thread, a ported thread and Tools, at 1280px and 380px) are byte-identical between `origin/main` and this branch.
+  - `git diff --check origin/main..HEAD`: clean. The concept and guide paths resolve.
+  - The full suite (`./v3 fulltest`) was not run; the maintainer runs it.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+- Completion Contract:
+  - Normal entry: passed. Ochre is in the `zenmemes` theme menu, and `theme: ochre` from an operator applies it before first paint.
+  - End-to-end outcome: passed in headless Chrome for the board, Recent, a thread, a ported thread and Tools at 1280px and 380px. Folds and parent/next work on a port nested nine deep.
+  - Recovery: passed. Leaving for Gloss leaves no Ochre element, and a revisit stays on Gloss; JavaScript off shows every reply.
+  - Deployment: **pending**. Production needs `php scripts/build_static_artifacts.php` after deploy; verified on a local build only.
+  - Release: **pending** merge, deploy and the maintainer's production try.
+- Unverified: the Activity drawer in Ochre (no fixture entries); real iPhone Safari (only Chrome's mobile emulation was used).
+- Enhancement requests: the ported-thread default stays deferred as separate work.
+- Retrospective cycle scope: **0.60**. Delivered scope v2 plus the site-profile list and the live-reply observer, minus the Activity drawer check. Six stages, seven commits after the planning commit. Claude, same exposed rater.
+- Maintainer comfortable-fit judgment: pending.
+
+*— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*

@@ -1568,6 +1568,63 @@ pre {
   display: none !important;
 }
 
+/* Zen strip: a grid of Zen memes, as tall as it needs; one column on a phone, two in the content column. */
+.zen-strip__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.zen-strip__item {
+  display: flex;
+  min-width: 0;
+}
+
+.zen-strip__card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: inherit;
+  text-decoration: none;
+}
+
+.zen-strip__card:hover,
+.zen-strip__card:focus-visible {
+  border-color: var(--ink-soft);
+}
+
+/* The whole image at its own shape, so its caption reads without opening the thread. */
+.zen-strip__card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--line);
+}
+
+.zen-strip__card--text {
+  min-height: 9rem;
+}
+
+.zen-strip__card--text span {
+  padding: 1rem;
+  font-size: 1.35rem;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.zen-strip__more {
+  margin: 0.4rem 0 0;
+  text-align: right;
+}
+
 .visitor-intro {
   position: relative;
 }

@@ -73,6 +73,7 @@ final class LlmsTxtRendererTest
         assertStringContains('POST /api/create_signed_post', $text);
         assertStringContains('bootstrap stays separate', $text);
         assertStringContains('Label agent accounts as agent accounts', $text);
+        assertStringContains('Threads tagged #ported were copied from Hacker News', $text);
         assertStringNotContains('rate limit', strtolower($text));
         assertStringContains('6. GET /api/get_post?post_id=<post_id>', $text);
         assertStringContains('create_thread and create_reply are unsigned: without author_identity_id the post is anonymous', $text);

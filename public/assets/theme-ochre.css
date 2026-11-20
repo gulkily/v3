@@ -1,0 +1,446 @@
+/* Theme: ochre
+   A compact, text-only page that Hacker News readers find familiar: a beige
+   page, one orange bar, small Verdana and grey metadata lines. No logo or
+   name is borrowed. Every text colour meets WCAG AA on its background: grey
+   metadata is #6b6b6b (4.9:1 on the beige), and the bar's text is black
+   (7.2:1 on the orange) because white on that orange is 2.9:1. */
+:root[data-theme="ochre"],
+.theme-menu__option[data-theme-option="ochre"] {
+  color-scheme: light;
+  --ochre-bar: #ff6600;
+  --page-bg: #f6f6ef;
+  --body-background: var(--page-bg);
+  --ink: #000000;
+  --ink-soft: #6b6b6b;
+  --line: #8a8a80;
+  --panel: #f6f6ef;
+  --input-bg: #ffffff;
+  --button-bg: #efefe6;
+  --button-alt-bg: #e8e8dd;
+  --feedback-ok-bg: #ececdf;
+  --feedback-error-bg: #fbe3dc;
+  --status-error: #a3140c;
+  --status-ok: #1f5e2e;
+  --status-warning: #7a4e00;
+  --active-bg: #ff6600;
+  --active-ink: #000000;
+  --active-line: #000000;
+  --active-ring: rgba(255, 102, 0, 0.4);
+  --body-font: Verdana, Geneva, "DejaVu Sans", sans-serif;
+  --ui-font: Verdana, Geneva, "DejaVu Sans", sans-serif;
+  --code-font: "Courier New", Courier, monospace;
+}
+
+.theme-swatch[data-theme="ochre"] {
+  background: #f6f6ef;
+  border-color: #000000;
+  box-shadow: inset 0 0.32rem 0 #ff6600;
+}
+
+:root[data-theme="ochre"] body {
+  font-size: 13.33px;
+  line-height: 1.4;
+}
+
+:root[data-theme="ochre"] a {
+  color: var(--ink);
+}
+
+:root[data-theme="ochre"] :focus-visible {
+  outline: 2px solid #000000;
+  outline-offset: 1px;
+}
+
+:root[data-theme="ochre"] ::selection {
+  background: #ffc499;
+  color: #000000;
+}
+
+/* The bar: one orange strip holding the site name and the destinations,
+   written as plain words rather than buttons. */
+:root[data-theme="ochre"] .site-header {
+  background: var(--ochre-bar);
+  color: #000000;
+  padding: 0.15rem 0.4rem;
+  gap: 0.5rem;
+  align-items: center;
+  border: none;
+  border-image: none;
+  margin-bottom: 0.6rem;
+}
+
+:root[data-theme="ochre"] .site-header .eyebrow {
+  margin: 0;
+  font-size: 13.33px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #000000;
+}
+
+:root[data-theme="ochre"] .site-header .eyebrow .site-brand {
+  color: #000000;
+  border: 1px solid #ffffff;
+  padding: 0 0.2rem;
+}
+
+:root[data-theme="ochre"] .site-header .nav {
+  gap: 0;
+}
+
+:root[data-theme="ochre"] .site-header .nav > .nav-link,
+:root[data-theme="ochre"] .site-header .new-post-button,
+:root[data-theme="ochre"] .site-header .account-menu__trigger {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  color: #000000;
+  font-size: 13.33px;
+  font-weight: 400;
+  padding: 0.1rem 0.35rem;
+  min-height: 0;
+}
+
+:root[data-theme="ochre"] .site-header .nav > .nav-link + .nav-link::after {
+  content: none;
+}
+
+:root[data-theme="ochre"] .site-header .nav > .nav-link:hover,
+:root[data-theme="ochre"] .site-header .new-post-button:hover,
+:root[data-theme="ochre"] .site-header .account-menu__trigger:hover {
+  background: transparent;
+  text-decoration: underline;
+}
+
+/* The current page: white on black, as one solid mark rather than a colour
+   that must pass on the orange. */
+:root[data-theme="ochre"] .site-header .nav > .nav-link.is-active,
+:root[data-theme="ochre"] .site-header .nav > .nav-link[aria-current="page"],
+:root[data-theme="ochre"] .site-header .new-post-button.is-active {
+  background: #000000;
+  color: #ffffff;
+}
+
+/* Text only: no icons beside the destinations. */
+:root[data-theme="ochre"] .site-header .nav > .nav-link::before,
+:root[data-theme="ochre"] .site-header .account-menu__icon,
+:root[data-theme="ochre"] .site-header .new-post-button__icon {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  :root[data-theme="ochre"] [data-shell="app"] .site-header.site-header--app {
+    margin-bottom: 0.6rem;
+    padding: 0.15rem 0.4rem;
+    border: none;
+    border-image: none;
+    align-items: center;
+  }
+
+  :root[data-theme="ochre"] [data-shell="app"] .site-header.site-header--app .eyebrow {
+    position: static;
+    margin-top: 0;
+  }
+
+  :root[data-theme="ochre"] [data-shell="app"] .site-header.site-header--app .site-header-actions {
+    align-items: center;
+  }
+
+  :root[data-theme="ochre"] [data-shell="app"] .site-header.site-header--app .nav > .nav-link {
+    padding: 0.1rem 0.35rem;
+  }
+}
+
+/* Phones keep the shared tab bar at the bottom; Ochre makes it beige with an
+   orange rule, and the name keeps its own orange strip at the top. */
+@media (max-width: 639px) {
+  :root[data-theme="ochre"] [data-shell="app"] .site-header.site-header--app {
+    background: transparent;
+    padding: 0;
+  }
+
+  :root[data-theme="ochre"] [data-shell="app"] .site-header.site-header--app .eyebrow {
+    flex: 1 1 auto;
+    background: var(--ochre-bar);
+    padding: 0.3rem 0.5rem;
+  }
+
+  :root[data-theme="ochre"] [data-shell="app"] .site-header.site-header--app .site-header-actions {
+    background: var(--page-bg);
+    border-top: 2px solid var(--ochre-bar);
+  }
+
+  :root[data-theme="ochre"] [data-shell="app"] .site-header.site-header--app .nav > .nav-link,
+  :root[data-theme="ochre"] [data-shell="app"] .site-header.site-header--app .new-post-button,
+  :root[data-theme="ochre"] [data-shell="app"] .site-header.site-header--app .account-menu__trigger {
+    font-size: 12px;
+  }
+}
+
+/* Content column: a little wider than the default, still a readable line. */
+:root[data-theme="ochre"] .shell {
+  width: min(100%, 880px);
+}
+
+:root[data-theme="ochre"] .meta {
+  font-size: 12px;
+}
+
+/* Threads: posts are plain text blocks, not boxes. The title, a grey line
+   naming who and when, the text, then small action links. */
+:root[data-theme="ochre"] .post-card {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  padding: 0.15rem 0 0.15rem 0.1rem;
+}
+
+:root[data-theme="ochre"] .post-card + .post-card {
+  margin-top: 0.7rem;
+}
+
+:root[data-theme="ochre"] .post-card.continuation {
+  margin-top: 0.25rem;
+}
+
+:root[data-theme="ochre"] .thread-root-card h1 {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.35;
+  margin-bottom: 0.3rem;
+}
+
+:root[data-theme="ochre"] .post-card > .body,
+:root[data-theme="ochre"] .post-card .body {
+  font-size: 13.33px;
+  line-height: 1.45;
+  margin: 0.2rem 0;
+}
+
+:root[data-theme="ochre"] .post-card > .meta,
+:root[data-theme="ochre"] .post-card > .meta a {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+:root[data-theme="ochre"] .post-card > .meta a:hover {
+  color: var(--ink);
+}
+
+:root[data-theme="ochre"] .post-card-actions {
+  gap: 0.6rem;
+  margin-top: 0.15rem;
+}
+
+:root[data-theme="ochre"] .post-card-actions > a,
+:root[data-theme="ochre"] .post-card-actions button.thread-reaction-button {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  min-height: 0;
+  font-size: 11px;
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+/* A permalink jump: a pale orange wash, like the bar. */
+:root[data-theme="ochre"] .post-card:target {
+  background: #ffe9d9;
+  outline: none;
+}
+
+/* Composers, the Activity drawer and other cards stay framed, thinly. */
+:root[data-theme="ochre"] .card:not(.post-card) {
+  border: 1px solid #d6d6c8;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+:root[data-theme="ochre"] textarea,
+:root[data-theme="ochre"] input[type="text"],
+:root[data-theme="ochre"] input[type="search"],
+:root[data-theme="ochre"] input[type="url"],
+:root[data-theme="ochre"] input:not([type]) {
+  font-family: var(--body-font);
+  font-size: 13px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--input-bg);
+}
+
+:root[data-theme="ochre"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.thread-reaction-button):not(.account-row) {
+  border-radius: 2px;
+}
+
+:root[data-theme="ochre"] .post-card .body > :first-child {
+  margin-top: 0;
+}
+
+:root[data-theme="ochre"] .post-card .body > p {
+  margin: 0 0 0.45rem;
+}
+
+:root[data-theme="ochre"] .post-card .body > :last-child {
+  margin-bottom: 0;
+}
+
+/* Lists (board, Recent, tags): numbered rows of a title and one grey line,
+   with no boxes. Hidden rows take no number, since display:none skips the
+   counter. Text only: thumbnails and excerpts are left out. */
+:root[data-theme="ochre"] .thread-rows {
+  border: none;
+  background: transparent;
+  counter-reset: ochre-row;
+}
+
+:root[data-theme="ochre"] .thread-row {
+  grid-template-columns: 2.4em minmax(0, 1fr) auto;
+  column-gap: 0.35rem;
+  padding: 0.2rem 0;
+  counter-increment: ochre-row;
+}
+
+:root[data-theme="ochre"] .thread-row + .thread-row {
+  border-top: none;
+}
+
+:root[data-theme="ochre"] .thread-row::before {
+  content: counter(ochre-row) ".";
+  grid-column: 1;
+  grid-row: 1;
+  text-align: right;
+  color: var(--ink-soft);
+  font-size: 13.33px;
+  line-height: 1.35;
+}
+
+:root[data-theme="ochre"] .thread-row > * {
+  grid-column: 2;
+}
+
+:root[data-theme="ochre"] .thread-row__title {
+  grid-row: 1;
+  font-size: 13.33px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+:root[data-theme="ochre"] .thread-row__title a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+:root[data-theme="ochre"] .thread-row__title a:hover {
+  text-decoration: underline;
+}
+
+:root[data-theme="ochre"] .thread-row__title a:visited {
+  color: var(--ink-soft);
+}
+
+:root[data-theme="ochre"] .thread-row__count {
+  grid-column: 3;
+  grid-row: 1;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+:root[data-theme="ochre"] .thread-row__meta {
+  font-size: 11px;
+}
+
+:root[data-theme="ochre"] .thread-row__excerpt,
+:root[data-theme="ochre"] .thread-row__thumb {
+  display: none;
+}
+
+/* Board and Tools controls: plain words rather than buttons. */
+:root[data-theme="ochre"] .main .nav-link,
+:root[data-theme="ochre"] .pagination-nav .nav-link {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0.05rem 0.25rem;
+  min-height: 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+:root[data-theme="ochre"] .main .nav-link:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+:root[data-theme="ochre"] .main .nav-link.is-active,
+:root[data-theme="ochre"] .main .nav-link[aria-current="page"] {
+  background: transparent;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+:root[data-theme="ochre"] .tool-launcher-button {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0.15rem 0;
+  min-height: 0;
+  justify-content: flex-start;
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+:root[data-theme="ochre"] .thread-row__count-number,
+:root[data-theme="ochre"] .thread-row__count-label {
+  display: inline;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+/* Folding (theme-ochre.js): a folded reply keeps only its grey line; the
+   replies below it are hidden. Without JavaScript nothing folds. */
+:root[data-theme="ochre"] .post-card.ochre-hidden {
+  display: none !important;
+}
+
+:root[data-theme="ochre"] .post-card.ochre-collapsed > :not(.ochre-keep) {
+  display: none !important;
+}
+
+:root[data-theme="ochre"] .ochre-nav a {
+  color: var(--ink-soft);
+}
+
+:root[data-theme="ochre"] .ochre-nav a:hover {
+  color: var(--ink);
+}
+
+:root[data-theme="ochre"] .post-card .ochre-toggle {
+  display: inline;
+  width: auto;
+  vertical-align: baseline;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0 0.15rem;
+  min-height: 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+/* Phones: a 44px tap target without changing the line's height. */
+@media (pointer: coarse) {
+  :root[data-theme="ochre"] .post-card .ochre-toggle {
+    display: inline-block;
+    min-width: 44px;
+    padding: 0.6rem 0.3rem;
+    margin: -0.6rem 0;
+  }
+}
