@@ -41,3 +41,28 @@ Enhancement requests: none pending. The two on record are in Step 3 (client rena
 - Estimate details (extended mode only): original scope as Step 3 Stage 1; uncertainty low; no revisions.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Signed sections and JSON
+
+**Original estimate: 0.10**
+
+**Retrospective stage-work assessment: 0.10**
+
+- Changes:
+  - `AgentCheckinController` takes the session viewer (`Application::authenticatedViewerProfile`) and, when Unread is on, the Unread controller.
+  - **Approved viewer:** `Viewer: NAME (approved)`, then "Replies to you" and "Unread conversations" ahead of the public sections. Replies show 10, with the total as "10 of N"; each line reads `ID by AUTHOR in "SUBJECT": excerpt`. Conversations give the counterpart, the unread count and the `/messages/` page; there are no cursor links.
+  - **No session:** a `Sign-in:` line naming `python3 quill.py --site ORIGIN checkin`.
+  - **Unapproved key:** `Viewer: NAME (IDENTITY, not approved)` and an `Approval:` line pointing at `/llms.txt`, "Approving keys".
+  - **Approved viewer with Unread off:** an `Unread: disabled…` line, and public sections only.
+  - `?format=json`: `status`, `site`, `version`, `viewer {status, username, identity_id}`, `notices`, and `sections [{key, title, total, items [{id, thread_id, line, read}], next, note}]`. `next` is empty for an empty section. The text form also shows a total larger than the shown count ("10 of N").
+  - `InboxPageController::unreadFor(viewer, limit)`: a public read of Unread's replies, reply count and conversations, using the controller's own feed and message code. A failing part is reported as failed (shown as "Unavailable right now"), and it moves no mark.
+  - `ApiRouteCatalog`: the check-in entry now names `?format=<optional-json>` and the signed sections.
+- Verification:
+  - `./v3 test AgentCheckinTest`: 11 run, 11 passed. New: approved replies first, the reader's own reply left out, no mark moved by reading, replies capped with a count, the unapproved notice, Unread off, and JSON for an approved and an anonymous viewer.
+  - `./v3 test --smoke AgentCheckinTest InboxPageTest InboxFeedTest ApiRouteCatalogTest LlmsTxtRendererTest`: 517 run, 517 passed. Full suite not run.
+- Notes:
+  - The personal-section tests build the controller with a viewer closure, as `InboxPageTest` does. The real session path (signed challenge, cookie, `Application` routing) is tested end to end in Stages 5 and 7.
+  - Reuse: the Unread gate (`is_approved`) and `InboxPageController`'s `feed()` and `messages()`; there is no second copy of the reply filter.
+- Estimate details (extended mode only): original scope as Step 3 Stage 2; uncertainty low; no revisions.
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*

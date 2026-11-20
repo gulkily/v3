@@ -136,6 +136,34 @@ final class InboxPageController
         return $sections;
     }
 
+    /**
+     * What Unread holds for an approved viewer, for other readers such as the agent check-in.
+     * Reading it moves no mark. A failing part reports failed instead of throwing.
+     *
+     * @param array<string, mixed> $viewer an approved viewer profile
+     * @return array{replies:list<array<string,mixed>>,reply_count:int,replies_failed:bool,conversations:list<array{counterpart:string,unread_count:int,latest_at:string}>,messages_enabled:bool,messages_failed:bool}
+     */
+    public function unreadFor(array $viewer, int $limit): array
+    {
+        try {
+            $feed = $this->feed($viewer);
+            $replies = array_slice($feed->items('replies'), 0, max(0, $limit));
+            $count = $feed->unreadCount('replies');
+            $failed = false;
+        } catch (\Throwable) {
+            [$replies, $count, $failed] = [[], 0, true];
+        }
+        $messages = $this->messages($viewer);
+        return [
+            'replies' => $replies,
+            'reply_count' => $count,
+            'replies_failed' => $failed,
+            'conversations' => $messages['conversations'],
+            'messages_enabled' => $messages['enabled'],
+            'messages_failed' => $messages['failed'],
+        ];
+    }
+
     /** @param array<string, mixed> $viewer */
     private function stagedCount(array $viewer): int
     {

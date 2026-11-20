@@ -2833,6 +2833,8 @@ final class Application
             $this->displayThreadTitle(...),
             $this->appVersion(),
             $this->featureFlags()->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED),
+            $this->authenticatedViewerProfile(...),
+            $this->featureFlags()->isEnabled(FeatureFlagRegistry::INBOX_ENABLED) ? $this->inboxPageController(...) : null,
         );
     }
 

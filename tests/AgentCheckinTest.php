@@ -6,6 +6,12 @@ require_once __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Http\AgentCheckinController;
+use ForumRewrite\Http\InboxPageController;
+use ForumRewrite\Http\RouteServices;
+use ForumRewrite\Inbox\InboxMarkStore;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\ReadModel\ReadModelBuilder;
 use ForumRewrite\Tools\MarkedPostsQuery;
 use ForumRewrite\Write\LocalWriteService;
@@ -14,6 +20,7 @@ use ForumRewrite\Write\LocalWriteService;
 final class AgentCheckinTest
 {
     private const APPROVED = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+    private InboxMarkStore $marks;
 
     public function testPublicSectionsListOpenIssueItemsAndNewestThreads(): void
     {
@@ -24,7 +31,8 @@ final class AgentCheckinTest
             [$status, $text] = $this->get($app, '/api/checkin');
             assertSame(200, $status);
             assertStringContains("Check-in: ", $text);
-            assertStringContains("Viewer: anonymous\n", $text);
+            assertStringContains("Viewer: anonymous\nSign-in: replies to you need a signed-in approved key. With a key, run: python3 quill.py --site http://forum.example checkin\n", $text);
+            assertStringNotContains('Replies to you', $text);
 
             $open = $this->section($text, 'Open #issue items');
             assertStringContains('Open #issue items: 3', $open);
@@ -55,6 +63,82 @@ final class AgentCheckinTest
             }
             assertStringNotContains('cursor', $text);
             assertStringNotContains('position=', $text);
+        });
+    }
+
+    public function testApprovedViewerGetsRepliesToThemFirst(): void
+    {
+        $this->withProfiles(function (\PDO $pdo, string $database): void {
+            $viewer = $this->profile($pdo, 'openpgp:ilyag');
+            $this->post($pdo, 'my-thread', '2026-11-07T11:00:00Z', 'openpgp:ilyag');
+            $this->post($pdo, 'alice-reply', '2026-11-07T12:01:00Z', 'openpgp:alice', 'my-thread');
+            $this->post($pdo, 'my-reply', '2026-11-07T12:02:00Z', 'openpgp:ilyag', 'alice-reply');
+            $text = $this->checkin($database, $viewer);
+            assertStringContains("Viewer: ilyag (approved)\n\n", $text);
+            $replies = $this->section($text, 'Replies to you');
+            assertStringContains("Replies to you: 1\n- alice-reply by alice in \"Subject my-thread\": Body alice-reply\n  Read: GET /api/get_post?post_id=alice-reply\n", $replies);
+            assertStringContains('Next: reply with python3 quill.py --site http://forum.example reply --thread THREAD_ID --body-file reply.txt', $replies);
+            assertStringNotContains('my-reply', $replies);
+            assertTrue(strpos($text, 'Replies to you') < strpos($text, 'Newest threads'));
+            assertStringNotContains('Unread conversations', $text, 'Messages are off in this fixture.');
+            assertStringContains('alice-reply', $this->checkin($database, $viewer), 'Reading the check-in marks nothing.');
+        });
+    }
+
+    public function testRepliesAreCappedButCounted(): void
+    {
+        $this->withProfiles(function (\PDO $pdo, string $database): void {
+            $this->post($pdo, 'my-thread', '2026-11-07T11:00:00Z', 'openpgp:ilyag');
+            for ($i = 1; $i <= 12; $i++) {
+                $this->post($pdo, sprintf('reply-%02d', $i), sprintf('2026-11-07T12:%02d:00Z', $i), 'openpgp:alice', 'my-thread');
+            }
+            $replies = $this->section($this->checkin($database, $this->profile($pdo, 'openpgp:ilyag')), 'Replies to you');
+            assertStringContains('Replies to you: 10 of 12', $replies);
+            assertSame(10, substr_count($replies, '  Read: '));
+        });
+    }
+
+    public function testUnapprovedViewerIsToldHowToGetApproved(): void
+    {
+        $this->withProfiles(function (\PDO $pdo, string $database): void {
+            $pdo->exec("UPDATE profiles SET is_approved = 0 WHERE identity_id = 'openpgp:bob'");
+            $this->post($pdo, 'bob-thread', '2026-11-07T11:00:00Z', 'openpgp:bob');
+            $this->post($pdo, 'alice-reply', '2026-11-07T12:01:00Z', 'openpgp:alice', 'bob-thread');
+            $text = $this->checkin($database, $this->profile($pdo, 'openpgp:bob'));
+            assertStringContains("Viewer: bob (openpgp:bob, not approved)\nApproval: replies to you need an approved key. Ask an approved member to approve openpgp:bob; see /llms.txt, \"Approving keys\".\n", $text);
+            assertStringNotContains('Replies to you', $text);
+            assertStringContains('Newest threads: 1', $text);
+        });
+    }
+
+    public function testUnreadOffStillShowsPublicSections(): void
+    {
+        $this->withProfiles(function (\PDO $pdo, string $database): void {
+            $this->post($pdo, 'my-thread', '2026-11-07T11:00:00Z', 'openpgp:ilyag');
+            $this->post($pdo, 'alice-reply', '2026-11-07T12:01:00Z', 'openpgp:alice', 'my-thread');
+            $text = $this->checkin($database, $this->profile($pdo, 'openpgp:ilyag'), inbox: false);
+            assertStringContains("Viewer: ilyag (approved)\nUnread: disabled on this server, so replies to you are not shown.\n", $text);
+            assertStringNotContains('Replies to you:', $text);
+        });
+    }
+
+    public function testJsonCarriesTheSameSections(): void
+    {
+        $this->withProfiles(function (\PDO $pdo, string $database): void {
+            $this->post($pdo, 'my-thread', '2026-11-07T11:00:00Z', 'openpgp:ilyag');
+            $this->post($pdo, 'alice-reply', '2026-11-07T12:01:00Z', 'openpgp:alice', 'my-thread');
+            $data = json_decode($this->checkin($database, $this->profile($pdo, 'openpgp:ilyag'), ['format' => 'json']), true, flags: JSON_THROW_ON_ERROR);
+            assertSame('ok', $data['status']);
+            assertSame('http://forum.example', $data['site']);
+            assertSame(['status' => 'approved', 'username' => 'ilyag', 'identity_id' => 'openpgp:ilyag'], $data['viewer']);
+            assertSame([], $data['notices']);
+            assertSame(['replies_to_you', 'open_items', 'newest_threads'], array_column($data['sections'], 'key'));
+            assertSame(['id' => 'alice-reply', 'thread_id' => 'my-thread', 'line' => 'alice-reply by alice in "Subject my-thread": Body alice-reply', 'read' => 'GET /api/get_post?post_id=alice-reply'], $data['sections'][0]['items'][0]);
+            assertSame('', $data['sections'][1]['next'], 'An empty section names no next request.');
+            $anonymous = json_decode($this->checkin($database, null, ['format' => 'json']), true, flags: JSON_THROW_ON_ERROR);
+            assertSame('anonymous', $anonymous['viewer']['status']);
+            assertSame(['open_items', 'newest_threads'], array_column($anonymous['sections'], 'key'));
+            assertStringContains('Sign-in:', $anonymous['notices'][0]);
         });
     }
 
@@ -150,6 +234,74 @@ final class AgentCheckinTest
         }
         $end = strpos($text, "\n\n", $start);
         return substr($text, $start, $end === false ? null : $end - $start);
+    }
+
+    /** @param array<string, mixed>|null $viewer @param array<string, string> $query */
+    private function checkin(string $database, ?array $viewer, array $query = [], bool $inbox = true): string
+    {
+        $viewerFn = static fn (): ?array => $viewer;
+        $services = new RouteServices(
+            $database,
+            new TemplateRenderer(__DIR__ . '/../templates', 'test'),
+            'test',
+            false,
+            $viewerFn,
+            __DIR__ . '/fixtures/parity_minimal_v1',
+            dirname(__DIR__),
+            null,
+            null,
+            FeatureFlagEvaluator::forApplication(__DIR__ . '/fixtures/parity_minimal_v1', dirname(__DIR__)),
+            $viewerFn,
+        );
+        $inboxFn = $inbox ? fn (): InboxPageController => new InboxPageController($services, $viewerFn, null, fn (): InboxMarkStore => $this->marks) : null;
+        $_SERVER['HTTP_HOST'] = 'forum.example';
+        ob_start();
+        (new AgentCheckinController($services, static fn (array $thread): string => (string) $thread['subject'], 'test-version', true, $viewerFn, $inboxFn))->show('GET', $query);
+        unset($_SERVER['HTTP_HOST']);
+        return (string) ob_get_clean();
+    }
+
+    /** @return array<string, mixed> */
+    private function profile(\PDO $pdo, string $identityId): array
+    {
+        $stmt = $pdo->prepare('SELECT * FROM profiles WHERE identity_id = ?');
+        $stmt->execute([$identityId]);
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
+    }
+
+    private function post(\PDO $pdo, string $postId, string $createdAt, string $author, ?string $parentId = null): void
+    {
+        $threadId = $parentId === null ? $postId : (string) $pdo->query('SELECT thread_id FROM posts WHERE post_id = ' . $pdo->quote($parentId))->fetchColumn();
+        $pdo->prepare("INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, author_identity_id, author_label, sequence_number)
+            VALUES (?, ?, ?, ?, ?, ?, '[\"general\"]', ?, ?, 0)")
+            ->execute([$postId, $createdAt, $threadId, $parentId, $parentId === null ? 'Subject ' . $postId : null, 'Body ' . $postId, $author, substr($author, 8)]);
+        if ($parentId === null) {
+            $pdo->prepare("INSERT INTO threads (root_post_id, subject, root_post_created_at, last_activity_at, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json)
+                VALUES (?, ?, ?, ?, ?, 0, ?, '[\"general\"]', '[]')")->execute([$postId, 'Subject ' . $postId, $createdAt, $createdAt, 'Body ' . $postId, $postId]);
+        } else {
+            $pdo->prepare('UPDATE threads SET reply_count = reply_count + 1, last_activity_at = ? WHERE root_post_id = ?')->execute([$createdAt, $threadId]);
+        }
+    }
+
+    /** @param callable(\PDO, string): void $test */
+    private function withProfiles(callable $test): void
+    {
+        $this->marks = new InboxMarkStore(new \PDO('sqlite::memory:'), static fn (): string => '2026-11-07T12:00:00Z');
+        $database = sys_get_temp_dir() . '/forum-rewrite-agent-checkin-' . bin2hex(random_bytes(6)) . '.sqlite3';
+        try {
+            $pdo = new \PDO('sqlite:' . $database);
+            foreach (\ForumRewrite\ReadModel\ReadModelSchema::statements() as $statement) $pdo->exec($statement);
+            foreach (['alice', 'bob', 'ilyag'] as $username) {
+                $pdo->prepare('INSERT INTO profiles (identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint,
+                    bootstrap_post_id, bootstrap_thread_id, public_key, is_approved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)')->execute([
+                    'openpgp:' . $username, 'openpgp-' . $username, $username, $username, $username, str_repeat('A', 40),
+                    'identity-' . $username, 'thread-' . $username, 'PUBLIC KEY ' . $username,
+                ]);
+            }
+            $test($pdo, $database);
+        } finally {
+            @unlink($database);
+        }
     }
 
     private function withSite(callable $check, int $extraReplies = 0): void
