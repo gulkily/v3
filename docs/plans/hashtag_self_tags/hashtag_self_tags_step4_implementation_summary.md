@@ -62,3 +62,27 @@ Branch: `hashtag-self-tags`, reused for this cycle as the maintainer asked. Plan
 - Estimate details: original scope as Step 3; no revisions.
 
 *— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Composer Tags line
+
+**Original estimate: 0.14**
+
+**Retrospective stage work: 0.14**
+
+- Changes:
+  - `templates/partials/composer.php` renders "Tags: …" under the text box from `selfTags($body)` while the flag is on. The line is hidden when there are no tags, so a prefilled draft is final on first paint.
+  - New `public/assets/hashtag_tags.js` ports the rule and follows the `markdown_detect.js` binding pattern: input, Discard draft, and late-mounted composers on focus.
+  - `TemplateRenderer` passes `hashtagSelfTagsEnabled` and loads the script only while the flag is on. `layout.php` loads it after `markdown_detect.js`. `compose.css` gives the line a small top margin.
+  - New `HashtagTagsTest`, registered in `tests/run.php`. It runs the script in node over the shared examples and checks the binding.
+  - `docs/concepts/shared_composer.md` gets a Tags line entry.
+- Verification:
+  - Passed: `./v3 test --smoke HashtagTagsTest ThreadLabelsTest MarkdownDetectTest`, 489 run, 489 passed. The PHP and JavaScript rules agree on all 20 examples.
+  - Passed: on a local server, `/compose/thread` renders the hidden line and loads the script. `/compose/thread?body=…%23meta` renders "Tags: #meta" on the server. The reply form on `/threads/root-001` has the line.
+  - Passed: headless Chrome, with a draft typed in, in Word97, Gloss and Bubblegum at 390px and 1280px. Each showed "Tags: #issue #meta" under the text box with no sideways overflow. Screenshots were kept outside the repository.
+  - Inapplicable: navigation icons, since no destination changed.
+  - Full suite not run.
+- Notes:
+  - On New post the line sits above the collapsed "Tags · #general" row for board tags. Both say "Tags", for board tags and thread labels. The UI copy rules favour fewer words, so no extra explanation was added; the maintainer may want to judge this on production.
+- Estimate details: original scope as Step 3; no revisions.
+
+*— Claude · 2026-11-20 UTC · Model: claude-opus-5-5*

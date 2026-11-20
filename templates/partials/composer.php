@@ -82,6 +82,10 @@ if (!($composerShowOptions ?? true)) {
   <p class="meta compose-normalization-inline" data-role="compose-normalization-status" hidden>
     <span data-role="compose-normalization-message"></span>
   </p>
+<?php if ($hashtagSelfTagsEnabled ?? false): ?>
+<?php $composerSelfTags = \ForumRewrite\Support\ThreadLabels::selfTags((string) $body); ?>
+  <p class="meta compose-tags-line" data-role="compose-tags"<?= $composerSelfTags === [] ? ' hidden' : '' ?>>Tags: <span data-role="compose-tags-list"><?= $e(implode(' ', array_map(static fn (string $label): string => '#' . $label, $composerSelfTags))) ?></span></p>
+<?php endif; ?>
 <?php if ($imageContentEnabled ?? false): ?>
 <?= $partial('partials/image_compose_fields.php', ['imageChooseInMenu' => true]) ?>
 <?php endif; ?>

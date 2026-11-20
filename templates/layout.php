@@ -307,6 +307,9 @@
   <script src="<?= $e($eventWhenScriptPath) ?>" defer></script>
 <?php endif; ?>
   <script src="<?= $e($markdownDetectScriptPath) ?>" defer></script>
+<?php if (($hashtagTagsScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($hashtagTagsScriptPath) ?>" defer></script>
+<?php endif; ?>
   <script src="<?= $e($tableZoomScriptPath) ?>" defer></script>
   <script src="<?= $e($inviteNavigationScriptPath) ?>" defer></script>
 <?php if (($inboxUnreadScriptPath ?? null) !== null): ?>

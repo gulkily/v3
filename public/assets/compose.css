@@ -61,6 +61,13 @@
 .compose-normalization-inline[hidden] {
   display: none;
 }
+/* "Tags: #a #b" under the text box (hashtag_tags.js); hidden when the post gives no tags. */
+.compose-tags-line {
+  margin: 0.2rem 0 0;
+}
+.compose-tags-line[hidden] {
+  display: none;
+}
 .compose-normalization-inline-action {
   width: auto;
   margin-top: 0;

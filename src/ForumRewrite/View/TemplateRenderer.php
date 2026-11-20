@@ -306,6 +306,8 @@ final class TemplateRenderer
             'replyViewportScriptPath' => $this->assetPath('/assets/reply_viewport.js'),
             'composeDisclosureScriptPath' => $this->assetPath('/assets/compose_disclosure.js'),
             'markdownDetectScriptPath' => $this->assetPath('/assets/markdown_detect.js'),
+            'hashtagTagsScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::HASHTAG_SELF_TAGS_ENABLED)
+                ? $this->assetPath('/assets/hashtag_tags.js') : null,
             'tableZoomScriptPath' => $this->assetPath('/assets/table_zoom.js'),
             'inviteNavigationScriptPath' => $this->assetPath('/assets/invite_navigation.js'),
             'versionCheckScriptPath' => $this->assetPath('/assets/version_check.js'),
@@ -753,6 +755,7 @@ final class TemplateRenderer
             'eventSupportEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EVENT_SUPPORT_ENABLED),
             'eventWhenEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::EVENT_WHEN_ENABLED),
             'calendarFeedEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::CALENDAR_FEED_ENABLED),
+            'hashtagSelfTagsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::HASHTAG_SELF_TAGS_ENABLED),
             'usernameChangesEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USERNAME_CHANGES_ENABLED),
             'composerPrompt' => SiteProfileRegistry::active()['composerPrompt'],
             'siteDescription' => \ForumRewrite\ProfilePresentationContent::siteDescription(SiteProfileRegistry::active()),
