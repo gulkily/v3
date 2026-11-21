@@ -8,8 +8,9 @@ use PDO;
 
 /**
  * The Zen strip at the top of the board: listed threads that carry every one
- * of the site profile's strip tags (on zenmemes.com, #zen and #meme), newest
- * first. Each tag must come from an approved member: the root's own board tag
+ * of the site profile's strip tags (on zenmemes.com, #zen and #meme), highest
+ * thread score first (the score Top sort uses), newest first among equals, so
+ * the first row is the featured meme. Each tag must come from an approved member: the root's own board tag
  * when its signed author is approved, or a label an approved member wrote.
  * The same rule as PromptLibrary's #prompt, applied to each tag. A guest's or
  * pending key's tag still shows on the thread and on tag pages; it just
@@ -21,7 +22,7 @@ final class ZenStrip
 
     /**
      * @param list<string> $tags lower-case tags, all required
-     * @return list<array{root_post_id:string, root_post_created_at:string, subject:string, body_preview:string}>
+     * @return list<array{root_post_id:string, root_post_created_at:string, subject:string, body_preview:string, score_total:int}>
      */
     public static function load(PDO $pdo, array $tags, int $limit = self::LIMIT): array
     {
@@ -45,10 +46,10 @@ final class ZenStrip
                         WHERE viewer_tags.record_family = 'thread-labels' AND viewer_tags.target_id = threads.root_post_id
                           AND viewer_tags.tag = :$param AND labelers.is_approved = 1 AND labelers.retired_at IS NULL)))";
         }
-        $statement = $pdo->prepare('SELECT threads.root_post_id, threads.root_post_created_at, threads.subject, threads.body_preview'
+        $statement = $pdo->prepare('SELECT threads.root_post_id, threads.root_post_created_at, threads.subject, threads.body_preview, threads.score_total'
             . ThreadKeysetPage::listedRootsSql()
             . ' AND ' . implode(' AND ', $conditions)
-            . ' ORDER BY threads.root_post_created_at DESC, threads.root_post_id DESC LIMIT ' . $limit);
+            . ' ORDER BY threads.score_total DESC, threads.root_post_created_at DESC, threads.root_post_id DESC LIMIT ' . $limit);
         $statement->execute($params);
 
         return array_map(static fn (array $row): array => [
@@ -56,6 +57,7 @@ final class ZenStrip
             'root_post_created_at' => (string) $row['root_post_created_at'],
             'subject' => (string) $row['subject'],
             'body_preview' => (string) $row['body_preview'],
+            'score_total' => (int) $row['score_total'],
         ], $statement->fetchAll(PDO::FETCH_ASSOC));
     }
 }

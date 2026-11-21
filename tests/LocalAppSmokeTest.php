@@ -2441,6 +2441,9 @@ PHP;
         assertStringContains('data-role="compose-identity-status" hidden', $composeThread);
         assertStringContains('data-action="submit-anonymous-compose"', $composeThread);
         assertStringContains('<details class="compose-action-menu" data-role="compose-action-menu">', $composeThread);
+        // Guests see who they post as and where to choose a name; the head script hides it for a named browser.
+        assertStringContains('<p class="meta compose-guest-note">Posting as guest · <a href="/account/key/#choose-name">Choose a name</a></p>', $composeThread);
+        assertStringContains("document.documentElement.setAttribute('data-viewer-named', '')", $composeThread);
         assertStringContains('Bookmarklets', $bookmarklets);
         assertStringContains('class="nav"', $bookmarklets);
         assertStringContains('class="nav-link is-active" href="/tools/bookmarklets/"', $bookmarklets);
@@ -2454,6 +2457,7 @@ PHP;
         assertStringNotContains('/assets/inline_reply_form.js', $composeReply);
         assertStringContains('data-role="compose-identity-status" hidden', $composeReply);
         assertStringContains('data-action="submit-anonymous-compose"', $composeReply);
+        assertStringContains('class="meta compose-guest-note"', $composeReply);
         assertStringContains('Storage and privacy', $account);
         assertStringContains('You’re posting as <span data-role="guest-name">guest</span>', $account);
         assertStringContains('data-action="clear-browser-identity"', $account);

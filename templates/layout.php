@@ -33,6 +33,16 @@
         }
       } catch (error) {}
       try {
+        // Named browser: a saved key with a name other than guest, or a chosen name still pending
+        // (same keys as Account's guest naming). Hides the composer's "Posting as guest" line.
+        var namedFingerprint = (localStorage.getItem('forum_pki_fingerprint') || '').trim().toLowerCase();
+        if (localStorage.getItem('forum_pki_public_key') && localStorage.getItem('forum_pki_private_key')
+          && ((localStorage.getItem('forum_pki_username') || 'guest').trim().toLowerCase() !== 'guest'
+            || localStorage.getItem('forum_pending_profile_name:openpgp:' + namedFingerprint))) {
+          document.documentElement.setAttribute('data-viewer-named', '');
+        }
+      } catch (error) {}
+      try {
         // Zoom table text size per kind (ZoomTable, table_zoom.js), restored before paint.
         var tableZoomKeys = <?= json_encode(\ForumRewrite\View\ZoomTable::KINDS, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
         Object.keys(tableZoomKeys).forEach(function (kind) {

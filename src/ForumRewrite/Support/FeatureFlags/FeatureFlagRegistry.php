@@ -37,6 +37,7 @@ final class FeatureFlagRegistry
     public const AGENT_PROMPT_ENABLED = 'FORUM_AGENT_PROMPT_ENABLED';
     public const ENGAGIFY_PASSWORD_NEWSLETTER = 'FORUM_ENGAGIFY_PASSWORD_NEWSLETTER';
     public const ZALGO_THEME_ENABLED = 'FORUM_ZALGO_THEME_ENABLED';
+    public const VAPORGEIST_THEME_ENABLED = 'FORUM_VAPORGEIST_THEME_ENABLED';
     public const MEDIA_EMBEDS_ENABLED = 'FORUM_MEDIA_EMBEDS_ENABLED';
     public const MEDIA_EMBEDS_INLINE_PLAYER_ENABLED = 'FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED';
     public const TAG_LINKS_ENABLED = 'FORUM_TAG_LINKS_ENABLED';
@@ -79,7 +80,7 @@ final class FeatureFlagRegistry
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
             self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED,
             self::DEPLOY_HEADER_PROMPT_ENABLED, self::INSTANCE_IMPORT_PAGE_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER,
-            self::ZALGO_THEME_ENABLED, self::PRIVATE_MESSAGE_CACHE_ENABLED,
+            self::ZALGO_THEME_ENABLED, self::VAPORGEIST_THEME_ENABLED, self::PRIVATE_MESSAGE_CACHE_ENABLED,
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED, self::AGENT_CHECKIN_ENABLED,
             self::READING_MARGINS_ENABLED, self::DRAGGABLE_WINDOWS_ENABLED, self::OPEN_BESIDE_ENABLED, self::GUESTBOOK_ENABLED, self::ZEN_STRIP_ENABLED, self::POST_RECORDS_ENABLED,
             self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED, self::THREAD_PORT_ENABLED, self::THREAD_PORT_GUESTS_ENABLED,
@@ -409,7 +410,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::AGENT_PROMPT_ENABLED,
                 'Agent prompt',
-                'Offer /agent/ (Prompts in the main nav): the library of prompts members share as #prompt threads, with copy, search and categories, plus the site\'s own prompts for being introduced, posting as an agent, or running a copy. About, the first-visit intro and Tools link to it. Only sites whose profile has prompts show it.',
+                'Offer the community prompt library at /agent/ and the site\'s agent getting-started prompts at /agent/start/. Only sites whose profile has prompts show these pages.',
                 true,
                 self::AGENT_PROMPT_ENABLED,
                 siteMutable: true,
@@ -499,7 +500,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::ZEN_STRIP_ENABLED,
                 'Zen strip',
-                "Open the board's first page with a row of Zen memes: threads an approved member tagged with every tag the site profile names (on zenmemes.com, #zen and #meme), newest first, with an All link to their tag page. Sites whose profile names no tags show no strip.",
+                "Open the home page with Zen memes: threads an approved member tagged with every tag the site profile names (on zenmemes.com, #zen and #meme). The top-liked one shows large, and a row of tiny thumbnails under it opens their tag page. Sites whose profile names no tags show none.",
                 true,
                 self::ZEN_STRIP_ENABLED,
                 siteMutable: true,
@@ -535,6 +536,16 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 group: 'EXPERIENCE',
                 releasedOn: '2026-11-16',
+            ),
+            new FeatureFlagDefinition(
+                self::VAPORGEIST_THEME_ENABLED,
+                'Vaporgeist theme',
+                'Offer the Vaporgeist theme: Vapor\'s pink, cyan and purple with a sinking sun and grid, corrupted as heavily as Zalgo. Off by default; while it is off, anyone who chose Vaporgeist sees the site default.',
+                false,
+                self::VAPORGEIST_THEME_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+                releasedOn: '2026-11-19',
             ),
             new FeatureFlagDefinition(
                 self::MEDIA_EMBEDS_ENABLED,

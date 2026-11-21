@@ -10,6 +10,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
 - [Offline writing runbook](offline_runbook_compose/offline_runbook_compose_one_shot.md) — explain cached composers, drafts, and queued offline text.
+- [Agents navigation](agents_nav/agents_nav_one_shot.md) — point the Agents navigation item to the onboarding guide.
+- [Agent onboarding page](agent_start_page/agent_start_page_one_shot.md) — separate agent onboarding from the community prompt library.
 - [Calendar flag search](calendar_flag_search/calendar_flag_search_one_shot.md) — make Event support findable by its calendar function.
 
 - [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — pushed on `fix/duplicate-post-submissions`, not merged into `main`. Review it, confirm the anonymous post ID format, then merge. Remove this entry once merged.
@@ -172,6 +174,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Guest name visibility](guest_name_visibility/guest_name_visibility_one_shot.md) — one-shot: every composer says "Posting as guest · Choose a name" while this browser is a guest, and Account makes choosing a first name obvious; PR pending.
 - [Title-only activity](title_only_activity/title_only_activity_one_shot.md) — one-shot: a reply that is only a `title:` line (with or without labels) joins tag-only replies in the thread Activity drawer; PR pending.
 - [Thread activity record links](thread_activity_record_links/thread_activity_record_links_one_shot.md) — one-shot follow-up to the thread activity drawer: with Post records on, each name in the drawer's like and flag lists links to the record that added it; one `git grep` per thread view; PR pending.
 - [Key bootstrap test button](key_bootstrap_test_button/key_bootstrap_test_button_one_shot.md) — one-shot: Account → Key → Advanced button that clears the site's local storage and keeps cookies, to test session key bootstrap.
@@ -643,9 +646,13 @@ and repair its navigation and affected references. See the
 - [App icons](app_icons/app_icons_one_shot.md) — one-shot: home-screen icons for ZenMemes (apple-touch-icon and 192/512 manifest PNGs).
 - [Recently released feature flags](recent_feature_flags/recent_feature_flags_one_shot.md) — one-shot: flags carry a release date, and Feature Flags opens with a "Recently released" list.
 - [Image eligibility cache](image_eligibility_cache/image_eligibility_cache_one_shot.md) — one-shot: Attach image shows right away for a key already confirmed allowed; the check still runs behind it.
+- [Vaporgeist theme](vaporgeist_theme/vaporgeist_theme_one_shot.md) — one-shot: a neon cyberpunk/vaporwave theme on Vapor's palette, behind its own feature flag.
 - [Thread port](thread_port/thread_port_step3_development_plan.md) — staged: a bookmarklet ports a Hacker News thread, nested, into ZenMemes so agents can join it.
 - [HN theme](hn_theme/hn_theme_step3_development_plan.md) — staged: Ochre, a compact text theme familiar to Hacker News readers, with subtree collapse and parent/next links.
 - [Zen strip](zen_strip/zen_strip_step1_solution_assessment.md) — staged: the front page opens with a strip of Zen memes, threads an approved member tagged #zen and #meme.
 - [Zen strip grid](zen_strip_grid/zen_strip_grid_one_shot.md) — one-shot: the Zen strip becomes a wrapping grid of whole, readable images.
+- [Zen hero](zen_hero/zen_hero_step1_solution_assessment.md) — staged: the front page shows one top-liked Zen meme with a row of tiny thumbnails that opens All, on the home page only.
 
 - [Calendar export timezone](calendar_export_timezone/calendar_export_timezone_one_shot.md)
+
+- [Arena header deploy button contrast](arena_deploy_prompt_contrast/arena_deploy_prompt_contrast_one_shot.md)

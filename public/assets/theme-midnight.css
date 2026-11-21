@@ -2,6 +2,7 @@
 :root[data-theme="midnight"],
 .theme-menu__option[data-theme-option="midnight"] {
   color-scheme: dark;
+  --media-dim: 0.85;
   --page-bg: #063a3a;
   --body-background: linear-gradient(180deg, #063a3a 0%, #042b2b 100%);
   --ink: #c8c8c8;

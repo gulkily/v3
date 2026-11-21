@@ -30,7 +30,7 @@ async function open({ html, remembered, reply, width = 390, theme = null }) {
     if (path === '/tools/deploy/') {
       const body = JSON.parse(route.request().postData() || '{}');
       calls.push(body);
-      const [status, payload] = reply(body);
+      const [status, payload] = await reply(body);
       return route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(payload) });
     }
     if (path.startsWith('/assets/')) {
@@ -48,6 +48,39 @@ const behind = (n) => () => [200, { status: 'ok', action: 'check', result: { out
 const visible = (page) => page.evaluate(() => { const el = document.querySelector('[data-deploy-prompt]'); return !!el && !el.hidden && el.getBoundingClientRect().width > 0; });
 // Phone: every tab. Desktop: the nav may shift right once, but New post and You stay put.
 const tabs = (page, width) => page.evaluate((all) => [...document.querySelectorAll(all ? '.site-header-actions a, .site-header-actions summary' : '.new-post-button, .account-menu__trigger')].map(e => { const r = e.getBoundingClientRect(); return [r.x, r.y, r.width, r.height].map(Math.round).join(','); }).join(';'), width < 700);
+
+// Arena keeps the active fill under the pointer, including during a deploy.
+for (const width of [390, 1100]) {
+  let finishDeploy;
+  const pendingDeploy = new Promise(resolve => { finishDeploy = resolve; });
+  const { page } = await open({
+    html: htmlOn, remembered: true, width, theme: 'arena',
+    reply: body => body.action === 'check' ? behind(2)() : pendingDeploy,
+  });
+  const button = page.locator('[data-deploy-prompt-button]');
+  await button.waitFor({ state: 'visible', timeout: 6000 });
+  const colors = () => button.evaluate(element => {
+    const style = getComputedStyle(element);
+    return { background: style.backgroundColor, foreground: style.color };
+  });
+  const activeColors = await colors();
+  assert.equal(activeColors.background, 'rgb(255, 255, 255)', 'Arena active fill');
+  await button.hover();
+  const hoveredColors = await colors();
+  await button.click();
+  await page.waitForFunction(() => document.querySelector('[data-deploy-prompt-button]').disabled);
+  const pendingColors = await colors();
+  finishDeploy([503, { status: 'error', transient: true }]);
+  await page.waitForFunction(() => !document.querySelector('[data-deploy-prompt-button]').disabled);
+  await page.close();
+  try {
+    assert.deepEqual(hoveredColors, activeColors, `Arena ${width}: contrast on hover`);
+    assert.deepEqual(pendingColors, activeColors, `Arena ${width}: contrast during deploy`);
+  } catch (error) {
+    await browser.close();
+    throw error;
+  }
+}
 
 // Flag off: no markup, no script, no requests, even in a remembered browser.
 {

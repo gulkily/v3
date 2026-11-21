@@ -98,6 +98,7 @@ if (!($composerShowOptions ?? true)) {
 <?php $composerMenuItems = (string) ob_get_clean(); ?>
 <?= $partial('partials/compose_action_menu.php', ['composeActionMenuItems' => $composerMenuItems]) ?>
   </div>
+  <p class="meta compose-guest-note">Posting as guest · <a href="/account/key/#choose-name">Choose a name</a></p>
 <?php if ($composerFull): ?>
   <input type="text" name="subject" class="compose-title" data-compose-field-label="Subject" aria-label="Title" placeholder="Title — or we’ll use your first line" value="<?= $e($subject) ?>">
 <?= $composerNormalizationStatus('subject') ?>
