@@ -1,5 +1,7 @@
 :root {
   color-scheme: light;
+  /* Brightness for pictures the site shows on the page: 1 on a light page; dark schemes set it lower. */
+  --media-dim: 1;
   --page-bg: #ffffff;
   --body-background: var(--page-bg);
   --ink: #0b3ea8;
@@ -28,6 +30,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     color-scheme: dark;
+    --media-dim: 0.85;
     --body-background: var(--page-bg);
     --page-bg: #0b1220;
     --ink: #d9e7ff;
@@ -1599,6 +1602,11 @@ pre {
   width: 100%;
   height: auto;
   background: var(--line);
+}
+
+/* Light-backed pictures glare on a dark page, so dark schemes dim them. */
+.zen-strip img {
+  filter: brightness(var(--media-dim, 1));
 }
 
 .zen-strip__card--text {

@@ -73,3 +73,26 @@ Branch `zen-hero`, based on `origin/main` `09a15f6`. Planning commits: Steps 1�
 - Estimate details (extended mode only): original scope as Step 3 Stage 3; uncertainty low; no revisions.
 
 *— Claude · 2026-11-21 UTC · Model: claude-fable-5-2*
+
+## Stage 4 - Dimmed images in dark themes
+
+**Original estimate: 0.10**
+
+**Retrospective stage-work assessment: 0.10**
+
+- Changes:
+  - `site.css`: a new theme variable `--media-dim`, 1 by default. The module's images use it as their brightness.
+  - Every place that declares a dark colour scheme sets `--media-dim: 0.85`: the system-dark block in `site.css`, and `theme-dark`, `theme-gloss` (Gloss Dark), `theme-midnight`, `theme-arena`, `theme-console`, `theme-forge`, `theme-thermal`, `theme-vapor`, `theme-zalgo`, `theme-chouse` and `theme-mitrapclub`.
+- Verification:
+  - Listed before editing: `grep "color-scheme: dark" public/assets/*.css` gave 14 places in 13 files. `forte.css` (the standalone paned reader, which never shows the module) was left unchanged.
+  - Local copy at 380x667 and 1280x900 in Gloss, Gloss Dark, Bubblegum, Ochre, Word97, Dark and Midnight: no sideways overflow in any; the row is one 48px line of five thumbnails in all. Computed brightness: 1 in Gloss, Bubblegum, Ochre and Word97; 0.85 in Gloss Dark, Dark and Midnight. Gloss Dark and Bubblegum screenshots viewed.
+  - First thread at 380px: 809px down in Gloss and Gloss Dark, 785 in Dark, 750 in Ochre, 929 in Bubblegum (all within 1.5 screens of 667px); 1068 in Word97 and 1076 in Midnight, about 1.6 screens, because those themes' headers are taller.
+  - `./v3 test --smoke BoardListTest ZenStripTest ThemeRegistryTest Word97ThemeCoverageTest`: 486 run, 486 passed. The full suite was not run.
+  - Not rerun: JavaScript off. The module is plain HTML and CSS, as before. `tests/theme_contrast_audit.py` was not run; it checks text colours, and the module's text styles didn't change.
+- Notes:
+  - No theme needed its own layout fix.
+  - A new dark theme must set `--media-dim` itself. CSS can't read the colour scheme into a number, so there is no single place to set it.
+  - The variable is general, but only the module uses it in this cycle. Dimming other images is out of scope.
+- Estimate details (extended mode only): original scope as Step 3 Stage 4; uncertainty was medium on the number of dark themes (twelve files, more than the three named); no revisions.
+
+*— Claude · 2026-11-21 UTC · Model: claude-fable-5-2*
