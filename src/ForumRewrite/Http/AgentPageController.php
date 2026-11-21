@@ -29,7 +29,7 @@ final class AgentPageController
                 'agentPrompts' => ProfilePresentationContent::agentPrompts(SiteProfileRegistry::active(), TemplateRenderer::requestOrigin()),
             ],
             'Use this site with your agent',
-            'agent-start',
+            'agent',
             [],
         );
     }
@@ -68,7 +68,7 @@ final class AgentPageController
                 'promptShareHref' => '/compose/thread?board_tags=' . PromptLibrary::TAG,
             ],
             'Prompts',
-            'agent',
+            'agent-library',
             // Like on a prompt card is the thread page's Like, so the same scripts.
             $shown === [] ? [] : [
                 '/assets/openpgp_loader.js',

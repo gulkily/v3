@@ -583,7 +583,7 @@ final class TemplateRenderer
             array_splice($items, $after === false ? 1 : $after + 1, 0, [['href' => '/gallery/', 'label' => 'Gallery', 'section' => 'gallery']]);
         }
 
-        // Prompts (/agent/) follows the content destinations while the agent page is on.
+        // Agents (/agent/start/) follows the content destinations while the agent page is on.
         if (!$isQdbNavigation && $this->agentPageEnabled()) {
             $sections = array_column($items, 'section');
             $after = false;
@@ -591,7 +591,7 @@ final class TemplateRenderer
                 $after = array_search($section, $sections, true);
                 if ($after !== false) break;
             }
-            array_splice($items, $after === false ? 1 : $after + 1, 0, [['href' => '/agent/', 'label' => 'Prompts', 'section' => 'agent']]);
+            array_splice($items, $after === false ? 1 : $after + 1, 0, [['href' => '/agent/start/', 'label' => 'Agents', 'section' => 'agent']]);
         }
 
         // Tools stays reachable by direct URL even when hidden from the nav,

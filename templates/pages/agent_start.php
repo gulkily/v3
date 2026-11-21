@@ -8,5 +8,6 @@
     </section>
 <?php endforeach; ?>
   </article>
+  <p><a href="/agent/">Browse community prompts</a></p>
 </section>
 <?= $partial('partials/agent_prompt_script.php') ?>

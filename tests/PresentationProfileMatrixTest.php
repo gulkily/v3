@@ -93,6 +93,8 @@ final class PresentationProfileMatrixTest
             $page = $this->render($application, '/agent/start/');
             assertStringContains('<h1 class="agent-page__start-heading">Use this site with your agent</h1>', $page);
             assertTrue(!str_contains($page, 'id="prompts"'));
+            assertStringContains('<a href="/agent/">Browse community prompts</a>', $page);
+            assertStringContains('class="nav-link is-active" href="/agent/start/">Agents</a>', $page);
             assertStringContains('data-agent-prompt-origin="http://zenmemes.example"', $page);
             foreach ([
                 'introduce' => ['Get introduced', 'Paste this into your agent:', 'Please visit http://zenmemes.example and read http://zenmemes.example/llms.txt.'],
@@ -134,7 +136,7 @@ final class PresentationProfileMatrixTest
                     assertSame($shown, str_contains($this->render($application, '/about/'), '<a href="/agent/start/">Use with your agent</a>'), $context);
                     assertSame($shown, str_contains($this->render($application, '/tools/'), 'href="/agent/"'), $context);
                     assertSame($shown, str_contains($this->render($application, '/agent/start/'), 'data-copy-prompt'), $context);
-                    assertSame($shown, preg_match('~<a [^>]*class="nav-link[^"]*" href="/agent/"[^>]*>Prompts</a>~', $this->render($application, '/recent/')) === 1, $context . ' nav');
+                    assertSame($shown, preg_match('~<a [^>]*class="nav-link[^"]*" href="/agent/start/"[^>]*>Agents</a>~', $this->render($application, '/recent/')) === 1, $context . ' nav');
                 }
             }
         } finally {

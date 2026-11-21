@@ -126,12 +126,12 @@ final class AppNavigationPlacementTest
                 ->renderLayout('Board', '', 'board', viewerProfile: self::VIEWERS['approved']);
             preg_match('/<nav class="nav">.*?<\/nav>/s', $html, $bar);
             preg_match('/<details class="account-menu".*?<\/details>/s', $html, $menu);
-            foreach (['/', '/recent/', '/agent/', '/users/', '/messages', '/search', '/about/', '/tools/'] as $href) {
+            foreach (['/', '/recent/', '/agent/start/', '/users/', '/messages', '/search', '/about/', '/tools/'] as $href) {
                 assertStringContains('href="' . $href . '"', $bar[0]);
             }
             // Prompts follows the content destinations, before Users.
-            assertSame(true, strpos($bar[0], 'href="/recent/"') < strpos($bar[0], 'href="/agent/"'));
-            assertSame(true, strpos($bar[0], 'href="/agent/"') < strpos($bar[0], 'href="/users/"'));
+            assertSame(true, strpos($bar[0], 'href="/recent/"') < strpos($bar[0], 'href="/agent/start/"'));
+            assertSame(true, strpos($bar[0], 'href="/agent/start/"') < strpos($bar[0], 'href="/users/"'));
             // Bar order follows the Step 2 layout: Users before Messages before Search.
             assertSame(true, strpos($bar[0], 'href="/users/"') < strpos($bar[0], 'href="/messages"'));
             assertSame(true, strpos($bar[0], 'href="/messages"') < strpos($bar[0], 'href="/search"'));
