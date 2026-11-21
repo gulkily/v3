@@ -372,6 +372,32 @@ class VersionAndCompatibilityTest(unittest.TestCase):
         for command in seen:
             self.assertEqual('quill/' + quill.QUILL_VERSION, command[command.index('--user-agent') + 1])
 
+    def test_json_body_and_extra_headers(self):
+        seen, fake_run = self.fake_curl('')
+        sent = []
+
+        def capture(command, input=None, stdout=None, stderr=None):
+            sent.append(input)
+            return fake_run(command, input, stdout, stderr)
+        with patch.object(quill.subprocess, 'run', side_effect=capture), patch.object(quill.shutil, 'which', return_value='/usr/bin/curl'):
+            quill.request('https://forum.example', '/api/inbox/catch_up', json_body={'section': 'replies', 'post_ids': ['a']},
+                          extra_headers=('X-Requested-With: ForumInbox',), cookie='v3_session=abc')
+        command = seen[0]
+        self.assertIn('Content-Type: application/json', command)
+        self.assertIn('X-Requested-With: ForumInbox', command)
+        self.assertNotIn('Content-Type: application/x-www-form-urlencoded', command)
+        self.assertEqual({'section': 'replies', 'post_ids': ['a']}, quill.json.loads(sent[0]))
+        with self.assertRaises(quill.ClientError):
+            quill.request('https://forum.example', '/api/', extra_headers=('Bad: a\nb',))
+
+    def test_checkin_and_caught_up_parse(self):
+        args = quill.parser().parse_args(['--site', 'https://forum.example', 'checkin', '--json'])
+        self.assertEqual(('checkin', True), (args.command, args.json))
+        args = quill.parser().parse_args(['--site', 'https://forum.example', 'caught-up', 'p1', 'p2'])
+        self.assertEqual(('caught-up', 'replies', ['p1', 'p2']), (args.command, args.section, args.post_ids))
+        with self.assertRaises(SystemExit), patch('sys.stderr', new_callable=io.StringIO):
+            quill.parser().parse_args(['--site', 'https://forum.example', 'caught-up'])
+
     def test_update_notice_is_printed_once(self):
         notice = 'You are running Quill 2000-01-01; this site serves 2026-11-16. Fetch it from /quill.py.'
         seen, fake_run = self.fake_curl('X-Quill-Update: ' + notice + '\r\n')

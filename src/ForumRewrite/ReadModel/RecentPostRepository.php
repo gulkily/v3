@@ -10,7 +10,7 @@ final class RecentPostRepository
 {
     private const SELECT = "SELECT posts.post_id, posts.thread_id, posts.created_at,
             substr(posts.subject,1,256) AS subject, substr(posts.body,1,1024) AS body, posts.body_format,
-            posts.author_label, posts.author_profile_slug, posts.attribution_counted,
+            posts.author_label, posts.ported_from, posts.ported_created_at, posts.author_profile_slug, posts.attribution_counted,
             profiles.username_token AS author_username_token, COALESCE(profiles.is_approved,0) AS author_is_approved,
             root.post_id AS context_id, substr(root.subject,1,256) AS context_subject, substr(root.body,1,1024) AS context_body, root.body_format AS context_body_format
             FROM posts LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
@@ -19,10 +19,12 @@ final class RecentPostRepository
                 AND NOT EXISTS (SELECT 1 FROM json_each(root.board_tags_json) WHERE value = 'identity')
             ";
 
+    /** A ported thread shows on Recent by its root only; its comments would bury everything else. */
     private const ELIGIBLE = "posts.is_hidden = 0 AND posts.retracted_at IS NULL
         AND COALESCE(posts.post_score_total, 0) >= 0
         AND NOT EXISTS (SELECT 1 FROM posts flagged_root WHERE flagged_root.post_id = posts.thread_id AND COALESCE(flagged_root.post_score_total, 0) < 0)
         AND COALESCE(json_extract(posts.agent_response_json, '$.type'), '') <> 'scripture_expansion'
+        AND (posts.ported_from IS NULL OR posts.post_id = posts.thread_id)
         AND NOT EXISTS (SELECT 1 FROM json_each(posts.board_tags_json) WHERE value = 'identity')";
 
     /**

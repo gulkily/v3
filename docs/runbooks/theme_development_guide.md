@@ -81,6 +81,20 @@ card's last child so it shifts no first-child spacing. A post collapsed in
 this browser is restored before paint by `layout.php`, which repeats the
 collapsed rules from `theme-bubblegum.css`; change both together.
 
+## Ochre
+
+Ochre (`docs/concepts/ochre_theme.md`) is a compact, text-only theme with a
+script. Its stylesheet restyles the existing markup: an orange bar, plain-word
+navigation, numbered lists by CSS counter, and posts as plain text blocks.
+`theme-ochre.js` adds fold toggles and parent/next links from each card's
+`data-reply-depth`, and removes them on stop. It is permitted on the
+`zenmemes` profile only. A thread shows it after an operator replies
+`theme: ochre`. As with any new theme, deploy with
+`php scripts/build_static_artifacts.php`: until then, baked pages carry the
+old allow-list and fall back to the default theme. Tests:
+`tests/browser/theme_ochre_script.cjs` (in `ThemeToggleScriptTest`) and
+`tests/browser/theme_ochre.mjs` (by hand).
+
 ## Shared stylesheets and the cycle button
 
 Two themes with one look should share one stylesheet rather than copy it. Set

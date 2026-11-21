@@ -4,6 +4,7 @@
   --console-glow: 155, 255, 138;
   --console-hover: #132917;
   color-scheme: dark;
+  --media-dim: 0.85;
   --page-bg: #08110a;
   --body-background:
     linear-gradient(180deg, rgba(20, 48, 24, 0.18) 0%, rgba(8, 17, 10, 0.92) 100%),

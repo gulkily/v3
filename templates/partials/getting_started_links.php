@@ -11,5 +11,5 @@
 </div>
 <?php else: ?>
 <p><a href="/compose/thread">Start a thread</a>, reply to a post, or <a href="/search/">search</a>.</p>
-<p><a href="/agent/">Work with an agent</a> · <a href="/tools/">Tools</a> · <a href="/about/">About the project</a></p>
+<p><?php if ($agentPageEnabled): ?><a href="/agent/start/">Work with an agent</a> · <?php endif; ?><a href="/tools/">Tools</a> · <a href="/about/">About the project</a></p>
 <?php endif; ?>

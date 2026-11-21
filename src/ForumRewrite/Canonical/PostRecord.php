@@ -45,6 +45,8 @@ final class PostRecord
         public readonly ?string $theme = null,
         /** The poster's own words for when the event happens ("next Friday at 7"); requires an event date. */
         public readonly ?string $eventWhen = null,
+        /** Set when the post was copied from another site (Ported-* headers). */
+        public readonly ?PortedSource $ported = null,
     ) {
     }
 

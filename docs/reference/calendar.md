@@ -80,8 +80,10 @@ feed. A feed lists what the matching calendar page lists, from 90 days ago to tw
 years ahead. Declined events are left out, confirmed events are marked confirmed and
 open ones tentative. Each event keeps its thread ID as its identity, so an edit or a
 confirmation updates the subscriber's copy. Its name is the thread's title, as the
-grid shows it. An event with a time starts at that time and lasts an hour; times
-carry no zone, so a calendar app shows them as written.
+grid shows it. Timed events use the site profile's optional `calendarTimeZone`
+for exports, including the single-event file and Google Calendar link. ZenMemes
+uses `America/New_York`, so its exports account for daylight saving time. Profiles
+without a zone keep floating clock times. All-day events use calendar dates.
 
 Each calendar page has a Subscribe panel, closed by default. It offers Add to Google
 Calendar, a `webcal:` link for other apps, the `.ics` file, and the feed address to

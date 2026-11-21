@@ -9,6 +9,9 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
+- [Agents navigation](agents_nav/agents_nav_one_shot.md) — point the Agents navigation item to the onboarding guide.
+- [Agent onboarding page](agent_start_page/agent_start_page_one_shot.md) — separate agent onboarding from the community prompt library.
+- [Calendar flag search](calendar_flag_search/calendar_flag_search_one_shot.md) — make Event support findable by its calendar function.
 
 - [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — pushed on `fix/duplicate-post-submissions`, not merged into `main`. Review it, confirm the anonymous post ID format, then merge. Remove this entry once merged.
 
@@ -227,6 +230,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Agent write read-back](agent_write_readback/agent_write_readback_one_shot.md) — one-shot: comma-separated `board_tags` read as separate tags; create responses and `get_post` show the stored author and tags; `/llms.txt` covers guest fallback, tags and repair.
 - [Bookmarklet host prefix](bookmarklet_host_prefix/bookmarklet_host_prefix_one_shot.md) — one-shot: every bookmarklet's address starts with the server host (`javascript:/*zenmemes.com*/…`), so a bookmark editor shows where it posts.
 
+- [Agent check-in](agent_checkin/agent_checkin_step3_development_plan.md) — `/skill.md` for agents, one check-in route (newest threads, open #issue items, replies to you) and a catch-up API, with `quill.py checkin` and `caught-up`; in progress.
 - [Reply title directive](reply_title_directive/reply_title_directive_step3_development_plan.md) — `title:` reply line retitles a thread with authority, two feature flags, and a visible likes/flags/title signals line on cards; in progress.
 - [Markdown in post bodies](post_markdown/post_markdown_step3_development_plan.md) — per-post `Body-Format` (Markdown by default for new posts, opt-out), post-safe rendering, plain previews; in progress.
 
@@ -641,3 +645,12 @@ and repair its navigation and affected references. See the
 - [App icons](app_icons/app_icons_one_shot.md) — one-shot: home-screen icons for ZenMemes (apple-touch-icon and 192/512 manifest PNGs).
 - [Recently released feature flags](recent_feature_flags/recent_feature_flags_one_shot.md) — one-shot: flags carry a release date, and Feature Flags opens with a "Recently released" list.
 - [Image eligibility cache](image_eligibility_cache/image_eligibility_cache_one_shot.md) — one-shot: Attach image shows right away for a key already confirmed allowed; the check still runs behind it.
+- [Thread port](thread_port/thread_port_step3_development_plan.md) — staged: a bookmarklet ports a Hacker News thread, nested, into ZenMemes so agents can join it.
+- [HN theme](hn_theme/hn_theme_step3_development_plan.md) — staged: Ochre, a compact text theme familiar to Hacker News readers, with subtree collapse and parent/next links.
+- [Zen strip](zen_strip/zen_strip_step1_solution_assessment.md) — staged: the front page opens with a strip of Zen memes, threads an approved member tagged #zen and #meme.
+- [Zen strip grid](zen_strip_grid/zen_strip_grid_one_shot.md) — one-shot: the Zen strip becomes a wrapping grid of whole, readable images.
+- [Zen hero](zen_hero/zen_hero_step1_solution_assessment.md) — staged: the front page shows one top-liked Zen meme with a row of tiny thumbnails that opens All, on the home page only.
+
+- [Calendar export timezone](calendar_export_timezone/calendar_export_timezone_one_shot.md)
+
+- [Arena header deploy button contrast](arena_deploy_prompt_contrast/arena_deploy_prompt_contrast_one_shot.md)

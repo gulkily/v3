@@ -970,3 +970,8 @@ Verification: Chromium; `private_message_redesign.mjs` in all 18 themes with 390
 - 2026-11-17, [new instance home quickfix](./new_instance_home/new_instance_home_quickfix.md). Changed: the empty Liked text ("Threads you like will show up here." → "Threads people like show up here.", since Liked is anyone's likes). Added: a "Getting started" link on the board only while it falls back to All, and on "No threads yet"; the `/start/` page. `/local/`'s "search your local content" became "search" (shared partial).
 - 2026-11-17, [issue tagset quickfix](./issue_tagset/issue_tagset_quickfix.md). Changed: the tag-unlocks flag description and the tour line now name #issue instead of #meta. No text added.
 - 2026-11-18, [guest name visibility](./guest_name_visibility/guest_name_visibility_one_shot.md). Added: "Posting as guest · Choose a name" under Post in every composer, for guest browsers only (hidden before paint once this browser's key has a name). Changed: Account's Name row action reads "Choose a name" instead of "Change" for a key still named guest. The removed "Post as {name} · Change" row (2026-10-28, "takes up way too much space") was a full-width row with an inline editor for everyone; this is one meta line, guests only.
+
+## Event support search — 2026-11-20
+
+- Clarified the flag's existing description so the calendar query finds Event support as well as Calendar feed. No new UI or renamed switch.
+- Verified exact query and clearing using the rendered canonical fixture and actual filter script. Added the browser regression; Chromium launch and visual checks remain pending in this executor. [Verification record](calendar_flag_search/calendar_flag_search_one_shot.md#delivery-and-verification).

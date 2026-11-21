@@ -13,13 +13,14 @@ use ForumRewrite\ReadModel\ThreadRepository;
  * Fourth Phase 2 slice of the Application.php decomposition (see
  * docs/plans/codebase_cleanup_audit_plan_v1.md and
  * docs/plans/codebase_cleanup_audit_findings_v1.md): /tags/ and
- * /tags/{tag}. The original slice 1 candidate, deferred until
+ * /tags/{tag} (or several tags joined by `+`). The original slice 1 candidate, deferred until
  * ThreadRepository/TagGrouping/BoardViewOptions existed - needs no bound
  * closures at all, unlike every other slice so far.
  */
 final class TagsPageController
 {
     private const TAG_GROUP_PREVIEW_LIMIT = 5;
+    private const MAX_TAGS = 4;
 
     public function __construct(
         private readonly RouteServices $routeServices,
@@ -50,20 +51,21 @@ final class TagsPageController
     public function tagWithLocation(string $tag, mixed $with): ?string
     {
         $id = PageNavigation::withId($with);
-        if ($id === null) return null;
-        $tag = strtolower($tag);
-        $page = TagPage::pageOf($this->routeServices->pdo(), $tag, $id);
-        return $page === null ? null : PageNavigation::withLocation('/tags/' . $tag, [], $page, $id);
+        $tags = self::tags($tag);
+        if ($id === null || $tags === null) return null;
+        $page = TagPage::pageOf($this->routeServices->pdo(), $tags, $id);
+        return $page === null ? null : PageNavigation::withLocation('/tags/' . implode('+', $tags), [], $page, $id);
     }
 
     public function tag(string $tag, mixed $page = null): ?string
     {
-        $tag = strtolower($tag);
+        $tags = self::tags($tag);
+        if ($tags === null) return null;
         $number = PageNavigation::pageNumber($page);
-        $page = TagPage::page($this->routeServices->pdo(), $tag, $number);
+        $page = TagPage::page($this->routeServices->pdo(), $tags, $number);
         if (!$page['exists'] && $number === 1) return null;
-        $group = ['tag' => $tag, 'threads' => $page['items']];
-        $pagination = PageNavigation::numbered('/tags/' . $tag, [], $number, $page['has_next'], $page['items'] === []);
+        $group = ['tag' => implode(' + #', $tags), 'threads' => $page['items']];
+        $pagination = PageNavigation::numbered('/tags/' . implode('+', $tags), [], $number, $page['has_next'], $page['items'] === []);
         return $this->routeServices->renderPageTemplate(
             'tag.php',
             [
@@ -74,5 +76,18 @@ final class TagsPageController
             '#' . $group['tag'] . ' - Tag',
             'board',
         );
+    }
+
+    /**
+     * The tags a /tags/ path names: one tag, or up to four joined by `+`, all
+     * required. Null when a tag repeats or there are too many.
+     *
+     * @return list<string>|null
+     */
+    private static function tags(string $path): ?array
+    {
+        $tags = explode('+', strtolower($path));
+        if (count($tags) > self::MAX_TAGS || count(array_unique($tags)) !== count($tags)) return null;
+        return $tags;
     }
 }

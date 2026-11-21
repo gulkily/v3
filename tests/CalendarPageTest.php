@@ -404,6 +404,24 @@ final class CalendarPageTest
         calendarAssertSame(404, http_response_code());
     }
 
+    public function testTimedEventExportsUseTheZenmemesTimeZone(): void
+    {
+        [, $service, $application] = $this->environment();
+        $zone = new DateTimeZone('America/New_York');
+        $local = new DateTimeImmutable('+3 days', $zone);
+        $date = $local->format('Y-m-d');
+        $utc = new DateTimeZone('UTC');
+        $start = $local->setTime(19, 0)->setTimezone($utc)->format('Ymd\THis\Z');
+        $end = $local->setTime(20, 0)->setTimezone($utc)->format('Ymd\THis\Z');
+        $thread = $this->event($service, 'couches', 'Concert', 'Concert', $date, time: '19:00');
+
+        foreach (['/calendar.ics', '/calendar/couches.ics', '/threads/' . $thread . '.ics'] as $path) {
+            $ics = $this->render($application, $path);
+            calendarAssertContains("DTSTART:$start\r\nDTEND:$end\r\n", $ics);
+        }
+        calendarAssertContains("dates={$start}%2F{$end}", $this->render($application, '/threads/' . $thread));
+    }
+
     public function testEventLinksAndFileAreGoneWhileTheFeedIsOff(): void
     {
         [, $service, $application] = $this->environment(true, "FORUM_CALENDAR_FEED_ENABLED: false\n");
@@ -439,11 +457,11 @@ final class CalendarPageTest
     }
 
     /** Events are authored by the approved fixture operator unless $author says otherwise ('' for anonymous). */
-    private function event(LocalWriteService $service, string $tags, string $subject, string $body, string $first, ?string $last = null, string $author = self::OPERATOR): string
+    private function event(LocalWriteService $service, string $tags, string $subject, string $body, string $first, ?string $last = null, string $author = self::OPERATOR, string $time = ''): string
     {
         return (string) $service->createThread([
             'board_tags' => $tags, 'subject' => $subject, 'body' => $body,
-            'event_date' => $first, 'event_end_date' => $last ?? '', 'author_identity_id' => $author,
+            'event_date' => $first, 'event_end_date' => $last ?? '', 'event_time' => $time, 'author_identity_id' => $author,
         ])['thread_id'];
     }
 

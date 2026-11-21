@@ -6,6 +6,7 @@ namespace ForumRewrite\Http;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\Calendar\CalendarDays;
 use ForumRewrite\Calendar\CalendarIcs;
 use ForumRewrite\Calendar\CalendarQuery;
@@ -98,7 +99,7 @@ final class CalendarPageController
 
         $name = SiteConfig::displayName() . ($tag === null ? '' : ' #' . $tag);
 
-        return CalendarIcs::document($events, $states, self::origin($siteUrl), $name);
+        return CalendarIcs::document($events, $states, self::origin($siteUrl), $name, timeZone: SiteProfileRegistry::calendarTimeZone());
     }
 
     /**
@@ -119,7 +120,7 @@ final class CalendarPageController
         }
         $states = EventStatus::forThreads($pdo, $this->repositoryRoot, [$threadId]);
 
-        return CalendarIcs::document([$event], $states, self::origin($siteUrl), CalendarIcs::title($event));
+        return CalendarIcs::document([$event], $states, self::origin($siteUrl), CalendarIcs::title($event), timeZone: SiteProfileRegistry::calendarTimeZone());
     }
 
     private static function origin(?string $siteUrl): string
