@@ -53,3 +53,23 @@ Branch `zen-hero`, based on `origin/main` `09a15f6`. Planning commits: Steps 1�
 - Estimate details (extended mode only): original scope as Step 3 Stage 2 after the home-page-only revision; uncertainty low; no revisions.
 
 *— Claude · 2026-11-21 UTC · Model: claude-fable-5-2*
+
+## Stage 3 - One featured meme and a row that opens All
+
+**Original estimate: 0.15**
+
+**Retrospective stage-work assessment: 0.15**
+
+- Changes:
+  - `templates/partials/zen_strip.php`: the first thread is the featured card (whole image with the tile and original in `srcset`, or its title in large type), linking to its thread. The others sit inside one link to the All page, named "All Zen memes": 48px square thumbnails from the `src`/`srcset` `ListThumbnails` already gives list rows, with empty alt text, and a tiny text tile for a text meme. The All paragraph is gone. One Zen meme means no row.
+  - `site.css`: the grid rules are replaced. The module is at most 24rem wide and centred; the row is one 3rem line that cuts off what doesn't fit.
+- Verification:
+  - `./v3 test BoardListTest ZenStripTest`: 20 run, 20 passed. `testZenMemesOpenTheHomePageOnly` now also covers: no row and no All link with one meme; a better-liked second meme takes the top spot; the row is one link to /tags/zen+meme holding the other meme; the module has exactly two links. The full suite was not run.
+  - Local copy, Gloss, at 380x667 and 1280x900: "Every commit is a stone" featured, five thumbnails in one row, no sideways overflow. At 380px the module is 402px tall and the first thread row starts 809px down, about 1.2 screens, against roughly three before.
+  - The row's link opens /tags/zen+meme (checked in the markup).
+- Notes:
+  - On a local dev server, `/` with no query shows the Local development page, and `/threads/` no longer shows the module. To see it locally, open `/?home=1`: any query other than view or sort keeps the home page.
+  - The **High risk** from Step 3 stands: the row opens a tag page without pictures until the gallery is built.
+- Estimate details (extended mode only): original scope as Step 3 Stage 3; uncertainty low; no revisions.
+
+*— Claude · 2026-11-21 UTC · Model: claude-fable-5-2*

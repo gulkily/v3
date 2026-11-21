@@ -380,7 +380,23 @@ final class BoardListTest
         assertSame(1, substr_count($first, 'class="zen-strip"'));
         assertTrue(strpos($first, 'class="zen-strip"') < strpos($first, 'data-visitor-intro'), 'The strip should come before the visitor intro.');
         assertStringContains('<a class="zen-strip__card zen-strip__card--text" href="/threads/board-list-030"><span>Thread 30</span></a>', $first);
-        assertStringContains('<p class="zen-strip__more"><a href="/tags/zen+meme">All</a></p>', $first);
+        // One Zen meme: no thumbnail row, and never a separate All link.
+        assertStringNotContains('zen-strip__row', $first);
+        assertStringNotContains('zen-strip__more', $first);
+
+        // A second, better-liked meme takes the top spot; the first drops into the row, which is one link to All.
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $pdo->exec("UPDATE posts SET author_identity_id = 'id-zen', attribution_counted = 1 WHERE post_id = 'board-list-010'");
+        $pdo->exec("UPDATE threads SET board_tags_json = '[\"zen\",\"meme\"]', score_total = 3 WHERE root_post_id = 'board-list-010'");
+        $pdo = null;
+        $first = $this->markup($this->render($application, '/'));
+        $strip = substr($first, strpos($first, '<section class="zen-strip"'), 1200);
+        $strip = substr($strip, 0, strpos($strip, '</section>'));
+        assertStringContains('<a class="zen-strip__card zen-strip__card--text" href="/threads/board-list-010"><span>Thread 10</span></a>', $strip);
+        assertStringContains('<a class="zen-strip__row" href="/tags/zen+meme" aria-label="All Zen memes">', $strip);
+        assertStringContains('<span class="zen-strip__thumb zen-strip__thumb--text" aria-hidden="true">Thread 30</span>', $strip);
+        assertSame(2, substr_count($strip, '<a '));
+        assertStringNotContains('zen-strip__more', $first);
         preg_match('/rel="next" href="([^"]+)">Show older threads</', $first, $next);
         // Not on the threads page, a chosen view or sort, or a later page.
         foreach (['/threads/', '/?view=all', '/?view=liked', '/?sort=top', '/threads/?view=all&sort=newest', html_entity_decode($next[1])] as $elsewhere) {
@@ -423,7 +439,7 @@ final class BoardListTest
             $tile = '/images/thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, 'tile');
             $full = '/images/' . \ForumRewrite\Images\ImageReference::filename($reference);
             $board = $this->markup($this->render($application, '/'));
-            assertStringContains('<a class="zen-strip__card zen-strip__card--image" href="/threads/zen-image"><img src="' . $tile . '" srcset="' . $tile . ' 480w, ' . $full . ' 900w" sizes="(min-width: 48rem) 22rem, 100vw" alt="A calm pond" width="900" height="600"', $board);
+            assertStringContains('<a class="zen-strip__card zen-strip__card--image" href="/threads/zen-image"><img src="' . $tile . '" srcset="' . $tile . ' 480w, ' . $full . ' 900w" sizes="(min-width: 48rem) 24rem, 100vw" alt="A calm pond" width="900" height="600"', $board);
         } finally {
             putenv($old === false ? $flag : $flag . '=' . $old);
             exec('rm -rf ' . escapeshellarg($imageRoot) . ' ' . escapeshellarg($imageRoot . '-thumbs') . ' ' . escapeshellarg($repositoryRoot . '-meme.png'));

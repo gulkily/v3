@@ -1568,19 +1568,10 @@ pre {
   display: none !important;
 }
 
-/* Zen strip: a grid of Zen memes, as tall as it needs; one column on a phone, two in the content column. */
-.zen-strip__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
-  gap: 0.75rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.zen-strip__item {
-  display: flex;
-  min-width: 0;
+/* Zen memes on the home page: one featured meme, then one row of tiny thumbnails that opens them all. */
+.zen-strip {
+  max-width: 24rem;
+  margin-inline: auto;
 }
 
 .zen-strip__card {
@@ -1596,7 +1587,9 @@ pre {
 }
 
 .zen-strip__card:hover,
-.zen-strip__card:focus-visible {
+.zen-strip__card:focus-visible,
+.zen-strip__row:hover .zen-strip__thumb,
+.zen-strip__row:focus-visible .zen-strip__thumb {
   border-color: var(--ink-soft);
 }
 
@@ -1620,9 +1613,33 @@ pre {
   overflow-wrap: anywhere;
 }
 
-.zen-strip__more {
-  margin: 0.4rem 0 0;
-  text-align: right;
+/* One line, one link: what doesn't fit is cut off, never scrolled or wrapped. */
+.zen-strip__row {
+  display: flex;
+  gap: 0.4rem;
+  height: 3rem;
+  margin-top: 0.4rem;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+}
+
+.zen-strip__thumb {
+  flex: none;
+  box-sizing: border-box;
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  object-fit: cover;
+}
+
+.zen-strip__thumb--text {
+  overflow: hidden;
+  padding: 0.2rem;
+  font-size: 0.5rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 
 .visitor-intro {
