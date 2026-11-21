@@ -45,7 +45,7 @@ final class FastmodMetaRead
         }
         if ($labels === []) return $read;
         $read->exec('CREATE TEMP TABLE fastmod_public_tags(post_id TEXT PRIMARY KEY, labels_json TEXT NOT NULL)');
-        $insert = $read->prepare('INSERT INTO temp.fastmod_public_tags VALUES(?,?)');
+        $insert = $read->prepare('INSERT INTO temp.fastmod_public_tags (post_id, labels_json) VALUES (?,?)');
         foreach ($labels as $id => $json) $insert->execute([$id, $json]);
         $fields = [];
         foreach ($columns as $column) {

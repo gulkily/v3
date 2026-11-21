@@ -8,7 +8,7 @@ Effort study: `railspike-effort` / `v3/named_column_inserts`; host ledger [named
 
 **Cycle estimate: 0.15**
 
-Status: plan written; next permitted action: implement.
+Status: implemented and pushed for review; next permitted action: maintainer merge.
 
 ## Original request
 
@@ -66,10 +66,36 @@ Concepts touched: none.
 
 `./v3 test --smoke SqlInsertColumnsTest PrivateMessageReadStateTest PrivateMessageHistorySyncTest LocalMetaSweepTest` plus any Fastmod meta-read test found. Full suite not run.
 
-Starting revision and branch: `09a15f6a`, `fix/named-column-inserts`. Planning commit: pending.
+Starting revision and branch: `09a15f6a`, `fix/named-column-inserts`. Planning commit: `625f2795`.
 
 ## Study history
 
 - 2026-11-21 UTC, intake and entry: **0.15**, after the audit (no pristine intake). Claude, single exposed rater. R1 not reverified this session.
+- 2026-11-21 UTC, closeout: projected **0.15** kept; retrospective **0.15**. Same rater.
+
+## Dated execution history
+
+- 2026-11-21: named the columns in the 14 runtime inserts listed in the audit. Each list was copied from the `CREATE TABLE` in the same file and checked against the values passed.
+- 2026-11-21: added `tests/SqlInsertColumnsTest.php`. Discovery: `tests/run.php` lists test files by name, so the new test did not run until it was added there. It is also in `tests/smoke.txt`.
+- 2026-11-21: added "SQL inserts name their columns" to `CONTRIBUTING.md`, with the rule that new columns outside the read model carry a default.
+
+## Outcome
+
+Every runtime insert in `src/` and `scripts/` names its columns, except the four read-model schema statements held in the guard's exception list. No table or stored data changed. The read-model fingerprint is unchanged (`56c52b25…` before and after), so the deploy queues no rebuild.
+
+Follow-ups, not done: name the columns in the four exceptions at the next `SCHEMA_VERSION` change; the 49 fixture inserts in `tests/`.
+
+## Verification
+
+- Passed: `./v3 test --smoke PrivateMessageReadStateTest PrivateMessageHistorySyncTest PrivateMessageStoreTest LocalMetaSweepTest FastmodMetaTest` (520 run, 0 failed).
+- Passed: `./v3 test PrivateMessageReadStateTest PrivateMessageHistorySyncTest PrivateMessageStoreTest LocalMetaSweepTest LocalMetaModelTest FastmodMetaTest SqlInsertColumnsTest ReadModelSchemaTest` (56 run), and `FastmodDerivedTagsTest FastmodScoreTransferTest`.
+- Passed: a probe file with `INSERT INTO foo VALUES (1)` made the guard fail and name the file; the probe was removed.
+- Not run: the full suite. Not verified: production, where the change needs no migration.
+
+## Final review
+
+Diff checked: five source files, one new test, its entries in `tests/run.php` and `tests/smoke.txt`, `CONTRIBUTING.md`, this record, the index, the ledger and the debug log. No dependency, no duplication, no concept entry touched.
+
+Commit, merge and publication: completion commit pending in this record; pushed to `fix/named-column-inserts`; not merged, not deployed.
 
 — Claude · 2026-11-21 UTC · Model: claude-fable-5-2
