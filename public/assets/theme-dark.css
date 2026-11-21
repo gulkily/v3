@@ -2,6 +2,7 @@
 :root[data-theme="dark"],
 .theme-menu__option[data-theme-option="dark"] {
   color-scheme: dark;
+  --media-dim: 0.85;
   --body-background: var(--page-bg);
   --page-bg: #0b1220;
   --ink: #d9e7ff;

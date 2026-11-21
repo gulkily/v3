@@ -2,6 +2,7 @@
 :root[data-theme="arena"],
 .theme-menu__option[data-theme-option="arena"] {
   color-scheme: dark;
+  --media-dim: 0.85;
   --page-bg: #000000;
   --body-background: #000000;
   --ink: #ffffff;
