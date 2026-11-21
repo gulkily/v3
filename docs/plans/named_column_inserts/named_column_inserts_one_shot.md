@@ -96,6 +96,6 @@ Follow-ups, not done: name the columns in the four exceptions at the next `SCHEM
 
 Diff checked: five source files, one new test, its entries in `tests/run.php` and `tests/smoke.txt`, `CONTRIBUTING.md`, this record, the index, the ledger and the debug log. No dependency, no duplication, no concept entry touched.
 
-Commit, merge and publication: completion commit pending in this record; pushed to `fix/named-column-inserts`; not merged, not deployed.
+Commit, merge and publication: completion commit `b394c3ff`; pushed to `fix/named-column-inserts`; not merged, not deployed.
 
 — Claude · 2026-11-21 UTC · Model: claude-fable-5-2
