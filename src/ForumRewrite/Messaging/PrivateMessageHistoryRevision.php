@@ -30,7 +30,7 @@ final class PrivateMessageHistoryRevision
     public static function ensureEpoch(PDO $pdo, string $prefix): void
     {
         $q=$pdo->query("SELECT token FROM {$prefix}_revision WHERE account='*'");
-        if($q->fetchColumn()===false)$pdo->exec("INSERT OR IGNORE INTO {$prefix}_revision VALUES ('*',lower(hex(randomblob(16))))");
+        if($q->fetchColumn()===false)$pdo->exec("INSERT OR IGNORE INTO {$prefix}_revision (account,token) VALUES ('*',lower(hex(randomblob(16))))");
     }
     public static function token(PDO $pdo, string $prefix, string $account): string
     {
