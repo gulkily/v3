@@ -6,7 +6,7 @@ Effort study: railspike-effort P2, [cycle ledger](../effort_ledger/arena_deploy_
 
 **Cycle estimate: 0.05**
 
-Status: planning.
+Status: implemented, with browser and PHP verification pending.
 
 Original request: [Arena deploy screenshot](https://zenmemes.com/threads/thread-20261121093059-ab28d30a), PF-20261121-B01. The screenshot shows dark Deploy now text on a dark fill while Deploying is visible.
 
@@ -23,3 +23,11 @@ Concepts touched: [Application update](../../concepts/application_update.md), ex
 Starting revision: fcd1732. Branch: fix/arena-deploy-prompt-contrast.
 
 2026-11-21: Intake estimate 0.05 by ChatGPT. The screenshot was inspected before implementation.
+
+2026-11-21: Planning commit recorded before implementation. The Arena hover rule overrode the active fill without overriding the active foreground. The scoped exclusion keeps the paired theme tokens. The existing browser test now covers hover, pending deployment and re-enabling the button after a busy response.
+
+Verification: JavaScript syntax check and git diff --check passed. The fixture-based browser tests, PHP smoke set and feedback checks could not start without PHP. A separate Chromium reproduction harness was blocked at browser startup by the environment's socket restrictions. Live operator flow and full suite were not run.
+
+Study closeout: Intake and final projected total 0.05, same rater and scope. Browser verification and production acceptance are pending.
+
+Completion commit: pending self-reference. Authored by ChatGPT on 2026-11-21.
