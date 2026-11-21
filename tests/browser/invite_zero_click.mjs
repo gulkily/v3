@@ -75,7 +75,7 @@ try {
       const prepared = await (await preparedResponse).json();
       const expiry = Date.parse(prepared.canonical_record.match(/^Expires-At: (.+)$/m)[1]);
       assert(expiry >= issuedAfter + lifetime - 1000 && expiry <= Date.now() + lifetime);
-      assert.equal(await inviter.page.getByText('Expires 30 days after creation.', {exact:true}).count(), 1);
+      assert.equal(await inviter.page.getByText('Scan to join · valid 30 days', {exact:true}).count(), 1);
       await inviter.page.waitForFunction(() => document.querySelector('[data-role=invitation-link]').value.includes('#invite='));
       assert.equal(await inviter.page.locator('[data-role=invitation-qr]').isVisible(), true);
       return inviter.page.locator('[data-role=invitation-link]').inputValue();

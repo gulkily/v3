@@ -173,6 +173,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Guest name visibility](guest_name_visibility/guest_name_visibility_one_shot.md) — one-shot: every composer says "Posting as guest · Choose a name" while this browser is a guest, and Account makes choosing a first name obvious; PR pending.
 - [Title-only activity](title_only_activity/title_only_activity_one_shot.md) — one-shot: a reply that is only a `title:` line (with or without labels) joins tag-only replies in the thread Activity drawer; PR pending.
 - [Thread activity record links](thread_activity_record_links/thread_activity_record_links_one_shot.md) — one-shot follow-up to the thread activity drawer: with Post records on, each name in the drawer's like and flag lists links to the record that added it; one `git grep` per thread view; PR pending.
 - [Key bootstrap test button](key_bootstrap_test_button/key_bootstrap_test_button_one_shot.md) — one-shot: Account → Key → Advanced button that clears the site's local storage and keeps cookies, to test session key bootstrap.
