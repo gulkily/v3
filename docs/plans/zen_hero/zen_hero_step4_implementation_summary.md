@@ -96,3 +96,31 @@ Branch `zen-hero`, based on `origin/main` `09a15f6`. Planning commits: Steps 1�
 - Estimate details (extended mode only): original scope as Step 3 Stage 4; uncertainty was medium on the number of dark themes (twelve files, more than the three named); no revisions.
 
 *— Claude · 2026-11-21 UTC · Model: claude-fable-5-2*
+
+## Stage 5 - Docs, phone evidence and final review
+
+**Original estimate: 0.05**
+
+**Retrospective stage-work assessment: 0.05**
+
+- Changes:
+  - `docs/concepts/zen_strip.md` describes the featured meme, the single-link row, home only, the local `/?home=1` note and `--media-dim`. `visitor_intro.md` says the module is on the home page.
+  - `FeatureFlagRegistry`: the Zen strip flag's description matches the new module.
+  - Ledger closeout in `effort_ledger/zen_hero.md`.
+- Verification:
+  - `./v3 test --smoke BoardListTest ZenStripTest FeatureFlagEvaluatorTest FeatureFlagsBehaviorTest PlatformDocsCatalogTest`: 491 run, 491 passed. The full suite was not run.
+  - iPhone SE evidence: 380x667 screenshots of the home page in Gloss and Gloss Dark on the local copy (Stages 3 and 4). **Pending:** the maintainer's own check on the phone after deploy.
+  - Final diff review against Step 2: 19 files outside `docs/`, 139 lines added and 57 removed. Every core requirement and success criterion is met on the local copy except the two below. No dependency change, no schema change, no new flag, no new partial.
+- Notes:
+  - **Not done:** push, PR, and the replies in the request thread and the gallery task thread. This session was refused push access to gulkily/v3, so the branch `zen-hero` is local. The replies wait for a PR to link.
+  - **Not verified:** a live like changing the featured meme (see Stage 1), and anything on production.
+  - Success criterion "first thread within 1.5 screens at 380px" holds in Gloss, the default, and in Gloss Dark, Dark, Ochre and Bubblegum; Word97 and Midnight come to about 1.6.
+- Estimate details (extended mode only): original scope as Step 3 Stage 5; uncertainty low; no revisions.
+
+## Closeout
+
+- Retrospective scope assessment: **0.35**. Delivered as planned, plus the home-page-only revision, minus the push and thread replies. Claude, single exposed rater. Maintainer comfortable-fit judgment: pending. Measured time unknown.
+- Checks: stage tests passed; smoke set passed (491 of 491); full suite not run; theme screenshots passed; JavaScript-off not rerun; live like blocked (no approved key set up locally); production pending; push and PR blocked (no push access).
+- Enhancement requests: none added. The gallery for All remains the proposed next cycle.
+
+*— Claude · 2026-11-21 UTC · Model: claude-fable-5-2*
