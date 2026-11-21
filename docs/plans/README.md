@@ -651,3 +651,5 @@ and repair its navigation and affected references. See the
 - [Zen hero](zen_hero/zen_hero_step1_solution_assessment.md) — staged: the front page shows one top-liked Zen meme with a row of tiny thumbnails that opens All, on the home page only.
 
 - [Calendar export timezone](calendar_export_timezone/calendar_export_timezone_one_shot.md)
+
+- [Arena header deploy button contrast](arena_deploy_prompt_contrast/arena_deploy_prompt_contrast_one_shot.md)

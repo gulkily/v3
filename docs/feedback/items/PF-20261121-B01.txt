@@ -1,0 +1,18 @@
+ID: PF-20261121-B01
+Title: Keep the Arena header Deploy now button readable on hover
+Kind: bug
+Workflow: blocked
+Created: 2026-11-21
+Evidence: unknown
+
+Request:
+Fix the dark text on the Arena header Deploy now button in the screenshot.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261121093059-ab28d30a
+
+Done when:
+In Arena the header button label remains readable while hovered and while deployment is pending.
+
+Notes:
+2026-11-21: Scoped CSS fix and browser regression check implemented. Browser verification, review and deployment pending.
