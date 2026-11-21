@@ -13,7 +13,7 @@ Concepts touched: [Zen strip](../../concepts/zen_strip.md) (revised in Stage 5).
 ## Completion Contract
 
 - Normal entry: a signed-out visitor opens zenmemes.com; a member likes a Zen meme.
-- End-to-end outcome: the board's default first page shows the highest-scored Zen meme whole, then one row of tiny thumbnails of the others. The row is one link to /tags/zen+meme. There is no All link. Chosen views, sorts and later pages show no module. Dark themes dim the module's images.
+- End-to-end outcome: the home page, `/`, shows the highest-scored Zen meme whole, then one row of tiny thumbnails of the others. The row is one link to /tags/zen+meme. There is no All link. The threads page, chosen views, sorts and later pages show no module. Dark themes dim the module's images.
 - Recovery: `FORUM_ZEN_STRIP_ENABLED` off removes the module. Removing a tag or retracting a thread takes it out, as today.
 - Deployment: no schema change and no extra command; Deploy now is enough. In high-traffic mode, cached pages keep the old module until their next refresh.
 - Release: merged to main, deployed, and checked by the maintainer on his iPhone SE.
@@ -43,16 +43,16 @@ Concepts touched: [Zen strip](../../concepts/zen_strip.md) (revised in Stage 5).
 
 **Estimate: 0.05**
 
-- Goal: the module shows only on the board's default first page.
+- Goal: the module shows only on the home page, `/`.
 - Dependencies: none.
-- Expected changes: `BoardPageController::zenStrip()` also requires that the request chose no view and no sort. Both callers (`board()` and `boardList()`) pass that. A tag filter already goes to a different page.
-- Verification approach: `./v3 test --smoke BoardListTest`: present on `/` and `/threads/`; absent on `?view=all`, `?view=liked`, `?sort=top` and page 2. The existing first-page test, which uses `?view=all&sort=newest`, moves to the default address.
-- Estimate details (extended mode only): driver: one condition and its tests; uncertainty: low.
+- Expected changes: `/` and `/threads/` share one route in `Application.php` and reach `board()` the same way, so the route passes whether the request was for `/`. `BoardPageController::zenStrip()` requires that, and that the request chose no view and no sort. `board()` gains one boolean parameter, handed on to `boardList()`.
+- Verification approach: `./v3 test --smoke BoardListTest`: present on `/`; absent on `/threads/`, `/?view=all`, `/?view=liked`, `/?sort=top` and page 2. The existing first-page tests, which use `/threads/?view=all&sort=newest`, move to `/`.
+- Estimate details (extended mode only): driver: one condition passed from the route, and its tests; uncertainty: low.
 - Risks or open questions:
   - Impact: the default view falls back from Liked to All when nothing is liked, and the module could vanish with it.
   - Early warning / validation: a test on a board with no liked threads.
   - Mitigation: decide from what the request asked for, not from the view the board fell back to.
-- Canonical components/API contracts touched: `Http/BoardPageController.php` (`zenStrip()` extended), `BoardViewOptions` (read only).
+- Canonical components/API contracts touched: `Http/BoardPageController.php` (`zenStrip()` extended; `board()` and `boardList()` gain a parameter), the board route in `Application.php`, `BoardViewOptions` (read only).
 
 ## Stage 3
 
@@ -99,6 +99,9 @@ Concepts touched: [Zen strip](../../concepts/zen_strip.md) (revised in Stage 5).
 ## Study snapshots and approval
 
 - 2026-11-21 UTC: **Approved Step 2** by the maintainer ("Approved. Step 2."), with the defaults as written.
-- 2026-11-21 UTC, Step 3 handoff: **0.35** projected total, reaffirmed. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified this session. Baseline `origin/main` `09a15f6`. Awaiting `Approved Step 3`.
+- 2026-11-21 UTC, Step 3 handoff: **0.35** projected total, reaffirmed. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified this session. Baseline `origin/main` `09a15f6`.
+- 2026-11-21 UTC revision: home page only, not the threads page (maintainer). Stage 2 now takes the path from the route. Stage 2 stays **0.05**; projected total **0.35**, unchanged. Awaiting `Approved Step 3`.
 
 *— Claude · 2026-11-21 UTC · Model: claude-fable-5-2*
+
+*— Revised by Claude · 2026-11-21 UTC · Model: claude-fable-5-2*

@@ -31,7 +31,7 @@ Concepts touched: [Zen strip](../../concepts/zen_strip.md) (changed: one feature
 - The featured meme is the Zen meme with the highest thread score, the number Top sort uses **(default)**. Among tied memes the newest wins **(default)**. It shows whole, like a grid card today, and links to its thread. A text-only meme shows its title in large type.
 - Under it, one row of tiny thumbnails shows the other Zen memes, newest first, leaving out the featured one **(default)**. Thumbnails are about 3rem squares cropped to the middle of the image **(default)**; a text meme gets a small text tile. The row is one line, never scrolls sideways or wraps, and shows as many as fit.
 - The whole row is a single link to /tags/zen+meme. The All link is removed.
-- The module shows only on the board's default view, first page **(default)**. A chosen view, sort, tag or later page hides it.
+- The module shows only on the home page, `/`, with no view or sort chosen. The threads page, `/threads/`, never shows it, and neither does a chosen view, sort, tag or later page. (Revised 2026-11-21.)
 - In dark themes the module's images dim slightly, through one theme setting. Light themes are unchanged.
 - Which threads are Zen memes, the server-only HTML, the no-JavaScript behaviour and the feature flag all stay as they are.
 
@@ -74,13 +74,13 @@ The maintainer demos on an iPhone SE (3rd gen). Entry: zenmemes.com in Safari. E
 2. They see one Zen meme, large, then a row of tiny thumbnails, then the threads.
 3. They tap the meme and land on its thread, where they can like it.
 4. Back on the home page, they tap the thumbnail row and see every Zen meme at /tags/zen+meme.
-5. They switch the board to All: the module is gone.
+5. They open the threads page, or switch the board to All: the module is gone.
 
 ## Success criteria
 
 - On production at 380px, the first thread starts within 1.5 screens of the top, down from about three.
 - A test shows the highest-scored Zen meme is featured, and that a tie goes to the newest.
-- A test shows the module on the default first page and absent on a chosen view, a chosen sort and page 2.
+- A test shows the module on `/` and absent on `/threads/`, a chosen view, a chosen sort and page 2.
 - The home page has no All link, and the row's link goes to /tags/zen+meme.
 - No sideways overflow at 380px or 1280px in Gloss, Gloss Dark, Bubblegum and Ochre.
 - In Gloss Dark the seed images are visibly dimmed; in Gloss they are unchanged.
@@ -94,5 +94,8 @@ The maintainer demos on an iPhone SE (3rd gen). Entry: zenmemes.com in Safari. E
 - 2026-11-21 UTC: **Approved Step 1** by the maintainer; Option A assumed, as recommended.
 - 2026-11-21 UTC, Step 2 handoff: **0.35** projected total, reaffirmed from Step 1. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified this session. Baseline `origin/main` `09a15f6`.
 - 2026-11-21 UTC: **Approved Step 2** by the maintainer.
+- 2026-11-21 UTC revision, after approval: the maintainer asked for "only on the home page, not on the threads page". The module shows on `/` only. Projected total **0.35**, unchanged.
+
+*— Revised by Claude · 2026-11-21 UTC · Model: claude-fable-5-2*
 
 *— Claude · 2026-11-21 UTC · Model: claude-fable-5-2*
