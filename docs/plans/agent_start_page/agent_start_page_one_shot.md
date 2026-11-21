@@ -14,3 +14,13 @@ Reuse AgentPageController, ProfilePresentationContent, the agent_prompt partial 
 Verify route entry and flag/profile gating with the smoke set and PresentationProfileMatrixTest. Check the shared script and inspect both pages with the local runtime if available. Open a feature-branch PR for review. Deployment is outside this change.
 
 The starting revision is 7f39d96d9912b8d285ae6b1b313a51531270812a. The November 21 local, uncommitted prototype predates this planning commit and is retained. The first formal checkpoint is the transition from exploration to PR verification.
+
+Planning commit: ca947a825e47dec42768b0cd0043bdab3b4bb736 in the local checkout. The GitHub connector recreates the same planning tree because the Git CLI has no write credentials.
+
+## Verification and outcome
+
+- PHP 8.4.27 ran from a workspace-local install with SQLite, mbstring, intl, GD and Phar. `./v3 check-dependencies` reported ready.
+- `./v3 test --smoke PresentationProfileMatrixTest` ran 488 checks. All seven presentation checks and 473 others passed. The eight failures all reproduced on the unchanged base revision, covering GPG-backed and single-request HTTP workflows. The full suite was not run.
+- `git diff --check`, PHP lint and the shared script's Node syntax check passed.
+- The Chromium prompt-card check could not launch because this workspace denied its local socket. Browser layout and clipboard interaction remain unverified. No new navigation icon, schema or production change is needed.
+- One bounded implementation: routes, template split, entry links and regression assertions. No scope changes or independent rating. PR review and maintainer acceptance remain pending.

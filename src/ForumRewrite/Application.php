@@ -776,9 +776,14 @@ final class Application
             return;
         }
 
-        if ($path === '/agent/' || $path === '/agent') {
+        if (in_array($path, ['/agent/', '/agent', '/agent/start/', '/agent/start'], true)) {
             if (!$this->renderer()->agentPageEnabled()) {
                 $this->routeServices()->notFound();
+                return;
+            }
+            if ($path === '/agent/start/' || $path === '/agent/start') {
+                $controller = new \ForumRewrite\Http\AgentPageController($this->renderPageTemplate(...));
+                $this->sendHtml($controller->renderStart(), 200);
                 return;
             }
             $this->sendHtml((new \ForumRewrite\Http\AgentPageController($this->renderPageTemplate(...), $this->pdo()))->render($query['sort'] ?? null, $query['tag'] ?? null), 200);
@@ -2573,7 +2578,7 @@ final class Application
             '/threads', '/threads/',
             '/about', '/about/', '/start', '/start/',
             '/themes', '/themes/',
-            '/agent', '/agent/',
+            '/agent', '/agent/', '/agent/start', '/agent/start/',
             '/docs', '/docs/',
             '/lobby', '/lobby/',
             '/instance', '/instance/', '/backup', '/backup/', '/tools/backup', '/tools/backup/',

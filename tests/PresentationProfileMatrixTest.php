@@ -85,11 +85,14 @@ final class PresentationProfileMatrixTest
         $_SERVER['HTTP_HOST'] = 'zenmemes.example';
         putenv('FORUM_SITE_ID=zenmemes');
         try {
-            $page = $this->render($application, '/agent/');
-            // In the main nav, so no visible page title; the site's prompts follow the library.
-            assertTrue(!str_contains($page, '<h1'), 'no visible page title');
-            assertStringContains('<article class="card agent-page__prompts" id="start">', $page);
-            assertStringContains('href="/compose/thread?board_tags=prompt">Share a prompt</a>', $page);
+            $library = $this->render($application, '/agent/');
+            assertStringContains('href="/compose/thread?board_tags=prompt">Share a prompt</a>', $library);
+            assertStringContains('<p id="start"><a href="/agent/start/">Use with your agent</a>', $library);
+            assertTrue(!str_contains($library, 'id="agent-prompt-introduce"'));
+
+            $page = $this->render($application, '/agent/start/');
+            assertStringContains('<h1 class="agent-page__start-heading">Use this site with your agent</h1>', $page);
+            assertTrue(!str_contains($page, 'id="prompts"'));
             assertStringContains('data-agent-prompt-origin="http://zenmemes.example"', $page);
             foreach ([
                 'introduce' => ['Get introduced', 'Paste this into your agent:', 'Please visit http://zenmemes.example and read http://zenmemes.example/llms.txt.'],
@@ -97,7 +100,7 @@ final class PresentationProfileMatrixTest
                 'install' => ['Run your own site', 'Paste this into your coding agent:', 'Please clone https://github.com/gulkily/v3 and inspect it for malicious content.'],
             ] as $id => [$heading, $label, $text]) {
                 assertStringContains('<section class="agent-page__prompt" id="' . $id . '">', $page);
-                assertStringContains('<h3>' . $heading . '</h3>', $page);
+                assertStringContains('<h2>' . $heading . '</h2>', $page);
                 assertStringContains('<p class="copy-prompt__label" id="agent-prompt-' . $id . '-label">' . $label . '</p>', $page);
                 assertStringContains('<pre class="copy-prompt__text" id="agent-prompt-' . $id . '" aria-labelledby="agent-prompt-' . $id . '-label" data-copy-prompt-source>', $page);
                 assertStringContains($text, $page);
@@ -127,10 +130,10 @@ final class PresentationProfileMatrixTest
                     putenv($flag . '=' . $value);
                     $shown = $profileId === 'zenmemes' && $value === '1';
                     $context = $profileId . ' ' . $flag . '=' . $value;
-                    assertSame($shown, str_contains($this->render($application, '/'), '<a href="/agent/#start">Use with your agent</a>'), $context);
-                    assertSame($shown, str_contains($this->render($application, '/about/'), '<a href="/agent/#start">Use with your agent</a>'), $context);
+                    assertSame($shown, str_contains($this->render($application, '/'), '<a href="/agent/start/">Use with your agent</a>'), $context);
+                    assertSame($shown, str_contains($this->render($application, '/about/'), '<a href="/agent/start/">Use with your agent</a>'), $context);
                     assertSame($shown, str_contains($this->render($application, '/tools/'), 'href="/agent/"'), $context);
-                    assertSame($shown, str_contains($this->render($application, '/agent/'), 'data-copy-prompt'), $context);
+                    assertSame($shown, str_contains($this->render($application, '/agent/start/'), 'data-copy-prompt'), $context);
                     assertSame($shown, preg_match('~<a [^>]*class="nav-link[^"]*" href="/agent/"[^>]*>Prompts</a>~', $this->render($application, '/recent/')) === 1, $context . ' nav');
                 }
             }
