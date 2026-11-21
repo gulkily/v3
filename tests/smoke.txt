@@ -50,6 +50,7 @@ PrivateMessageStoreTest
 OfflineSnapshotPublisherTest
 
 # CLI and the test runner itself
+DevServerStartTest::testFallbackServesRequestsRegistersActualPortAndStopsWithoutPcntl
 StatusCommandTest
 TestRunnerBehaviorTest
 

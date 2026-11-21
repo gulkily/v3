@@ -86,10 +86,14 @@ repair. The marker file is not created by installation or tracked in Git.
 ## Start the local dev server
 
 ```
-./v3 start [--listen-all|host:port] [--verbose|--quiet] [--no-worker] [--log-file=/path/dev.log]
+./v3 start [--listen-all|port|host:port] [--verbose|--quiet] [--no-worker] [--log-file=/path/dev.log]
 ```
 
-Starts the PHP built-in dev server on `127.0.0.1:8000` by default.
+Starts the PHP built-in dev server on `127.0.0.1:8000` by default. If occupied,
+tries successive ports through 8009 and prints the actual URL after binding.
+`--listen-all` uses the same range on `0.0.0.0`. Explicit ports, including
+`8000`, `:8000` and `127.0.0.1:8000`, never fall back. Exhaustion or another
+startup error exits nonzero; choose another port with `./v3 start 8010`.
 It also runs the internal task worker (`scripts/task_queue.php run --limit=1`) every
 5 seconds while the server runs, as cron does on a server, so queued imports,
 rebuilds and offline snapshots run locally. `--no-worker` turns that off. A worker
@@ -113,7 +117,7 @@ once with the original address, logging options and caller identity; failures
 return 1 without starting a listener. Redirected startup never prompts or installs.
 Options are validated before recovery. Stop the launcher with Ctrl+C or SIGTERM.
 
-- `--listen-all` — bind `0.0.0.0:8000` instead of `127.0.0.1:8000`
+- `--listen-all` — bind all interfaces, trying ports 8000–8009
 - `host:port` — bind an explicit address or bare port number instead of the default
 - `--verbose` / `--quiet` — show all requests / server errors only
 - `--log-file=...` — append plain request logs to the chosen file
