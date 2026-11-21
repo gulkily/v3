@@ -52,3 +52,42 @@ evidence-based runbook correction plus verification. R1 frozen hashes were
 not re-verified for this cycle. No scope alternatives or extended estimates.
 
 *dot · 2026-11-21 UTC*
+
+## Outcome and verification
+
+The preceding planning commit was `1239d05757d4092a718c7f35bd6063a4c39bb8c2`. No application or test change. The health-check
+advice now links to reading and writing boundaries. The writing and privacy
+sections distinguish cached public forms, IndexedDB drafts, queued text and
+online delivery. The old absolute claim about disabled New Post was removed;
+this does not promise that a toolbar link is present or works from every cold
+offline startup.
+
+- Reviewed current main, public Recent and the historical public report
+  through its read API, open issues and recent PRs. [PR #337](https://github.com/gulkily/v3/pull/337)
+  changes Open beside; it does not correct this runbook.
+- `./v3 test --smoke OfflineNavigationWorkerTest OfflineOutboxComposeTest OfflineOutboxSendTest OfflineSnapshotPresentationTest OfflineSnapshotThreadPresentationTest`:
+  445 passed, 66 failed of 511 on unmodified main and again after the docs edit,
+  with the same failure names. Those failures include environmental signing
+  and fixture issues. This is not a passing smoke run.
+- Focused repeat of the same five classes (without smoke) with
+  `NODE_OPTIONS=--no-experimental-global-navigator`: 31 passed, zero failed.
+  Default Node 24 has a global Navigator with Web Locks, making three older
+  sender harnesses reach a mock with no `storage.load`; disabling that global
+  runs those harnesses under their expected assumptions. This does not test a
+  browser's Web Locks path.
+- Existing offline-compose browser fixture attempted with Chromium; it
+  stopped at launch because the workspace denies its singleton socket.
+  No end-to-end browser result, reload test, mobile or production claim.
+  The checked-in fixture is evidence of intended cases, not an executed pass.
+- Local document targets/anchors and `git diff --check` passed. No files
+  outside the recorded documentation scope; no dependencies, schema, UI,
+  migration, production or deployment changes. Full suite not run.
+
+Retrospective R1 scope assessment: **0.15** (same bounded correction; no
+runtime edits; browser replay blocked). No measured labor, independent rating,
+or maintainer comfortable-fit judgment; acceptance pending.
+
+The completion commit and draft review do not establish deployment or
+runtime acceptance of PF-20261111-B15. No merge or deploy performed.
+
+*dot · 2026-11-21 UTC*
