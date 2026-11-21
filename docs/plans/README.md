@@ -9,6 +9,7 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
+- [Offline writing runbook](offline_runbook_compose/offline_runbook_compose_one_shot.md) — explain cached composers, drafts, and queued offline text.
 - [Agents navigation](agents_nav/agents_nav_one_shot.md) — point the Agents navigation item to the onboarding guide.
 - [Agent onboarding page](agent_start_page/agent_start_page_one_shot.md) — separate agent onboarding from the community prompt library.
 - [Calendar flag search](calendar_flag_search/calendar_flag_search_one_shot.md) — make Event support findable by its calendar function.
