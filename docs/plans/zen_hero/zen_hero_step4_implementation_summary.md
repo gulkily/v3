@@ -35,3 +35,21 @@ Branch `zen-hero`, based on `origin/main` `09a15f6`. Planning commits: Steps 1�
 - Estimate details (extended mode only): original scope as Step 3 Stage 1; uncertainty low; no revisions.
 
 *— Claude · 2026-11-21 UTC · Model: claude-fable-5-2*
+
+## Stage 2 - Home page only
+
+**Original estimate: 0.05**
+
+**Retrospective stage-work assessment: 0.05**
+
+- Changes:
+  - The board route in `Application.php` passes `zenHome`: true only when the path is `/` and the request names no view and no sort.
+  - `BoardPageController::board()` and `boardList()` take `bool $zenHome = false` and hand it to `zenStrip()`, which still also requires page 1, the flag and the profile's tags.
+- Verification:
+  - `./v3 test BoardListTest`: 15 run, 15 passed. `testZenStripOpensTheFirstPageOnly` became `testZenMemesOpenTheHomePageOnly`: present on `/`; absent on `/threads/`, `/?view=all`, `/?view=liked`, `/?sort=top`, `/threads/?view=all&sort=newest` and page 2; absent with the flag off. The image-card test now renders `/`. The full suite was not run.
+  - Fallback case: the test board has no liked threads, so `/` falls back from Liked to All, and the module still shows. The decision comes from what the request asked for, as planned.
+- Notes:
+  - `zenHome` defaults to false, so any other caller of `board()` (QDB sections) shows no module.
+- Estimate details (extended mode only): original scope as Step 3 Stage 2 after the home-page-only revision; uncertainty low; no revisions.
+
+*— Claude · 2026-11-21 UTC · Model: claude-fable-5-2*

@@ -39,7 +39,7 @@ final class BoardPageController
     /** Threads per board list page; pinned threads come on the first page in addition. */
     private const LIST_PAGE_SIZE = 50;
 
-    public function board(string $view, string $sort, string $activeSection = 'board', int $page = 1, ?QdbBoardPolicy $qdbPolicy = null, mixed $listPage = null): string
+    public function board(string $view, string $sort, string $activeSection = 'board', int $page = 1, ?QdbBoardPolicy $qdbPolicy = null, mixed $listPage = null, bool $zenHome = false): string
     {
         // No view in the URL: Liked, or All when nothing besides pinned threads is liked yet.
         $defaultView = $view === '' && $qdbPolicy === null;
@@ -80,7 +80,7 @@ final class BoardPageController
         $qdbVoteTags = $qdbPolicy?->voteTags() ?? [];
         $boardCardSlot = PresentationSlotRegistry::resolve(\ForumRewrite\SiteProfileRegistry::active(), 'boardCard');
         if ($boardCardSlot === 'list' && $qdbPolicy === null) {
-            return $this->boardList($view, $sort, $threads, $viewOptions, $sortOptions, \ForumRewrite\Pagination\PageNavigation::pageNumber($listPage), $fellBackToAll);
+            return $this->boardList($view, $sort, $threads, $viewOptions, $sortOptions, \ForumRewrite\Pagination\PageNavigation::pageNumber($listPage), $fellBackToAll, $zenHome);
         }
 
         return $this->routeServices->renderPageTemplate(
@@ -111,7 +111,7 @@ final class BoardPageController
                 'qdbPendingCount' => $qdbPendingCount,
                 'pagination' => $pagination,
                 'showGettingStarted' => $fellBackToAll,
-                'zenStrip' => $this->zenStrip($qdbPolicy === null && $page === 1),
+                'zenStrip' => $this->zenStrip($zenHome && $qdbPolicy === null && $page === 1),
             ],
             $qdbPolicy !== null ? match ($activeSection) {
                 'latest' => 'Latest Quotes',
@@ -140,7 +140,7 @@ final class BoardPageController
      * @param array<int, array{label:string,href:string,is_active:bool,key:string}> $viewOptions
      * @param array<int, array{label:string,href:string,is_active:bool,key:string}> $sortOptions
      */
-    private function boardList(string $view, string $sort, array $threads, array $viewOptions, array $sortOptions, int $number, bool $showGettingStarted = false): string
+    private function boardList(string $view, string $sort, array $threads, array $viewOptions, array $sortOptions, int $number, bool $showGettingStarted = false, bool $zenHome = false): string
     {
         $pinned = array_values(array_filter($threads, fn (array $thread): bool => $this->isPinned($thread)));
         $latest = array_values(array_filter($threads, fn (array $thread): bool => !$this->isPinned($thread)));
@@ -172,7 +172,7 @@ final class BoardPageController
                 'pagination' => $pagination,
                 'paginationError' => null,
                 'showGettingStarted' => $showGettingStarted,
-                'zenStrip' => $this->zenStrip($number === 1),
+                'zenStrip' => $this->zenStrip($zenHome && $number === 1),
             ],
             'Board',
             'board',
@@ -181,16 +181,17 @@ final class BoardPageController
     }
 
     /**
-     * The Zen strip for the top of the board's first page: the site profile's strip
-     * threads with their first image, and the address of their tag page. Null on
-     * later pages, with the flag off, or when the site names no strip tags.
+     * The Zen memes for the top of the home page: the site profile's strip threads,
+     * top-scored first, with their first image, and the address of their tag page.
+     * Null anywhere but the first page of `/` with no view or sort chosen (the
+     * caller decides that), with the flag off, or when the site names no strip tags.
      *
      * @return array{threads:list<array<string,mixed>>, allHref:string}|null
      */
-    private function zenStrip(bool $firstPage): ?array
+    private function zenStrip(bool $homeFirstPage): ?array
     {
         $tags = \ForumRewrite\SiteProfileRegistry::zenStripTags();
-        if (!$firstPage || $tags === [] || !$this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::ZEN_STRIP_ENABLED)) {
+        if (!$homeFirstPage || $tags === [] || !$this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::ZEN_STRIP_ENABLED)) {
             return null;
         }
         $pdo = $this->routeServices->pdo();

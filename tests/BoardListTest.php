@@ -363,11 +363,11 @@ final class BoardListTest
     }
 
     /** Text of the rows container with the given class. */
-    public function testZenStripOpensTheFirstPageOnly(): void
+    public function testZenMemesOpenTheHomePageOnly(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment(60);
         $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
-        assertStringNotContains('class="zen-strip"', $this->markup($this->render($application, '/threads/?view=all&sort=newest')));
+        assertStringNotContains('class="zen-strip"', $this->markup($this->render($application, '/')));
 
         // Make one thread's signed author an approved member who tagged it #zen #meme.
         $pdo = new PDO('sqlite:' . $databasePath);
@@ -376,17 +376,20 @@ final class BoardListTest
         $pdo->exec("UPDATE threads SET board_tags_json = '[\"zen\",\"meme\"]' WHERE root_post_id = 'board-list-030'");
         $pdo = null;
 
-        $first = $this->markup($this->render($application, '/threads/?view=all&sort=newest'));
+        $first = $this->markup($this->render($application, '/'));
         assertSame(1, substr_count($first, 'class="zen-strip"'));
         assertTrue(strpos($first, 'class="zen-strip"') < strpos($first, 'data-visitor-intro'), 'The strip should come before the visitor intro.');
         assertStringContains('<a class="zen-strip__card zen-strip__card--text" href="/threads/board-list-030"><span>Thread 30</span></a>', $first);
         assertStringContains('<p class="zen-strip__more"><a href="/tags/zen+meme">All</a></p>', $first);
         preg_match('/rel="next" href="([^"]+)">Show older threads</', $first, $next);
-        assertStringNotContains('class="zen-strip"', $this->markup($this->render($application, html_entity_decode($next[1]))));
+        // Not on the threads page, a chosen view or sort, or a later page.
+        foreach (['/threads/', '/?view=all', '/?view=liked', '/?sort=top', '/threads/?view=all&sort=newest', html_entity_decode($next[1])] as $elsewhere) {
+            assertStringNotContains('class="zen-strip"', $this->markup($this->render($application, $elsewhere)), $elsewhere);
+        }
 
         putenv('FORUM_ZEN_STRIP_ENABLED=false');
         try {
-            $off = $this->markup($this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/threads/?view=all&sort=newest'));
+            $off = $this->markup($this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/'));
         } finally {
             putenv('FORUM_ZEN_STRIP_ENABLED');
         }
@@ -419,7 +422,7 @@ final class BoardListTest
 
             $tile = '/images/thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, 'tile');
             $full = '/images/' . \ForumRewrite\Images\ImageReference::filename($reference);
-            $board = $this->markup($this->render($application, '/threads/?view=all&sort=newest'));
+            $board = $this->markup($this->render($application, '/'));
             assertStringContains('<a class="zen-strip__card zen-strip__card--image" href="/threads/zen-image"><img src="' . $tile . '" srcset="' . $tile . ' 480w, ' . $full . ' 900w" sizes="(min-width: 48rem) 22rem, 100vw" alt="A calm pond" width="900" height="600"', $board);
         } finally {
             putenv($old === false ? $flag : $flag . '=' . $old);

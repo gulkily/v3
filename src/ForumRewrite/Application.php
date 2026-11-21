@@ -758,6 +758,8 @@ final class Application
                     (string) ($query['view'] ?? ''),
                     (string) ($query['sort'] ?? 'newest'),
                     listPage: $query['page'] ?? null,
+                    // The Zen memes open the home page only: not /threads/, and not a chosen view or sort.
+                    zenHome: ($path === '/' || $path === '') && !isset($query['view']) && !isset($query['sort']),
                 ),
                 200
             );
