@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./zen_hero_step1_solution_assessment.md) · [Step 2](./zen_hero_step2_feature_description.md) · Step 3 · Step 4
+> **Feature plan:** [Step 1](./zen_hero_step1_solution_assessment.md) · [Step 2](./zen_hero_step2_feature_description.md) · [Step 3](./zen_hero_step3_development_plan.md) · Step 4
 
 Debug mode: enabled
 
@@ -92,6 +92,7 @@ The maintainer demos on an iPhone SE (3rd gen). Entry: zenmemes.com in Safari. E
 ## Study snapshots and approval
 
 - 2026-11-21 UTC: **Approved Step 1** by the maintainer; Option A assumed, as recommended.
-- 2026-11-21 UTC, Step 2 handoff: **0.35** projected total, reaffirmed from Step 1. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified this session. Baseline `origin/main` `09a15f6`. Awaiting `Approved Step 2`.
+- 2026-11-21 UTC, Step 2 handoff: **0.35** projected total, reaffirmed from Step 1. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified this session. Baseline `origin/main` `09a15f6`.
+- 2026-11-21 UTC: **Approved Step 2** by the maintainer.
 
 *— Claude · 2026-11-21 UTC · Model: claude-fable-5-2*

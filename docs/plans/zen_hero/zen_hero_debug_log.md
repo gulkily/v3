@@ -40,3 +40,23 @@
 ### Uncertain assessments
 
 - The approval read "Approved Sub 1" and named no option. Option A and the Step 1 defaults were assumed and each default is marked in Step 2 so it can be changed.
+
+## 2026-11-21T09:10Z — Step 3
+
+### Necessary/useful instructions
+
+- `step3_development_plan_do.md`, resolve each material risk before dependent work: put the like-and-reload check in Stage 1, before styling.
+- `step3_development_plan_do.md`, known user or environment: Stage 5 names the 380px screenshots and the maintainer's own phone check as the iPhone SE evidence.
+- `implementation_standards.md`, source-backed reuse: `ListThumbnails` already provides square thumbnails for list rows, so the row needs no new image size.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- `step3_development_plan_after.md`, keep Step 1-3 docs uncommitted: this host commits each step as it is approved, as the earlier Zen strip cycle did.
+
+### Uncertain assessments
+
+- The list of dark themes isn't confirmed; Stage 4 confirms it before editing.
