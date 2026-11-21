@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./zen_hero_step1_solution_assessment.md) · [Step 2](./zen_hero_step2_feature_description.md) · [Step 3](./zen_hero_step3_development_plan.md) · Step 4
+> **Feature plan:** [Step 1](./zen_hero_step1_solution_assessment.md) · [Step 2](./zen_hero_step2_feature_description.md) · [Step 3](./zen_hero_step3_development_plan.md) · [Step 4](./zen_hero_step4_implementation_summary.md)
 
 Debug mode: enabled
 
@@ -100,7 +100,8 @@ Concepts touched: [Zen strip](../../concepts/zen_strip.md) (revised in Stage 5).
 
 - 2026-11-21 UTC: **Approved Step 2** by the maintainer ("Approved. Step 2."), with the defaults as written.
 - 2026-11-21 UTC, Step 3 handoff: **0.35** projected total, reaffirmed. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified this session. Baseline `origin/main` `09a15f6`.
-- 2026-11-21 UTC revision: home page only, not the threads page (maintainer). Stage 2 now takes the path from the route. Stage 2 stays **0.05**; projected total **0.35**, unchanged. Awaiting `Approved Step 3`.
+- 2026-11-21 UTC revision: home page only, not the threads page (maintainer). Stage 2 now takes the path from the route. Stage 2 stays **0.05**; projected total **0.35**, unchanged.
+- 2026-11-21 UTC: **Approved Step 3** by the maintainer.
 
 *— Claude · 2026-11-21 UTC · Model: claude-fable-5-2*
 

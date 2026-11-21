@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./zen_hero_step1_solution_assessment.md) · [Step 2](./zen_hero_step2_feature_description.md) · [Step 3](./zen_hero_step3_development_plan.md) · Step 4
+> **Feature plan:** [Step 1](./zen_hero_step1_solution_assessment.md) · [Step 2](./zen_hero_step2_feature_description.md) · [Step 3](./zen_hero_step3_development_plan.md) · [Step 4](./zen_hero_step4_implementation_summary.md)
 
 Cycle: `v3/zen_hero`. Follows [zen_strip](../zen_strip/zen_strip_step1_solution_assessment.md) (PR #344) and [zen_strip_grid](../zen_strip_grid/zen_strip_grid_one_shot.md) (PR #345), both merged.
 
