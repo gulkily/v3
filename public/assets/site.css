@@ -1571,12 +1571,7 @@ pre {
   display: none !important;
 }
 
-/* Zen memes on the home page: one featured meme, then one row of tiny thumbnails that opens them all. */
-.zen-strip {
-  max-width: 24rem;
-  margin-inline: auto;
-}
-
+/* Zen memes on the home page: one featured meme as wide as the column, then one row of tiny thumbnails that opens them all. */
 .zen-strip__card {
   display: flex;
   align-items: center;

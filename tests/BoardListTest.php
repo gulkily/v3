@@ -439,7 +439,7 @@ final class BoardListTest
             $tile = '/images/thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, 'tile');
             $full = '/images/' . \ForumRewrite\Images\ImageReference::filename($reference);
             $board = $this->markup($this->render($application, '/'));
-            assertStringContains('<a class="zen-strip__card zen-strip__card--image" href="/threads/zen-image"><img src="' . $tile . '" srcset="' . $tile . ' 480w, ' . $full . ' 900w" sizes="(min-width: 48rem) 24rem, 100vw" alt="A calm pond" width="900" height="600"', $board);
+            assertStringContains('<a class="zen-strip__card zen-strip__card--image" href="/threads/zen-image"><img src="' . $tile . '" srcset="' . $tile . ' 480w, ' . $full . ' 900w" sizes="(min-width: 48rem) 45rem, 100vw" alt="A calm pond" width="900" height="600"', $board);
         } finally {
             putenv($old === false ? $flag : $flag . '=' . $old);
             exec('rm -rf ' . escapeshellarg($imageRoot) . ' ' . escapeshellarg($imageRoot . '-thumbs') . ' ' . escapeshellarg($repositoryRoot . '-meme.png'));

@@ -18,7 +18,7 @@ $href = '/threads/' . rawurlencode($featured['root_post_id']);
 <?php $image = $featured['thumbnail']; ?>
 <?php $alt = trim($image['description']) !== '' ? $image['description'] : $featured['subject']; ?>
 <?php $srcset = $image['full'] === $image['preview'] ? null : $image['preview'] . ' 480w, ' . $image['full'] . ' ' . max(481, (int) $image['width']) . 'w'; ?>
-  <a class="zen-strip__card zen-strip__card--image" href="<?= $e($href) ?>"><img src="<?= $e($image['preview']) ?>"<?php if ($srcset !== null): ?> srcset="<?= $e($srcset) ?>" sizes="(min-width: 48rem) 24rem, 100vw"<?php endif; ?> alt="<?= $e($alt) ?>" width="<?= (int) $image['width'] ?>" height="<?= (int) $image['height'] ?>" decoding="async"></a>
+  <a class="zen-strip__card zen-strip__card--image" href="<?= $e($href) ?>"><img src="<?= $e($image['preview']) ?>"<?php if ($srcset !== null): ?> srcset="<?= $e($srcset) ?>" sizes="(min-width: 48rem) 45rem, 100vw"<?php endif; ?> alt="<?= $e($alt) ?>" width="<?= (int) $image['width'] ?>" height="<?= (int) $image['height'] ?>" decoding="async"></a>
 <?php else: ?>
   <a class="zen-strip__card zen-strip__card--text" href="<?= $e($href) ?>"><span><?= $e($featured['subject']) ?></span></a>
 <?php endif; ?>

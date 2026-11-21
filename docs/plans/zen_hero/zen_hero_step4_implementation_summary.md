@@ -8,7 +8,7 @@ Extended estimates: enabled. Stage values are stage work only; they are not summ
 
 **Cycle estimate: 0.35**
 
-Branch `zen-hero`, based on `origin/main` `09a15f6`. Planning commits: Steps 1–3 were committed as each was written and approved (zen_strip precedent), ending with `5af3040` (Step 3 revision, home page only). The ledger and debug log went into those commits too, the same deviation from the planning-commit rule as zen_strip. The branch is local only: this session was refused push access to gulkily/v3. Base: `./v3 test --smoke ZenStripTest BoardListTest`, 484 run, 484 passed.
+Branch `zen-hero`, based on `origin/main` `09a15f6`. Planning commits: Steps 1–3 were committed as each was written and approved (zen_strip precedent), ending with `5af3040` (Step 3 revision, home page only). The ledger and debug log went into those commits too, the same deviation from the planning-commit rule as zen_strip. The branch was local only until the maintainer asked for the PR on 2026-11-21; it is now pushed. Base: `./v3 test --smoke ZenStripTest BoardListTest`, 484 run, 484 passed.
 
 ## Study snapshots
 
@@ -112,15 +112,31 @@ Branch `zen-hero`, based on `origin/main` `09a15f6`. Planning commits: Steps 1�
   - iPhone SE evidence: 380x667 screenshots of the home page in Gloss and Gloss Dark on the local copy (Stages 3 and 4). **Pending:** the maintainer's own check on the phone after deploy.
   - Final diff review against Step 2: 19 files outside `docs/`, 139 lines added and 57 removed. Every core requirement and success criterion is met on the local copy except the two below. No dependency change, no schema change, no new flag, no new partial.
 - Notes:
-  - **Not done:** push, PR, and the replies in the request thread and the gallery task thread. This session was refused push access to gulkily/v3, so the branch `zen-hero` is local. The replies wait for a PR to link.
+  - Push and PR: done on 2026-11-21 once the maintainer asked for the PR. **Not done:** the replies in the request thread and the gallery task thread.
   - **Not verified:** a live like changing the featured meme (see Stage 1), and anything on production.
   - Success criterion "first thread within 1.5 screens at 380px" holds in Gloss, the default, and in Gloss Dark, Dark, Ochre and Bubblegum; Word97 and Midnight come to about 1.6.
 - Estimate details (extended mode only): original scope as Step 3 Stage 5; uncertainty low; no revisions.
 
+## Follow-up - Featured meme as wide as the column
+
+- Request (maintainer, 2026-11-21, after Stage 5 and before the PR): "Please make the large meme full width as the rest of the column." Disposition: done on this branch as a follow-up commit; a styling change inside the approved module.
+- Changes:
+  - `site.css`: the module is no longer capped at 24rem and centred; the featured meme spans the content column, and the thumbnail row starts at the column's left edge.
+  - `partials/zen_strip.php`: the image's `sizes` hint is now `(min-width: 48rem) 45rem, 100vw`, so a desktop loads the original rather than the 480px copy.
+- Verification:
+  - `./v3 test BoardListTest ZenStripTest`: 20 run, 20 passed. The full suite was not run.
+  - Local copy, 1280x900, Gloss: the image is 710px wide in the 712px column and loads the original. No sideways overflow at 380px or 1280px in Gloss, Gloss Dark, Bubblegum, Ochre and Word97.
+- Notes:
+  - Phones are unchanged (the meme already filled the screen's width).
+  - **Desktop gets taller:** the module is 766px in Gloss, up from 438px, and the first thread row starts 1,217px down a 900px-tall window, about 1.35 screens (889px before). Word97 is the tallest at 1,484px.
+  - This replaces the 24rem figures in Stages 3 and 4 above.
+
+*— Claude · 2026-11-21 UTC · Model: claude-fable-5-2*
+
 ## Closeout
 
 - Retrospective scope assessment: **0.35**. Delivered as planned, plus the home-page-only revision, minus the push and thread replies. Claude, single exposed rater. Maintainer comfortable-fit judgment: pending. Measured time unknown.
-- Checks: stage tests passed; smoke set passed (491 of 491); full suite not run; theme screenshots passed; JavaScript-off not rerun; live like blocked (no approved key set up locally); production pending; push and PR blocked (no push access).
+- Checks: stage tests passed; smoke set passed (491 of 491); full suite not run; theme screenshots passed; JavaScript-off not rerun; live like blocked (no approved key set up locally); production pending; branch pushed and PR opened on request.
 - Enhancement requests: none added. The gallery for All remains the proposed next cycle.
 
 *— Claude · 2026-11-21 UTC · Model: claude-fable-5-2*
