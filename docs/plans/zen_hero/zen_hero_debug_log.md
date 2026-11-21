@@ -60,3 +60,25 @@
 ### Uncertain assessments
 
 - The list of dark themes isn't confirmed; Stage 4 confirms it before editing.
+
+## 2026-11-21T09:40Z — Step 4
+
+### Necessary/useful instructions
+
+- `step4_implementation_do.md`, one commit per stage with its summary update: five stage commits, each with its section.
+- `step3_development_plan_do.md` carried into Stage 4, list every dark scheme before editing: found twelve theme files, not the three named, and one file (`forte.css`) that should not change.
+- `step4_implementation_after.md`, open the handoff with anything unverified: the handoff leads with no push, no PR and no live like.
+- Host `AGENTS.md`, run a subset of tests: the smoke set plus the changed tests; the full suite was left to the maintainer.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- `step4_implementation_before.md`, planning commit excludes the ledger and debug log: this host commits each step with them as it is approved; deviation recorded in the summary.
+
+### Uncertain assessments
+
+- Stage 1's planned like-and-reload check was replaced by evidence from imported likes. Whether that is enough is the maintainer's call; it is listed as not verified.
+- The local dev server replaces `/`, which hides the module from a local visitor unless they add a query. Recorded in the concept entry; whether the Local development page should link to it is a question for its own cycle.
