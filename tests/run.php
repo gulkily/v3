@@ -255,6 +255,7 @@ $testFiles = [
     __DIR__ . '/DatabaseLockProbeTest.php',
     __DIR__ . '/HealthIndicatorsTest.php',
     __DIR__ . '/ApiRouteCatalogTest.php',
+    __DIR__ . '/ThreadAuthorDetailsTest.php',
     __DIR__ . '/LlmsTxtRendererTest.php',
     __DIR__ . '/AgentApiWorkedExampleTest.php',
     __DIR__ . '/PlatformDocsCatalogTest.php',
