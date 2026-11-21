@@ -84,7 +84,8 @@ const kept = (page) => page.evaluate(async () => {
   const cache = await caches.open(name);
   return (await cache.keys()).map((request) => new URL(request.url).pathname).filter((path) => path !== '/__nav_copy_paths__').sort();
 });
-const version = (page) => page.getAttribute('meta[name="app-version"]', 'content');
+const version = (page) => page.getAttribute('meta[name="page-version"]', 'content');
+const appVersion = (page) => page.getAttribute('meta[name="app-version"]', 'content');
 const bannerShown = (page) => page.evaluate(() => { const banner = document.querySelector('[data-role="app-version-banner"]'); return !!banner && !banner.hidden; });
 const navLink = (page, href) => page.locator(`.site-header .nav > a.nav-link[href="${href}"]`).first();
 const go = async (page, href) => { await navLink(page, href).click(); await page.waitForURL((url) => url.pathname === href); await page.waitForLoadState('load'); };
@@ -109,9 +110,11 @@ try {
   await go(page, '/');
   await until(async () => JSON.stringify(await kept(page)) === JSON.stringify(['/', '/users/']), 'copies of / and /users/');
   const before = await version(page);
+  const codeVersion = await appVersion(page);
 
   // New content: the next visit shows the older copy, offers the notice, and keeps the page.
-  const after = on.commit('New post');
+  const after = codeVersion + ':' + on.commit('New post');
+  assert.equal(await (await fetch(on.base + '/api/version')).text(), codeVersion + '\n', 'posting leaves application version unchanged');
   await go(page, '/users/');
   assert.equal(await version(page), before, 'served from the older copy');
   await until(() => bannerShown(page), 'notice raised by the background copy');
@@ -130,7 +133,7 @@ try {
   assert.equal(await version(page), after, 'next visit gets the refreshed copy');
 
   // Reload in the notice opens the current page from the network.
-  const latest = on.commit('Another post');
+  const latest = codeVersion + ':' + on.commit('Another post');
   await go(page, '/');
   assert.equal(await version(page), after, 'board copy refreshed on the previous visit');
   await until(() => bannerShown(page), 'notice on the board');
@@ -138,6 +141,9 @@ try {
   await page.waitForURL((url) => url.searchParams.has('__v'));
   await page.waitForLoadState('load');
   assert.equal(await version(page), latest, 'Reload shows the current version');
+  assert.equal(await appVersion(page), codeVersion, 'content refresh keeps the code version');
+  await page.reload();
+  assert.equal(await bannerShown(page), false, 'page pending state cleared without another notice');
 
   // A key change drops every copy; the next visits make new ones.
   await page.evaluate(() => window.dispatchEvent(new Event('forum:identity-changed')));

@@ -7,7 +7,7 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.25**
 
-Status: planned; next action: planning commit, then implementation and focused verification.
+Status: locally implemented and verified; production deployment, flag re-enable and acceptance pending. Next action: completion commit; hand off for review and deployment.
 Original request: User selected “2” from the ranked list: fix the application-version source.
 Authorization: 2026-11-21 chat selection authorizes implementing the bounded fix in one-shot mode. No production access, deployment, flag mutation on another instance, push or merge is authorized.
 Feedback: PF-20261030-B18. Its broader request includes independent cached-page revisions; preserve that behavior as part of fixing the shared version contract.
@@ -18,11 +18,11 @@ Reuse decisions: src/ForumRewrite/Application.php::appVersion is the shared sour
 Risks: Shared cached-page behavior currently depends on content-backed app-version. Resolve this before implementation by providing separate page freshness and pending state; test content-only changes and Reload. Linked worktrees must resolve the actual code checkout and source-only exports must not inherit an enclosing Git repository. Preserve no-git/git-error fallbacks. Production's disabled notification flag remains operator-controlled; document re-enabling after deployment.
 Completion conditions: Normal /api/version and board output agree with code HEAD; content commits do not change app-version; code commits do. Linked worktree, packed/detached refs and missing Git behavior covered. Existing cached navbar flow detects content changes and Reload reaches fresh content without repeated redirects. Browser phone/desktop checks cover the existing banner flow. Network failure retains retry behavior. Production deployment and phone acceptance remain explicitly unverified.
 Concepts touched: [Application update](../../concepts/application_update.md), changed to document code-version detection and independent cached-page freshness. Existing static-publication behavior used unchanged; no new inventory concept needed.
-Verification plan: ./v3 test --smoke VersionCheckBehaviorTest FastNavigationLayoutTest ApplicationVersionTest LocalAppSmokeTest::testApplicationRendersTextApisAndRss LocalAppSmokeTest::testApplicationRendersBoardThreadPostAndUserPages (confirm exact method names first); add affected read-model tests if resolver change warrants them. Run existing cached-navigation browser replay and an isolated code/content HTTP/browser regression. Review all appVersion consumers and Git fallback cases. Full suite will not be run. Do not claim deployed recovery from local checks.
+Verification plan: ./v3 test --smoke VersionCheckBehaviorTest FastNavigationLayoutTest ApplicationVersionTest LocalAppSmokeTest::testApplicationRendersTextApisAndRss LocalAppSmokeTest::testApplicationRendersCoreRoutes; add affected read-model tests if resolver change warrants them. Run existing cached-navigation browser replay and an isolated code/content HTTP/browser regression. Review all appVersion consumers and Git fallback cases. Full suite will not be run. Do not claim deployed recovery from local checks.
 Recovery: Failed polling silently retries with existing backoff. Reload uses existing __v bypass; separate pending state clears once the requested code/page is shown. Operator enables App version notification after deploying this fix; if an environment override disables it, remove that override and restart the service. Source-only distributions retain no-git and cannot detect Git-based updates.
 Starting revision: 22fc9f10a4d4f8cba9ecaed501aba2ea90d129e4, freshly fetched origin/main.
 Branch: fix/application-version-source
-Planning commit: pending.
+Planning commit: 31f4adc738eba9e15dbbff54c5df6535dac9d5b3 (confirmed before implementation).
 Dependency delta: zero; only existing PHP/Git/Node/browser facilities.
 
 ## Study history
@@ -32,6 +32,33 @@ Dependency delta: zero; only existing PHP/Git/Node/browser facilities.
 
 ## Execution and verification
 
-Pending planning commit. No implementation edits yet.
+2026-11-21: Planning commit confirmed before application edits. Changed the shared Application version source to the code checkout and extended the existing HEAD resolver to support .git files. Updated affected smoke expectations and registered ApplicationVersionTest in tests/run.php (the runner uses an explicit file list).
+2026-11-21: Preserved cached-navigation behavior with additive page-version metadata (code:content), the existing worker handshake and a separate pending-page key. Reused the same banner/Reload helpers. New workers accept older app-version-only pages; new clients ignore an older worker reporting the same code revision. Docs release/pending identities remain separate.
+2026-11-21: New browser regression uses isolated code and content repositories through normal Application routes, serving fingerprinted assets through the existing development router. Its initial fixture returned 404 for fingerprinted assets and could not raise the banner; corrected the fixture to reuse public/router.php, then reran successfully. This was a test-fixture correction, not an application regression or scope addition.
+2026-11-21: Audited shared appVersion consumers: forum metadata, /api/version, /api/checkin and skill discovery now share code HEAD. System status already used code HEAD and separate content state; retained it. Docs publication/rendering still uses its release marker. No new requests, dependencies or schema changes.
+
+Verification: PASS — ./v3 test ApplicationVersionTest VersionCheckBehaviorTest FastNavigationLayoutTest: final 14/14, covering Git-backed code/content independence, board/check-in versions, packed refs, detached linked worktrees, source-only/broken checkouts, separate pending state, legacy worker response, existing poll backoff and Docs-state isolation.
+Verification: BASELINE FAILURES — ./v3 test --smoke ApplicationVersionTest VersionCheckBehaviorTest FastNavigationLayoutTest LocalAppSmokeTest::testApplicationRendersCoreRoutes LocalAppSmokeTest::testApplicationRendersTextApisAndRss LocalAppSmokeTest::testAppVersionNotificationCanBeDisabled AgentCheckinTest ReadModelHotIndexRebuildTest DocsPublicationTest: 519 run, 514 passed, 5 failed. Logs: /tmp/v3-application-version-tests.log. Every version-specific check passed. Failures:
+- AgentPostingApiTest::testSignedControlDiagnosticsBeforeGenericParserFailure
+- AgentPostingApiTest::testRulesErrorsAndLegacyCompatibility
+- SingleRequestHttpTest::testUnicodeRoundTripAndSymbolRejection
+- SignedPostBundleValidatorTest::testStrictSubsetAndExactBytes
+- ReadModelHotIndexRebuildTest::testVersion25StartupRebuildsIndexesBeforeServingThread
+Verification: BASELINE REPLAY — unchanged origin/main 22fc9f10 in /tmp/v3-application-version-baseline-22fc9f10, the same smoke/focused selection minus the new ApplicationVersionTest: 515 run, 510 passed, the identical five failures. Log: /tmp/v3-application-version-baseline.log. Unicode/PCRE warnings accompanied the first group. The read-model recovery case passes alone on the working branch (1/1), but fails in both combined runs; its shared-run cause is not established. These unrelated failures remain outside this fix.
+Verification: PASS — node tests/browser/nav_cached_copy.mjs: flag on/off, older copies, content notice, stable /api/version after posts, later refreshed copies, Reload, cleared pending state, identity change, server stopped and non-navbar exclusion. Final replay passed after the legacy-worker guard change; log /tmp/v3-application-version-nav.log.
+Verification: PASS — node tests/browser/application_version.mjs: desktop 1280x800/light (Gloss) and phone 390x844/dark (Gloss Dark); initial notice hidden, content-only commit leaves it hidden, failed poll retains the page, recovery after code commit shows Reload, Reload obtains new code metadata, pending state clears, subsequent reload has no loop. No page errors or horizontal overflow. Visually reviewed /tmp/application-version-1280.png and /tmp/application-version-390.png: notice and Reload visible and usable. Final replay passed; log /tmp/v3-application-version-browser.log.
+Verification: PASS — git diff --check; intended diff/reuse review, source/reference/concept paths checked. No UI copy or styles changed, so ui_copy_audit_checklist.md did not require an entry. No theme-specific selectors or viewer-specific HTML added. Static release behavior covered by smoke and existing Docs-publication tests; production artifacts still need rebuilding after deployment.
+Verification: BLOCKED (pre-existing documentation problem) — ./v3 feedback index refuses PF-20261104-F50.txt because its Evidence field contains narrative text instead of an allowed value. Left that unrelated record and the generated README untouched; PF-20261030-B18 itself is updated and valid. Regenerate the index after that unrelated record is corrected in its own work.
+Verification: NOT RUN — full suite (maintainer-only under project instructions), production deployment, actual iPhone Safari and production flag re-enable. Local Chromium phone checks do not establish iPhone or production acceptance. No production access or external writes performed.
+Migration/dependencies: Inapplicable; no schema, format, canonical-record or third-party dependency change. Metadata is additive; the endpoint stays plain text and retains no-git/git-error fallbacks.
+Release/recovery: After merging/deploying, rebuild static artifacts and enable App version notification as documented in docs/runbooks/production_deploy.md#app-version-notification. Confirm /api/version equals code HEAD, posting leaves it unchanged, and an older open page offers Reload after the next deploy. Cached-page notices intentionally continue to respond to content changes. Leave feedback Workflow blocked until the deployment/acceptance evidence is collected.
+
+## Closeout
+
+2026-11-21T17:58:15Z retrospective scope assessment: 0.30, separately from the unchanged prospective 0.25. R1/P2, scope v1, Codex single exposed rater. The difference reflects shared cached-page migration/recovery and the isolated code/content browser fixture; no scope expansion or new product outcome. No measured effort or independent rating. Maintainer comfortable-fit judgment and acceptance pending.
+Outcome: Bounded application fix locally delivered; no implementation blockers remain. Production outcome and feedback-index refresh remain pending as above. No abandoned requirements or new enhancements.
+Final review: Existing Git lookup, rendering, banner, worker and router contracts reused; no duplicate UI or repository APIs. Reviewed all intended changes and touched concept/reference links. Corrected test fixture and outdated version assertions; final affected unit/browser checks passed. Smoke failures retained with unchanged-baseline evidence.
+Commit/merge/publication status: Planning commit 31f4adc738eba9e15dbbff54c5df6535dac9d5b3; completion commit pending creation (its hash will be reported in the handoff). Branch fix/application-version-source; not pushed, merged or deployed. No PR or thread reply requested.
+
 
 *— Codex · 2026-11-21 UTC*

@@ -15,6 +15,9 @@
   }
 
   var currentVersion = String(versionMeta.getAttribute('content') || '').trim();
+  var pageVersionMeta = document.querySelector('meta[name="page-version"]');
+  var currentPageVersion = pageVersionMeta ? String(pageVersionMeta.getAttribute('content') || '').trim() : '';
+  var pendingPageVersionStorageKey = 'forum_pending_page_version';
   if (currentVersion === '') {
     return;
   }
@@ -28,33 +31,34 @@
   var banner = document.querySelector('[data-role="app-version-banner"]');
   var reloadButton = banner ? banner.querySelector('[data-action="reload-for-new-version"]') : null;
   var nextVersion = null;
+  var nextVersionStorageKey = pendingVersionStorageKey;
   var requestInFlight = false;
   var versionCheckDelay = 15000;
   var maximumVersionCheckDelay = 120000;
   var versionCheckTimer = null;
 
-  function storedPendingVersion() {
+  function storedPendingVersion(storageKey) {
     if (!storage) {
       return '';
     }
 
     try {
-      return String(storage.getItem(pendingVersionStorageKey) || '').trim();
+      return String(storage.getItem(storageKey || pendingVersionStorageKey) || '').trim();
     } catch (error) {
       return '';
     }
   }
 
-  function persistPendingVersion(version) {
+  function persistPendingVersion(version, storageKey) {
     if (!storage) {
       return;
     }
 
     try {
       if (version === '') {
-        storage.removeItem(pendingVersionStorageKey);
+        storage.removeItem(storageKey || pendingVersionStorageKey);
       } else {
-        storage.setItem(pendingVersionStorageKey, version);
+        storage.setItem(storageKey || pendingVersionStorageKey, version);
       }
     } catch (error) {
     }
@@ -66,9 +70,10 @@
     return target.toString();
   }
 
-  function showBanner(version) {
+  function showBanner(version, storageKey) {
     nextVersion = version;
-    persistPendingVersion(version);
+    nextVersionStorageKey = storageKey || pendingVersionStorageKey;
+    persistPendingVersion(version, nextVersionStorageKey);
     if (!banner) {
       return;
     }
@@ -78,18 +83,19 @@
 
   function reloadForNewVersion() {
     var version = nextVersion || currentVersion;
-    persistPendingVersion(version);
+    persistPendingVersion(version, nextVersionStorageKey);
     window.location.assign(withVersionBypass(window.location.href, version));
   }
 
-  function ensurePendingVersionSatisfied() {
-    var pendingVersion = storedPendingVersion();
+  function ensurePendingVersionSatisfied(version, storageKey) {
+    version = version || currentVersion;
+    var pendingVersion = storedPendingVersion(storageKey);
     if (pendingVersion === '') {
       return false;
     }
 
-    if (pendingVersion === currentVersion) {
-      persistPendingVersion('');
+    if (pendingVersion === version) {
+      persistPendingVersion('', storageKey);
       return false;
     }
 
@@ -101,7 +107,7 @@
       // equal that exact target. Treat the reload as satisfied rather than
       // re-showing the banner forever, and re-poll immediately so a
       // genuinely stale response (e.g. a cached page) is caught right away.
-      persistPendingVersion('');
+      persistPendingVersion('', storageKey);
       checkForNewVersion(true);
       return false;
     }
@@ -110,7 +116,7 @@
     // Offer the newer version instead of replacing the page the reader is looking at.
     var root = document.documentElement;
     if (root && typeof root.getAttribute === 'function' && root.getAttribute('data-nav-cached-copy') === '1') {
-      showBanner(pendingVersion);
+      showBanner(pendingVersion, storageKey);
       return false;
     }
 
@@ -126,10 +132,20 @@
     show: function (version) {
       var value = String(version || '').trim();
       if (value !== '' && value !== currentVersion) showBanner(value);
+    },
+    showPage: function (version) {
+      var value = String(version || '').trim();
+      // An older worker only knows app-version; an equal code revision is not fresh content.
+      if (currentPageVersion !== '' && value !== '' && value !== currentPageVersion && value !== currentVersion) {
+        showBanner(value, pendingPageVersionStorageKey);
+      }
     }
   };
 
   if (ensurePendingVersionSatisfied()) {
+    return;
+  }
+  if (currentPageVersion !== '' && ensurePendingVersionSatisfied(currentPageVersion, pendingPageVersionStorageKey)) {
     return;
   }
 
@@ -193,6 +209,7 @@
 
   window.addEventListener('pageshow', function () {
     ensurePendingVersionSatisfied();
+    if (currentPageVersion !== '') ensurePendingVersionSatisfied(currentPageVersion, pendingPageVersionStorageKey);
   });
 
   scheduleNextVersionCheck();
