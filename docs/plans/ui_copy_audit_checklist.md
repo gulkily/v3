@@ -969,3 +969,8 @@ Verification: Chromium; `private_message_redesign.mjs` in all 18 themes with 390
 - [x] The step list replaces the "Importing…" status line and the Task worker row. The form is hidden while an import runs. Raw output is folded under Log. New copy is limited to step names, "Elapsed · updated · time left", and the not-started recovery: "The task worker didn't start.", the command and Try again. Checked in 8 themes at 390 and 1280 px ([Step 4](import_without_worker/import_without_worker_step4_implementation_summary.md)).
 - 2026-11-17, [new instance home quickfix](./new_instance_home/new_instance_home_quickfix.md). Changed: the empty Liked text ("Threads you like will show up here." → "Threads people like show up here.", since Liked is anyone's likes). Added: a "Getting started" link on the board only while it falls back to All, and on "No threads yet"; the `/start/` page. `/local/`'s "search your local content" became "search" (shared partial).
 - 2026-11-17, [issue tagset quickfix](./issue_tagset/issue_tagset_quickfix.md). Changed: the tag-unlocks flag description and the tour line now name #issue instead of #meta. No text added.
+
+## Event support search — 2026-11-20
+
+- Clarified the flag's existing description so the calendar query finds Event support as well as Calendar feed. No new UI or renamed switch.
+- Verified exact query and clearing using the rendered canonical fixture and actual filter script. Added the browser regression; Chromium launch and visual checks remain pending in this executor. [Verification record](calendar_flag_search/calendar_flag_search_one_shot.md#delivery-and-verification).

@@ -102,3 +102,16 @@ One stylesheet serves both themes; no copied rules. Registry, flag and profiles 
 Planning commit `bf0b83d5`; completion commit follows; PR to be opened. Not merged; not deployed.
 
 *— Claude · 2026-11-19 UTC · Model: claude-opus-5-5*
+
+
+## PR 341 merge recovery — 2026-11-21
+
+Request: "can you please help me fix pr 341"
+Mode: Direct, bounded merge recovery under the supplied task instructions; retain the existing implementation record.
+Feedback: No matching feedback item found in docs/feedback/items/ for Vaporgeist or the Vapor theme.
+Problem: PR 341 is open but cannot merge because both branches extended the Experience flag presentation list.
+Reuse: Preserve FeatureFlagRegistry::PRESENTATION_ORDER as the canonical ordering contract. Keep Vaporgeist after Zalgo and agent check-in after the agent prompt. Reuse the existing registry completeness, flag gating and theme consumer tests; no new component or behavior.
+Scope: Merge current origin/main into the open PR branch and resolve the one flag-list conflict. No visual redesign, dependencies, schema changes, deployment or PR merge.
+Completion: The combined branch passes smoke and affected flag/theme checks, and GitHub reports the updated PR mergeable. Any failed check must be investigated before pushing; baseline failures are reported separately. No force push.
+Verification: Smoke plus ThemeRegistryTest, ThemeCatalogPageTest, PreferencesPageTest, ThreadThemeTest and FeatureFlagEvaluatorTest ran 495 tests: 491 passed and four Unicode tests failed. FeatureFlagChangePageTest and SiteProfileRegistryTest: 12 passed. The four failures replay identically on unchanged origin/main bc16f7a77: AgentPostingApiTest::testSignedControlDiagnosticsBeforeGenericParserFailure, AgentPostingApiTest::testRulesErrorsAndLegacyCompatibility, SingleRequestHttpTest::testUnicodeRoundTripAndSymbolRejection and SignedPostBundleValidatorTest::testStrictSubsetAndExactBytes. This environment has PHP 8.1.2 and PCRE 10.39; UnicodeTextPolicy emits an unsupported Emoji_Presentation property warning. These failures are outside the theme/merge repair. No new test failures found.
+Review: The only manual code resolution combines both flag-list additions. No markup or styling changed by the resolution; rendered phone/desktop checks were not repeated. Dependency delta: zero. Full suite not run. Production not deployed. Push and GitHub mergeability verification pending.

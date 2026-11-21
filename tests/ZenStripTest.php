@@ -23,10 +23,23 @@ final class ZenStripTest
         assertSame($this->ids(ZenStrip::load($pdo, ['zen', 'meme'])), $this->ids(ZenStrip::load($pdo, ['Meme', 'ZEN'])));
     }
 
+    public function testTheHighestScoreLeadsAndATieGoesToTheNewest(): void
+    {
+        $pdo = $this->fixture();
+        // Equal scores: newest first, as before.
+        assertSame('mixed-sources', ZenStrip::load($pdo, ['zen', 'meme'])[0]['root_post_id']);
+
+        $pdo->exec("UPDATE threads SET score_total = 2 WHERE root_post_id IN ('by-approved', 'retired-author')");
+        $pdo->exec("UPDATE threads SET score_total = -1 WHERE root_post_id = 'mixed-sources'");
+        $rows = ZenStrip::load($pdo, ['zen', 'meme']);
+        assertSame(['retired-author', 'by-approved', 'both-labeled', 'mixed-sources'], $this->ids($rows));
+        assertSame([2, 2, 0, -1], array_column($rows, 'score_total'));
+    }
+
     public function testRowsCarryWhatACardShows(): void
     {
         $row = ZenStrip::load($this->fixture(), ['zen', 'meme'])[0];
-        assertSame(['root_post_id', 'root_post_created_at', 'subject', 'body_preview'], array_keys($row));
+        assertSame(['root_post_id', 'root_post_created_at', 'subject', 'body_preview', 'score_total'], array_keys($row));
         assertSame('Title mixed-sources', $row['subject']);
     }
 

@@ -96,6 +96,50 @@ final class InboxPageController
     }
 
     /**
+     * POST /api/inbox/catch_up: the Caught up action for clients other than the Unread page,
+     * such as an agent after its check-in. Takes JSON {section, post_ids} and returns the
+     * section's remaining unread count. IDs that are not currently unread are ignored.
+     *
+     * @param array<string, mixed> $query
+     */
+    public function apiCatchUp(string $method, array $query = []): void
+    {
+        $headers = $this->routeServices->noStoreHeaders();
+        if ($method !== 'POST') {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Only POST is supported.'], 405, ['Allow: POST', ...$headers]);
+            return;
+        }
+        $viewer = ($this->authenticatedViewerProfile)();
+        if ($viewer === null || ((int) ($viewer['is_approved'] ?? 0)) !== 1) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Unread is for signed-in approved members.'], $viewer === null ? 401 : 403, $headers);
+            return;
+        }
+        // Same guard as /api/private_messages/read: a non-simple request that no other site's form can send.
+        if (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') !== 'ForumInbox'
+            || !str_starts_with(strtolower($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json')
+            || in_array($_SERVER['HTTP_SEC_FETCH_SITE'] ?? '', ['cross-site', 'same-site'], true)) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Send JSON with the header X-Requested-With: ForumInbox.'], 403, $headers);
+            return;
+        }
+        $input = $this->routeServices->requestData($query);
+        $section = $input['section'] ?? 'replies';
+        $ids = $input['post_ids'] ?? null;
+        if (!in_array($section, self::POST_SECTIONS, true) || !is_array($ids) || array_filter($ids, 'is_string') !== $ids) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Send section (replies or new) and post_ids, a list of post IDs.'], 400, $headers);
+            return;
+        }
+        try {
+            $feed = $this->feed($viewer);
+            $feed->catchUp($section, array_values($ids));
+            $unread = $feed->unreadCount($section);
+        } catch (\Throwable) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Nothing was marked read; try again.'], 503, $headers);
+            return;
+        }
+        $this->routeServices->sendJson(['status' => 'ok', 'section' => $section, 'unread' => $unread], 200, $headers);
+    }
+
+    /**
      * Moves one section's mark past the posts the member saw, then returns to Inbox.
      * Returns the section whose update failed, or null after redirecting.
      *
@@ -134,6 +178,34 @@ final class InboxPageController
             $sections[$section] = ['items' => $items, 'failed' => $failed, 'catch_up_failed' => $failedCatchUp === $section];
         }
         return $sections;
+    }
+
+    /**
+     * What Unread holds for an approved viewer, for other readers such as the agent check-in.
+     * Reading it moves no mark. A failing part reports failed instead of throwing.
+     *
+     * @param array<string, mixed> $viewer an approved viewer profile
+     * @return array{replies:list<array<string,mixed>>,reply_count:int,replies_failed:bool,conversations:list<array{counterpart:string,unread_count:int,latest_at:string}>,messages_enabled:bool,messages_failed:bool}
+     */
+    public function unreadFor(array $viewer, int $limit): array
+    {
+        try {
+            $feed = $this->feed($viewer);
+            $replies = array_slice($feed->items('replies'), 0, max(0, $limit));
+            $count = $feed->unreadCount('replies');
+            $failed = false;
+        } catch (\Throwable) {
+            [$replies, $count, $failed] = [[], 0, true];
+        }
+        $messages = $this->messages($viewer);
+        return [
+            'replies' => $replies,
+            'reply_count' => $count,
+            'replies_failed' => $failed,
+            'conversations' => $messages['conversations'],
+            'messages_enabled' => $messages['enabled'],
+            'messages_failed' => $messages['failed'],
+        ];
     }
 
     /** @param array<string, mixed> $viewer */

@@ -192,6 +192,7 @@ $testFiles = [
     __DIR__ . '/FeatureFlagEvaluatorTest.php',
     __DIR__ . '/TagsetsTest.php',
     __DIR__ . '/TagUnlocksTest.php',
+    __DIR__ . '/AgentCheckinTest.php',
     __DIR__ . '/FeatureFlagsBehaviorTest.php',
     __DIR__ . '/BandcampPlayerControllerTest.php',
     __DIR__ . '/BandcampPlayerResolverTest.php',

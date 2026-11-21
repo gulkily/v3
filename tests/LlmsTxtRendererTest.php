@@ -36,6 +36,36 @@ final class LlmsTxtRendererTest
         assertTrue(strpos($text, '## Before you post as guest') < strpos($text, '## Publish in one request'));
     }
 
+    public function testCheckInSectionFollowsItsFlag(): void
+    {
+        $on = $this->render([]);
+        assertStringContains("## Check in\n\nOn each visit, GET /api/checkin", $on);
+        assertStringContains('python3 quill.py --site https://forum.example caught-up --section replies POST_ID...', $on);
+        assertStringContains('X-Requested-With: ForumInbox', $on);
+        assertTrue(strpos($on, '## Reply resolution') < strpos($on, '## Check in') && strpos($on, '## Check in') < strpos($on, '## Approving keys'));
+        assertStringContains('- [This guide as a skill file](/skill.md)', $on);
+        $off = $this->render([Registry::AGENT_CHECKIN_ENABLED => false]);
+        assertStringNotContains('## Check in', $off);
+        assertStringNotContains('/api/checkin', substr($off, 0, (int) strpos($off, '## Routes')));
+    }
+
+    public function testSkillFileIsTheGuideWithFrontmatter(): void
+    {
+        $flags = new FeatureFlagEvaluator(siteValues: []);
+        $renderer = new LlmsTxtRenderer($flags, null, 'ZenMemes', 'A board.');
+        $skill = $renderer->renderSkill('2026-11-20.abc123', 'zenmemes.com');
+        $header = "---\nname: zenmemes-agent-guide\ndescription: Use when reading, posting or checking in on ZenMemes (zenmemes.com): signed posting with Quill, the check-in, open #issue work and key approval.\nversion: 2026-11-20.abc123\n---\n\n";
+        assertTrue(str_starts_with($skill, $header), $skill);
+        $body = substr($skill, strlen($header));
+        $comment = "<!-- The same text as /llms.txt. Changes are announced in the thread titled \"Agent guide changes\", if this instance has one; refetch when the version changes. -->\n\n";
+        assertTrue(str_starts_with($body, $comment));
+        assertSame($renderer->render(), substr($body, strlen($comment)), 'The skill body is /llms.txt byte for byte.');
+
+        $generic = (new LlmsTxtRenderer($flags))->renderSkill('v1', 'forum.example');
+        assertStringContains("name: forum-example-agent-guide\ndescription: Use when reading, posting or checking in on forum.example: ", $generic);
+        assertStringContains("name: agent-guide\n", (new LlmsTxtRenderer($flags))->renderSkill('v1', ''));
+    }
+
     public function testEachInstanceFactFollowsItsFlag(): void
     {
         $cases = [
@@ -100,7 +130,7 @@ final class LlmsTxtRendererTest
     public function testReferenceNamesOnlyCatalogRoutesAndRenders(): void
     {
         $reference = (string) file_get_contents(dirname(__DIR__) . LlmsTxtRenderer::REFERENCE_PATH);
-        preg_match_all('#/api/([a-z_]+)#', $reference, $paths);
+        preg_match_all('#/api/([a-z_]+(?:/[a-z_]+)*)#', $reference, $paths);
         preg_match_all('#`((?:prepare|create|finalize|get|list|inspect|auth|authenticate)_[a-z_]+)`#', $reference, $names);
         $named = array_diff(array_unique(array_merge($paths[1], $names[1])), ['prepare_token']);
         assertTrue(count($named) >= 10, 'Expected the reference to name routes.');
@@ -158,6 +188,8 @@ final class LlmsTxtRendererTest
                 return (string) ob_get_clean();
             };
             assertStringContains('Posting: members only.', $get('/llms.txt'));
+            assertStringContains("Posting: members only.", $get('/skill.md'));
+            assertStringContains('access_denied', $get('/api/checkin'));
             assertStringContains('Plain-text API. Agents start at /llms.txt.', $get('/api/'));
             assertStringNotContains('root-001', $get('/api/list_index'));
             assertStringContains('<link rel="alternate" type="text/plain" href="/llms.txt"', $get('/'));

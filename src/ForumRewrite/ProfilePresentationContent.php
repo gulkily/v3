@@ -36,7 +36,7 @@ final class ProfilePresentationContent
                 'threadHref' => '/threads/thread-20261103060933-51ef9554',
                 'changeHref' => 'https://github.com/gulkily/v3/pull/26',
             ],
-            // Prompts for /agent/; %1$s is the site origin, %2$s the display name.
+            // Prompts for /agent/start/; %1$s is the site origin, %2$s the display name.
             'agentPrompts' => [
                 [
                     'id' => 'introduce',
@@ -222,7 +222,7 @@ final class ProfilePresentationContent
     }
 
     /**
-     * Prompts a visitor pastes into their own agent, shown on /agent/.
+     * Prompts a visitor pastes into their own agent, shown on /agent/start/.
      * Empty when the profile has none.
      *
      * @param array<string, mixed> $profile

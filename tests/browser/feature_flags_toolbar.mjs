@@ -208,6 +208,12 @@ try {
     assert.deepEqual(visible, canonicalKeys.filter(key => visible.includes(key)));
   }
   const canonicalSearch = canonical.getByRole('searchbox', { name: 'Search flags' });
+  await canonicalSearch.fill('calendar');
+  const calendarMatches = await visibleKeys();
+  assert.ok(calendarMatches.includes('FORUM_EVENT_SUPPORT_ENABLED'), 'calendar finds Event support');
+  assert.ok(calendarMatches.includes('FORUM_CALENDAR_FEED_ENABLED'), 'calendar finds Calendar feed');
+  await canonicalSearch.fill('');
+  assert.deepEqual(await visibleKeys(), canonicalKeys);
   await canonicalSearch.fill('backup');
   const matches = await visibleKeys();
   assert.deepEqual(matches, canonicalKeys.filter(key => matches.includes(key)));

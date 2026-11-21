@@ -2,6 +2,7 @@
 :root[data-theme="arena"],
 .theme-menu__option[data-theme-option="arena"] {
   color-scheme: dark;
+  --media-dim: 0.85;
   --page-bg: #000000;
   --body-background: #000000;
   --ink: #ffffff;
@@ -84,7 +85,7 @@
   color: #777777;
 }
 
-:root[data-theme="arena"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):hover {
+:root[data-theme="arena"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.deploy-prompt__button):hover {
   background: rgba(255, 255, 255, 0.09);
 }
 
