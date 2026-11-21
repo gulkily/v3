@@ -9,6 +9,7 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
+- [Application version source](application_version_source/application_version_source_one_shot.md) — code revision for deploy notifications, with independent cached-page freshness.
 - [Local startup port fallback](local_start_port_fallback/local_start_port_fallback_one_shot.md) — try ports 8000–8009 by default and report bind failures honestly.
 - [Agents navigation](agents_nav/agents_nav_one_shot.md) — point the Agents navigation item to the onboarding guide.
 - [Agent onboarding page](agent_start_page/agent_start_page_one_shot.md) — separate agent onboarding from the community prompt library.
