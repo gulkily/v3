@@ -648,3 +648,4 @@ and repair its navigation and affected references. See the
 - [Zen strip grid](zen_strip_grid/zen_strip_grid_one_shot.md) — one-shot: the Zen strip becomes a wrapping grid of whole, readable images.
 
 - [Calendar export timezone](calendar_export_timezone/calendar_export_timezone_one_shot.md)
+- [Named-column inserts](named_column_inserts/named_column_inserts_one_shot.md) — one-shot: every runtime SQL insert names its columns, with a guard test.
