@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./zen_hero_step1_solution_assessment.md) · Step 2 · Step 3 · Step 4
+> **Feature plan:** [Step 1](./zen_hero_step1_solution_assessment.md) · [Step 2](./zen_hero_step2_feature_description.md) · Step 3 · Step 4
 
 Cycle: `v3/zen_hero`. Follows [zen_strip](../zen_strip/zen_strip_step1_solution_assessment.md) (PR #344) and [zen_strip_grid](../zen_strip_grid/zen_strip_grid_one_shot.md) (PR #345), both merged.
 
@@ -102,6 +102,7 @@ Vertical slice: on an iPhone SE, open zenmemes.com signed out in Gloss Dark. One
 
 - 2026-11-21 UTC, intake after code inspection (`ZenStrip.php`, `BoardPageController.php`, `partials/zen_strip.php`, `site.css`, `zen_strip.md`): 0.35 projected total for the recommended scope. No pristine intake. Claude, single exposed rater (wrote the code being changed); R1 hashes not re-verified this session; baseline `origin/main` `09a15f6`.
 - Step 1 handoff: 0.35 for Option A (alternatives B 0.50, C 0.65; not summed). No implementation. 
-- 2026-11-21 UTC revision: the row opens All and the All link is removed. Projected total **0.35** for Option A, unchanged; one link replaces several. Option B kept for the record at 0.50 but marked as conflicting. Awaiting `Approved Step 1`.
+- 2026-11-21 UTC revision: the row opens All and the All link is removed. Projected total **0.35** for Option A, unchanged; one link replaces several. Option B kept for the record at 0.50 but marked as conflicting.
+- 2026-11-21 UTC: **Approved Step 1** by the maintainer ("Approved Sub 1"). No option named; Option A taken as recommended, with the Step 1 defaults for the open questions. Recorded in [Step 2](./zen_hero_step2_feature_description.md#approved-direction).
 
 *— Claude · 2026-11-21 UTC · Model: claude-fable-5-2*
