@@ -1610,7 +1610,7 @@ pre {
 /* The composer's "Posting as guest · Choose a name" line; the head script
    marks a browser whose key has a name before paint. */
 .compose-guest-note {
-  margin: 0;
+  margin: 0.5rem 0 0;
 }
 :root[data-viewer-named] .compose-guest-note {
   display: none;

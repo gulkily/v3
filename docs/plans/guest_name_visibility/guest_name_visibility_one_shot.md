@@ -102,3 +102,11 @@ Commit/merge/publication status: completion commit pending at time of writing; P
 Debug report: [debug log](guest_name_visibility_debug_log.md)
 
 *— Claude · 2026-11-18 UTC · Model: Claude Opus 5.5*
+
+## Composer spacing follow-up
+
+On November 20 the maintainer asked for a little more space below Post in the mobile composer and subsequently authorized pushing the change to PR #340. The shared `.compose-guest-note` rule in `public/assets/site.css` adds a top margin of 0.5rem. The existing guest and named viewer checks still control visibility.
+
+At a 390 × 844 viewport, the gap measured 8 CSS pixels. The guest-name visibility browser test passed after the local PHP POSIX extension was enabled, including registering a guest, choosing a name, and hiding the notice for a named viewer. The local smoke run recorded failures. The full suite was skipped.
+
+*Codex, November 21, 2026*
