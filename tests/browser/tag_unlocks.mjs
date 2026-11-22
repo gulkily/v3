@@ -1,4 +1,4 @@
-// Resolved/Closed/Reopen on replies in an #issue thread (resources/tagsets.txt).
+// Resolve/Close/Reopen on replies in an #issue thread (resources/tagsets.txt).
 // Run: node tests/browser/tag_unlocks.mjs  (set TAG_UNLOCKS_SHOTS=<dir> to save screenshots)
 import assert from 'node:assert/strict';
 import { mkdtemp, realpath, rm, mkdir } from 'node:fs/promises';
@@ -54,7 +54,7 @@ try {
     assert.equal(await card(page, first).locator('.body').isVisible(), true);
   } finally { await noScript.close(); }
 
-  // 1. Signed-in approved viewer: Resolved folds state in place, survives a reload, Reopen clears it.
+  // 1. Signed-in approved viewer: Resolve folds state in place, survives a reload, Reopen clears it.
   const context = await browser.newContext({ serviceWorkers: 'block', viewport: viewports[1] });
   try {
     await context.addCookies([{ name: 'identity_hint', value: identity, url: base }]);
@@ -83,6 +83,8 @@ try {
     assert.equal(await reply.locator('.body').isVisible(), true, 'folded reply expands');
     assert.equal(await reply.locator('[data-tag="resolved"]').isHidden(), true);
     assert.equal(await reply.locator('[data-tag="open"]').isHidden(), false);
+    // The button names the action; the saving text ("Resolved") does not stick once the state changes.
+    assert.equal(await reply.locator('[data-tag="resolved"]').evaluate(node => node.textContent.trim()), 'Resolve');
     await page.reload({ waitUntil: 'load' });
     assert.equal(await card(page, first).getAttribute('data-resolution'), 'resolved');
     await card(page, first).hover();
@@ -148,7 +150,7 @@ try {
         const button = card(page, first).locator('[data-tag="closed"]');
         await card(page, first).hover();
         const box = await button.boundingBox();
-        if (!box || box.x < 0 || box.x + box.width > viewport.width + 1) failures.push(`${theme} ${viewport.label}: Closed button outside viewport (${JSON.stringify(box)})`);
+        if (!box || box.x < 0 || box.x + box.width > viewport.width + 1) failures.push(`${theme} ${viewport.label}: Close button outside viewport (${JSON.stringify(box)})`);
         if (shots) await page.screenshot({ path: join(shots, `${theme}-${viewport.label}.png`), fullPage: true });
       } catch (error) {
         failures.push(`${theme} ${viewport.label}: ${error.message}`);

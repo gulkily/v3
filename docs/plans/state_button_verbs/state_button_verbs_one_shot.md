@@ -10,7 +10,7 @@ Extended estimates: disabled (one approach, no alternatives or stages)
 
 **Cycle estimate: 0.15 (intake after source inspection; no pristine intake)**
 
-Status: plan written; next permitted action: planning commit, then implementation.
+Status: implemented and verified locally; PR open, awaiting maintainer review, merge and deploy. Production replay pending.
 
 ## Original request
 
@@ -69,18 +69,41 @@ Exclusions: renaming tags; labels for tags other than the four state tags; per-t
 
 Branch `state-button-verbs` from `origin/main` at `e6fd4b0`.
 
-Planning commit: pending.
+Planning commit: `705a319`.
 
 ## Dated execution history
 
-- 2026-11-22: record written.
+- 2026-11-22: record written; planning commit `705a319`.
+- 2026-11-22: `PostStateView::buttonLabel()` returns Resolve and Close. New `PostStateView::appliedLabel()` feeds `data-applied-label` in `post_unlocked_tags.php` (Claimed, Resolved, Closed; Unclaim or Reopen for `open`). `thread_reactions.js` unchanged: state buttons already restore their own text after a save. Concept entry and test comments updated.
+- 2026-11-22: no feedback item in `docs/feedback/items/` matches this change.
 
 ## Study history
 
 - 2026-11-22T22:40Z intake **0.15**, scope v1, R1, P2. Single exposed Claude rater; `PostStateView`, the button template, `thread_reactions.js` and their tests were read before this estimate. Not hours.
+- 2026-11-22 execution entry: **0.15** reaffirmed against the recorded plan.
+- 2026-11-22 closeout, retrospective scope assessment **0.15**: delivered scope v1 unchanged, no corrections or additions. Maintainer fit judgment pending. Not measured effort.
 
 ## Enhancement requests
 
-None yet.
+None.
+
+## Outcome
+
+Delivered as planned. Every state button is a verb; the fold label, "Claimed by NAME", confirmations, the Tools page and stored tags are unchanged. Next action: maintainer merges and deploys, then checks an `#issue` reply on zenmemes.
+
+## Verification
+
+- Passed: `./v3 test --smoke TagUnlocksTest ReactionSendOrderTest TagsetsTest` (504 run, 504 passed). `TagUnlocksTest` now checks the Resolve and Close buttons, the past-tense applied labels and Reopen's applied label.
+- Passed: `node tests/browser/tag_unlocks.mjs` with the environment's Playwright and Chromium (`PLAYWRIGHT_MODULE`, `PLAYWRIGHT_BROWSERS_PATH`). It now also checks that the Resolve button reads Resolve after a tap, not the saving text. The test covers its usual themes at phone and desktop width.
+- Not run: the full suite (maintainer runs it).
+- Pending: production replay after deploy.
+
+## Final review
+
+Diff checked: two source files, one concept entry, two tests and this record. No duplicated wording logic: `appliedLabel()` reuses `buttonLabel()` for `open`. `git diff --check` clean.
+
+## Commit, merge and publication status
+
+Completion commit: pending at writing (hash in the PR). Not merged, not deployed.
 
 *— Claude · 2026-11-22 UTC · Model: claude-opus-5-5*

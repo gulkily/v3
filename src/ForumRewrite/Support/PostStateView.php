@@ -32,18 +32,28 @@ final class PostStateView
         return ucfirst($state);
     }
 
+    /** A state button names the action: Claim, Resolve, Close, Unclaim, Reopen. */
     public static function buttonLabel(string $tag, ?string $state): string
     {
         return match ($tag) {
             'claimed' => 'Claim',
-            'resolved' => 'Resolved',
-            'closed' => 'Closed',
+            'resolved' => 'Resolve',
+            'closed' => 'Close',
             'open' => $state === 'claimed' ? 'Unclaim' : 'Reopen',
             default => ucfirst($tag),
         };
     }
 
-    /** An open post offers every state; a claimed one offers Resolved, Closed, Unclaim; a folded one offers Reopen. */
+    /**
+     * Shown while a tap saves and used for the confirmation ("Resolved."), like Like/Liked.
+     * The open button keeps its verb: thread_reactions.js turns it into "Unclaimed." or "Reopened.".
+     */
+    public static function appliedLabel(string $tag, ?string $state): string
+    {
+        return $tag === 'open' ? self::buttonLabel($tag, $state) : ucfirst($tag);
+    }
+
+    /** An open post offers every state; a claimed one offers Resolve, Close, Unclaim; a folded one offers Reopen. */
     public static function buttonHidden(string $tag, ?string $state): bool
     {
         if ($state === null || $state === '') {
