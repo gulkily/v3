@@ -8,7 +8,7 @@ Effort study: `railspike-effort` / `v3/image_loading`; host ledger [image_loadin
 
 Extended estimates: enabled. Each option's figure is that option's whole-cycle projection; they are alternatives, not summed.
 
-Cycle estimate: 0.80
+Cycle estimate: 0.90
 
 ## Original Query
 
@@ -46,12 +46,12 @@ Concepts touched: [Zen strip](../../concepts/zen_strip.md) (changed by the modul
 
 ## Option A — All three, with Apache serving behind a flag
 
-**Estimate: 0.80**
+**Estimate: 0.90**
 Main driver: a published-images folder that Apache can serve from, kept in step with posts and deletions, plus its rewrite rules and flag. Uncertainty: medium-high; it touches deployment, deletion and private instances.
 
-1. **Caching:** images are sent with a long private lifetime in place of `no-store`.
+1. **Caching:** images are sent with a one-year private lifetime in place of `no-store`. A deleted image's address stops working on the server at once, and pages stop naming it; a browser that already holds a copy may show it until it lets go. Best effort to catch up is defined in Step 2.
 2. **Without PHP:** behind a new flag, off by default, the site keeps a folder of the images that public posts use, and Apache serves a file from it directly when it exists, the way high-traffic mode serves pages. Anything missing falls back to PHP as today. Deleting a post removes its files there.
-3. **Module:** the big meme is marked high priority, phones get a new mid-size copy in place of the original, and the box shows a tiny blurred preview until the image arrives.
+3. **Pages:** the big meme is marked high priority, and the box shows a tiny blurred preview until the image arrives. Everywhere on the site, a page shows a compressed copy at a fitting size and never the stored original; the original opens only when asked for. An image that fails to load is tried once more on its own.
 
 - Pro: everything asked for. First visits get fast and repeat visits are instant.
 - Pro: images stop competing with pages for PHP.
@@ -80,7 +80,7 @@ Main driver: Option A plus the service worker keeping the home page's meme image
 
 ## Recommendation
 
-Option A, as asked, with the Apache part behind a flag that is off by default and turned on for zenmemes.com. Build it in the order 1, 3, 2, so the two safe fixes land first and can be deployed even if the Apache part needs more review.
+Option A, as asked and as revised on 2026-11-22, with the Apache part behind a flag that is off by default and turned on for zenmemes.com. Build it in the order 1, 3, 2, so the two safe fixes land first and can be deployed even if the Apache part needs more review.
 
 One caution: Option B gets most of the speed without giving up the access checks. If the flag's trade-off looks wrong in Step 2, falling back to B is cheap.
 
@@ -88,7 +88,22 @@ On storing images in localStorage for the offline web app: the app already keeps
 
 Vertical slice: on an iPhone SE, open zenmemes.com signed out. The big meme's box shows a blurred preview at once and the sharp image soon after. Reload: every image appears with no wait. With the Apache flag on, the server log shows no PHP request for those images. Delete a test post with an image: its address stops working.
 
+## Maintainer's answers (2026-11-22)
+
+"Yes, a browser may keep an image for a year. It's okay if a deleted image reappears until the client catches up, although we should make best effort to catch up. I don't know why no store was chosen. The phone was online. The phone was online. Yes, every image, perhaps we should compress them when we store them."
+
+- **Lifetime:** one year. A deleted image may linger in a browser, with best effort to catch up.
+- **`no-store`:** no known reason. Nothing in the repository records one either.
+- **The blank image:** the phone was online, so a request failed and was never retried. One automatic retry joins the scope. The cause of the failed request itself is still unknown.
+- **Scope:** every image on the site.
+- **Compress when stored:** partly there already. The browser shrinks an image to at most 2048px and re-encodes it at 85% quality before upload (`image_prepare.js`). The server then keeps those exact bytes, because the signed post names their hash; re-compressing the stored file would break that reference. What can change is what pages show: compressed copies only, which is now part of fix 3. Uploads that skip the browser (agents posting through the API) arrive as sent.
+
 ## Open questions for the maintainer
+
+- **What "best effort to catch up" should cover.** A server can't recall one file from a browser's own store; it can only ask the browser to drop everything it holds for the site. Default: the address fails at once, no page names it, and the offline web app drops its copy at its next update once it keeps images. Not by default: clearing the whole site's stored files on a deletion.
+- **API uploads:** should the server refuse or shrink an oversized image that skipped the browser's preparation? Default: leave as is in this cycle.
+
+## Answered questions (kept for the record)
 
 - **How long may a browser keep an image?** Default: one year, private, since an address can never change its content. The cost: an image deleted from the site stays visible in browsers that already loaded it, until they clear it. Alternative: one day.
 - **Was `no-store` chosen so deleted images vanish at once?** If so, the default above needs your explicit agreement.
@@ -102,6 +117,9 @@ Vertical slice: on an iPhone SE, open zenmemes.com signed out. The big meme's bo
 ## Study snapshots and approval
 
 - 2026-11-22 UTC, intake after measuring production and reading `ImageController.php`, `ImageStore.php`, `ThumbnailStore.php`, `service_worker.js`, `public/.htaccess` and `partials/zen_strip.php`: 0.80 projected total for the recommended scope. No pristine intake. Claude, single exposed rater; R1 hashes not re-verified this session; baseline `origin/main` `22fc9f1`.
-- Step 1 handoff: 0.80 for Option A (alternatives B 0.45, C 1.10; not summed). No implementation. Awaiting `Approved Step 1`.
+- Step 1 handoff: 0.80 for Option A (alternatives B 0.45, C 1.10; not summed). No implementation.
+- 2026-11-22 UTC revision after the maintainer's answers: one-year caching, a retry, and compressed copies on every page join Option A. Projected total **0.90** for Option A, up from 0.80, for the site-wide display copies and the retry. B and C unchanged for the record. Awaiting `Approved Step 1`.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+*— Revised by Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
