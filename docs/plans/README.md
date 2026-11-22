@@ -656,3 +656,5 @@ and repair its navigation and affected references. See the
 - [Calendar export timezone](calendar_export_timezone/calendar_export_timezone_one_shot.md)
 
 - [Arena header deploy button contrast](arena_deploy_prompt_contrast/arena_deploy_prompt_contrast_one_shot.md)
+
+- [Local import progress](local_import_progress/local_import_progress_step1_solution_assessment.md) — staged: the local start page queues its import and shows the Tools → Import steps, timer and time left.
