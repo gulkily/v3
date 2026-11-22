@@ -392,6 +392,7 @@ $testFiles = [
     __DIR__ . '/UnicodeTextPolicyTest.php',
     __DIR__ . '/UnicodeTextRuleParityTest.php',
     __DIR__ . '/VersionCheckBehaviorTest.php',
+    __DIR__ . '/ApplicationVersionTest.php',
     __DIR__ . '/UrlHintsTest.php',
     __DIR__ . '/StressProbeScriptTest.php',
     __DIR__ . '/WebServerRoutingTest.php',

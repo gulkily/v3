@@ -2015,6 +2015,7 @@ final class Application
             versionEndpoint: $this->docsPage ? '/api/docs-version' : '/api/version',
             versionStorageKey: $this->docsPage ? 'forum_pending_docs_version' : 'forum_pending_app_version',
             requestPath: fn (): string => $this->requestPath,
+            pageVersion: $this->docsPage ? null : $this->appVersion() . ':' . ReadModelMetadata::repositoryHead($this->repositoryRoot),
         );
     }
 
@@ -2092,7 +2093,7 @@ final class Application
             return $this->appVersion;
         }
 
-        $this->appVersion = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+        $this->appVersion = ReadModelMetadata::repositoryHead($this->projectRoot);
 
         return $this->appVersion;
     }

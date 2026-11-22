@@ -35,7 +35,7 @@ final class ReadModelMetadata
 
     public static function repositoryHead(string $repositoryRoot): string
     {
-        if (!is_dir($repositoryRoot . '/.git')) {
+        if (!is_dir($repositoryRoot . '/.git') && !is_file($repositoryRoot . '/.git')) {
             return 'no-git';
         }
 
