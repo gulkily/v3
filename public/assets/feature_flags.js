@@ -6,6 +6,8 @@
     var search = toolbar.querySelector('input[type="search"]');
     var chips = toolbar.querySelectorAll('[data-flag-filter]');
     var rows = document.querySelectorAll('[data-feature-flag-row]');
+    var recent = document.querySelector('[data-feature-flags-recent]');
+    var recentLinks = recent ? recent.querySelectorAll('a') : [];
     var selected = 'all';
 
     function refresh() {
@@ -24,6 +26,15 @@
         row.hidden = !found || !matches[selected];
         if (!row.hidden) visible++;
       });
+      if (recent) {
+        var recentVisible = false;
+        recentLinks.forEach(function (link) {
+          var row = document.getElementById(link.hash.slice(1));
+          link.parentElement.hidden = !row || row.hidden;
+          if (!link.parentElement.hidden) recentVisible = true;
+        });
+        recent.hidden = !recentVisible;
+      }
       document.querySelectorAll('.feature-flag-group').forEach(function (group) {
         group.hidden = !group.querySelector('[data-feature-flag-row]:not([hidden])');
       });
@@ -37,7 +48,7 @@
 
     // A Recently released link lands its row below the sticky toolbar, and a row a
     // filter hides clears the filter first. Opening the link in a new tab changes nothing here.
-    document.querySelectorAll('[data-feature-flags-recent] a').forEach(function (link) {
+    recentLinks.forEach(function (link) {
       link.addEventListener('click', function (event) {
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         var row = document.getElementById(link.hash.slice(1));

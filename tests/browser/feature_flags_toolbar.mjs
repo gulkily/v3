@@ -24,16 +24,32 @@ try {
   const visible = () => page.locator('[data-feature-flag-row]:visible').evaluateAll(rows => rows.map(row => row.dataset.flagKey));
   const counts = () => page.locator('[data-flag-filter-count]').allTextContents();
   assert.deepEqual(await counts(), ['4', '3', '1', '1', '2']);
-  // Recently released: newest release date and the day before, newest first; undated
-  // and older flags left out. A link to a filtered-out row clears the filter.
-  assert.deepEqual(await page.locator('[data-feature-flags-recent] li').allTextContents(), ['Beta switch Nov 17', 'Alpha switch Nov 16']);
+  // Recent items mirror search and status without changing their release order.
+  const recent = page.locator('[data-feature-flags-recent]');
+  const recentItems = () => recent.locator('li:visible').allTextContents();
+  assert.deepEqual(await recentItems(), ['Beta switch Nov 17', 'Alpha switch Nov 16']);
   await chip('disabled').click();
   assert.deepEqual(await visible(), ['TEST_GAMMA']);
-  await page.locator('[data-feature-flags-recent] a', { hasText: 'Alpha switch' }).click();
+  assert.equal(await recent.isVisible(), false);
+  assert.equal(await recent.locator('a', { hasText: 'Alpha switch' }).isVisible(), false);
+  await chip('all').click();
+  await search.fill('apricot');
+  assert.deepEqual(await recentItems(), ['Alpha switch Nov 16']);
+  assert.equal(await recent.locator('a', { hasText: 'Beta switch' }).isVisible(), false);
+  await recent.locator('a', { hasText: 'Alpha switch' }).click();
   assert.equal(await page.locator('#flag-TEST_ALPHA').isVisible(), true);
   const landed = await page.evaluate(() => [document.querySelector('#flag-TEST_ALPHA').getBoundingClientRect().top, document.querySelector('[data-feature-flags-toolbar]').getBoundingClientRect().bottom]);
   assert.ok(landed[0] >= landed[1], 'row lands below the sticky toolbar: ' + landed);
-  assert.equal(await chip('all').getAttribute('aria-pressed'), 'true');
+  assert.equal(await search.inputValue(), 'apricot');
+  await chip('locked').click();
+  assert.equal(await recent.isVisible(), false);
+  await search.fill('shared');
+  assert.deepEqual(await visible(), ['TEST_GAMMA', 'TEST_DELTA']);
+  assert.equal(await recent.isVisible(), false);
+  await chip('all').click();
+  assert.deepEqual(await recentItems(), ['Beta switch Nov 17']);
+  await search.fill('');
+  assert.deepEqual(await recentItems(), ['Beta switch Nov 17', 'Alpha switch Nov 16']);
   assert.equal((await visible()).length, 4);
   for (const [status, expected] of [
     ['enabled', ['TEST_ALPHA', 'TEST_BETA', 'TEST_DELTA']],
