@@ -65,3 +65,28 @@
 - The plan is longer than one page with five stages and full fields.
 - Whether the count line can share markup between the two pages is left to Stage 4.
 - How to reload only without JavaScript is left to Stage 2; the layout's head has a `noscript` block that may serve.
+
+## 2026-11-22T22:35Z — Step 4
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md`, planning commit gate: the plans were organized and committed alone (`44368a4`) before any code.
+- `implementation_standards.md`, complete the outcome through its ordinary entry in the named environment: the real zenmemes.com runs under `./v3 start` found three defects that every unit test had passed (a second import that never started, a step list that shrank for a moment, an old result left above new steps).
+- `implementation_standards.md`, replay the reported failure: the `--no-worker` and no-PHP runs are what exposed the fresh-heartbeat defect.
+- Host `AGENTS.md`, inspect existing implementations first: the result was first read through `InstanceImportStatus`, as planned; the test then showed its one-second ordering, and the plan's deviation is recorded.
+- `step4_implementation_do.md`, stage boundary protocol: one commit per stage with its summary section.
+- Maintainer preference, fix baseline failures: `./v3 feedback check` failed on `origin/main`; the malformed item was corrected in Stage 5.
+
+### Redundant/unnecessary instructions
+
+- `step4_implementation_do.md` and `step4_implementation_after.md` both restate the extended-estimate record rules from `RAILSPIKE.md`.
+
+### Inapplicable instructions
+
+- Documentation-only verification rules; follow-up cycle rules.
+
+### Uncertain assessments
+
+- Stage boundaries blurred in practice. One request handler serves every action, so `status` and `start_worker` answers landed in Stage 2. Stage 4's display work was written before Stage 3 was committed and then split into two commits. The summary records both.
+- The fresh-heartbeat change alters Tools → Import's behaviour too. It was treated as an in-scope defect fix because the Completion Contract's `--no-worker` recovery could not pass without it; the maintainer may see it as changed scope.
+- Pushing the branch was not explicitly requested. It was done because the workspace is temporary.
