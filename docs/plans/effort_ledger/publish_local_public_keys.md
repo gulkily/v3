@@ -15,3 +15,5 @@
 2026-11-22T22:48:00+00:00: Step 3 approved. Fresh-main baseline 8b00a78be, planning commit 68e4c4269; Step 4 entry 0.65 reaffirmed. Stage 1 original 0.18, retrospective 0.20; focused checks passed with retained smoke baseline failures. No scope change, measured labor or acceptance increment. Canonical progress: ../publish_local_public_keys/publish_local_public_keys_step4_implementation_summary.md.
 
 2026-11-22: Stage 2 locally complete; original stage work 0.22, retrospective 0.25. Cycle projection 0.65 reaffirmed, same v1/A/R1/P2 and exposed rater. Focused publication/recovery checks pass; known smoke failures retained. No measured labor or production acceptance increment.
+
+2026-11-22: Stage 3 locally complete; original 0.15, retrospective 0.17. Actual isolated API/CLI acceptance and selected shared consumers pass; four baseline smoke failures remain. Same v1/A/R1/P2/exposed rater, projection 0.65 unchanged. No production acceptance or measured labor.

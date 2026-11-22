@@ -26,14 +26,14 @@ final class PublicKeyPublishDestination
         $identity = 'openpgp:' . strtolower($fingerprint);
         try {
             [$status, $body, $type] = $this->request('/api/get_profile?profile_slug=openpgp-' . strtolower($fingerprint));
+            if (in_array($status, [401, 403], true)) {
+                return ['state' => 'refused', 'detail' => 'Destination access refused; use an instance that permits public registration.'];
+            }
             if (!str_starts_with($type, 'text/plain')) {
                 throw new RuntimeException('Unexpected profile response; check the destination and retry.');
             }
-            if ($status === 404 && trim($body) === 'profile not found') {
+            if ($status === 404 && $body === "profile not found\n") {
                 return ['state' => 'missing', 'detail' => 'Not registered'];
-            }
-            if (in_array($status, [401, 403], true)) {
-                return ['state' => 'refused', 'detail' => 'Destination access refused; use an instance that permits public registration.'];
             }
             if ($status !== 200) {
                 throw new RuntimeException('Profile HTTP ' . $status . '; check the destination and retry.');

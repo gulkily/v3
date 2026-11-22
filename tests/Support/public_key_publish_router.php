@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 file_put_contents(__DIR__ . '/requests', $_SERVER['REQUEST_METHOD'] . ' ' . $_SERVER['REQUEST_URI'] . "\n", FILE_APPEND);
+if (is_file(__DIR__ . '/delay')) usleep(1500000);
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && str_ends_with(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/api/link_identity')) {
     require file_get_contents(__DIR__ . '/project') . '/autoload.php';
     $fp = (new \ForumRewrite\Security\OpenPgpKeyInspector())->inspectPublicOnly($_POST['public_key'] ?? '')['fingerprint'];

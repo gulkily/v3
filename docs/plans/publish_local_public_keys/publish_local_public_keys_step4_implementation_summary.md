@@ -37,7 +37,7 @@ Reuse and risks: use the existing inspector, identity/name/retirement parsers, p
 
 **Retrospective stage work: 0.25**
 
-- Status: locally complete.
+- Status: locally complete; commit 3304d9083.
 - Changes: explicit fingerprint selection, exclusive Key: value review files outside canonical source, source/destination binding, all-selection validation before the first write, bounded public-key-only registration and mandatory read-back. Each invocation attempts each missing selection once; reruns skip confirmed registrations and preserve mixed outcomes.
 - Verification: smoke plus PublishKeysCommandTest/PublicKeyPublisherTest: 494 run, 490 passed, four known Unicode failures reproduced on untouched baseline. Final focused PublicKeyPublisherTest: 5/5 passed, including source changes in another selected key, source-byte changes, review-file preservation, ambiguous responses, concurrent registration, partial refusal and reruns. Syntax/help/diff checks passed. Full suite not run.
 - Estimate details: original 0.22 retained, retrospective 0.25; same v1/A, R1/P2 and exposed rater. Projection 0.65 reaffirmed; not measured labor. Production untouched and acceptance pending.
@@ -46,7 +46,13 @@ Reuse and risks: use the existing inspector, identity/name/retirement parsers, p
 
 **Original estimate: 0.15**
 
-- Status: pending; Stage 2 must commit first.
+**Retrospective stage work: 0.17**
+
+- Status: locally complete.
+- Changes: reused SingleRequestHttpTest::server/FrontendTestServer and the ordinary bash v3 CLI against the actual FrontController/get_profile/link_identity routes. Verified registered key/name, unchanged local source, destination commit changes only on first publish, unapproved status and duplicate-free rerun. Corrected JSON access-denial classification and required the exact typed missing-profile response.
+- Verification: final focused PublicKeyPublishHttpTest 5/5 passed: actual registration and restricted instance, TLS failure, oversized/unexpected 404, timeout/recovery, cryptographically verified rename and incomplete retirement evidence. Each unsafe source check made zero requests. Smoke plus PublicKeyPublishHttpTest/PublicKeyPublisherTest/PublishKeysCommandTest/IdentityBootstrapDiagnosticsTest and the two link-identity name/bootstrap WriteApiSmokeTest cases: 505 run, 501 passed, only the four reproduced baseline Unicode failures. All new and selected shared-consumer tests passed. Syntax and diff checks passed. Full suite not run.
+- Notes: no browser UI, themes, roles, schema/migration or deployment changes; UI/theme checks inapplicable. Existing registration/inspector semantics remain intact; shared bootstrap consumers selected for verification. Live production and physical-device acceptance remain pending and require separate authorization.
+- Estimate details: original 0.15 retained, retrospective 0.17; same v1/A/R1/P2/exposed rater, cycle projection 0.65 unchanged. Not measured labor.
 
 ## Stage 4 - Documentation and handoff
 
