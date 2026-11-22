@@ -19,7 +19,7 @@ final class LocalMetaTrainingTest
         $pdo->exec("CREATE TABLE posts (post_id TEXT PRIMARY KEY, thread_id TEXT, subject TEXT, body TEXT, board_tags_json TEXT NOT NULL DEFAULT '[]', post_tags_json TEXT NOT NULL DEFAULT '[]', is_hidden INTEGER NOT NULL DEFAULT 0, retracted_at TEXT NULL)");
         $pdo->exec('CREATE TABLE threads (root_post_id TEXT PRIMARY KEY, thread_labels_json TEXT NOT NULL)');
         $post = $pdo->prepare('INSERT INTO posts (post_id, thread_id, subject, body) VALUES (?, ?, ?, ?)');
-        $thread = $pdo->prepare('INSERT INTO threads VALUES (?, ?)');
+        $thread = $pdo->prepare('INSERT INTO threads (root_post_id, thread_labels_json) VALUES (?, ?)');
         foreach ($roots as [$id, $subject, $body, $labels]) {
             $post->execute([$id, $id, $subject, $body]);
             $thread->execute([$id, json_encode($labels)]);
@@ -36,11 +36,11 @@ final class LocalMetaTrainingTest
         $pdo->exec('CREATE TABLE post_fast_scores (post_id TEXT, content_hash TEXT, rubric_revision TEXT, status TEXT, source TEXT, scores_json TEXT, updated_at TEXT)');
         $pdo->exec('CREATE TABLE fastmod_meta (post_id TEXT, suppressed INTEGER)');
         $hasher = new FastScoreContextFactory(static fn (string $_): ?array => null);
-        $insert = $pdo->prepare("INSERT INTO post_fast_scores VALUES (?, ?, 'r1', 'scored', 'llm', ?, '2026-11-01')");
+        $insert = $pdo->prepare("INSERT INTO post_fast_scores (post_id, content_hash, rubric_revision, status, source, scores_json, updated_at) VALUES (?, ?, 'r1', 'scored', 'llm', ?, '2026-11-01')");
         foreach ($scores as $id => [$subject, $body, $meta]) {
             $insert->execute([$id, $hasher->contentHashForPost(['post_id' => $id, 'subject' => $subject, 'body' => $body]), json_encode(['meta' => $meta, 'moderation' => 0.1])]);
         }
-        foreach ($suppressed as $id) $pdo->exec("INSERT INTO fastmod_meta VALUES ('$id', 1)");
+        foreach ($suppressed as $id) $pdo->exec("INSERT INTO fastmod_meta (post_id, suppressed) VALUES ('$id', 1)");
         return $pdo;
     }
 

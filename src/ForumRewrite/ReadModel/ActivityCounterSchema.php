@@ -10,12 +10,12 @@ final class ActivityCounterSchema
     {
         $sql = [
             'CREATE TABLE activity_counts (view TEXT PRIMARY KEY, total INTEGER NOT NULL, without_profile_names INTEGER NOT NULL)',
-            'INSERT INTO activity_counts VALUES ' . implode(',', array_map(
+            'INSERT INTO activity_counts (view, total, without_profile_names) VALUES ' . implode(',', array_map(
                 static fn (string $view): string => "('$view',0,0)",
                 [...\ForumRewrite\Activity\ActivityService::activityViews(), 'commits'],
             )),
             'CREATE TABLE activity_local_state (singleton INTEGER PRIMARY KEY, events INTEGER NOT NULL, revision TEXT NOT NULL)',
-            "INSERT INTO activity_local_state VALUES (1,0,'')",
+            "INSERT INTO activity_local_state (singleton, events, revision) VALUES (1,0,'')",
             "CREATE INDEX activity_page_idx ON activity(created_at DESC, COALESCE(action_key, 'local:' || id) DESC)",
             'CREATE INDEX activity_date_key_idx ON activity(created_at, action_key, id)',
             'CREATE INDEX activity_kind_key_idx ON activity(kind, action_key, id)',

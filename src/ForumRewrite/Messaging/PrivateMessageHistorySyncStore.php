@@ -27,7 +27,7 @@ final class PrivateMessageHistorySyncStore
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_sender_scan (account TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, after_id TEXT NOT NULL, PRIMARY KEY(account,source))');
         foreach(PrivateMessageHistoryRevision::statements('history_sync_transfers','history_arrivals',["@.account || ':' || @.target"]) as $sql) $pdo->exec($sql);
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_donor_revision (account TEXT PRIMARY KEY, token TEXT NOT NULL)');
-        $pdo->exec("CREATE TRIGGER IF NOT EXISTS history_donor_delete AFTER DELETE ON history_sync_transfers BEGIN INSERT INTO history_donor_revision VALUES (OLD.source,lower(hex(randomblob(16)))) ON CONFLICT(account) DO UPDATE SET token=excluded.token; END");
+        $pdo->exec("CREATE TRIGGER IF NOT EXISTS history_donor_delete AFTER DELETE ON history_sync_transfers BEGIN INSERT INTO history_donor_revision (account,token) VALUES (OLD.source,lower(hex(randomblob(16)))) ON CONFLICT(account) DO UPDATE SET token=excluded.token; END");
         PrivateMessageHistoryRevision::ensureEpoch($pdo,'history_arrivals');
         PrivateMessageHistoryRevision::ensureEpoch($pdo,'history_donor');
         $pdo->exec('CREATE TABLE IF NOT EXISTS history_sync_schedule (account TEXT NOT NULL, source TEXT NOT NULL, mode TEXT NOT NULL, state TEXT NOT NULL, PRIMARY KEY(account,source,mode))');
@@ -44,7 +44,7 @@ final class PrivateMessageHistorySyncStore
     }
     public function saveVerification(string $account, string $source, string $mode, array $state): void
     {
-        $q=$this->pdo->prepare('INSERT INTO history_sync_verification VALUES (?,?,?,?) ON CONFLICT(account,source,mode) DO UPDATE SET state=excluded.state');
+        $q=$this->pdo->prepare('INSERT INTO history_sync_verification (account,source,mode,state) VALUES (?,?,?,?) ON CONFLICT(account,source,mode) DO UPDATE SET state=excluded.state');
         $q->execute([$account,$source,$mode,json_encode($state,JSON_THROW_ON_ERROR)]);
     }
     public function donorRevision(string $source): string { return PrivateMessageHistoryRevision::token($this->pdo,'history_donor',$source); }
@@ -57,7 +57,7 @@ final class PrivateMessageHistorySyncStore
     }
     public function saveSchedule(string $account, string $source, string $mode, array $state): void
     {
-        $q=$this->pdo->prepare('INSERT INTO history_sync_schedule VALUES (?,?,?,?) ON CONFLICT(account,source,mode) DO UPDATE SET state=excluded.state');
+        $q=$this->pdo->prepare('INSERT INTO history_sync_schedule (account,source,mode,state) VALUES (?,?,?,?) ON CONFLICT(account,source,mode) DO UPDATE SET state=excluded.state');
         $q->execute([$account,$source,$mode,json_encode($state,JSON_THROW_ON_ERROR)]);
     }
     public function destination(string $account, string $source, string $target, string $revision): array
@@ -67,7 +67,7 @@ final class PrivateMessageHistorySyncStore
     }
     public function saveDestination(string $account, string $source, string $target, string $revision, string $after, bool $finished): void
     {
-        $q=$this->pdo->prepare('INSERT INTO history_sync_destinations VALUES (?,?,?,?,?,?) ON CONFLICT(account,source,target) DO UPDATE SET revision=excluded.revision,after_id=excluded.after_id,finished=excluded.finished');
+        $q=$this->pdo->prepare('INSERT INTO history_sync_destinations (account,source,target,revision,after_id,finished) VALUES (?,?,?,?,?,?) ON CONFLICT(account,source,target) DO UPDATE SET revision=excluded.revision,after_id=excluded.after_id,finished=excluded.finished');
         $q->execute([$account,$source,$target,$revision,$after,(int)$finished]);
     }
     public function pendingDestination(string $account, string $source, string $revision, string $after=''): ?string
@@ -77,7 +77,7 @@ final class PrivateMessageHistorySyncStore
     }
     public function recordActivity(string $account, string $source, int $now): void
     {
-        $q=$this->pdo->prepare('INSERT INTO history_sync_activity VALUES (?,?,?) ON CONFLICT(account,source) DO UPDATE SET active_at=excluded.active_at WHERE excluded.active_at>=active_at+5 OR excluded.active_at<active_at');
+        $q=$this->pdo->prepare('INSERT INTO history_sync_activity (account,source,active_at) VALUES (?,?,?) ON CONFLICT(account,source) DO UPDATE SET active_at=excluded.active_at WHERE excluded.active_at>=active_at+5 OR excluded.active_at<active_at');
         $q->execute([$account,$source,$now]);
     }
     public function recentActivity(string $account, int $limit = 16): array
@@ -100,7 +100,7 @@ final class PrivateMessageHistorySyncStore
             // redundant durable write while other clients are being admitted.
             if ($retry>0) {$this->pdo->exec('COMMIT');return $retry;}
             $events[]=[$source,$now];
-            $q=$this->pdo->prepare('INSERT INTO history_sync_admission VALUES (?,?) ON CONFLICT(account) DO UPDATE SET events=excluded.events');
+            $q=$this->pdo->prepare('INSERT INTO history_sync_admission (account,events) VALUES (?,?) ON CONFLICT(account) DO UPDATE SET events=excluded.events');
             $q->execute([$account,json_encode($events,JSON_THROW_ON_ERROR)]);
             $this->pdo->exec('COMMIT');
             return max(0,$retry);
@@ -117,7 +117,7 @@ final class PrivateMessageHistorySyncStore
     {
         if($this->checkpoint($account,$source,$sender)===['target'=>$target,'after_id'=>$after]) return;
         $table=$sender?'history_sync_sender_scan':'history_sync_scan';
-        $q=$this->pdo->prepare('INSERT INTO '.$table.' VALUES (?,?,?,?) ON CONFLICT(account,source) DO UPDATE SET target=excluded.target,after_id=excluded.after_id WHERE target!=excluded.target OR after_id!=excluded.after_id');
+        $q=$this->pdo->prepare('INSERT INTO '.$table.' (account,source,target,after_id) VALUES (?,?,?,?) ON CONFLICT(account,source) DO UPDATE SET target=excluded.target,after_id=excluded.after_id WHERE target!=excluded.target OR after_id!=excluded.after_id');
         $q->execute([$account,$source,$target,$after]);
     }
     public function transferItems(string $transfer): array
@@ -151,7 +151,7 @@ final class PrivateMessageHistorySyncStore
         $id=hash('sha256',json_encode([$account,$source,$target,$ciphertext,$items],JSON_THROW_ON_ERROR));
         $this->pdo->beginTransaction();
         try {
-            $q=$this->pdo->prepare('INSERT INTO history_sync_transfers VALUES (?,?,?,?,?) ON CONFLICT(transfer_id) DO NOTHING');
+            $q=$this->pdo->prepare('INSERT INTO history_sync_transfers (transfer_id,account,source,target,ciphertext) VALUES (?,?,?,?,?) ON CONFLICT(transfer_id) DO NOTHING');
             $q->execute([$id,$account,$source,$target,$ciphertext]);
             $old=[];
             foreach($items as $item) {
@@ -159,7 +159,7 @@ final class PrivateMessageHistorySyncStore
                 $q->execute([$account,$source,$target,$item['message_id']]);
                 if($prior=$q->fetchColumn()) $old[]=$prior;
                 // Keep acknowledged ciphertext reachable; unconfirmed bad uploads can be replaced.
-                $q=$this->pdo->prepare("INSERT INTO history_sync_items VALUES (?,?,?,?,?,?) ON CONFLICT(account,source,target,message_id) DO UPDATE SET digest=excluded.digest,transfer_id=excluded.transfer_id WHERE history_sync_items.digest!=excluded.digest OR NOT EXISTS(SELECT 1 FROM history_sync_coverage c JOIN history_sync_transfers t ON t.transfer_id=c.transfer_id WHERE c.account=history_sync_items.account AND c.target=history_sync_items.target AND c.message_id=history_sync_items.message_id AND c.digest=history_sync_items.digest AND c.transfer_id=history_sync_items.transfer_id)");
+                $q=$this->pdo->prepare("INSERT INTO history_sync_items (account,source,target,message_id,digest,transfer_id) VALUES (?,?,?,?,?,?) ON CONFLICT(account,source,target,message_id) DO UPDATE SET digest=excluded.digest,transfer_id=excluded.transfer_id WHERE history_sync_items.digest!=excluded.digest OR NOT EXISTS(SELECT 1 FROM history_sync_coverage c JOIN history_sync_transfers t ON t.transfer_id=c.transfer_id WHERE c.account=history_sync_items.account AND c.target=history_sync_items.target AND c.message_id=history_sync_items.message_id AND c.digest=history_sync_items.digest AND c.transfer_id=history_sync_items.transfer_id)");
                 $q->execute([$account,$source,$target,$item['message_id'],$item['digest'],$id]);
             }
             foreach(array_unique(array_merge($old,[$id])) as $candidate) {
@@ -173,7 +173,7 @@ final class PrivateMessageHistorySyncStore
     {
         $this->pdo->beginTransaction();
         try {
-            $q=$this->pdo->prepare('INSERT INTO history_sync_coverage VALUES (?,?,?,?,?) ON CONFLICT(account,target,message_id) DO UPDATE SET digest=excluded.digest,transfer_id=excluded.transfer_id WHERE digest!=excluded.digest OR transfer_id!=excluded.transfer_id');
+            $q=$this->pdo->prepare('INSERT INTO history_sync_coverage (account,target,message_id,digest,transfer_id) VALUES (?,?,?,?,?) ON CONFLICT(account,target,message_id) DO UPDATE SET digest=excluded.digest,transfer_id=excluded.transfer_id WHERE digest!=excluded.digest OR transfer_id!=excluded.transfer_id');
             foreach($items as $item) $q->execute([$account,$target,$item['message_id'],$item['digest'],$item['transfer_id']??'']);
             $this->pdo->commit();
         } catch (\Throwable $e) { $this->pdo->rollBack();throw $e; }

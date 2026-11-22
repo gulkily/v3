@@ -58,3 +58,6 @@ TestRunnerBehaviorTest
 UsageReportUploadTest
 UsageJourneysTest
 UsageNamesTest
+
+# Source rules
+SqlInsertColumnsTest
