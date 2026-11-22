@@ -71,6 +71,41 @@ final class EditableTagsetsTest
         });
     }
 
+    public function testSavingRecomputesPostStatesAndClearsGeneratedPages(): void
+    {
+        $this->withOperator(function (LocalWriteService $writer, string $root, string $operator, array $key, string $database, string $artifacts): void {
+            $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'resolved', 'author_identity_id' => $operator]);
+            assertSame('resolved', $this->state($database, 'reply-001'));
+            @mkdir($artifacts . '/threads/root-001', 0777, true);
+            file_put_contents($artifacts . '/threads/root-001/index.html', 'stale page');
+
+            // Without a state group, a resolved mark is an ordinary tag: the reply is open again.
+            $result = $this->signed($writer, $operator, $key, ['operation' => 'set', 'text' => "Parent: event\nUnlocks: attend\n"]);
+            assertSame('1', $result['updated_posts']);
+            assertSame(null, $this->state($database, 'reply-001'));
+            assertSame(false, is_file($artifacts . '/threads/root-001/index.html'), 'generated thread pages are cleared');
+            $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+            assertStringNotContains('data-resolution="resolved"', $this->render($app, '/threads/root-001'));
+
+            $this->signed($writer, $operator, $key, ['operation' => 'reset']);
+            assertSame('resolved', $this->state($database, 'reply-001'), 'reset brings the state back from the stored mark');
+
+            // A full rebuild agrees with the incremental update.
+            $this->signed($writer, $operator, $key, ['operation' => 'set', 'text' => "Parent: event\nUnlocks: attend\n"]);
+            (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
+            assertSame(null, $this->state($database, 'reply-001'));
+        });
+    }
+
+    private function state(string $database, string $postId): ?string
+    {
+        $stmt = (new PDO('sqlite:' . $database))->prepare('SELECT resolution_state FROM posts WHERE post_id = ?');
+        $stmt->execute([$postId]);
+        $value = $stmt->fetchColumn();
+
+        return $value === false || $value === null ? null : (string) $value;
+    }
+
     private function sortedLike(string $files, string $recordPath): array
     {
         $lines = array_values(array_filter(array_map('trim', explode("\n", $files)), static fn (string $line): bool => $line !== ''));
@@ -110,6 +145,9 @@ final class EditableTagsetsTest
         $key = $this->createSigningKey('tagsets-operator');
         try {
             exec('cp -R ' . escapeshellarg(__DIR__ . '/fixtures/parity_minimal_v1') . ' ' . escapeshellarg($root));
+            // root-001 becomes an #issue thread, so its replies take state marks under the shipped rules.
+            $rootPost = $root . '/records/posts/root-001.txt';
+            file_put_contents($rootPost, str_replace("Board-Tags: general meta\n", "Board-Tags: general meta issue\n", (string) file_get_contents($rootPost)));
             $this->run($root, 'git init -q && git config user.name t && git config user.email t@example.invalid && git add . && git -c commit.gpgsign=false commit -qm init');
             $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
             $this->render($app, '/');
@@ -119,7 +157,7 @@ final class EditableTagsetsTest
             file_put_contents($root . '/records/approval-seeds/openpgp-' . $fingerprint . '.txt', "Approved-Identity-ID: {$operator}\nSeed-Reason: test operator\n\nTest trust anchor.\n");
             $this->run($root, 'git add records/approval-seeds && git -c commit.gpgsign=false commit -qm seed');
             $this->render(new Application(dirname(__DIR__), $root, $database, $artifacts), '/');
-            $check(new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root)), $root, $operator, $key);
+            $check(new LocalWriteService($root, $database, $artifacts, new CanonicalRecordRepository($root)), $root, $operator, $key, $database, $artifacts);
         } finally {
             Tagsets::useRepository(null);
             Tagsets::forget();

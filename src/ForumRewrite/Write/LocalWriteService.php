@@ -3706,9 +3706,24 @@ class LocalWriteService
             );
             Tagsets::forget();
             $this->deletePreparedPost($prepareToken);
+            $commitSha = $commitResult['commit_sha'];
+            $changedPostIds = [];
+            if ($this->canIncrementallyUpdateReadModel()) {
+                try {
+                    $changedPostIds = $this->incrementalReadModelUpdater()->applyTagsetsWrite($commitSha)['changed_post_ids'];
+                } catch (\Throwable $error) {
+                    $this->staleMarker()->mark(['reason' => 'tagsets_refresh_failed', 'commit_sha' => $commitSha, 'failed_at' => gmdate('c'), 'message' => $error->getMessage()]);
+                    throw new RuntimeException('Tagsets saved as ' . $commitSha . ', but post states could not be updated: '
+                        . $error->getMessage() . ' The read model is marked stale and will rebuild.', 0, $error);
+                }
+            } else {
+                $this->refreshDerivedStateAfterCommit($commitSha);
+            }
+            $this->invalidator()->invalidateAllGeneratedPresentation(false);
 
             return [
                 'status' => 'ok', 'wrote_record' => 'yes', 'operation' => $action->operation,
+                'updated_posts' => (string) count($changedPostIds),
                 'source' => Tagsets::stateFor($this->repositoryRoot)['source'],
                 'record_id' => $recordId, 'record_path' => $recordPath, 'signature_path' => $recordPath . '.asc',
                 'operator_identity_id' => $operatorIdentityId, 'commit_sha' => $commitResult['commit_sha'],

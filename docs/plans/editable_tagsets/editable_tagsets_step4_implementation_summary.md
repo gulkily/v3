@@ -58,3 +58,22 @@ None during Step 4 so far. Earlier requests stay in [Step 2](./editable_tagsets_
   - Estimate details: original scope as in Step 3; no revision.
 
 *— Claude · 2026-11-22 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Recompute states and clear pages
+
+**Original estimate: 0.10**
+
+**Retrospective: 0.10**
+
+- Changes:
+  - `IncrementalReadModelUpdater::applyTagsetsWrite($commitSha)` recomputes every post that has a stored state or a mark that is now a state tag. It uses the same `derivePostReactionState` and `updatePostReactions` as an approval change (`refreshApprovalSensitivePostReactions`), writes the read-model metadata, and returns the posts whose state changed.
+  - `finalizePreparedTagsetsChange()` runs it after the commit, or does a full rebuild when the read model can't be updated incrementally. It then clears generated pages (`invalidateAllGeneratedPresentation(false)`). If the update fails, the read model is marked stale (`tagsets_refresh_failed`), and the error says the rules were saved and the states will rebuild. The response includes `updated_posts`.
+- Verification:
+  - Passed: `./v3 test --smoke EditableTagsetsTest TagsetsTest TagUnlocksTest AgentCheckinTest` (523 run, 523 passed).
+  - New `EditableTagsetsTest::testSavingRecomputesPostStatesAndClearsGeneratedPages`: a resolved reply opens again when the state group is removed (1 post updated), a generated thread page is deleted, the thread page has no resolved fold, reset brings the state back, and a full rebuild gives the same state as the incremental update.
+  - Full suite not run.
+- Notes:
+  - Renaming a parent (for example `issue` to `work`) keeps existing states, because a state comes from the mark's tag and not from the thread's parent. What changes is which threads show the buttons. Stage 4's preview reports those threads, as Step 2 asks.
+  - Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-22 UTC · Model: claude-opus-5-5*
