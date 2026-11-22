@@ -162,13 +162,17 @@ Step 3 approved 2026-11-22 ("approved step 3"). Branch `feat/local_import_progre
 ## Enhancement requests
 
 - None received during Step 4.
+- 2026-11-22, after the handoff. **Request:** update the local start page once an import is done, and offer a re-import until sync exists, with a recorded status instead of the same form again. **Disposition:** separate work; it changes what the card is for, beyond this cycle's requirements. **Approval status:** not approved; raised as a question. **Follow-up:** proposed as the next cycle, noted on `PF-20261122-F01`.
+- 2026-11-22. **Request:** "update any tasks if appropriate". **Disposition:** in scope as record keeping. **Outcome:** the three follow-ups from Stage 5 are filed as `PF-20261122-B01`, `B02` and `B03`; `PF-20261122-F01` and `PF-20261117-F01` carry the PR notes.
+
+*— Revised by Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
 
 ## Completion Contract check
 
 - Normal entry and end-to-end outcome: passed locally with real zenmemes.com imports.
 - Recovery: Retry, Resume and Try again passed in tests and in the browser.
 - Deployment: no schema change and no new flag.
-- Release: pending. Not merged; the maintainer's own run is outstanding.
+- Release: pending. PR https://github.com/gulkily/v3/pull/357 is open, not merged; the maintainer's own run is outstanding.
 
 ## Study closeout
 
