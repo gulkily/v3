@@ -98,3 +98,31 @@ None during Step 4 so far. Earlier requests stay in [Step 2](./editable_tagsets_
   - Estimate details: the retrospective is 0.10 against the original 0.08 because of that fix.
 
 *— Claude · 2026-11-22 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Edit view on the Tag Unlocks page
+
+**Original estimate: 0.15**
+
+**Retrospective: 0.15**
+
+- Changes:
+  - `templates/pages/tag_unlocks.php`: the opening line says whether the rules are the shipped ones or were set on this site. A site record with an error shows that error. Active operators get an Edit disclosure with the text, Preview, Save, and Reset to default (only when site rules are in force).
+  - Operators are recognised in the browser before paint: the page carries active operator fingerprints, and an inline script sets `data-tagsets-editor-eligible`, as `partials/operator_grant.php` does. The server HTML is the same for every viewer.
+  - New `ApprovalPolicy::activeOperatorFingerprints()`. `operatorGrantActors()` now uses it, with the same result.
+  - New `public/assets/tag_unlocks_edit.js`. Save stays off until the current text has previewed without errors, and any edit turns it off again. The preview shows the rules or the line errors, plus the threads whose marks would lose their buttons. Save signs through `ForumBrowserSigning` the way `feature_flags.js` does, then reloads. Reset to default loads the shipped text, previews it, and saves as a reset.
+  - `ToolsPageController::tagUnlocks()` passes the text in force, its source and error, the shipped text and the operator fingerprints, and loads the signing scripts. `tools.css` styles the editor.
+- Verification:
+  - Passed: new `node tests/browser/editable_tagsets.mjs` (run with the environment's `PLAYWRIGHT_MODULE` and `PLAYWRIGHT_BROWSERS_PATH`).
+    - Signed out, and with a key that is not an operator: no Edit.
+    - As an operator: an error keeps Save off. Dropping `#issue` lists the thread with one closed mark. Adding an `event` block saves, and Attend and Interested appear on an `#event` reply, where a tap succeeds.
+    - Reset to default removes the site file, the event buttons go away, and the closed reply stays closed.
+    - Light, dark, gloss, word97, midnight and bubblegum at 375 and 1280 px: text box and buttons inside the viewport, no sideways scroll. Screenshots were checked by eye, and that check led to Preview and Save sitting side by side instead of full width.
+  - Passed: `node tests/browser/tag_unlocks.mjs` (unchanged buttons after the loader change).
+  - Passed: `./v3 test --smoke EditableTagsetsTest TagUnlocksTest TagsetsTest` (512 run, 512 passed) and `WriteApiSmokeTest::testOperatorGrantRoutesAndAccessPageButton` for the shared fingerprint helper.
+  - Not applicable: navigation icons, since no navigation destination was added or renamed.
+  - Full suite not run.
+- Notes:
+  - Without JavaScript an operator sees Edit, but its buttons do nothing. The page stays readable.
+  - Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-22 UTC · Model: claude-opus-5-5*

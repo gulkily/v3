@@ -280,21 +280,29 @@ final class ToolsPageController
         );
     }
 
-    /** Read-only: which thread tags unlock which post tags, and every post marked claimed, resolved or closed. */
+    /** Which thread tags unlock which post tags, every post marked claimed, resolved or closed, and the operators' editor. */
     public function tagUnlocks(): string
     {
         $enabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED);
+        $active = \ForumRewrite\Support\Tagsets::active();
+        $shipped = (string) @file_get_contents(\ForumRewrite\Support\Tagsets::shippedPath());
 
         return $this->routeServices->renderPageTemplate(
             'tag_unlocks.php',
             [
-                'tagsets' => \ForumRewrite\Support\Tagsets::forApplication()->all(),
+                'tagsets' => $active['tagsets']->all(),
+                'tagsetsSource' => $active['source'],
+                'tagsetsError' => $active['error'],
+                'tagsetsText' => $active['source'] === \ForumRewrite\Support\Tagsets::SOURCE_SITE ? $active['text'] : $shipped,
+                'shippedTagsetsText' => $shipped,
+                'tagsetEditors' => \ForumRewrite\Security\ApprovalPolicy::activeOperatorFingerprints($this->routeServices->repositoryRoot()),
                 'markedPosts' => $enabled ? \ForumRewrite\Tools\MarkedPostsQuery::byState($this->routeServices->pdo()) : [],
                 'tagUnlocksOn' => $enabled,
                 'toolNavOptions' => ToolsPageSupport::navOptions('tag-unlocks'),
             ],
             'Tag Unlocks',
             'tools',
+            ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/tag_unlocks_edit.js'],
         );
     }
 

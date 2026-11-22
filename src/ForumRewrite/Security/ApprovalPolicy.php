@@ -53,6 +53,17 @@ final class ApprovalPolicy
             || preg_match('/^openpgp:[a-f0-9]{40}$/D', $target) !== 1 || self::isOperator($repositoryRoot, $target)) {
             return [];
         }
+        return self::activeOperatorFingerprints($repositoryRoot);
+    }
+
+    /**
+     * Fingerprints of every active operator, sorted, for pages that decide operator-only
+     * controls in the browser before paint.
+     *
+     * @return list<string>
+     */
+    public static function activeOperatorFingerprints(string $repositoryRoot): array
+    {
         $actors = [];
         foreach (glob($repositoryRoot . '/records/approval-seeds/openpgp-*.txt') ?: [] as $path) {
             $fingerprint = substr(basename($path, '.txt'), strlen('openpgp-'));
