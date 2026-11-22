@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./image_loading_step1_solution_assessment.md) · [Step 2](./image_loading_step2_feature_description.md) · [Step 3](./image_loading_step3_development_plan.md) · Step 4
+> **Feature plan:** [Step 1](./image_loading_step1_solution_assessment.md) · [Step 2](./image_loading_step2_feature_description.md) · [Step 3](./image_loading_step3_development_plan.md) · [Step 4](./image_loading_step4_implementation_summary.md)
 
 Debug mode: enabled
 
@@ -121,6 +121,7 @@ Concepts touched: [Zen strip](../../concepts/zen_strip.md) (revised in Stage 3).
 ## Study snapshots and approval
 
 - 2026-11-22 UTC: **Approved Step 2** by the maintainer ("approved step 2").
-- 2026-11-22 UTC, Step 3 handoff: **0.90** projected total, reaffirmed. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified this session. Baseline `origin/main` `a4a4aea`. Awaiting `Approved Step 3`.
+- 2026-11-22 UTC, Step 3 handoff: **0.90** projected total, reaffirmed. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified this session. Baseline `origin/main` `a4a4aea`.
+- 2026-11-22 UTC: **Approved Step 3** by the maintainer.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*

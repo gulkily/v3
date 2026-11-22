@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./image_loading_step1_solution_assessment.md) · [Step 2](./image_loading_step2_feature_description.md) · [Step 3](./image_loading_step3_development_plan.md) · Step 4
+> **Feature plan:** [Step 1](./image_loading_step1_solution_assessment.md) · [Step 2](./image_loading_step2_feature_description.md) · [Step 3](./image_loading_step3_development_plan.md) · [Step 4](./image_loading_step4_implementation_summary.md)
 
 Cycle: `v3/image_loading`. Follows [zen_hero](../zen_hero/zen_hero_step1_solution_assessment.md) (PR #350, merged), which put a large image at the top of the home page.
 

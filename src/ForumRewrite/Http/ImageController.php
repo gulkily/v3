@@ -11,10 +11,20 @@ use RuntimeException;
 /** Dispatched only after the application's instance access gate. */
 final class ImageController
 {
+    /**
+     * A served image may be kept by that browser for a year: its name is the
+     * hash of its bytes, so an address can never show anything else. Private,
+     * because the access gate decided this visitor may see it. A removed image
+     * stops being served at once; a browser that already holds a copy may show
+     * it until it lets go.
+     */
+    public const KEEP = 'Cache-Control: private, max-age=31536000, immutable';
+
     public function __construct(private readonly RouteServices $services, private readonly string $repositoryRoot, private readonly FeatureFlagEvaluator $flags) {}
 
     public function serve(string $method, string $name): void
     {
+        // Error answers are never kept; a served image replaces the first header with KEEP.
         $headers = ['Cache-Control: private, no-store', 'X-Content-Type-Options: nosniff'];
         if (!in_array($method, ['GET', 'HEAD'], true)) {
             $this->services->sendText("Method not allowed\n", 405, $headers);
@@ -41,7 +51,8 @@ final class ImageController
         }
         if (!headers_sent()) {
             http_response_code(200);
-            foreach ($headers as $header) { header($header); }
+            header(self::KEEP);
+            header($headers[1]);
             header('Content-Type: image/' . ($ref['type'] === 'jpg' ? 'jpeg' : 'png'));
             header('Content-Length: ' . $ref['bytes']);
             header('Content-Disposition: inline; filename="' . $name . '"');
@@ -82,7 +93,8 @@ final class ImageController
         clearstatcache(true, $cached);
         if (!headers_sent()) {
             http_response_code(200);
-            foreach ($headers as $header) { header($header); }
+            header(self::KEEP);
+            header($headers[1]);
             header('Content-Type: image/' . match (pathinfo($cached, PATHINFO_EXTENSION)) { 'webp' => 'webp', 'jpg' => 'jpeg', default => 'png' });
             header('Content-Length: ' . filesize($cached));
             header('Content-Disposition: inline; filename="' . basename($cached) . '"');
