@@ -77,3 +77,36 @@ No supported findings. Before/Do/After phases were read sequentially; their repe
 - F03's accepted record is in another worktree; future source integration must preserve its permanent identity and cannot silently claim the broad reverse-import outcome complete.
 
 No product/workflow edits, exhaustive diagnostic claim, production access or measured-effort inference.
+
+
+## 2026-11-22 — Completed Step 4 handoff
+
+### Necessary/useful instructions
+
+- step4_implementation_before.md, Planning Docs Commit Gate: preserved approved Steps 1–3/debug/index in 68e4c4269 before creating the summary or implementation. Fresh origin/main baseline 8b00a78be and isolated worktree kept the original drafts/mockups untouched. Retain the gate and narrow organization allowance.
+- implementation_standards.md, Before dependent work: reused OpenPgpKeyInspector, canonical identity/name/retirement parsers, GenericTextRecordParser, URL validation and existing get_profile/link_identity routes. The missing component was orchestration/bounded transport rather than a new server registration contract. Strict public-only inspection rejects secret packets under public armor before any request; existing inspect consumers retain their behavior. Retain the explicit reuse/risk requirement.
+- step4_implementation_do.md, Stage Boundary Protocol: separate preview 78da8c12c, publication 3304d9083, acceptance f3d24dd33 and documentation d2b94f16f commits each contain their summary update. This separated read-only safety from the write path and recovery verification. Retain the stage-scoped record; no stage diagnostic reports were emitted.
+- implementation_standards.md, Verification and final review: ordinary WSL CLI replay against actual isolated FrontController endpoints established zero preview writes, confirmed public registration, unapproved status and unchanged rerun HEAD. Fault fixtures covered dropped/error responses, concurrent acceptance, mixed outcomes, timeouts, TLS and oversize failures, stale source/target, verified rename, retirement evidence and private packets. Actual member-only JSON denial exposed a classification issue corrected in Stage 3. Retain ordinary-entry and recovery evidence over helper-only acceptance.
+- Host Tests instructions and baseline recovery: Stage 3 smoke/selected tests ran 505 with 501 passes; four Unicode/PCRE failures reproduce on untouched base. Stage 1 SQLite-lock failure passed when replayed individually on branch and base. ScriptsIndexTest found the launcher comment omission in Stage 4; corrected and passed 3/3. Full suite was not run. Retain honest baseline/omission reporting and bounded test scope.
+- effort-estimation.md, Execution history/closeout: retained originals, stage retrospectives and a separate whole-cycle 0.75 assessment with earlier 0.50/0.65 projections. R1 hashes reverified; exposed Codex rater only, active labor unknown and maintainer judgment pending. No accepted production/study outcome inferred from fixtures.
+- step4_implementation_after.md, Final Verification Checklist: five required planning/stage commits are present; summary begins only after planning. Documentation, touched concepts/source paths, feedback checker, syntax and diff checks verified. Production, push, PR and external replies were not authorized or performed. Retain distinction between local technical completion and acceptance.
+
+### Redundant/unnecessary instructions
+
+No supported findings. Repeated before/commit/closeout checks serve different boundaries; no demonstrated basis to remove one. No workflow instruction edits made.
+
+### Inapplicable instructions
+
+- Browser first-paint, theme/navigation/icon and physical-device UI checks: this slice adds a CLI and no web markup, styles or navigation. Existing browser registration behavior is unchanged; selected shared registration tests passed.
+- Dependency approval and read-model schema migration: no new dependency or schema change. Retraction deletion/history workflows were not modified.
+- Full-suite execution: expressly excluded by host instructions, with scoped smoke/affected checks retained instead. This is an omission by policy, not a full-suite pass.
+- Production acceptance/deployment: not part of implementation authority. The next live trial remains pending separate authorization; no credentials or external instance were accessed.
+
+### Uncertain assessments
+
+- The broader F03 request includes reverse content import and is not completed by this approved public-key slice. Its original workflow/evidence remain open; dated partial progress and commit trailers preserve the narrower result.
+- The plans-index link sweep detected a pre-existing missing Windows ME assessment target on untouched main. New feature links resolve; the unrelated broken link was left outside scope.
+- The After procedure was inspected while gathering closeout requirements before the last stage commit, then checked again after all stage commits. No implementation, approval, or stage boundary depended on prematurely treating closeout as complete; preserve sequential phase reading on future runs.
+- Production compatibility, maintainer comfortable-fit judgment and physical-device behavior remain unclaimed. No recommendation to broaden credentials or transfer approvals follows from this local acceptance.
+
+Final implementation revision: d2b94f16f. This report is saved in a separate log-only handoff commit, without amending completed stages. No exhaustive diagnostic claim or independent-rater claim.
