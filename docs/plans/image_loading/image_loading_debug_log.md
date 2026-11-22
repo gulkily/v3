@@ -43,3 +43,25 @@
 
 - The document runs longer than the one page the step asks for. The scope has six requirements and four risks; cutting further would drop a risk.
 - Whether DreamHost will serve the published folder is unknown until tried on production.
+
+## 2026-11-22T21:50Z — Step 3
+
+### Necessary/useful instructions
+
+- `step3_development_plan_do.md`, resolve each material risk before dependent work: Stage 5 opens with the locked-site tests before any Apache rule exists.
+- `step3_development_plan_do.md`, flag high-risk areas: two are marked, access and the host.
+- Host `AGENTS.md`, reuse canonical components: the Apache block follows `HighTrafficMode`'s managed block, and removal stays in `ImageStore::remove`.
+- Host `AGENTS.md`, a reported failure is replayed or reported unverified: Stage 4 says the desktop test does not cover the maintainer's phone.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- `step3_development_plan_after.md`, keep Step 1-3 docs uncommitted: this host commits each step as it is approved.
+
+### Uncertain assessments
+
+- The host risk has no early validation the agent can run; it depends on the maintainer turning the flag on in production.
+- Whether Apache is available in this workspace for `image_content_apache_test.py` is not known yet.

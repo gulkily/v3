@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./image_loading_step1_solution_assessment.md) · [Step 2](./image_loading_step2_feature_description.md) · Step 3 · Step 4
+> **Feature plan:** [Step 1](./image_loading_step1_solution_assessment.md) · [Step 2](./image_loading_step2_feature_description.md) · [Step 3](./image_loading_step3_development_plan.md) · Step 4
 
 Debug mode: enabled
 
@@ -101,6 +101,7 @@ The maintainer, on an iPhone SE (3rd gen), online, in the installed offline web 
 ## Study snapshots and approval
 
 - 2026-11-22 UTC: **Approved Step 1** by the maintainer; Option A as revised.
-- 2026-11-22 UTC, Step 2 handoff: **0.90** projected total, reaffirmed from the Step 1 revision. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified this session. Baseline `origin/main` `a4a4aea` (merged into the branch). Awaiting `Approved Step 2`.
+- 2026-11-22 UTC, Step 2 handoff: **0.90** projected total, reaffirmed from the Step 1 revision. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified this session. Baseline `origin/main` `a4a4aea` (merged into the branch).
+- 2026-11-22 UTC: **Approved Step 2** by the maintainer.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
