@@ -446,6 +446,16 @@ class VersionAndCompatibilityTest(unittest.TestCase):
             self.assertTrue(quill.recovery_command(Path('/tmp/op'), meta).startswith('python3 quill.py --site '))
 
 
+class PostLinkTest(unittest.TestCase):
+    """The printed URL is the thread page, at the post for a reply; servers without thread_id get the post page."""
+
+    def test_thread_reply_and_older_server(self):
+        site = 'https://forum.example'
+        self.assertEqual(site + '/threads/thread-1', quill.post_link(site, {'post_id': 'thread-1', 'thread_id': 'thread-1'}))
+        self.assertEqual(site + '/threads/thread-1#reply-2', quill.post_link(site, {'post_id': 'reply-2', 'thread_id': 'thread-1'}))
+        self.assertEqual(site + '/posts/reply-2', quill.post_link(site, {'post_id': 'reply-2'}))
+
+
 class SignInTest(unittest.TestCase):
     """sign_in keeps the session cookie in memory and sends it only when asked; nothing on disk."""
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-our $QUILL_VERSION = '2026-11-22';
+our $QUILL_VERSION = '2026-11-22.1';
 
 # quill.pl: portable forum client. Core Perl 5.10+, curl and GPG; no CPAN modules.
 # One of three versions (quill.py, quill.php, quill.pl) with the same commands, output,
@@ -755,6 +755,16 @@ sub PayloadFrom { # $operation, \%meta ; request fields saved by SavePayload()
 	return {map { $_ => ReadText("$operation/$_.txt") } @names};
 } # PayloadFrom()
 
+sub PostLink { # $site, \%result ; the thread page, at the post for a reply; servers that omit thread_id get the post page
+	my ($site, $result) = @_;
+	my $postId = $result->{'post_id'};
+	my $threadId = $result->{'thread_id'};
+	if (!defined($threadId) || $threadId eq '') {
+		return "$site/posts/$postId";
+	}
+	return "$site/threads/$threadId" . ($threadId eq $postId ? '' : "#$postId");
+} # PostLink()
+
 sub Submit { # $operation, \%meta, $args ; sends the saved request and records the outcome
 	my $operation = shift;
 	my $meta = shift;
@@ -793,7 +803,7 @@ sub Submit { # $operation, \%meta, $args ; sends the saved request and records t
 	if ($result->{'refresh_pending'}) {
 		print "Refresh: pending; resume this exact operation to finish refresh.\n";
 	}
-	print 'URL: ' . $meta->{'Site'} . '/posts/' . $result->{'post_id'} . "\n";
+	print 'URL: ' . PostLink($meta->{'Site'}, $result) . "\n";
 	return 0;
 } # Submit()
 

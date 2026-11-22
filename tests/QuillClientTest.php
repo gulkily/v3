@@ -701,10 +701,12 @@ final class QuillClientTest
             $identitiesBefore=count(glob($repo.'/records/identity/*'));
             [$code,$out]=self::run($scripts['quill.py'],array_merge($base,['thread','--subject','Shared','--body-file',$root.'/body.txt','--no-report']));
             assertSame(0,$code,$out); preg_match('/Post-ID: (\S+)/',$out,$thread); preg_match('/Identity-ID: (\S+)/',$out,$identity);
+            assertStringContains("\nURL: ".$server->url.'/threads/'.$thread[1]."\n",$out."\n");
             foreach (['quill.pl','quill.php'] as $name) {
                 [$code,$out]=self::run($scripts[$name],array_merge($base,['reply','--thread',$thread[1],'--body-file',$root.'/body.txt','--no-report']));
                 assertSame(0,$code,$name.': '.$out); assertStringContains('Identity-ID: '.$identity[1],$out);
                 preg_match('/Post-ID: (\S+)/',$out,$reply);
+                assertStringContains("\nURL: ".$server->url.'/threads/'.$thread[1].'#'.$reply[1]."\n",$out."\n");
                 $post=(string) file_get_contents($server->url.'/api/get_post?post_id='.rawurlencode($reply[1]));
                 assertStringContains('Author-Identity-ID: '.$identity[1],$post); assertStringContains('Shared key, three clients. Café.',$post);
             }
@@ -719,6 +721,7 @@ final class QuillClientTest
                 $head=$tx->git(['rev-parse','HEAD']);
                 [$code,$out]=self::run($scripts[$resumer],array_merge($base,['reply','--resume',$operation[1],'--no-report']));
                 assertSame(0,$code,$resumer.' resuming '.$writer.': '.$out); assertSame($head,$tx->git(['rev-parse','HEAD']));
+                assertSame(1,preg_match('#^URL: '.preg_quote($server->url,'#').'/threads/'.preg_quote($thread[1],'#').'\#\S+$#m',$out),$resumer.': '.$out);
             }
             foreach (glob(self::stateDir($root,'shared').'/*/keyring') as $home) \ForumRewrite\Security\GpgHomeCleaner::dispose($home);
         } finally {$server->close();}

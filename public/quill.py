@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Quill: portable forum client. Python 3 standard library, curl and GPG; no packages."""
-QUILL_VERSION = "2026-11-20"
+QUILL_VERSION = "2026-11-22.1"
 FRM_VERSION = QUILL_VERSION  # old name, kept for scripts that read it
 
 import argparse
@@ -338,6 +338,15 @@ def payload_from(operation, meta):
     return {name: (operation / (name + '.txt')).read_bytes().decode('utf-8') for name in names}
 
 
+def post_link(site, result):
+    """The thread page, at the post for a reply. Servers that omit thread_id get the post page."""
+    post_id = result['post_id']
+    thread_id = result.get('thread_id')
+    if not thread_id:
+        return site + '/posts/' + post_id
+    return site + '/threads/' + thread_id + ('' if thread_id == post_id else '#' + post_id)
+
+
 def submit(operation, meta, args):
     meta['State'] = 'sending'
     save_meta(operation / 'operation.txt', meta)
@@ -368,7 +377,7 @@ def submit(operation, meta, args):
     print('Status: accepted\nPost-ID: ' + result['post_id'])
     if result.get('refresh_pending'):
         print('Refresh: pending; resume this exact operation to finish refresh.')
-    print('URL: ' + meta['Site'] + '/posts/' + result['post_id'])
+    print('URL: ' + post_link(meta['Site'], result))
     return 0
 
 
