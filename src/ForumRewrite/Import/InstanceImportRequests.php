@@ -120,20 +120,20 @@ final class InstanceImportRequests
         $queued = ($state['task']['status'] ?? null) === 'queued';
         $worker = ['key' => 'worker', 'label' => $state['start'] === 'starting' ? 'Starting the task worker' : 'Waiting for the task worker',
             'status' => $queued ? 'current' : 'done', 'done' => null, 'total' => null];
-        if ($queued) {
-            if (($state['task']['action'] ?? '') !== 'import') {
-                return [$worker];
-            }
-            $pending = [];
+        $pending = [];
+        if (($state['task']['action'] ?? '') === 'import') {
             foreach (ImportProgressView::STEPS as $key => $label) {
                 $pending[] = ['key' => $key, 'label' => $label, 'status' => 'pending', 'done' => null, 'total' => null];
             }
-
+        }
+        if ($queued) {
             return [$worker, ...$pending];
         }
         $worker['label'] = 'Task worker started';
+        // Between the claim and the import's first line, keep the list as it was while queued.
+        $steps = $state['view']['steps'] ?? [];
 
-        return [$worker, ...($state['view']['steps'] ?? [])];
+        return [$worker, ...($steps === [] ? $pending : $steps)];
     }
 
     /** Start one detached worker for this task and note the attempt on its request. */

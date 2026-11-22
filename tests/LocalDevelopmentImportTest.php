@@ -120,6 +120,23 @@ final class LocalDevelopmentImportTest
         assertSame(200, $this->request($server->url, '/threads/?view=all')[0]);
         assertTrue(microtime(true) - $started < 2.0);
         assertStringContains('<li class="is-current"><span>Starting the task worker</span></li>', $this->request($server->url, '/local/')[1]);
+        // The page script's requests: JSON in the shape Tools → Import answers with.
+        $script = ['X-Requested-With: ForumImport'];
+        [$code, $json] = $this->request($server->url, '/local/', ['token' => $token, 'action' => 'status'], $script);
+        $status = json_decode($json, true);
+        assertSame(200, $code, $json);
+        assertSame(true, $status['state']['busy']);
+        assertSame('worker', $status['state']['steps'][0]['key']);
+        assertSame('current', $status['state']['steps'][0]['status']);
+        assertTrue(is_int($status['state']['timing']['elapsed']));
+        assertSame('php scripts/task_queue.php run --limit=1', $status['state']['worker_command']);
+        [$code, $json] = $this->request($server->url, '/local/', ['token' => $token, 'action' => 'start_worker'], $script);
+        assertSame(200, $code, $json);
+        [$code, $json] = $this->request($server->url, '/local/', ['token' => 'wrong', 'action' => 'status'], $script);
+        assertSame(403, $code, $json);
+        assertSame('error', json_decode($json, true)['status']);
+        assertStringContains('data-import-form-retry', $body);
+        assertTrue(preg_match('/data-import-not-started hidden>/', $body) === 1);
         // A second import is refused, as are requests without the token or from elsewhere.
         assertSame(409, $this->request($server->url, '/local/', ['token' => $token, 'source' => 'http://127.0.0.1:1', 'action' => 'import'])[0]);
         foreach (['import', 'resume', 'status', 'start_worker'] as $action) {

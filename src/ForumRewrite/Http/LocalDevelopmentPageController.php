@@ -89,6 +89,6 @@ final class LocalDevelopmentPageController
         return $this->routes->renderPageTemplate('local_development.php', [
             'source' => $source, 'token' => $this->import->token(), 'importState' => $state,
             'notice' => $notice, 'log' => $this->requests->latestLog(),
-        ], 'Local development', 'board');
+        ], 'Local development', 'board', ['/assets/import_control.js']);
     }
 }

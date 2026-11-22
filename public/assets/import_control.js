@@ -1,5 +1,5 @@
-// Import page actions. Without this script the form posts normally and the
-// server answers with the page and a notice; with it, requests go as JSON,
+// Import page actions, for Tools → Import and the local start page. Without
+// this script the form posts normally and the server answers with the page and a notice; with it, requests go as JSON,
 // the step list and timer follow the task worker, and the page reloads when
 // the import finishes so the result shows.
 (() => {
@@ -87,12 +87,15 @@
   }
   setInterval(drawTiming, 1000);
 
+  // Tools → Import posts to its own address; the local start page posts to /local/ with its token.
+  const endpoint = form.getAttribute('action') || '/tools/import/';
+  const token = form.elements.token ? form.elements.token.value : null;
   const post = async (body) => {
-    const response = await fetch('/tools/import/', {
+    const response = await fetch(endpoint, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'ForumImport' },
-      body: JSON.stringify(body),
+      body: JSON.stringify(token === null ? body : { ...body, token }),
     });
     const data = await response.json().catch(() => null);
     if (response.ok && data) return data;

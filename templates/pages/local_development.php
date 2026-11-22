@@ -32,6 +32,8 @@ $finished = !$s['busy'] && ($s['task']['status'] ?? null) === 'completed';
 <?php endif; ?>
       </div>
     </form>
+<?= $indent($partial('partials/import_run.php', ['s' => $s, 'part' => 'not_started', 'action' => '/local/', 'token' => $token]), 4) ?>
+    <p class="meta" role="status" aria-live="polite" data-import-status hidden></p>
 <?php if ($log !== null && !$s['busy']): ?>
     <details>
       <summary>Import details</summary>

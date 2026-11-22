@@ -61,3 +61,29 @@ Step 3 approved 2026-11-22 ("approved step 3"). Branch `feat/local_import_progre
 - Estimate details: retrospective higher for the fresh-heartbeat defect and the test rewrite.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+## Stage 3 - Live steps and a worker that doesn't start
+
+**Original estimate: 0.08**
+**Retrospective: 0.08**
+
+- Changes:
+  - `public/assets/import_control.js` posts to the form's own address and sends the form's token when it has one. Tools → Import is the default and is unchanged.
+  - The local page loads that script and renders the `not_started` part of `import_run.php` (the notice, the worker command and Try again, with the token) plus the status line the script writes to.
+  - `InstanceImportRequests::steps()` keeps the pending steps listed between the worker's claim and the import's first line. Before, the list shrank to one line for a second or two.
+- Verification:
+  - `./v3 test LocalDevelopmentImportTest ImportPageTest InstanceImportTaskTest`: 15 run, 15 passed. New assertions: `status` returns JSON with steps, timing and the worker command; `start_worker` answers for a queued import; a wrong token gets 403 as JSON; the page carries the Try again form.
+  - Real imports of https://zenmemes.com from the local start page in Chromium, each on a fresh copy under `./v3 start`:
+    - Default worker: first step visible 0.33 s after the click; longest gap without a visible change 1.9 s; `/threads/?view=all` answered in 75 ms mid-import; finished in 32 s; no page errors. Steps seen: waiting for the worker, checking, planning with counts, installing 8,813 of 8,813, copying images.
+    - `--no-worker`: "Starting the task worker", then the same steps; finished in 37 s; no worker process left behind.
+    - A second import straight after, still `--no-worker`: started in 2.4 s and showed "under a minute left" for the whole import, from the first run's timings. This is the case that hung before the Stage 2 fix.
+    - `--no-worker` with `FORUM_PHP_CLI=/bin/false`: "The task worker didn't start.", the command and Try again appeared 16.3 s after the click.
+  - JavaScript off, real import: the page reloaded itself every 5 seconds, the current step advanced through planning, installing and images, and it ended on the result.
+  - Screenshots reviewed: Gloss 390, Word97 1280 and Bubblegum 390 in the running state; no sideways overflow in any.
+  - Full suite not run.
+- Notes:
+  - The timer ticks once a second but is not aligned with the 2-second poll, so the visible text can stand still for up to about 2 seconds. Step 2's limit is 10 seconds.
+  - Found in the Bubblegum screenshot and fixed in Stage 4: when the script starts a second import, the previous result stayed above the steps.
+- Estimate details: original scope unchanged.
+
+*— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
