@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/fastmod_bayes_meta`; [cycle ledger](../ef
 
 Extended estimates: enabled
 
-**Cycle estimate: 0.45**
+**Cycle estimate: 0.55**
 
 Step 2 approved (Revision 1: Russian always not meta) and committed as `6b17a17` on `feat/fastmod-bayes-meta`. Step 2 Revision 2 (local score sweep task and Retrain button) committed as `11d1e3d`.
 
@@ -93,6 +93,24 @@ Concepts touched: [Fastmod scoring](../../concepts/fastmod_scoring.md) and [effe
   - Mitigation: retry with `--weak-negatives` once, then stop or accept.
 - Canonical components/API contracts touched: none.
 
+## Stage 5 - Revision 2: model fix and operator labels
+
+**Estimate: 0.10**
+
+- Goal: get past the gate after the first production run failed it (no threshold reached 0.95 precision with weak negatives).
+- Dependencies: Stages 1–4 deployed; the failed report.
+- Expected changes:
+  - `LocalMetaModel::score()`: damped average of word evidence, `(prior × 2 + Σ evidence) / (words + 2)`, instead of the sum. Tokens skip hashtags and URLs. Model format `fastmod-local-meta-v2`; a v1 file counts as no model, so the page asks for a retrain.
+  - `LocalMetaTraining`: reads `state/private/fastmod_local_meta_labels.txt` first (`post_id: meta|not`, `#` comments); five folds by post-id hash score every labeled root out of fold; the threshold and the report's precision and recall come from those scores. The report counts operator labels.
+  - Seed file `docs/plans/fastmod_bayes_meta/zenmemes_local_meta_labels.txt` with Claude's labels of 1,182 public roots; the maintainer copies it into `state/private/` after deploy.
+- Verification approach: unit tests for the new score, labels-file parsing and precedence, fold determinism; offline replay on public data must show test precision ≥ 0.95 with the threshold chosen from training folds alone. Then the maintainer retrains on production without weak negatives.
+- Estimate details: driver: model change and folds are small; labeling took most of the effort; uncertainty: medium, production adds about 330 roots that aren't public and aren't in the file.
+- Risks or open questions:
+  - Impact: roots missing from the file fall back to weak or missing labels.
+  - Early warning / validation: the report's operator-label count and precision.
+  - Mitigation: corrections from the disagreement list go into the same file.
+- Canonical components/API contracts touched: `LocalMetaModel`, `LocalMetaTraining`, `LocalMetaFiles` report text.
+
 ## Stage 6
 
 **Estimate: 0.10**
@@ -138,4 +156,8 @@ Concepts touched: [Fastmod scoring](../../concepts/fastmod_scoring.md) and [effe
 
 Revision 1, 2026-11-14T20:15:00Z: Step 2 Revision 2 adds the local score sweep task (Stage 3) and the queued Retrain button with report (Stage 4); publish failures queue the sweep (Stage 7). Stage work 0.06/0.08/**0.08**/**0.07**/0.02/0.10/0.05/0.02, non-additive; Stage 3 and 4 originals 0.05 and 0.03 kept. Projected total 0.40 → **0.45**. Same R1/P2, single exposed Claude rater.
 
+Revision 2, 2026-11-22T23:30:00Z: Step 2 Revision 3. New Stage 5 Revision 2 (model fix, operator labels file, five-fold threshold), estimate 0.10, before the gate is retried. Projected total 0.45 → **0.55**. Same R1/P2, single exposed Claude rater.
+
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+*— Claude · 2026-11-22 UTC · Model: claude-opus-5-5 (Revision 2)*
