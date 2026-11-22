@@ -58,3 +58,25 @@
 ### Uncertain assessments
 
 - The plan is somewhat over one page with five stages and extended-estimate lines.
+
+## 2026-11-22 UTC — Step 4
+
+### Necessary/useful instructions
+
+- `step4_implementation_do.md`, one commit per stage with its summary: the Stage 1 defect surfaced in Stage 2 and is recorded where it was found. Retain.
+- `implementation_standards.md`, inspect existing implementations first: led to `record()`, `moveKeepingLocalChanges()`, `commitList()` and `blocks()` being shared with the deploy path instead of copied. Retain.
+- Host `CONTRIBUTING.md`, UI verification: the first screenshots loaded without the page stylesheet (fingerprinted asset names), which would have passed an overflow check on an unstyled page. Looking at the image caught it. Retain.
+- Host `AGENTS.md`, favor removing UI text: the history rows carry no explanatory copy. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- Navigation icon sets, dependency approval, read-model schema change steps: none touched.
+
+### Uncertain assessments
+
+- Step 3 said "a history table in the existing `codebase-facts` style"; the shipped page uses a section with a list below the actions. Treated as a layout detail inside the approved stage, and recorded in the Stage 4 notes, rather than a scope change needing renewed approval.
+- A successful plain-form rollback answers with the redirect page rendered by code that is now older on disk than the code in memory. The existing no-script deploy has the same property.
