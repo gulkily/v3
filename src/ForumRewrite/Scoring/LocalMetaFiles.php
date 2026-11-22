@@ -14,6 +14,36 @@ final class LocalMetaFiles
         return $this->projectRoot . '/state/private/fastmod_local_meta.json';
     }
 
+    /** Operator labels: one `post_id: meta` or `post_id: not` per line; `#` starts a comment. */
+    public function labelsPath(): string
+    {
+        return $this->projectRoot . '/state/private/fastmod_local_meta_labels.txt';
+    }
+
+    /** @return array<string,bool> post ID => meta; empty when the file doesn't exist */
+    public function loadLabels(): array
+    {
+        if (!is_file($this->labelsPath())) return [];
+        $text = @file_get_contents($this->labelsPath());
+        if ($text === false) throw new \RuntimeException('Cannot read the local meta labels file.');
+        return self::parseLabels($text);
+    }
+
+    /** @return array<string,bool> */
+    public static function parseLabels(string $text): array
+    {
+        $labels = [];
+        foreach (preg_split('/\R/', $text) ?: [] as $number => $line) {
+            $line = trim(preg_replace('/#.*$/', '', $line) ?? '');
+            if ($line === '') continue;
+            if (!preg_match('/^([A-Za-z0-9_-]+)\s*:\s*(meta|not)$/i', $line, $match)) {
+                throw new \InvalidArgumentException(sprintf('Local meta labels line %d should look like "thread-...: meta" or "thread-...: not".', $number + 1));
+            }
+            $labels[$match[1]] = strtolower($match[2]) === 'meta';
+        }
+        return $labels;
+    }
+
     public function reportPath(): string
     {
         return $this->projectRoot . '/state/private/fastmod_local_meta_report.txt';
@@ -25,6 +55,8 @@ final class LocalMetaFiles
         if (!is_file($this->modelPath())) return null;
         $json = @file_get_contents($this->modelPath());
         if ($json === false) throw new \RuntimeException('Cannot read the local meta model.');
+        // A model saved in an older format scores differently; treat it as missing until retrained.
+        if ((json_decode($json, true)['format'] ?? null) !== LocalMetaModel::FORMAT) return null;
         return LocalMetaModel::fromJson($json);
     }
 
@@ -59,14 +91,15 @@ final class LocalMetaFiles
             'Built-At: ' . $report['built_at'],
             'Build: ' . $report['build_id'],
             'Weak-Negatives: ' . ($report['weak_negatives'] ? 'yes' : 'no'),
-            sprintf('Meta-Labels: %d (authored %d, LLM %d)', $report['meta'], $labels['authored'], $labels['llm_meta']),
-            sprintf('Not-Meta-Labels: %d (LLM %d, suppressed %d, weak %d)', $report['other'], $labels['llm_other'], $labels['suppressed'], $labels['weak_other']),
+            sprintf('Meta-Labels: %d (operator %d, authored %d, LLM %d)', $report['meta'], $labels['operator_meta'], $labels['authored'], $labels['llm_meta']),
+            sprintf('Not-Meta-Labels: %d (operator %d, LLM %d, suppressed %d, weak %d)', $report['other'], $labels['operator_other'], $labels['llm_other'], $labels['suppressed'], $labels['weak_other']),
             sprintf('Skipped: Russian %d, LLM unsure %d, unlabeled %d', $labels['cyrillic'], $labels['uncertain'], $labels['unlabeled']),
-            sprintf('Held-Out: %d (%d meta)', $report['holdout'], $report['holdout_meta']),
+            sprintf('Cross-Checked: %d (%d meta, %d folds)', $report['checked'], $report['checked_meta'], $report['folds']),
             'Threshold: ' . $number($report['threshold']),
             'Precision: ' . $number($report['precision']),
             'Recall: ' . $number($report['recall']),
-            'Disagreements: ' . count($report['disagreements']),
+            'Disagreements: ' . ($report['disagreement_count'] ?? count($report['disagreements']))
+                . (($report['disagreement_count'] ?? 0) > count($report['disagreements']) ? ' (first ' . count($report['disagreements']) . ' listed)' : ''),
         ];
         $text = implode("\n", $lines) . "\n";
         foreach ($report['disagreements'] as $item) {

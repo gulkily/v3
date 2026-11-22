@@ -102,7 +102,7 @@ Concepts touched: [Fastmod scoring](../../concepts/fastmod_scoring.md) and [effe
 - Expected changes:
   - `LocalMetaModel::score()`: damped average of word evidence, `(prior × 2 + Σ evidence) / (words + 2)`, instead of the sum. Tokens skip hashtags and URLs. Model format `fastmod-local-meta-v2`; a v1 file counts as no model, so the page asks for a retrain.
   - `LocalMetaTraining`: reads `state/private/fastmod_local_meta_labels.txt` first (`post_id: meta|not`, `#` comments); five folds by post-id hash score every labeled root out of fold; the threshold and the report's precision and recall come from those scores. The report counts operator labels.
-  - Seed file `docs/plans/fastmod_bayes_meta/zenmemes_local_meta_labels.txt` with Claude's labels of 1,213 public roots; the maintainer copies it into `state/private/` after deploy.
+  - Seed file `docs/plans/fastmod_bayes_meta/zenmemes_local_meta_labels.txt` with Claude's labels of 1,182 public roots; the maintainer copies it into `state/private/` after deploy.
 - Verification approach: unit tests for the new score, labels-file parsing and precedence, fold determinism; offline replay on public data must show test precision ≥ 0.95 with the threshold chosen from training folds alone. Then the maintainer retrains on production without weak negatives.
 - Estimate details: driver: model change and folds are small; labeling took most of the effort; uncertainty: medium, production adds about 330 roots that aren't public and aren't in the file.
 - Risks or open questions:

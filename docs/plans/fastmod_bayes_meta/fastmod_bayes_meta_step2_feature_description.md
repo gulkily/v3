@@ -77,7 +77,7 @@ Production, with the LLM unavailable. Entry is SSH into `~/v3`, often from iPhon
 - `templates/pages/post.php`, `RouteServices::latestFastScoreForPost`: per-rubric score display. **Extend** to show the local score and its top words.
 - `src/ForumRewrite/TaskQueue/SqliteTaskQueueStore.php`, `TaskQueueWorker.php`, `scripts/task_queue.php`: allowlisted task types with deduplication and visible status. **Extend** with two types, local training and local score sweep. The LLM `fast_score_sweep` stays separate, since it depends on the provider. (Revision 2)
 - `src/ForumRewrite/Http/DeployController.php`: Deploy now queues work for a signed-in root-approved operator. **Reuse** that pattern for Retrain. (Revision 2)
-- Operator labels file (Revision 3): **New**, read by `LocalMetaTraining`. Seeded with Claude's 1,213 labels of public ZenMemes roots, kept in this plan folder.
+- Operator labels file (Revision 3): **New**, read by `LocalMetaTraining`. Seeded with Claude's 1,182 labels of public ZenMemes roots (340 meta), kept in this plan folder.
 - `src/ForumRewrite/Scoring/FastmodScoreTransfer.php`: score transfer. **Extend** only to exclude local scores.
 - `src/ForumRewrite/Analysis/RelatedContentSearchService.php` has a private ASCII tokenizer with a stopword list. **New**: a small shared Latin tokenizer and the naive Bayes model, with no new dependency. Russian needs no tokenizing, since it is never meta. The related-content tokenizer stays unchanged in this cycle.
 

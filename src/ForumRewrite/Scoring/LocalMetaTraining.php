@@ -16,9 +16,11 @@ final class LocalMetaTraining
     public const LLM_META_AT_OR_ABOVE = 0.90;
     public const LLM_OTHER_BELOW = 0.10;
     public const TARGET_PRECISION = 0.95;
-    private const HOLDOUT_ONE_IN = 5;
+    public const FOLDS = 5;
+    private const MAX_REPORTED_DISAGREEMENTS = 300;
 
-    public function __construct(private readonly PDO $read, private readonly ?PDO $scores) {}
+    /** @param array<string,bool> $operatorLabels post ID => meta, from the operator labels file; overrides every other label */
+    public function __construct(private readonly PDO $read, private readonly ?PDO $scores, private readonly array $operatorLabels = []) {}
 
     /**
      * @return array{examples:list<array{post_id:string,subject:string,body:string,meta:bool,label_source:string}>, counts:array<string,int>}
@@ -28,7 +30,7 @@ final class LocalMetaTraining
         $llm = $this->llmMetaScores();
         $suppressed = $this->suppressed();
         $hasher = new FastScoreContextFactory(static fn (string $_): ?array => null);
-        $counts = ['authored' => 0, 'llm_meta' => 0, 'llm_other' => 0, 'suppressed' => 0, 'weak_other' => 0,
+        $counts = ['operator_meta' => 0, 'operator_other' => 0, 'authored' => 0, 'llm_meta' => 0, 'llm_other' => 0, 'suppressed' => 0, 'weak_other' => 0,
             'cyrillic' => 0, 'uncertain' => 0, 'unlabeled' => 0];
         $examples = [];
         $rows = $this->read->query('SELECT p.post_id, p.subject, p.body, p.board_tags_json, p.post_tags_json, t.thread_labels_json
@@ -44,7 +46,9 @@ final class LocalMetaTraining
                 continue;
             }
             $score = $llm[$postId][$hasher->contentHashForPost($row)] ?? null;
-            if (isset($suppressed[$postId])) {
+            if (isset($this->operatorLabels[$postId])) {
+                [$meta, $source] = $this->operatorLabels[$postId] ? [true, 'operator_meta'] : [false, 'operator_other'];
+            } elseif (isset($suppressed[$postId])) {
                 [$meta, $source] = [false, 'suppressed'];
             } elseif (self::authoredMeta($row)) {
                 [$meta, $source] = [true, 'authored'];
@@ -68,7 +72,8 @@ final class LocalMetaTraining
     }
 
     /**
-     * Trains on four fifths, picks a threshold on the held-out fifth, then trains the saved model on everything.
+     * Scores every labeled root with a model that didn't see it (five folds by post-ID hash),
+     * picks the threshold from all of those scores, then trains the saved model on everything.
      *
      * @return array{model:LocalMetaModel, report:array<string,mixed>}
      */
@@ -80,21 +85,23 @@ final class LocalMetaTraining
         if ($meta < self::MIN_PER_CLASS || $other < self::MIN_PER_CLASS) {
             throw new LocalMetaTrainingRefused($counts, $meta, $other, $weakNegatives);
         }
-        $train = [];
-        $holdout = [];
+        $folds = array_fill(0, self::FOLDS, []);
         foreach ($examples as $example) {
-            if (hexdec(substr(hash('sha256', $example['post_id']), 0, 6)) % self::HOLDOUT_ONE_IN === 0) $holdout[] = $example;
-            else $train[] = $example;
+            $folds[hexdec(substr(hash('sha256', $example['post_id']), 0, 6)) % self::FOLDS][] = $example;
         }
-        $trial = LocalMetaModel::train($train, null, $builtAt);
         $scored = [];
-        foreach ($holdout as $example) {
-            $scored[] = $example + $trial->score($example['subject'], $example['body']);
+        foreach ($folds as $index => $fold) {
+            $rest = [];
+            foreach ($folds as $otherIndex => $examplesInFold) if ($otherIndex !== $index) array_push($rest, ...$examplesInFold);
+            $trial = LocalMetaModel::train($rest, null, $builtAt);
+            foreach ($fold as $example) $scored[] = $example + $trial->score($example['subject'], $example['body']);
         }
         [$threshold, $precision, $recall] = self::chooseThreshold($scored);
         $cut = $threshold ?? 0.5;
         $disagreements = array_values(array_filter($scored, static fn (array $s): bool => ($s['probability'] >= $cut) !== $s['meta']));
         usort($disagreements, static fn (array $a, array $b): int => abs($b['probability'] - $cut) <=> abs($a['probability'] - $cut));
+        $disagreementCount = count($disagreements);
+        $disagreements = array_slice($disagreements, 0, self::MAX_REPORTED_DISAGREEMENTS);
         $model = LocalMetaModel::train($examples, $threshold, $builtAt);
         return ['model' => $model, 'report' => [
             'built_at' => $model->builtAt(),
@@ -103,8 +110,10 @@ final class LocalMetaTraining
             'labels' => $counts,
             'meta' => $meta,
             'other' => $other,
-            'holdout' => count($holdout),
-            'holdout_meta' => count(array_filter($holdout, static fn (array $e): bool => $e['meta'])),
+            'checked' => count($scored),
+            'checked_meta' => $meta,
+            'folds' => self::FOLDS,
+            'disagreement_count' => $disagreementCount,
             'threshold' => $threshold,
             'precision' => $precision,
             'recall' => $recall,
@@ -122,14 +131,15 @@ final class LocalMetaTraining
      */
     public function runAndSave(LocalMetaFiles $files, bool $weakNegatives): array
     {
-        ['model' => $model, 'report' => $report] = $this->run($weakNegatives);
+        $training = $this->operatorLabels === [] ? new self($this->read, $this->scores, $files->loadLabels()) : $this;
+        ['model' => $model, 'report' => $report] = $training->run($weakNegatives);
         $files->saveModel($model);
         $files->saveReport($report);
         return $report;
     }
 
     /**
-     * The widest held-out cut at which precision still reaches the target; null when none does.
+     * The widest cut at which precision still reaches the target; null when none does.
      * The threshold sits halfway, in log-odds, between the last score kept and the next one,
      * because naive Bayes pushes scores toward 0 and 1 and a cut right at a held-out score is fragile.
      *
