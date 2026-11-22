@@ -9,6 +9,7 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
+- [Offline writing runbook](offline_runbook_compose/offline_runbook_compose_one_shot.md) — explain cached composers, drafts, and queued offline text.
 - [Optional thread author details](thread_author_details/thread_author_details_one_shot.md) — opt-in speakers in the text thread API.
 - [Local startup port fallback](local_start_port_fallback/local_start_port_fallback_one_shot.md) — try ports 8000–8009 by default and report bind failures honestly.
 - [Agents navigation](agents_nav/agents_nav_one_shot.md) — point the Agents navigation item to the onboarding guide.
