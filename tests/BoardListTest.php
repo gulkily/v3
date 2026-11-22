@@ -412,7 +412,7 @@ final class BoardListTest
         assertStringNotContains('class="zen-strip"', $off);
     }
 
-    public function testZenStripImageCardsShowTheWholeImageWithTheOriginalForSharpScreens(): void
+    public function testTheFeaturedZenMemeShowsACompressedCopyOverAStandIn(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);
         $imageRoot = $repositoryRoot . '-images';
@@ -437,9 +437,16 @@ final class BoardListTest
             $pdo = null;
 
             $tile = '/images/thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, 'tile');
+            $wide = '/images/thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, 'wide');
             $full = '/images/' . \ForumRewrite\Images\ImageReference::filename($reference);
             $board = $this->markup($this->render($application, '/'));
-            assertStringContains('<a class="zen-strip__card zen-strip__card--image" href="/threads/zen-image"><img src="' . $tile . '" srcset="' . $tile . ' 480w, ' . $full . ' 900w" sizes="(min-width: 48rem) 45rem, 100vw" alt="A calm pond" width="900" height="600"', $board);
+            // A compressed copy at the original's width, fetched first, over a tiny inline stand-in; never the stored original.
+            assertSame(1, preg_match('#<a class="zen-strip__card zen-strip__card--image zen-strip__card--standin" href="/threads/zen-image"><img style="background-image:url\\((data:image/webp;base64,[A-Za-z0-9+/=]+)\\)" src="' . preg_quote($wide, '#') . '" srcset="' . preg_quote($tile . ' 480w, ' . $wide . ' 900w', '#') . '" sizes="\\(min-width: 48rem\\) 45rem, 100vw" alt="A calm pond" width="900" height="600" fetchpriority="high" decoding="async"></a>#', $board, $standin));
+            assertTrue(strlen($standin[1]) < 1024, 'stand-in is ' . strlen($standin[1]) . ' bytes');
+            $dot = getimagesizefromstring(base64_decode(substr($standin[1], strlen('data:image/webp;base64,'))));
+            assertSame([16, 11], [$dot[0], $dot[1]]);
+            $strip = substr($board, strpos($board, '<section class="zen-strip"'));
+            assertStringNotContains($full, substr($strip, 0, strpos($strip, '</section>')));
         } finally {
             putenv($old === false ? $flag : $flag . '=' . $old);
             exec('rm -rf ' . escapeshellarg($imageRoot) . ' ' . escapeshellarg($imageRoot . '-thumbs') . ' ' . escapeshellarg($repositoryRoot . '-meme.png'));

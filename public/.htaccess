@@ -51,6 +51,19 @@ Header set X-Content-Type-Options "nosniff"
 </If>
 </IfModule>
 
+# Direct image serving (FORUM_IMAGE_DIRECT_SERVING_ENABLED, off by default).
+# `.published-images` holds copies of images PHP has already served on a public
+# board; PHP puts them there only while the flag is on and the board is not
+# members-only, empties the folder on its next request otherwise, and removes
+# an image's copies when the image is removed. With no folder these rules do
+# nothing. The folder itself is not an address.
+RewriteCond %{THE_REQUEST} \s/+\.published-images(?:/|\s) [NC]
+RewriteRule ^\.published-images(?:/|$) - [F,NC,L]
+RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{DOCUMENT_ROOT}/.published-images/$1 -f
+RewriteRule ^images/((?:thumbs/)?[a-f0-9]{64}(?:-[a-z0-9]+)?\.(?:png|jpg)(?:\.webp)?)$ .published-images/$1 [END]
+
 # Feature and membership state must be evaluated by PHP before serving content.
 # Every content, API, download, and generated-artifact request goes through the
 # front controller. Public instances still use its static-artifact fast path;

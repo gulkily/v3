@@ -133,6 +133,7 @@ $testFiles = [
     __DIR__ . '/FastmodRubricsTest.php',
     __DIR__ . '/ImageUploadValidatorTest.php',
     __DIR__ . '/ImageContentTest.php',
+    __DIR__ . '/ImageServingTest.php',
     __DIR__ . '/ImageZipRestoreTest.php',
     __DIR__ . '/ImageZipBackupTest.php',
     __DIR__ . '/InstanceImageImportTest.php',

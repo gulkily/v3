@@ -143,6 +143,9 @@ final class Application
             $this->routeServices = null;
         }
         $this->docsPage = $docsPage;
+        // Published image copies exist only while the site may publish them (one stat when there are none).
+        // First, so every request that reaches the application enforces it.
+        \ForumRewrite\Images\PublishedImages::forProject()->enforce($this->featureFlags());
         if ($path === '/api/text_rules') {
             if ($method !== 'GET') { $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405); return; }
             $this->sendJson(\ForumRewrite\Support\UnicodeTextPolicy::rules(
