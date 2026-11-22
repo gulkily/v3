@@ -219,6 +219,8 @@ final class TemplateRenderer
         $scriptPaths = array_values(array_unique($scriptPaths));
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED)) {
             array_unshift($scriptPaths, '/assets/image_prepare.js', '/assets/image_upload.js');
+            // Every page that can show an image retries a failed one once.
+            $scriptPaths[] = '/assets/image_retry.js';
         }
         $assetScriptPaths = [];
         foreach ($scriptPaths as $scriptPath) {
@@ -668,6 +670,8 @@ final class TemplateRenderer
         }
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED)) {
             array_unshift($scriptPaths, '/assets/image_prepare.js', '/assets/image_upload.js');
+            // Every page that can show an image retries a failed one once.
+            $scriptPaths[] = '/assets/image_retry.js';
         }
         $assetScriptPaths = [];
         foreach (array_values(array_unique($scriptPaths)) as $scriptPath) {

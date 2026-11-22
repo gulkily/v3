@@ -96,3 +96,25 @@ Branch `image-loading`, from `origin/main` `22fc9f1` with `a4a4aea` merged in. P
 - Estimate details (extended mode only): original scope as Step 3 Stage 3; uncertainty low-medium; no revisions.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+## Stage 4 - A failed image tries once more
+
+**Original estimate: 0.10**
+
+**Retrospective stage-work assessment: 0.10**
+
+- Changes:
+  - New `public/assets/image_retry.js`: when an image's request fails, it waits two seconds and asks again, once per image. It also catches images that failed before the script ran. Images that load are never touched. It adds no text and no control.
+  - `TemplateRenderer` includes it on every page when image attachments are on, in both places that already add the image scripts.
+  - New `tests/browser/image_retry.mjs`, following the other files in `tests/browser/`.
+- Verification:
+  - The browser test passes in **Chrome and in WebKit**, the engine Safari uses: an image that fails once loads on the second try; one with `srcset` does too; one that always fails is asked for exactly twice and then left alone; one that loads is asked for once. It was run from a copy with the library's import path changed, because `playwright-core` is not installed in this checkout.
+  - `./v3 test --smoke ImageServingTest BoardListTest MediaEmbedRendererTest TemplateRendererMediaEmbedsScriptTest`: 506 run, 506 passed. The full suite was not run.
+  - The local home page includes the script.
+- Notes:
+  - **Not verified:** the maintainer's iPhone SE in the installed app. Desktop WebKit is the closest this workspace gets. The reason his original request failed is still unknown; this makes one failure recover, and does nothing for a server that fails twice.
+  - Without JavaScript nothing changes.
+  - The browser test is not wired into `./v3 test`; like its neighbours it is run by hand with `node tests/browser/image_retry.mjs`.
+- Estimate details (extended mode only): original scope as Step 3 Stage 4; uncertainty low; no revisions.
+
+*— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
