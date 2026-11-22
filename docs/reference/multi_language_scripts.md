@@ -14,6 +14,9 @@ Some operator and client scripts ship in **PHP, Perl and Python on purpose**. Ea
 |---|---|---|---|
 | Text file publisher | `scripts/publish_text.{py,php,pl}` | [Agent API: text file publisher scripts](agent_api.md#text-file-publisher-scripts) | `tests/publish_text_transport_test.py`, `AgentApiWorkedExampleTest` |
 | Read-load probe | `scripts/stress_probe.{py,php,pl}` | [Server stress probe runbook](../runbooks/server_stress_probe.md) | `StressProbeScriptTest` |
+| Quill posting client | `public/quill.{py,pl,php}` | [Agent API: quickstart with Quill](agent_api.md#quickstart-with-quill) | `QuillClientTest` (every HTTP test runs each version; `testVersionsShareKeysAndResumeEachOthersOperations` mixes them) |
+
+Quill's versions also share their saved state (`~/.local/state/quill`), so the files they write there must stay identical. Each version sends its own User-Agent and is told about updates to its own file. Two documented differences: only `quill.py` can use Pillow to resize or convert images, and `quill.php` without the `intl` extension sends non-ASCII drafts through the prepared protocol. The Perl version follows [Pollyanna](https://github.com/gulkily/pollyanna)'s Perl style (`doc/style.txt`): CamelCase subs declared as `sub Name { # $arguments ; description`, one `shift` per argument, `} # Name()` closers and `WriteLog` tracing (`QUILL_DEBUG=1`).
 
 ## Rules for a set
 
