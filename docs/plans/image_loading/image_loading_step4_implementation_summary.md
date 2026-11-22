@@ -73,3 +73,26 @@ Branch `image-loading`, from `origin/main` `22fc9f1` with `a4a4aea` merged in. P
 - Estimate details (extended mode only): original scope as Step 3 Stage 2; uncertainty was medium on quality, and that is where the extra work went; no revisions.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+## Stage 3 - The featured meme: a stand-in, fetched first, never the original
+
+**Original estimate: 0.15**
+
+**Retrospective stage-work assessment: 0.15**
+
+- Changes:
+  - `ThumbnailStore::inline()`: a 16px-wide WebP of an image as a `data:` address, made once and kept beside the other copies under a name that is not a size, so it is never served by address and is removed with the image.
+  - `BoardPageController::zenStrip()` asks for it for the featured meme only. `ListThumbnails` entries carry their `reference` for that.
+  - `partials/zen_strip.php`: the featured image offers the tile and the display copies through `srcset`, is marked `fetchpriority="high"`, and carries the stand-in as its own background. The stored original is no longer named there.
+  - `site.css`: the stand-in fills the image's box. It sits on the image element, so dark schemes dim it with the image.
+- Verification:
+  - `./v3 test BoardListTest ZenStripTest`: 20 run, 20 passed. `testTheFeaturedZenMemeShowsACompressedCopyOverAStandIn` (renamed) checks the markup, that the stand-in is a 16x11 WebP under 1 KB, and that the module never names the original. The full suite was not run.
+  - Local copy with the six seed images restored from production: the home page's HTML grows by 166 bytes. Three home page loads took 0.11 s each once the stand-in existed.
+  - Browser at 380x667, 2x, with image requests held back: the box shows the blurred stand-in in Gloss and Gloss Dark, then the image. The first image the browser asked for was the featured one. A 2x phone chose the `wide` copy (20 KB), where before it chose the 72 KB original.
+- Notes:
+  - **Changed during the stage:** the stand-in first sat on the link, where Gloss Dark showed it brighter than the image that replaced it. It moved onto the image element.
+  - The thumbnail row has no stand-ins; its boxes are empty until their images arrive.
+  - **Not checked separately:** the high-traffic copy of the home page. It is rendered from the same template.
+- Estimate details (extended mode only): original scope as Step 3 Stage 3; uncertainty low-medium; no revisions.
+
+*— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*

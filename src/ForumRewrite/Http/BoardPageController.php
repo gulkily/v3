@@ -201,10 +201,18 @@ final class BoardPageController
         }
         $imagesEnabled = $this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED);
 
-        return [
-            'threads' => \ForumRewrite\Images\ListThumbnails::attach($pdo, $this->repositoryRoot, $imagesEnabled, $threads, 'root_post_id', true),
-            'allHref' => '/tags/' . implode('+', $tags),
-        ];
+        $threads = \ForumRewrite\Images\ListThumbnails::attach($pdo, $this->repositoryRoot, $imagesEnabled, $threads, 'root_post_id', true);
+        // The featured meme's box shows a tiny blurred stand-in from the first paint, until the image arrives.
+        if (isset($threads[0]['thumbnail']['reference'])) {
+            try {
+                $store = new \ForumRewrite\Images\ThumbnailStore(new \ForumRewrite\Images\ImageStore($this->repositoryRoot));
+                $threads[0]['thumbnail']['placeholder'] = $store->inline($threads[0]['thumbnail']['reference']);
+            } catch (\RuntimeException) {
+                // No stand-in; the box keeps its plain background.
+            }
+        }
+
+        return ['threads' => $threads, 'allHref' => '/tags/' . implode('+', $tags)];
     }
 
     /**

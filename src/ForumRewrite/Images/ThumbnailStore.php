@@ -165,6 +165,45 @@ final class ThumbnailStore
         return $target;
     }
 
+    /**
+     * A page-ready stand-in for an image while it loads: a copy about 16px
+     * wide as a `data:` address, a few hundred bytes, which the browser
+     * stretches into a soft blur. Made once and kept beside the other copies
+     * (its name is not a size, so it is never served by address). Null when
+     * the host cannot write WebP or the image cannot be read.
+     */
+    public function inline(array $reference): ?string
+    {
+        if (!self::available() || self::format() !== 'webp') {
+            return null;
+        }
+        try {
+            $target = $this->root . '/' . $reference['sha256'] . '-dot.' . $reference['type'] . '.webp';
+            if (!is_file($target) || is_link($target)) {
+                $source = $this->images->resolve($reference);
+                $width = min(16, $reference['width']);
+                $height = max(1, (int) round($reference['height'] * $width / $reference['width']));
+                $this->ensureRoot();
+                $temp = tempnam($this->root, '.thumb-');
+                if ($temp === false) {
+                    return null;
+                }
+                try {
+                    $this->resize($source, $reference['type'], $temp, $width, $height, 'webp', false, 50);
+                    if (!chmod($temp, 0600) || !rename($temp, $target)) {
+                        return null;
+                    }
+                } finally {
+                    if (is_file($temp)) { unlink($temp); }
+                }
+            }
+            $bytes = file_get_contents($target);
+            return $bytes === false || strlen($bytes) > 2048 ? null : 'data:image/webp;base64,' . base64_encode($bytes);
+        } catch (RuntimeException) {
+            return null;
+        }
+    }
+
     private function resize(string $source, string $type, string $target, int $width, int $height, ?string $format, bool $crop, int $quality = 80): void
     {
         $original = $type === 'png' ? @imagecreatefrompng($source) : @imagecreatefromjpeg($source);

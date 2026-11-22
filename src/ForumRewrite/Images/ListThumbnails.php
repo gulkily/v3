@@ -74,6 +74,7 @@ final class ListThumbnails
             $thumbnails[$key] = self::sources($reference) + [
                 'preview' => ThumbnailStore::url($reference, 'tile'),
                 'full' => '/images/' . ImageReference::filename($reference),
+                'reference' => $reference,
                 'display' => ThumbnailStore::displaySources($reference),
                 'display_srcset' => ThumbnailStore::displaySrcset($reference),
                 'width' => $reference['width'],
