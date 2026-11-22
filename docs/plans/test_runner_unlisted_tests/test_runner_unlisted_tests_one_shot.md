@@ -8,7 +8,7 @@ Effort study: `railspike-effort` / `v3/test_runner_unlisted_tests`; host ledger 
 
 **Cycle estimate: 0.10**
 
-Status: plan written; next permitted action: implement.
+Status: implemented, PR open; next permitted action: maintainer merge.
 
 ## Original request
 
@@ -49,10 +49,28 @@ Tooling change.
 
 Smoke set plus `TestRunnerBehaviorTest` pass. A name that matches nothing fails with and without `--smoke`. PR open. Feedback: no matching item in `docs/feedback/items/`. Concepts touched: none.
 
-Starting revision and branch: `cc6680c9`, `fix/test-runner-unlisted-tests`.
+Starting revision and branch: `cc6680c9`, `fix/test-runner-unlisted-tests`. Planning commit: `1d048c48`.
 
 ## Study history
 
 - 2026-11-22 UTC, intake and entry: **0.10**. Claude, single exposed rater. R1 not reverified this session.
+- 2026-11-22 UTC, closeout: retrospective **0.10**. Same rater.
+
+## Outcome
+
+`tests/run.php` loads unlisted `tests/*Test.php` files after the listed ones, and stops with `Test not found: <name>` (exit 1, nothing run) when a named class or method doesn't exist. The smoke-entry check and the new check share `testExists()`. `CONTRIBUTING.md` documents both.
+
+## Verification
+
+- Passed: `./v3 test --smoke TestRunnerBehaviorTest` (486 run, 0 failed), including two new tests: unknown names fail with and without `--smoke` and with `--jobs=2`, and `unlistedTestFiles()` returns only unlisted `*Test.php` files in name order.
+- Passed, by hand: a temporary unlisted `tests/ZzUnlistedTest.php` ran with `./v3 test ZzUnlistedTest`; `./v3 test --smoke NoSuchTest` exited 1 before running anything. The temporary file was removed.
+- Checked: the test names in `./v3 agent-reply test-local` all exist.
+- Not run: the full suite.
+
+## Final review
+
+Diff: `tests/run.php`, `tests/TestRunnerBehaviorTest.php`, one paragraph in `CONTRIBUTING.md`, this record, the index, the ledger and the debug log. Merges cleanly with the two open sibling PRs.
+
+Commit, merge and publication: pushed to `fix/test-runner-unlisted-tests` with an open PR; not merged.
 
 — Claude · 2026-11-22 UTC · Model: claude-fable-5-2
