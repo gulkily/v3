@@ -8,7 +8,7 @@ Effort study: `railspike-effort` / `v3/test_fixture_insert_columns`; host ledger
 
 **Cycle estimate: 0.10**
 
-Status: plan written; next permitted action: implement.
+Status: implemented, PR open; next permitted action: maintainer merge.
 
 ## Original request
 
@@ -45,10 +45,28 @@ Extend the existing guard's directory list. No new test, tooling or dependency.
 
 Smoke set plus all changed test classes pass. PR open. Feedback: no matching item in `docs/feedback/items/`. Concepts touched: none.
 
-Starting revision and branch: `cc6680c9`, `fix/test-fixture-insert-columns`.
+Starting revision and branch: `cc6680c9`, `fix/test-fixture-insert-columns`. Planning commit: `c178fba6`.
 
 ## Study history
 
 - 2026-11-22 UTC, intake and entry: **0.10**. Claude, single exposed rater. R1 not reverified this session.
+- 2026-11-22 UTC, closeout: retrospective **0.10**. Same rater.
+
+## Outcome
+
+All 46 fixture inserts name their columns. `SqlInsertColumnsTest` scans `tests/` (skipping its own sample strings), and `CONTRIBUTING.md` says the rule covers fixtures. Nothing under `src/` changed.
+
+## Verification
+
+- Passed: `./v3 test --smoke` (484 run, 0 failed).
+- Passed: the 23 changed test classes (119 run, 0 failed).
+- Passed: a probe file under `tests/Support/` with `INSERT INTO foo VALUES (1)` made the guard fail; the probe was removed.
+- Not run: the full suite, and the browser tests that use the two support files.
+
+## Final review
+
+Diff: 23 test files, the guard, one sentence in `CONTRIBUTING.md`, this record, the index, the ledger and the debug log. Merges cleanly with the open `fix/read-model-insert-columns` PR.
+
+Commit, merge and publication: pushed to `fix/test-fixture-insert-columns` with an open PR; not merged.
 
 — Claude · 2026-11-22 UTC · Model: claude-fable-5-2

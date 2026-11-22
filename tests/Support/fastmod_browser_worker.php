@@ -9,7 +9,7 @@ if (str_starts_with($argv[2] ?? '', 'legacy-suppress:')) {
     $private=new PDO('sqlite:'.$root.'/scores.sqlite3');
     // An upgrade fixture, never a production correction interface.
     $private->exec('CREATE TABLE IF NOT EXISTS fastmod_meta(post_id TEXT PRIMARY KEY,suppressed INTEGER)');
-    $private->prepare('INSERT INTO fastmod_meta VALUES(?,1)')->execute([$id]);
+    $private->prepare('INSERT INTO fastmod_meta (post_id, suppressed) VALUES(?,1)')->execute([$id]);
     echo json_encode(['suppressed'=>$id]);exit;
 }
 if (($argv[2] ?? '') === 'state') {

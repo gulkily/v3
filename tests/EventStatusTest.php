@@ -128,7 +128,8 @@ final class EventStatusTest
                 $pdo->exec("UPDATE member SET {$column} = 'member-' || {$column} WHERE {$column} IS NOT NULL");
             }
         }
-        $pdo->exec('INSERT INTO profiles SELECT * FROM member');
+        $names = implode(', ', $columns);
+        $pdo->exec('INSERT INTO profiles (' . $names . ') SELECT ' . $names . ' FROM member');
     }
 
     private function render(Application $application, string $path): string

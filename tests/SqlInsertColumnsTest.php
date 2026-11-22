@@ -5,7 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 /**
- * Every SQL insert in `src/` and `scripts/` names its columns (CONTRIBUTING.md,
+ * Every SQL insert in `src/`, `scripts/` and `tests/` names its columns (CONTRIBUTING.md,
  * "SQL inserts name their columns"). An insert without a column list breaks as
  * soon as its table gains a column, which makes rollbacks and migrations unsafe.
  */
@@ -28,13 +28,16 @@ final class SqlInsertColumnsTest
     {
         $root = dirname(__DIR__);
         $found = [];
-        foreach (['src', 'scripts'] as $directory) {
+        foreach (['src', 'scripts', 'tests'] as $directory) {
             $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . '/' . $directory, FilesystemIterator::SKIP_DOTS));
             foreach ($files as $file) {
                 if (!$file->isFile() || $file->getExtension() !== 'php') {
                     continue;
                 }
                 $path = substr($file->getPathname(), strlen($root) + 1);
+                if ($path === 'tests/SqlInsertColumnsTest.php') {
+                    continue; // holds the pattern's own bad examples
+                }
                 $lines = self::insertsWithoutColumns((string) file_get_contents($file->getPathname()));
                 if ($lines !== []) {
                     $found[$path] = $lines;

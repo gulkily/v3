@@ -143,7 +143,7 @@ final class ApprovalAuditCommandTest
             foreach (ReadModelSchema::statements() as $statement) {
                 $pdo->exec($statement);
             }
-            $insert = $pdo->prepare('INSERT INTO metadata VALUES (?, ?)');
+            $insert = $pdo->prepare('INSERT INTO metadata (key, value) VALUES (?, ?)');
             foreach (array_merge(ReadModelMetadata::expectedSchemaIdentity(), [
                 'repository_root' => $root, 'repository_head' => 'no-git',
             ]) as $key => $value) {
