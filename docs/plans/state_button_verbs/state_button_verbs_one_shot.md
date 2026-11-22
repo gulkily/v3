@@ -104,6 +104,6 @@ Diff checked: two source files, one concept entry, two tests and this record. No
 
 ## Commit, merge and publication status
 
-Completion commit: pending at writing (hash in the PR). Not merged, not deployed.
+Completion commit: `794c9f7`. PR #363 open. Not merged, not deployed.
 
 *— Claude · 2026-11-22 UTC · Model: claude-opus-5-5*
