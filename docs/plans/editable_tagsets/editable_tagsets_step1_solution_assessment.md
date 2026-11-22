@@ -87,6 +87,6 @@ Questions for Step 2:
 
 2026-11-18T02:55:00Z; scope v1; starting revision `92ef92501`; reference R1 (frozen hashes as recorded in the origin ledger; local copies present). Claude, single exposed rater; tagsets code, the Tools page and the feature-flag write path were inspected before this snapshot, so no pristine intake is claimed. Recommended Option A: projected total **0.50**. Alternatives B 0.70 and C 0.75, non-additive. Not hours or measured labor; no approval to advance.
 
-Status: Step 1 drafted for review; awaiting Approved Step 1.
+Status: Approved Step 1 (maintainer, 2026-11-22).
 
 *— Claude · 2026-11-18 UTC · Model: claude-opus-5-5*
