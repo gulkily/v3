@@ -36,3 +36,40 @@ Branch `image-loading`, from `origin/main` `22fc9f1` with `a4a4aea` merged in. P
 - Estimate details (extended mode only): original scope as Step 3 Stage 1; uncertainty low; no revisions.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+## Stage 2 - Compressed copies on pages; threads link the original
+
+**Original estimate: 0.20**
+
+**Retrospective stage-work assessment: 0.25**
+
+- Changes:
+  - `ThumbnailStore`: two display sizes, `wide` (fits 960px) and `large` (fits 1600px), written as WebP. With WebP available they are made even from an original that already fits. `displaySources()` and `displaySrcset()` list the tile and each display size wider than the one before, so an image never offers two copies of the same width.
+  - Display sizes are written at WebP quality 90 (`DISPLAY_QUALITY`); thumbnails stay at 80.
+  - `ImageController` accepts the new size names. A display copy that came out no smaller than its original is answered with the original.
+  - `MediaEmbedRenderer`: a thread image is a compressed copy with `srcset`, wrapped in a link to the stored original (`post-image__original`).
+  - `ListThumbnails` carries `display` and `display_srcset` for Stage 3.
+- Verification:
+  - `./v3 test --smoke ImageServingTest ImageContentTest MediaEmbedRendererTest GalleryPageTest BoardListTest ZenStripTest QuillClientTest`: 534 run, 534 passed. New in `ImageServingTest`: the source list for a 900x600, a 2000x1000 and a 40x40 image; the thread markup; no stored original inside an image tag on a thread, the board list, Recent and the gallery; the copy is WebP, 900x600 and under half the original's bytes; a flat PNG's copy is answered with the PNG. The full suite was not run.
+  - Six originals downloaded from zenmemes.com, copies made in a scratch store:
+
+    | Image | Original | Tile | Wide | Large |
+    | --- | --- | --- | --- | --- |
+    | Painting, 1672x941 PNG | 2,567 KB | 4 KB | 21 KB | 50 KB |
+    | "Every commit is a stone", 1080x1080 PNG | 72 KB | 6 KB | 20 KB | 25 KB |
+    | Screenshot with text, 732x655 PNG | 112 KB | 12 KB | 26 KB | same as wide |
+    | Screenshot, 844x400 PNG | 82 KB | 13 KB | 41 KB | same as wide |
+    | Screenshot, 809x316 PNG | 32 KB | 5 KB | 13 KB | same as wide |
+    | Small banner, 775x165 PNG | 14 KB | 5 KB | 18 KB, so the original is sent | same |
+
+  - Side by side, original against copy: the text screenshot is indistinguishable at quality 80 and 90. The painting at quality 80 lost its canvas grain and the coat's texture; at 90 they are kept.
+- Notes:
+  - **Changed from the plan:** quality 90 for display sizes, after the painting comparison. This is why the stage ran over.
+  - **Changed from the plan:** a copy can come out larger than a small, flat original. Those requests are answered with the original's bytes.
+  - **Narrower than Step 2's wording:** an original no larger than 480px (or 72px in list rows) is still shown as it is, as before this cycle. There is nothing smaller to make from it.
+  - The home page still names the original until Stage 3.
+  - The one stored photo-like image was a PNG; no camera JPEG was on the site to compare.
+  - A tap on a thread image now opens the original in the same tab.
+- Estimate details (extended mode only): original scope as Step 3 Stage 2; uncertainty was medium on quality, and that is where the extra work went; no revisions.
+
+*— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*

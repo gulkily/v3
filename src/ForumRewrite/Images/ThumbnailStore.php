@@ -19,7 +19,23 @@ final class ThumbnailStore
      * Boxes in pixels by size name: the square list-row slot (4.5rem) at 1x
      * and 2x, and gallery tiles (rows are at most 12rem tall).
      */
-    public const SIZES = ['sq' => [72, 72], 'sq2x' => [144, 144], 'tile' => [480, 480]];
+    public const SIZES = ['sq' => [72, 72], 'sq2x' => [144, 144], 'tile' => [480, 480], 'wide' => [960, 960], 'large' => [1600, 1600]];
+
+    /**
+     * Display sizes: what a page shows in place of the stored original (the
+     * home page's featured meme, an image in a thread). When WebP is available
+     * they are made even from an original that already fits, because the
+     * re-encoded copy is a fraction of a PNG or camera JPEG's bytes; the
+     * original stays untouched and opens only when asked for.
+     */
+    public const DISPLAY = ['wide', 'large'];
+
+    /**
+     * WebP quality for display sizes. Thumbnails use 80; at 80 a full-size
+     * painting lost its canvas grain (2.5 MB original, 23 KB copy), so the
+     * sizes people actually look at are written at 90.
+     */
+    public const DISPLAY_QUALITY = 90;
 
     /**
      * Sizes cropped to fill their box from the centre, as the row slot shows
@@ -84,9 +100,36 @@ final class ThumbnailStore
     /** URL of the derivative, or of the original when resizing is unavailable or the original already fits. */
     public static function url(array $reference, string $size): string
     {
-        return !self::available() || self::originalFits($reference, $size)
+        $reencode = in_array($size, self::DISPLAY, true) && self::format() === 'webp';
+        return !self::available() || (self::originalFits($reference, $size) && !$reencode)
             ? '/images/' . ImageReference::filename($reference)
             : '/images/thumbs/' . self::filename($reference, $size);
+    }
+
+    /**
+     * What an inline image offers the browser: the tile, then each display size
+     * that is wider than the one before it, with pixel widths for `srcset`. An
+     * original no wider than the tile is its own only entry.
+     *
+     * @return list<array{url:string, width:int}>
+     */
+    public static function displaySources(array $reference): array
+    {
+        $sources = [];
+        foreach (['tile', ...self::DISPLAY] as $size) {
+            $width = self::size($reference, $size)['width'];
+            if ($sources === [] || $width > $sources[count($sources) - 1]['width']) {
+                $sources[] = ['url' => self::url($reference, $size), 'width' => $width];
+            }
+        }
+        return $sources;
+    }
+
+    /** `srcset` for displaySources(), or null when there is only one entry. */
+    public static function displaySrcset(array $reference): ?string
+    {
+        $sources = self::displaySources($reference);
+        return count($sources) < 2 ? null : implode(', ', array_map(static fn (array $s): string => $s['url'] . ' ' . $s['width'] . 'w', $sources));
     }
 
     /**
@@ -112,7 +155,7 @@ final class ThumbnailStore
             throw new RuntimeException('Unable to stage thumbnail.');
         }
         try {
-            $this->resize($source, $reference['type'], $temp, $pixels['width'], $pixels['height'], self::format(), in_array($size, self::CROPPED, true));
+            $this->resize($source, $reference['type'], $temp, $pixels['width'], $pixels['height'], self::format(), in_array($size, self::CROPPED, true), in_array($size, self::DISPLAY, true) ? self::DISPLAY_QUALITY : 80);
             if (!chmod($temp, 0600) || !rename($temp, $target)) {
                 throw new RuntimeException('Unable to save thumbnail.');
             }
@@ -122,7 +165,7 @@ final class ThumbnailStore
         return $target;
     }
 
-    private function resize(string $source, string $type, string $target, int $width, int $height, ?string $format, bool $crop): void
+    private function resize(string $source, string $type, string $target, int $width, int $height, ?string $format, bool $crop, int $quality = 80): void
     {
         $original = $type === 'png' ? @imagecreatefrompng($source) : @imagecreatefromjpeg($source);
         if ($original === false) {
@@ -142,7 +185,7 @@ final class ThumbnailStore
         $cropHeight = $scale === null ? $sourceHeight : (int) round($height * $scale);
         $ok = imagecopyresampled($thumb, $original, 0, 0, intdiv($sourceWidth - $cropWidth, 2), intdiv($sourceHeight - $cropHeight, 2), $width, $height, $cropWidth, $cropHeight)
             && match (true) {
-                $format === 'webp' => imagewebp($thumb, $target, 80),
+                $format === 'webp' => imagewebp($thumb, $target, $quality),
                 // Without WebP, a 256-colour palette still cuts a PNG tile to about a third.
                 $type === 'png' => imagetruecolortopalette($thumb, true, 256) && imagepng($thumb, $target, 9),
                 default => imagejpeg($thumb, $target, 82),

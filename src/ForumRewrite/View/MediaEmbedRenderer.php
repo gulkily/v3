@@ -42,7 +42,12 @@ final class MediaEmbedRenderer
             $description = $this->escape($image['description']);
             $html = '<span class="post-image" data-image-reference="' . $image['sha256'] . '">';
             if ($available) {
-                $html .= '<img src="/images/' . \ForumRewrite\Images\ImageReference::filename($image) . '" alt="' . $description . '" width="' . $image['width'] . '" height="' . $image['height'] . '" loading="lazy" style="max-width:100%;height:auto">';
+                // The page shows a compressed copy sized for the screen; the stored original opens from the link.
+                $sources = \ForumRewrite\Images\ThumbnailStore::displaySources($image);
+                $srcset = \ForumRewrite\Images\ThumbnailStore::displaySrcset($image);
+                $html .= '<a class="post-image__original" href="/images/' . \ForumRewrite\Images\ImageReference::filename($image) . '">'
+                    . '<img src="' . $sources[min(1, count($sources) - 1)]['url'] . '"' . ($srcset === null ? '' : ' srcset="' . $srcset . '" sizes="(min-width: 48rem) 45rem, 100vw"')
+                    . ' alt="' . $description . '" width="' . $image['width'] . '" height="' . $image['height'] . '" loading="lazy" style="max-width:100%;height:auto"></a>';
             }
             $html .= '<span class="meta">' . ($available ? '' : 'Image unavailable' . ($description === '' ? '' : ' — ')) . $description . '</span>';
             ['details' => $details, 'rest' => $after] = \ForumRewrite\Images\ImageReference::photoDetails($after);

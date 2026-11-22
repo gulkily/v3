@@ -31,7 +31,7 @@ final class ImageController
             return;
         }
         if ($this->flags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED)
-            && preg_match('/^thumbs\/(([a-f0-9]{64})-(1x|2x|sq|sq2x|tile)\.(png|jpg)(?:\.webp)?)$/D', $name, $thumb)) {
+            && preg_match('/^thumbs\/(([a-f0-9]{64})-(1x|2x|sq|sq2x|tile|wide|large)\.(png|jpg)(?:\.webp)?)$/D', $name, $thumb)) {
             $size = \ForumRewrite\Images\ThumbnailStore::LEGACY[$thumb[3]] ?? $thumb[3];
             $this->serveThumbnail($method, $headers, $thumb[2] . '.' . $thumb[4], $size, $thumb[1]);
             return;
@@ -91,6 +91,11 @@ final class ImageController
             return;
         }
         clearstatcache(true, $cached);
+        // A display copy re-encodes an original that already fits; when that came out no smaller, answer with the original.
+        if (in_array($size, \ForumRewrite\Images\ThumbnailStore::DISPLAY, true) && filesize($cached) >= filesize($originalPath)) {
+            $this->serve($method, $original);
+            return;
+        }
         if (!headers_sent()) {
             http_response_code(200);
             header(self::KEEP);
