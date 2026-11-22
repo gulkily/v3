@@ -88,6 +88,7 @@ class LocalWriteService
     ) {
         $this->enqueueOfflineSnapshotPublication = $enqueueOfflineSnapshotPublication;
         $this->enqueueRetractionSweep = $enqueueRetractionSweep;
+        Tagsets::useRepository($repositoryRoot);
     }
 
     /**
@@ -1850,7 +1851,7 @@ class LocalWriteService
             $signed = $this->signedReactionInput('post', $input, $postId, $tag, $authorIdentityId);
             $viewerIsApproved = $this->isApprovedIdentity($authorIdentityId) ? 'yes' : 'no';
             // A state tag (resolved/closed/open) may be given again: the latest counted mark wins.
-            $repeatable = $unlockedTag !== null && Tagsets::forApplication()->exclusiveGroupOf($tag) !== null;
+            $repeatable = $unlockedTag !== null && Tagsets::forRepository($this->repositoryRoot)->exclusiveGroupOf($tag) !== null;
             if ($repeatable
                 ? $this->hasPostTagFromIdentity($postId, $tag, $authorIdentityId, $intentId ?? $this->signedIntentId($input) ?? '')
                 : $this->hasPostTagFromIdentity($postId, $tag, $authorIdentityId)) {
@@ -5078,7 +5079,7 @@ class LocalWriteService
     private function unlockedPostTag(string $value, PostRecord $post): ?string
     {
         $tag = strtolower(trim($value));
-        $tagsets = Tagsets::forApplication();
+        $tagsets = Tagsets::forRepository($this->repositoryRoot);
         if (TagScore::isScoredTag($tag) || !$tagsets->isUnlockable($tag)
             || !FeatureFlagEvaluator::forRepository($this->repositoryRoot)->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED)) {
             return null;

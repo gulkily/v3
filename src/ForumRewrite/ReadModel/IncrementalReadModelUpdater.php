@@ -1989,7 +1989,7 @@ class IncrementalReadModelUpdater
 
         return [
             'tags' => $tagList,
-            'resolution' => PostResolution::derive(array_filter($records, static fn (PostReactionRecord $r): bool => $r->postId === $postId), $approvedIdentityIds),
+            'resolution' => PostResolution::derive(array_filter($records, static fn (PostReactionRecord $r): bool => $r->postId === $postId), $approvedIdentityIds, \ForumRewrite\Support\Tagsets::forRepository($this->repositoryRoot)),
             'post_score_total' => $verifiedEnabled ? $verifiedScoreTotal : $scoreTotal,
             'approved_flag_count' => $approvedFlagCount,
             'claimed_post_score_total' => $scoreTotal,

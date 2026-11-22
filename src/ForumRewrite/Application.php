@@ -117,6 +117,7 @@ final class Application
     ) {
         SignatureCheckCache::useBeside($databasePath);
         \ForumRewrite\Qdb\QdbModeration::useRepository($repositoryRoot);
+        \ForumRewrite\Support\Tagsets::useRepository($repositoryRoot);
     }
 
     /**
