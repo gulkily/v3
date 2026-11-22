@@ -659,3 +659,4 @@ and repair its navigation and affected references. See the
 - [Arena header deploy button contrast](arena_deploy_prompt_contrast/arena_deploy_prompt_contrast_one_shot.md)
 - [Test fixture insert columns](test_fixture_insert_columns/test_fixture_insert_columns_one_shot.md) — one-shot: inserts in test fixtures name their columns.
 - [Named-column inserts](named_column_inserts/named_column_inserts_one_shot.md) — one-shot: every runtime SQL insert names its columns, with a guard test.
+- [Read-model insert columns](read_model_insert_columns/read_model_insert_columns_one_shot.md) — one-shot: the four read-model schema inserts name their columns.

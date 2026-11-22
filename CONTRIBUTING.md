@@ -121,7 +121,7 @@ Write `INSERT INTO t (a, b) VALUES (?, ?)`, never `INSERT INTO t VALUES (?, ?)`.
 
 For the same reason, add a column to a SQLite store outside the read model only with a default (or as nullable), so code that doesn't know the column can still insert. A stored trigger keeps its old text, so a migration that changes a table a trigger writes to must recreate that trigger.
 
-`SqlInsertColumnsTest` enforces the first rule across `src/` and `scripts/`. Its short exception list covers statements in the read-model schema list only; do not add new code to it.
+`SqlInsertColumnsTest` enforces the first rule across `src/` and `scripts/`, with no exceptions.
 
 ## Read-model schema changes
 
