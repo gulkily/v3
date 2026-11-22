@@ -31,6 +31,7 @@ final class AppUpdate
 
     /** Commits listed before "and N more"; keeps page loads and polls cheap. */
     public const INCOMING_LIMIT = 20;
+    public const HISTORY_LIMIT = 20;
 
     /** `git stash` needs an identity; servers often have none configured. */
     private const STASH_IDENTITY = ['-c', 'user.name=Forum deploy', '-c', 'user.email=deploy@localhost'];
@@ -38,6 +39,7 @@ final class AppUpdate
     private string $lockPath;
     private string $logPath;
     private string $queuedPath;
+    private string $historyPath;
 
     /** @var (\Closure(): array{status: string, message: string})|null */
     private ?\Closure $readModelCheck;
@@ -53,6 +55,7 @@ final class AppUpdate
         $this->lockPath = $stateRoot . '/app_update.lock';
         $this->logPath = $stateRoot . '/logs/app_update.log';
         $this->queuedPath = $stateRoot . '/app_update_queued.txt';
+        $this->historyPath = $stateRoot . '/logs/deploy_history.txt';
     }
 
     /**
@@ -284,9 +287,118 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
             'actor' => $actor,
             'read_model' => $readModel,
         ];
-        $this->appendAttempt($attempt + ['started_at' => $startedAt, 'finished_at' => gmdate('Y-m-d\TH:i:s\Z')]);
+        $finishedAt = gmdate('Y-m-d\TH:i:s\Z');
+        $this->appendAttempt($attempt + ['started_at' => $startedAt, 'finished_at' => $finishedAt]);
+        if ($result['outcome'] === 'deployed') {
+            $this->appendHistory('deploy', $finishedAt, $mode, $actor, (string) $result['old_commit'], (string) $result['new_commit']);
+        }
 
         return $attempt;
+    }
+
+    /**
+     * The versions this checkout has run, newest first: one entry per deploy that changed the
+     * commit. Kept in state/logs/deploy_history.txt, which is never rotated.
+     *
+     * @return list<array{deployed_at: string, action: string, mode: string, actor: string, old_commit: string, new_commit: string, subject: string}>
+     */
+    public function history(int $limit = self::HISTORY_LIMIT): array
+    {
+        $this->seedHistory();
+        $entries = [];
+        foreach (array_reverse(self::blocks(is_file($this->historyPath) ? (string) @file_get_contents($this->historyPath) : '')) as $fields) {
+            if (preg_match('/^[0-9a-f]{40,64}$/', $fields['New-Commit'] ?? '') !== 1) {
+                continue;
+            }
+            $entries[] = [
+                'deployed_at' => $fields['Deployed-At'] ?? '-',
+                'action' => $fields['Action'] ?? 'deploy',
+                'mode' => $fields['Mode'] ?? '-',
+                'actor' => $fields['Actor'] ?? '-',
+                'old_commit' => $fields['Old-Commit'] ?? '-',
+                'new_commit' => $fields['New-Commit'],
+                'subject' => ($fields['Subject'] ?? '-') === '-' ? '' : $fields['Subject'],
+            ];
+            if (count($entries) === $limit) {
+                break;
+            }
+        }
+
+        return $entries;
+    }
+
+    private function appendHistory(string $action, string $at, string $mode, string $actor, string $old, string $new): void
+    {
+        $this->seedHistory();
+        @file_put_contents($this->historyPath, $this->historyBlock($action, $at, $mode, $actor, $old, $new), FILE_APPEND | LOCK_EX);
+    }
+
+    private function historyBlock(string $action, string $at, string $mode, string $actor, string $old, string $new): string
+    {
+        $fields = [
+            'Deployed-At' => $at, 'Action' => $action, 'Mode' => $mode, 'Actor' => $actor,
+            'Old-Commit' => $old, 'New-Commit' => $new,
+            'Subject' => (string) $this->gitValue(['log', '-1', '--format=%s', $new, '--']),
+        ];
+        $lines = [];
+        foreach ($fields as $label => $value) {
+            $value = trim(str_replace(["\r", "\n"], ' ', $value));
+            $lines[] = $label . ': ' . ($value === '' ? '-' : $value);
+        }
+
+        return implode("\n", $lines) . "\n\n";
+    }
+
+    /**
+     * The first time the history is used, fill it from the deploys the attempt log still holds,
+     * so the list does not start empty on a site that has deployed before.
+     */
+    private function seedHistory(): void
+    {
+        if (is_file($this->historyPath)) {
+            return;
+        }
+        $dir = dirname($this->historyPath);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+        $seed = '';
+        foreach ([$this->logPath . '.1', $this->logPath] as $path) {
+            foreach (self::blocks(is_file($path) ? (string) @file_get_contents($path) : '') as $fields) {
+                $old = $fields['Old-Commit'] ?? '';
+                $new = $fields['New-Commit'] ?? '';
+                if (($fields['Outcome'] ?? '') !== 'deployed' || $old === $new
+                    || preg_match('/^[0-9a-f]{40,64}$/', $old) !== 1 || preg_match('/^[0-9a-f]{40,64}$/', $new) !== 1) {
+                    continue;
+                }
+                $seed .= $this->historyBlock('deploy', $fields['Finished-At'] ?? '-', $fields['Mode'] ?? '-', $fields['Actor'] ?? '-', $old, $new);
+            }
+        }
+        @file_put_contents($this->historyPath, $seed, LOCK_EX);
+    }
+
+    /**
+     * Parses the `Key: value` blocks, separated by blank lines, of the attempt log and the history.
+     *
+     * @return list<array<string, string>>
+     */
+    private static function blocks(string $raw): array
+    {
+        $blocks = [];
+        foreach (preg_split("/\n\n+/", trim($raw)) ?: [] as $block) {
+            $fields = [];
+            foreach (explode("\n", $block) as $line) {
+                $pos = strpos($line, ': ');
+                if ($pos !== false) {
+                    $fields[substr($line, 0, $pos)] = substr($line, $pos + 2);
+                }
+            }
+            if ($fields !== []) {
+                $blocks[] = $fields;
+            }
+        }
+
+        return $blocks;
     }
 
     /**
@@ -294,20 +406,9 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
      */
     public function latestAttempt(): ?array
     {
-        $raw = is_file($this->logPath) ? (string) @file_get_contents($this->logPath) : '';
-        if (trim($raw) === '') {
-            return null;
-        }
-        $blocks = preg_split("/\n\n+/", trim($raw)) ?: [];
-        $fields = [];
-        foreach (explode("\n", (string) end($blocks)) as $line) {
-            $pos = strpos($line, ': ');
-            if ($pos !== false) {
-                $fields[substr($line, 0, $pos)] = substr($line, $pos + 2);
-            }
-        }
+        $blocks = self::blocks(is_file($this->logPath) ? (string) @file_get_contents($this->logPath) : '');
 
-        return $fields === [] ? null : $fields;
+        return $blocks === [] ? null : $blocks[count($blocks) - 1];
     }
 
     /**

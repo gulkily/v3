@@ -9,10 +9,11 @@ require dirname(__DIR__) . '/autoload.php';
 use ForumRewrite\Deploy\AppUpdate;
 
 const DEPLOY_HELP = <<<'HELP'
-Usage: ./v3 deploy [--check|--status] [--timeout=SECONDS]
+Usage: ./v3 deploy [--check|--status|--history] [--timeout=SECONDS]
   (default)   Fetch origin/main and fast-forward this application checkout.
   --check     Fetch and report how far behind origin/main the checkout is.
   --status    Report local state and the latest attempt without contacting GitHub.
+  --history   List the versions this checkout has run, newest first.
 Keeps local edits to tracked files (stash, fast-forward, reapply). Refuses,
 leaving the checkout unchanged, when the update conflicts with a local edit,
 the branch is not main, history has diverged, or another deploy is running.
@@ -30,6 +31,8 @@ foreach (array_slice($argv, 1) as $arg) {
         $mode = 'check';
     } elseif ($arg === '--status') {
         $mode = 'status';
+    } elseif ($arg === '--history') {
+        $mode = 'history';
     } elseif (preg_match('/^--timeout=(\d+)$/', $arg, $m) === 1 && (int) $m[1] > 0) {
         $timeout = (int) $m[1];
     } else {
@@ -68,6 +71,16 @@ if ($mode === 'status') {
     $printState($state);
     foreach (AppUpdate::latestAttemptLines($state['latest']) as $line) {
         echo $line . "\n";
+    }
+    exit(0);
+}
+
+if ($mode === 'history') {
+    $running = $update->inspect()['commit'] ?? null;
+    echo 'Running: ' . ($running === null ? 'unavailable' : substr($running, 0, 12)) . "\n";
+    foreach ($update->history(PHP_INT_MAX) as $entry) {
+        echo 'Version: ' . $entry['deployed_at'] . ' ' . $entry['action'] . ' ' . substr($entry['new_commit'], 0, 12)
+            . ($entry['subject'] === '' ? '' : ' ' . $entry['subject']) . "\n";
     }
     exit(0);
 }

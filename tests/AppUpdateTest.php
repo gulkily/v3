@@ -29,6 +29,66 @@ final class AppUpdateTest
         assertSame($new, $latest['New-Commit']);
     }
 
+    public function testEachDeployThatChangesTheCommitIsRecordedInTheHistory(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $first = $this->head($app);
+        $update = new AppUpdate($app);
+        assertSame([], $update->history());
+
+        $second = $this->pushCommit($seed, 'second');
+        $update->deploy('openpgp:test', AppUpdate::MODE_INSTANT);
+        $update->deploy('openpgp:test', AppUpdate::MODE_INSTANT); // up to date: no entry
+        $third = $this->pushCommit($seed, 'third');
+        $update->deploy('cli:ops', AppUpdate::MODE_CLI);
+
+        $history = $update->history();
+        assertSame([$third, $second], array_column($history, 'new_commit'));
+        assertSame([$second, $first], array_column($history, 'old_commit'));
+        assertSame(['third', 'second'], array_column($history, 'subject'));
+        assertSame(['deploy', 'deploy'], array_column($history, 'action'));
+        assertSame('cli', $history[0]['mode']);
+        assertSame('cli:ops', $history[0]['actor']);
+        assertSame([$third], array_column($update->history(1), 'new_commit'));
+        assertStringContains("Action: deploy\n", (string) file_get_contents($app . '/state/logs/deploy_history.txt'));
+    }
+
+    public function testHistoryStartsFromTheDeploysInTheAttemptLog(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $first = $this->head($app);
+        $second = $this->pushCommit($seed, 'second');
+        $third = $this->pushCommit($seed, 'third');
+        $this->git($app, ['pull', '-q']);
+        mkdir($app . '/state/logs', 0775, true);
+        // An older rotated log without Read-Model, a refusal, an unreadable block, then a newer deploy.
+        file_put_contents($app . '/state/logs/app_update.log.1',
+            "Finished-At: 2026-11-01T10:00:00Z\nMode: cli\nActor: cli:ops\nOutcome: deployed\nOld-Commit: {$first}\nNew-Commit: {$second}\n\n");
+        file_put_contents($app . '/state/logs/app_update.log',
+            "Finished-At: 2026-11-02T10:00:00Z\nMode: instant\nOutcome: refused\nOld-Commit: {$second}\nNew-Commit: {$second}\n\n"
+            . "Outcome: deployed\nOld-Commit: -\nNew-Commit: -\n\n"
+            . "Finished-At: 2026-11-03T10:00:00Z\nMode: instant\nActor: openpgp:test\nOutcome: deployed\nOld-Commit: {$second}\nNew-Commit: {$third}\nRead-Model: current\n\n");
+
+        $history = (new AppUpdate($app))->history();
+
+        assertSame([$third, $second], array_column($history, 'new_commit'));
+        assertSame(['2026-11-03T10:00:00Z', '2026-11-01T10:00:00Z'], array_column($history, 'deployed_at'));
+        assertSame(['third', 'second'], array_column($history, 'subject'));
+    }
+
+    public function testCliHistoryListsVersionsNewestFirst(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $second = $this->pushCommit($seed, 'second');
+        (new AppUpdate($app))->deploy('cli:ops', AppUpdate::MODE_CLI);
+
+        [$code, $out] = $this->cli($app, ['--history']);
+
+        assertSame(0, $code, $out);
+        assertSame('Running: ' . substr($second, 0, 12) . "\nVersion: ", substr($out, 0, 31));
+        assertStringContains(' deploy ' . substr($second, 0, 12) . " second\n", $out);
+    }
+
     public function testDeployChecksTheReadModelWithTheNewCodeAndQueuesARebuild(): void
     {
         [$app, $seed] = $this->fixture();
@@ -586,6 +646,24 @@ final class AppUpdateTest
         assertStringContains('Usage: ./v3 deploy', implode("\n", $help));
         exec('php ' . escapeshellarg($root . '/scripts/deploy.php') . ' --bogus 2>&1', $bad, $badCode);
         assertSame(2, $badCode);
+    }
+
+    /**
+     * Runs the real scripts/deploy.php against the fixture checkout.
+     *
+     * @param list<string> $args
+     * @return array{0: int, 1: string} exit code, combined output
+     */
+    private function cli(string $app, array $args): array
+    {
+        if (!is_dir($app . '/scripts')) {
+            mkdir($app . '/scripts');
+            copy(dirname(__DIR__) . '/scripts/deploy.php', $app . '/scripts/deploy.php');
+            file_put_contents($app . '/autoload.php', '<?php require ' . var_export(dirname(__DIR__) . '/autoload.php', true) . ";\n");
+        }
+        exec('php ' . escapeshellarg($app . '/scripts/deploy.php') . ' ' . implode(' ', array_map('escapeshellarg', $args)) . ' 2>&1', $lines, $code);
+
+        return [$code, implode("\n", $lines) . "\n"];
     }
 
     /**
