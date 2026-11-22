@@ -26,6 +26,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Key approval agent API](key_approval_api/key_approval_api_step3_development_plan.md) — `GET /api/pending_keys`, `Author-Identity-ID` on post reads, and `quill.py pending` / `quill.py approve` so agents approve the right key; Stages 1–5 done ([summary](key_approval_api/key_approval_api_step4_implementation_summary.md)), the post-deploy check pending.
 
+[State button verbs](state_button_verbs/state_button_verbs_one_shot.md) — one-shot: state buttons read Claim, Resolve, Close, Unclaim, Reopen; stored tags unchanged.
+
 [Quill rename](quill_rename/quill_rename_one_shot.md) — the posting client `frm.py` becomes `quill.py` (old URL kept), sends its version on every request, and gets an update notice when it is out of date.
 
 [Beside toggle state](beside_toggle_state/beside_toggle_state_one_shot.md) — one-shot: the ruler's Beside button shows clearly when the mode is on.
