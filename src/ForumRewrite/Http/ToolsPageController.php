@@ -106,6 +106,59 @@ final class ToolsPageController
         }
     }
 
+    /**
+     * POST text: the rules it gives, its errors by line, and the threads whose marks would
+     * lose their buttons. Saves nothing. Operators only.
+     */
+    public function previewTagsetsApi(string $method, array $query): void
+    {
+        if (!$this->tagsetsRequestAllowed($method)) {
+            return;
+        }
+        $text = \ForumRewrite\Write\LocalWriteService::normalizeTagsetsText((string) ($this->routeServices->requestData($query)['text'] ?? ''));
+        $errors = \ForumRewrite\Support\Tagsets::check($text);
+        $next = \ForumRewrite\Support\Tagsets::parse($text);
+        $affected = $errors === []
+            ? \ForumRewrite\Tools\MarkedPostsQuery::losingButtons($this->routeServices->pdo(), \ForumRewrite\Support\Tagsets::forApplication(), $next)
+            : [];
+        $this->routeServices->sendJson([
+            'status' => 'ok', 'errors' => $errors, 'rules' => $errors === [] ? $next->all() : [], 'affected_threads' => $affected,
+        ], 200, $this->routeServices->noStoreHeaders());
+    }
+
+    /** POST prepare or finalize a signed tagsets change (operation set with text, or reset). Operators only. */
+    public function tagsetsChangeApi(string $method, array $query, bool $finalize): void
+    {
+        if (!$this->tagsetsRequestAllowed($method)) {
+            return;
+        }
+        $viewer = ($this->resolveViewerProfileFromIdentityHint)();
+        try {
+            $input = $this->routeServices->requestData($query);
+            $writer = $this->routeServices->writer();
+            $result = $finalize
+                ? $writer->finalizePreparedTagsetsChange($input, (string) ($viewer['identity_id'] ?? ''))
+                : $writer->prepareTagsetsChange($input, (string) ($viewer['identity_id'] ?? ''));
+            $this->routeServices->sendJson($result, 200, $this->routeServices->noStoreHeaders());
+        } catch (\RuntimeException | \InvalidArgumentException $error) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => $error->getMessage()], 400, $this->routeServices->noStoreHeaders());
+        }
+    }
+
+    private function tagsetsRequestAllowed(string $method): bool
+    {
+        if ($method !== 'POST') {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $this->routeServices->noStoreHeaders());
+            return false;
+        }
+        if (!$this->viewerCanManageFeatureFlags(($this->resolveViewerProfileFromIdentityHint)())) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'Editing tagsets requires an approved operator identity.'], 403, $this->routeServices->noStoreHeaders());
+            return false;
+        }
+
+        return true;
+    }
+
     public function highTrafficApi(string $method, array $query, bool $finalize): void
     {
         if ($method!=='POST') { $this->routeServices->sendJson(['status'=>'error','error'=>'method not allowed'],405,$this->routeServices->noStoreHeaders());return; }

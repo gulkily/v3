@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/Support/TestViewerSession.php';
 
 use ForumRewrite\Application;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
@@ -95,6 +96,61 @@ final class EditableTagsetsTest
             (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
             assertSame(null, $this->state($database, 'reply-001'));
         });
+    }
+
+    public function testPreviewAndSaveRoutesAreForOperatorsAndListThreadsThatLoseButtons(): void
+    {
+        $this->withOperator(function (LocalWriteService $writer, string $root, string $operator, array $key, string $database, string $artifacts): void {
+            $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'resolved', 'author_identity_id' => $operator]);
+            $app = new Application(dirname(__DIR__), $root, $database, $artifacts);
+            try {
+                TestViewerSession::signedOut();
+                $_POST = ['text' => self::EVENT_TEXT];
+                foreach (['/api/preview_tagsets', '/api/prepare_tagsets_change', '/api/finalize_tagsets_change'] as $route) {
+                    assertStringContains('requires an approved operator', $this->post($app, $route)['error'] ?? '', $route);
+                }
+
+                TestViewerSession::signIn($operator);
+                $_POST = ['text' => "Parent: event\nUnlocks: attend\n"];
+                $preview = $this->post($app, '/api/preview_tagsets');
+                assertSame([], $preview['errors']);
+                assertSame('event', $preview['rules'][0]['parent']);
+                assertSame([['thread_id' => 'root-001', 'thread_subject' => $preview['affected_threads'][0]['thread_subject'], 'tags' => ['resolved'], 'marks' => 1]], $preview['affected_threads']);
+
+                $_POST = ['text' => self::EVENT_TEXT];
+                assertSame([], $this->post($app, '/api/preview_tagsets')['affected_threads'], 'keeping #issue keeps its buttons');
+
+                $_POST = ['text' => "Parent: event\nUnlocks: like\n"];
+                $invalid = $this->post($app, '/api/preview_tagsets');
+                assertSame(['Line 2: like is a built-in tag and cannot be unlocked.'], $invalid['errors']);
+                assertSame([], $invalid['rules']);
+
+                $_POST = ['operation' => 'set', 'text' => self::EVENT_TEXT];
+                $prepared = $this->post($app, '/api/prepare_tagsets_change');
+                assertSame('yes', $prepared['wrote_record']);
+                $_POST = [
+                    'prepare_token' => $prepared['prepare_token'], 'record_id' => $prepared['record_id'], 'record_path' => $prepared['record_path'],
+                    'canonical_record' => $prepared['canonical_record'], 'detached_signature' => $this->sign($key['home'], $prepared['canonical_record']),
+                ];
+                $saved = $this->post($app, '/api/finalize_tagsets_change');
+                assertSame('ok', $saved['status']);
+                assertSame(Tagsets::SOURCE_SITE, $saved['source']);
+                assertSame(self::EVENT_TEXT, (string) file_get_contents($root . '/records/instance/tagsets.txt'));
+            } finally {
+                $_POST = [];
+                TestViewerSession::signedOut();
+            }
+        });
+    }
+
+    /** @return array<string, mixed> */
+    private function post(Application $app, string $path): array
+    {
+        ob_start();
+        $app->handle('POST', $path);
+        $decoded = json_decode((string) ob_get_clean(), true);
+
+        return is_array($decoded) ? $decoded : [];
     }
 
     private function state(string $database, string $postId): ?string

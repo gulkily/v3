@@ -77,3 +77,24 @@ None during Step 4 so far. Earlier requests stay in [Step 2](./editable_tagsets_
   - Estimate details: original scope as in Step 3; no revision.
 
 *— Claude · 2026-11-22 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Preview and save API
+
+**Original estimate: 0.08**
+
+**Retrospective: 0.10**
+
+- Changes:
+  - `POST /api/preview_tagsets` returns errors by line, the parsed rules, and `affected_threads`. It saves nothing.
+  - `POST /api/prepare_tagsets_change` and `/api/finalize_tagsets_change` call the Stage 2 pair.
+  - All three routes are in `ToolsPageController` for active operators only, use the `fastmodChangeApi` shape, and are listed in `ApiRouteCatalog` and in `Application`'s members-only allowance.
+  - `MarkedPostsQuery::losingButtons($pdo, $current, $next)`: a thread is listed when one of its posts carries a tag that the current rules unlock for that post and the new rules do not. It reads thread tags and labels as the buttons do, and gives the lost tags and the number of marks.
+- Verification:
+  - Passed: `./v3 test --smoke EditableTagsetsTest TagUnlocksTest ApiRouteCatalogTest LlmsTxtRendererTest` (519 run, 519 passed).
+  - New `EditableTagsetsTest::testPreviewAndSaveRoutesAreForOperatorsAndListThreadsThatLoseButtons`: all three routes refuse a signed-out viewer. The preview lists `root-001` with a lost `resolved` mark when `#issue` is dropped, and lists nothing when it is kept. An invalid text gives the line error and no rules. Prepare and finalize over HTTP save the site file.
+  - Full suite not run.
+- Notes:
+  - Fixed an existing failure in `LlmsTxtRendererTest::testReferenceNamesOnlyCatalogRoutesAndRenders`, which also failed without this stage. Its route pattern stopped at the hyphen in `/api/docs-version`. That route was also missing from `ApiRouteCatalog`, and `ApiRouteCatalogTest` had the same pattern, so it missed the gap. Both patterns now accept hyphens, and the catalog lists `/api/docs-version`. This is a correction, not new scope.
+  - Estimate details: the retrospective is 0.10 against the original 0.08 because of that fix.
+
+*— Claude · 2026-11-22 UTC · Model: claude-opus-5-5*
