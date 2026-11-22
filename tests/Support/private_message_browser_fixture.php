@@ -87,7 +87,7 @@ foreach ($input['profiles'] as $profile) {
     }
     $add->execute(['id' => $id, 'slug' => $slug, 'name' => $profile['name'], 'fingerprint' => strtoupper($profile['fingerprint']),
         'key' => $profile['publicKey'], 'approved' => $profile['name'] === 'pending' ? 0 : 1]);
-    $pdo->prepare('INSERT INTO username_routes VALUES (?, ?)')->execute([$profile['name'], $id]);
+    $pdo->prepare('INSERT INTO username_routes (username_token, identity_id) VALUES (?, ?)')->execute([$profile['name'], $id]);
 }
 $store = new PrivateMessageStore(new PDO('sqlite:' . $root . '/state/private/messages.sqlite3'));
 for ($i = 1; $i <= 60; $i++) {

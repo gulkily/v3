@@ -8,8 +8,8 @@ complete archive.
 
 When a visitor loads a public page while online, the browser may install the
 offline-reader cache. It stores the Offline Reading health page, a separate
-reader shell, their required same-origin assets, and the public SQLite snapshot
-at `/offline/snapshot.sqlite3`.
+reader shell, public New post and Reply composer pages, their required
+same-origin assets, and the public SQLite snapshot at `/offline/snapshot.sqlite3`.
 
 Each static release builds a fresh snapshot from visible public content. The
 fast offline publication command can refresh that snapshot later without
@@ -99,9 +99,8 @@ Use those signals to distinguish a capability issue from stale content:
 
 - If **Saved reader freshness** says `Matches current reader`, a missing
   offline control is not caused by an old cached reader. Check the documented
-  offline boundary instead: only Board/Tags read navigation and saved threads
-  are available; posting and other personalized or write actions require a
-  connection.
+  [supported reading routes](#what-is-saved) and
+  [offline writing limits](#writing-offline).
 - If it says `Different from current reader`, choose **Refresh saved reader**
   while online. Wait for `Saved reader refreshed and rechecked.`, then check
   the comparison again. That refresh downloads the reader assets and public
@@ -110,13 +109,9 @@ Use those signals to distinguish a capability issue from stale content:
   determining whether the interface is stale. The saved archive can still be
   read while disconnected.
 
-The offline Board and Tags subnav contains the normal supported read controls:
-Tags, All/Liked, and Newest/Oldest/Top. **New Post** remains visible but is
-disabled, making the current online-only write boundary explicit without
-navigation or an error message. If a supported read control is absent, first
-use the online freshness comparison above; a matching reader means the control
-is deliberately outside the supported offline experience rather than a stale
-browser cache.
+The offline Board and Tags subnav retains the supported reading controls.
+To write offline, use an available composer as described below. A matching
+reader revision does not confirm that a particular action is supported offline.
 
 ## Local Outbox
 
@@ -157,24 +152,25 @@ to another person using the same browser profile.
 
 ### Writing offline
 
-Offline, writing works as it does online. The offline board and thread show the
-same composers as the online pages, and **New post** and **Reply** open the
-compose pages at their usual addresses. The worker caches `/compose/thread` and
-`/compose/reply` as they render with no target, refreshes them with the reader
-when a deploy changes them, and fills the reply target from the address. The
-reply page quotes the post being answered from the saved snapshot, or says the
-thread isn't saved on this device; the reply can still be written and saved.
+After the browser has saved the public composer pages, it can reopen them
+without a connection at their usual addresses, `/compose/thread` and
+`/compose/reply`. The offline reader also provides an inline composer on its
+Board and saved thread views. The cached Reply page takes its target from the
+address and can show the quoted post from the saved snapshot. If the thread
+isn't saved on this device, you can still write the reply locally.
 
-Pressing **Post** with no connection saves the post to the Outbox as queued and
-says "Saved on this device, not sent." A thread lists its own unsent replies
-above its reply composer. When the connection returns, they are sent once
-through the delivery path above. **Save to Outbox** saves a draft instead, on
-every composer.
+For a text post using the signed posting path, pressing **Post** while the
+browser is offline queues it and reports "Saved on this device, not sent."
+A saved thread lists its own unsent replies above the reply composer. Check
+**Tools → Outbox** for delivery status. Queued items can be delivered when
+you reconnect with an appropriate page open, through the normal signed
+posting flow. **Save to Outbox** saves an unqueued local draft instead; it
+won't send until you explicitly queue it.
 
-Anonymous posts and posts with images cannot go through the Outbox: offline,
-they stay in the composer. A request that fails while the browser reports a
-connection may have reached the server, so it is reported ("Couldn't reach the
-server") and never queued automatically.
+Guest submissions and posts with images are not queued offline; the text
+stays in the composer. If a request fails while the browser reports a
+connection, the server may already have received it. The composer reports
+the failure and keeps the text; it does not automatically queue another send.
 
 This MVP does not yet provide draft editing, export or bulk clear confirmation;
 use **Discard** or **Remove** in the Outbox to remove individual local records.
@@ -188,8 +184,11 @@ explicitly marked as not checked rather than guessed.
 ## Privacy boundary
 
 Approved-members-only deployments do not register the offline cache and do
-not expose the snapshot to unauthenticated visitors. The cache does not
-intercept APIs, account pages, posting routes, or other personalized pages.
+not expose the snapshot to unauthenticated visitors. The cached composer pages
+are public shells, not account pages or personalized content. The worker
+does not cache posting requests or API responses for offline use. Unsent
+Outbox items live in this browser's IndexedDB, separate from both the
+service-worker cache and the public snapshot.
 
 Browser data that was already downloaded cannot be remotely revoked. If an
 instance changes to approved-members-only mode, operators should tell prior

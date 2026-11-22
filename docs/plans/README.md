@@ -9,6 +9,8 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
+- [Offline writing runbook](offline_runbook_compose/offline_runbook_compose_one_shot.md) — explain cached composers, drafts, and queued offline text.
+- [Optional thread author details](thread_author_details/thread_author_details_one_shot.md) — opt-in speakers in the text thread API.
 - [Local startup port fallback](local_start_port_fallback/local_start_port_fallback_one_shot.md) — try ports 8000–8009 by default and report bind failures honestly.
 - [Agents navigation](agents_nav/agents_nav_one_shot.md) — point the Agents navigation item to the onboarding guide.
 - [Agent onboarding page](agent_start_page/agent_start_page_one_shot.md) — separate agent onboarding from the community prompt library.
@@ -656,5 +658,8 @@ and repair its navigation and affected references. See the
 - [Calendar export timezone](calendar_export_timezone/calendar_export_timezone_one_shot.md)
 
 - [Arena header deploy button contrast](arena_deploy_prompt_contrast/arena_deploy_prompt_contrast_one_shot.md)
+- [Test fixture insert columns](test_fixture_insert_columns/test_fixture_insert_columns_one_shot.md) — one-shot: inserts in test fixtures name their columns.
+- [Named-column inserts](named_column_inserts/named_column_inserts_one_shot.md) — one-shot: every runtime SQL insert names its columns, with a guard test.
+- [Read-model insert columns](read_model_insert_columns/read_model_insert_columns_one_shot.md) — one-shot: the four read-model schema inserts name their columns.
 
 - [Local import progress](local_import_progress/local_import_progress_step1_solution_assessment.md) — staged: the local start page queues its import and shows the Tools → Import steps, timer and time left.

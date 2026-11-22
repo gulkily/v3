@@ -236,7 +236,7 @@ final class ViewerSessionStoreTest
         $pdo->exec('CREATE TABLE viewer_sessions (token_hash TEXT PRIMARY KEY, identity_id TEXT NOT NULL, lobby_identity_id TEXT NOT NULL,
             created_at INTEGER NOT NULL, last_seen_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, replaced_by_hash TEXT NOT NULL, replaced_at INTEGER NOT NULL)');
         $token = str_repeat('b', 64);
-        $pdo->prepare('INSERT INTO viewer_sessions VALUES (:hash, :identity, \'\', :now, :now, :expires, \'\', 0)')
+        $pdo->prepare('INSERT INTO viewer_sessions (token_hash, identity_id, lobby_identity_id, created_at, last_seen_at, expires_at, replaced_by_hash, replaced_at) VALUES (:hash, :identity, \'\', :now, :now, :expires, \'\', 0)')
             ->execute(['hash' => hash('sha256', $token), 'identity' => 'openpgp:abc', 'now' => $this->now, 'expires' => $this->now + 3600]);
 
         $store = new ViewerSessionStore($pdo, fn (): int => $this->now);

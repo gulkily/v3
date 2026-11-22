@@ -165,15 +165,15 @@ final class PublicOfflineSnapshotBuilderTest
             identity_id TEXT PRIMARY KEY, signer_fingerprint TEXT, public_key TEXT, is_approved INTEGER
         )');
         $pdo->exec('CREATE TABLE post_analyses (post_id TEXT, raw_response_json TEXT)');
-        $pdo->exec("INSERT INTO post_analyses VALUES ('thread-055', '{\"private\":true}')");
-        $profile = $pdo->prepare('INSERT INTO profiles VALUES (?, ?, ?, ?)');
+        $pdo->exec("INSERT INTO post_analyses (post_id, raw_response_json) VALUES ('thread-055', '{\"private\":true}')");
+        $profile = $pdo->prepare('INSERT INTO profiles (identity_id, signer_fingerprint, public_key, is_approved) VALUES (?, ?, ?, ?)');
         $profile->execute(['approved-selected', 'A1', 'approved selected key', 1]);
         $profile->execute(['approved-unrelated', 'A2', 'approved unrelated key', 1]);
         $profile->execute(['unapproved-selected', 'U1', 'unapproved selected key', 0]);
         $profile->execute(['unapproved-unselected', 'U2', 'unapproved unselected key', 0]);
 
-        $thread = $pdo->prepare('INSERT INTO threads VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $post = $pdo->prepare('INSERT INTO posts VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $thread = $pdo->prepare('INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $post = $pdo->prepare('INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, thread_type, author_identity_id, author_label, author_profile_slug, sequence_number, is_hidden) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
         for ($number = 1; $number <= 55; $number++) {
             $id = sprintf('thread-%03d', $number);
             $timestamp = sprintf('2026-02-%02dT00:00:00Z', $number);

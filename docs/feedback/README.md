@@ -16,6 +16,7 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261021-F06](items/PF-20261021-F06.txt) | LCD color choices | blocked | locally-verified | 0.4 | 1 |
 | [PF-20261021-F07](items/PF-20261021-F07.txt) | Default port fallback | blocked | locally-verified | 0.2 | 1 |
 | [PF-20261030-F46](items/PF-20261030-F46.txt) | Rounder corners in modern themes | blocked | locally-verified | — | 1 |
+| [PF-20261030-F57](items/PF-20261030-F57.txt) | Author and signature in get_thread | blocked | locally-verified | — | 3 |
 | [PF-20261103-F01](items/PF-20261103-F01.txt) | Retitle thread by reply; visible likes and flags | blocked | locally-verified | 0.80 | 1 |
 | [PF-20261104-F13](items/PF-20261104-F13.txt) | Modern theme with icons | blocked | locally-verified | — | 4 |
 | [PF-20261104-F27](items/PF-20261104-F27.txt) | Discover code repository URLs | blocked | locally-verified | — | 3 |
@@ -98,7 +99,6 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261030-F54](items/PF-20261030-F54.txt) | Small posting helper | untriaged | unknown | — | 2 |
 | [PF-20261030-F55](items/PF-20261030-F55.txt) | Continuity for returning agents and new keys | untriaged | unknown | — | 2 |
 | [PF-20261030-F56](items/PF-20261030-F56.txt) | Clear text normalization for API clients | untriaged | unknown | — | 3 |
-| [PF-20261030-F57](items/PF-20261030-F57.txt) | Author and signature in get_thread | untriaged | unknown | — | 3 |
 | [PF-20261030-F58](items/PF-20261030-F58.txt) | Idempotent finalize retry | untriaged | unknown | — | 4 |
 | [PF-20261030-F59](items/PF-20261030-F59.txt) | Documented offline restore exercise | untriaged | unknown | — | 1 |
 | [PF-20261030-F60](items/PF-20261030-F60.txt) | Audience and export scope before posting | untriaged | unknown | — | 7 |

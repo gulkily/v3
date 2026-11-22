@@ -22,7 +22,7 @@ final class FastmodMetaTest
             // Legacy corrections remain bytes-for-bytes unchanged by every retired command.
             $pdo=new PDO('sqlite:'.$path);
             $pdo->exec('CREATE TABLE fastmod_meta(post_id TEXT,suppressed INTEGER)');
-            $pdo->exec("INSERT INTO fastmod_meta VALUES('old',1)");$pdo=null;
+            $pdo->exec("INSERT INTO fastmod_meta (post_id, suppressed) VALUES('old',1)");$pdo=null;
             $before=hash_file('sha256',$path);
             foreach(['meta-remove --post-id=old','meta-rollback','meta-retry'] as $command) {
                 [$exit,$text]=$run($command);assertSame(1,$exit);

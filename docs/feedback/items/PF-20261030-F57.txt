@@ -1,9 +1,9 @@
 ID: PF-20261030-F57
 Title: Author and signature in get_thread
 Kind: feature
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-10-30
-Evidence: unknown
+Evidence: locally-verified
 Aliases: 2026-10-30/F57
 
 Request:
@@ -17,3 +17,5 @@ Sources:
 Notes:
 Status in the October 30 summary: October 30 source reports author still absent; not independently reproduced
 Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F57; that summary is a local snapshot review and its request wording is preserved here.
+
+2026-11-21: Optional include_authors=1 view implemented with display labels and get_post-compatible signed-source identity headers. Indexed source lookup is folded into the thread query; legacy fallbacks remain. Focused route/attribution checks and local HTTP compatibility verified. Review, deployment and production acceptance pending. Cryptographic signature-status reporting remains outside this author-details slice. See docs/plans/thread_author_details/thread_author_details_one_shot.md.

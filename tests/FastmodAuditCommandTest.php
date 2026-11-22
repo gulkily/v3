@@ -17,11 +17,11 @@ final class FastmodAuditCommandTest
         try {
             $read = new PDO('sqlite:' . $readPath);
             $read->exec('CREATE TABLE posts (post_id TEXT PRIMARY KEY, thread_id TEXT NOT NULL, parent_id TEXT NULL, subject TEXT NULL, body TEXT NOT NULL)');
-            $read->exec("INSERT INTO posts VALUES ('post-1', 'post-1', NULL, 'Subject', 'Body')");
+            $read->exec("INSERT INTO posts (post_id, thread_id, parent_id, subject, body) VALUES ('post-1', 'post-1', NULL, 'Subject', 'Body')");
             new SqliteFastScoreStore(new PDO('sqlite:' . $scorePath));
             $exchange = new PDO('sqlite:' . $exchangePath);
             $exchange->exec('CREATE TABLE llm_exchanges (call_type TEXT, provider_model TEXT, status TEXT, response_json TEXT)');
-            $exchange->prepare('INSERT INTO llm_exchanges VALUES (:call_type, :model, :status, :response)')->execute([
+            $exchange->prepare('INSERT INTO llm_exchanges (call_type, provider_model, status, response_json) VALUES (:call_type, :model, :status, :response)')->execute([
                 'call_type' => 'fast_post_score',
                 'model' => 'gpt-5-nano',
                 'status' => 'completed',
@@ -104,7 +104,7 @@ final class FastmodAuditCommandTest
         try {
             $read = new PDO('sqlite:' . $readPath);
             $read->exec('CREATE TABLE posts (post_id TEXT PRIMARY KEY, thread_id TEXT NOT NULL, parent_id TEXT NULL, subject TEXT NULL, body TEXT NOT NULL)');
-            $read->exec("INSERT INTO posts VALUES ('post-1', 'post-1', NULL, 'Subject', 'Body')");
+            $read->exec("INSERT INTO posts (post_id, thread_id, parent_id, subject, body) VALUES ('post-1', 'post-1', NULL, 'Subject', 'Body')");
             file_put_contents($secretsPath, "<?php return " . var_export([
                 'FAST_SCORING_DATABASE_PATH' => $scorePath,
                 'LLM_PROVIDER' => 'openai',

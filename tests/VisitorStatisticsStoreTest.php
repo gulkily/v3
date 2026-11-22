@@ -66,7 +66,7 @@ final class VisitorStatisticsStoreTest
                 authenticated_user_bitmap BLOB NOT NULL
             )'
         );
-        $pdo->exec("INSERT INTO visitor_statistics_daily VALUES ('2026-10-01', 99, x'00', x'00')");
+        $pdo->exec("INSERT INTO visitor_statistics_daily (bucket_date, visit_count, client_bitmap, authenticated_user_bitmap) VALUES ('2026-10-01', 99, x'00', x'00')");
         $store = new VisitorStatisticsStore($pdo);
         $asOf = new \DateTimeImmutable('2026-10-07T12:30:00Z');
 
