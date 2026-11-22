@@ -65,3 +65,27 @@
 
 - The host risk has no early validation the agent can run; it depends on the maintainer turning the flag on in production.
 - Whether Apache is available in this workspace for `image_content_apache_test.py` is not known yet.
+
+## 2026-11-22T23:10Z — Step 4
+
+### Necessary/useful instructions
+
+- Step 3's "compare side by side before any page uses the copies": caught that quality 80 flattened a painting's texture; display copies went to 90.
+- Step 3's "tests that a locked site publishes nothing": the test caught that the emptying check ran after some early returns.
+- Host `AGENTS.md`, inspect existing implementations first: `HighTrafficMode`'s note that the shipped `.htaccess` already carries its rules led to shipping inert rules and writing nothing to `.htaccess` at run time.
+- Host `AGENTS.md`, a pass elsewhere does not establish recovery: the retry is reported unverified for the maintainer's phone although it passes in Chrome and WebKit.
+- User preference, fix a test that fails on the base commit: none failed on the base. `StatusCommandTest` failed only while `.htaccess` was uncommitted, which is its design.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- Step 3 Stage 5's "the block-writing code is shared, not copied": no block is written, so there was nothing to share.
+
+### Uncertain assessments
+
+- Installing Apache in the workspace to test the rules was not in the plan. It changed nothing in the project and removed most of the local uncertainty; the host itself is still untested.
+- Step 2 said the stored original is "never" shown inline. Originals of 480px or less still are. Recorded as narrower than the wording, for the maintainer to accept or not.
+- Plan order for Stage 5 put tests before rules; they were written just after.
