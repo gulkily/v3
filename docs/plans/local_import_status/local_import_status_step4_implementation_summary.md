@@ -31,3 +31,27 @@ Step 3 approved 2026-11-22 ("approved step 3"). Branch `feat/local_import_status
 - Estimate details: retrospective lower; one record kind instead of two.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+## Stage 2 - Status line and quiet held-back line
+
+**Original estimate: 0.07**
+**Retrospective: 0.07**
+
+- Changes:
+  - `LocalDevelopmentPageController` passes `LastImportSummary::read()` to the page, preferring the run the newest page output names.
+  - `templates/pages/local_development.php` leads with "Imported from **host** <age> · N imported | N new | nothing new", using the existing `$relativeTimestamp` helper. The age is a `time` element with the full date as its title.
+  - Under it, one disclosure. Its label is the held-back line ("356 held back for review · 4 conflicts", plus "some images not copied" when that applies), or "Import details" when nothing was held back. Inside: the full count line, and the import's output when the newest page request is the same run.
+  - The review alert and the bare count line are gone from the card. "Browse imported threads" shows whenever a finished import exists.
+  - A failed request keeps its reason as the alert, with its own details, above the last good status.
+  - The `counts` part of `import_run.php` prints thousands separators, on both import pages.
+- Verification:
+  - `./v3 test --smoke LocalDevelopmentImportTest ImportPageTest LastImportSummaryTest`: 499 run; 498 passed and 1 failed on the first run. The failure was `ImportPageTest` expecting "conflict 10000"; it now expects "conflict 10,000", the intended change. Rerun of `ImportPageTest LocalDevelopmentImportTest`: passed.
+  - `LocalDevelopmentImportTest` asserts: no status on a copy whose only import failed; "1 imported" after the first import; "nothing new" on a repeat with "duplicate" only inside the details; "1 held back for review · 1 conflict" with no alert on a conflict; and "1 new" after an import run from the terminal, with no page output shown for it.
+  - `node tests/browser/tools_import.mjs`: passed, 80 cases unchanged.
+  - Full suite not run.
+- Notes:
+  - The held-back line is the disclosure's own label, so "opens Import details" needs no link or script.
+  - The button still reads "Import again" here; Stage 3 replaces the form.
+- Estimate details: original scope unchanged.
+
+*— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*

@@ -67,6 +67,7 @@ final class LocalDevelopmentImportTest
         assertStringNotContains('Last request failed', $body);
         assertStringContains('Browse local content', $body);
         assertStringContains('value="http://127.0.0.1:1"', $body);
+        assertStringNotContains('data-import-last', $body);
         assertTrue(!is_file($target . '/records/posts/local-import-example.txt'));
 
         $data['source'] = $remote->url;
@@ -89,6 +90,7 @@ final class LocalDevelopmentImportTest
         assertStringContains('Browse imported threads', $body);
         assertStringNotContains('role="alert"', $body);
         assertTrue(!is_file($target . '/.git/instance-import/pending.json'));
+        assertStringContains('</time> · 1 imported</p>', $body);
         $board = $this->request($server->url, '/threads/?view=all')[1];
         assertStringContains('Imported local-import-example', $board);
         assertStringContains('Imported body', $this->request($server->url, '/threads/local-import-example')[1]);
@@ -96,17 +98,37 @@ final class LocalDevelopmentImportTest
         assertStringContains('Browse imported threads', $body);
         assertStringContains("\nimport: 0\n", $body);
         assertStringContains('Import again', $body);
-        assertTrue(preg_match('/<p data-import-result><span class="meta">[^<]*duplicate 1[^<]*<\/span><\/p>/', $body) === 1, substr($body, (int) strpos($body, 'data-import-root'), 1500));
+        // The card reports on the copy: source, age and what came in. "duplicate" stays in the details.
+        assertTrue(preg_match('#<p data-import-result data-import-last>Imported from <strong>127\.0\.0\.1:\d+</strong> <time [^>]*>just now</time> · nothing new</p>#', $body) === 1, substr($body, (int) strpos($body, 'data-import-root'), 600));
+        assertStringContains('<summary>Import details</summary>', $body);
+        assertStringNotContains('duplicate', substr($body, 0, (int) strpos($body, '<summary>')));
+        assertStringNotContains('role="alert"', $body);
         assertSame(1, count(glob($target . '/records/posts/local-import-example.txt')));
         $original = file_get_contents($target . '/records/posts/root-001.txt');
         $w->put($source . '/records/posts/root-001.txt', $w->post('root-001', '', 'A conflicting remote version'));
         $w->command(['tar', '-czf', $w->root . '/source.tar.gz', '-C', $w->root, 'source']);
         $body = $this->import($server->url, $data);
-        assertStringContains('Some content needs review', $body);
-        assertStringContains('conflict 1', $body);
-        assertStringNotContains('Browse imported threads', $body);
-        assertStringContains('Browse local content', $body);
+        // Held-back records are a quiet line that opens the details, with conflicts named; no alert.
+        assertStringContains('<summary>1 held back for review · 1 conflict</summary>', $body);
+        assertStringContains('· nothing new</p>', $body);
+        assertStringNotContains('role="alert"', $body);
+        assertStringNotContains('Some content needs review', $body);
+        assertStringContains('Browse imported threads', $body);
         assertSame($original, file_get_contents($target . '/records/posts/root-001.txt'));
+
+        // An import run from the terminal is the newest import too; the page has no output for it.
+        assertStringContains('<pre>', $body);
+        sleep(1);
+        $w->put($source . '/records/posts/terminal-import-example.txt', $w->post('terminal-import-example'));
+        $w->command(['tar', '-czf', $w->root . '/source.tar.gz', '-C', $w->root, 'source']);
+        exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__) . '/scripts/import_instance.php') . ' ' . escapeshellarg($remote->url)
+            . ' --repository-root=' . escapeshellarg($target) . ' --database-path=' . escapeshellarg($environment['FORUM_DATABASE_PATH'])
+            . ' --static-html-root=' . escapeshellarg($environment['FORUM_STATIC_HTML_ROOT']) . ' 2>&1', $terminalOutput, $terminalCode);
+        assertTrue(in_array($terminalCode, [0, 2], true), implode("\n", $terminalOutput));
+        $body = $this->request($server->url, '/local/')[1];
+        assertStringContains('</time> · 1 new</p>', $body);
+        assertStringContains('<summary>1 held back for review · 1 conflict</summary>', $body);
+        assertStringNotContains('<pre>', $body);
     }
 
     public function testQueuedImportShowsStepsAndLeavesTheSiteUsable(): void

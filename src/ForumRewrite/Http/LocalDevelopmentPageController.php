@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Http;
 
 use ForumRewrite\Import\InstanceImportRequests;
+use ForumRewrite\Import\LastImportSummary;
 use ForumRewrite\Support\LocalDevelopmentImport;
 
 /**
@@ -23,6 +24,7 @@ final class LocalDevelopmentPageController
         private readonly RouteServices $routes,
         private readonly LocalDevelopmentImport $import,
         private readonly InstanceImportRequests $requests,
+        private readonly LastImportSummary $lastImport,
     ) {}
 
     /**
@@ -87,10 +89,13 @@ final class LocalDevelopmentPageController
                 : ($state['known'][0]['url'] ?? '')));
 
         $log = $this->requests->latestLog();
+        $result = InstanceImportRequests::resultFromLog((string) $log);
 
         return $this->routes->renderPageTemplate('local_development.php', [
             'source' => $source, 'token' => $this->import->token(), 'importState' => $state,
-            'notice' => $notice, 'log' => $log, 'result' => InstanceImportRequests::resultFromLog((string) $log),
+            'notice' => $notice, 'log' => $log, 'result' => $result,
+            // The newest finished import, from the page or the terminal; null on a copy that never imported.
+            'last' => $this->lastImport->read($result['run_id']),
         ], 'Local development', 'board', ['/assets/import_control.js']);
     }
 }
