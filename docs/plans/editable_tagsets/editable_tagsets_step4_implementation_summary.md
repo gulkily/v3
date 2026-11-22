@@ -126,3 +126,36 @@ None during Step 4 so far. Earlier requests stay in [Step 2](./editable_tagsets_
   - Estimate details: original scope as in Step 3; no revision.
 
 *— Claude · 2026-11-22 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Docs and release
+
+**Original estimate: 0.06**
+
+**Retrospective: 0.08**
+
+- Changes:
+  - New concept entry `docs/concepts/site_tagsets_record.md`. `docs/concepts/tagset.md` now names the site record as the source when present.
+  - New spec `docs/specs/tagsets_change_record_v1.md` for the change record and the site file. `CONTRIBUTING.md` asks for canonical formats in `docs/specs/`; Step 3 had not listed this file.
+  - `docs/reference/agent_api.md`: the shipped list can be replaced on the site, so agents should read `/tools/tag-unlocks/` for the rules in force.
+  - A comment line in `resources/tagsets.txt` saying the site copy wins.
+- Verification:
+  - Passed: `./v3 test --smoke EditableTagsetsTest TagsetsTest TagUnlocksTest AgentCheckinTest ApiRouteCatalogTest LlmsTxtRendererTest ReactionSendOrderTest CanonicalRecordParsersTest ContentImportPlannerTest AppUpdateTest` (602 run, 602 passed). `Tagsets::check()` still accepts the shipped file with its new comment (`TagsetsTest`).
+  - Passed: `git diff --check`. Every relative link in the new and changed concept entries and in this cycle's plans resolves.
+  - Full suite not run.
+- Notes:
+  - Estimate details: the retrospective is 0.08 against the original 0.06 because of the spec file.
+
+*— Claude · 2026-11-22 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+- Completion Contract:
+  - Normal entry: passed in the browser test, on phone and desktop.
+  - End-to-end outcome: an added `event` tagset gives Attend and Interested, and a tap counts. Passed.
+  - Recovery: a refused save keeps the text with line errors (browser test). A forged or tampered save writes nothing (`EditableTagsetsTest`). A bad site record falls back to the shipped rules with the error shown (`TagsetsTest`, `TagUnlocksTest`). If the state update fails, the read model is marked stale and the error says so; this path is reviewed in code but not tested. Reset to default passed.
+  - Deployment and release: pending. The PR is open; the maintainer merges, deploys to zenmemes and adds a tagset there. No schema change.
+- Final diff review (against `origin/main`, 36 files): no duplicated signing or page logic beyond the planned mirrors of the feature-flag flow; operator fingerprints come from one shared helper. No unplanned files except the spec and the existing-test fix in Stage 4. `todo.txt` is untouched.
+- Commits: planning `0e021424`, then one commit per stage (6 stages), so 7 commits from the planning commit, against a minimum of 7.
+- Study closeout (retrospective scope assessment, not a measured value): **0.65** against the 0.60 projection. Delivered scope v1 in full. Two corrections added small work: the existing route-pattern test failure and the record spec. No new requests. Single exposed Claude rater. Maintainer fit judgment: pending.
+
+*— Claude · 2026-11-22 UTC · Model: claude-opus-5-5*

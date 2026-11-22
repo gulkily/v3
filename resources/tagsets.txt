@@ -7,6 +7,7 @@ Schema: tagsets-v1
 #   Unlocks:   comma-separated tags offered as buttons
 #   Exclusive: yes when the tags are one state (the latest counted mark wins)
 # Lines starting with # are comments. Blocks are separated by blank lines.
+# Operators can replace these rules on the site (Tools -> Tag Unlocks); the site copy wins.
 
 Parent: issue
 Target: reply, root
