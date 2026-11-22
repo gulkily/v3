@@ -10,7 +10,7 @@ Extended estimates: disabled (one approach; the two ports are not alternatives a
 
 **Cycle estimate: 0.75 (execution entry; intake 0.60)**
 
-Status: planned; next permitted action: implementation after the planning commit.
+Status: implemented and verified locally; PR open, awaiting maintainer review, merge and deploy. Production check pending.
 
 ## Original request
 
@@ -84,15 +84,44 @@ Starting revision `cc6680c9` (main). Branch `feat/quill-ports`.
 
 ## Planning commit
 
-Pending at the time of writing.
+`d4f5ec3c` (record and plans index only). It carries a `Feedback: PF-20261116-F04` trailer without updating the item; the item is updated in the completion commit, which also carries the trailer.
 
 ## Study history
 
 - 2026-11-22: intake **0.60**, rated after listing the files and their sizes and reading the feedback item, before reading `quill.py`. Single exposed Claude rater (the same session wrote the earlier Python-side posts). Baseline `cc6680c9`.
 - 2026-11-22: execution entry **0.75**, revised up after reading `quill.py` (1,179 lines, nine commands, two protocols, image handling) and `QuillClientTest.php`: two full ports plus parity tests is more than the intake assumed. Scope unchanged.
+- 2026-11-22: retrospective **0.75**. Scope unchanged; three additions inside it (the no-`intl` fallback test, the CLI-only guard test, the cross-version test). No split. Maintainer fit judgment pending; no accepted-count change.
 
 ## Dated execution history
 
 - 2026-11-22: record written. Mode one-shot: the scope is fixed by the existing client, and no approach choice needs the maintainer.
+- 2026-11-22, implementation:
+  - `public/quill.pl`: port of `quill.py` in Pollyanna's Perl style (80 subs, each `sub Name { # $arguments ; description` with a `} # Name()` closer, one `shift` per argument, tab indents, `WriteLog` lines shown with `QUILL_DEBUG=1`). Core modules only (`Digest::SHA`, `Encode`, `JSON::PP`, `Unicode::Normalize`, `File::Temp`, `File::Path`, `Time::Local`, `POSIX`). Processes run by `fork` and `exec` with stderr to a temporary file; no shell. Function names follow `quill.py`'s (`request` → `Request`, `new_post` → `NewPost`), so a search finds the same step in each version. Decision: no taint mode (see risks).
+  - `public/quill.php`: port in this repository's PHP script style (`scripts/publish_text.php`). PHP 8.1+ core only; `intl` optional. Refuses to run outside the CLI. Correction during work: a helper named `urlEncode` collided with the built-in `urlencode` (PHP function names ignore case); renamed `formEncode`.
+  - Both send their own User-Agent (`quill-pl/2026-11-22`, `quill-php/2026-11-22`), print `Update:` once per run, write the same `identity.txt`, `operation.txt`, `key.txt` and payload files, and print `perl quill.pl …` or `php quill.php …` in `Resume:`, `Check:` and `Replace:` lines.
+  - Image messages name the fix that applies to them ("Export a smaller copy, or use quill.py with Pillow…") instead of `quill.py`'s "Install Pillow". Everything else prints the same lines.
+  - `ClientDownload`: `PATHS` maps each download path to its file; `AGENTS` maps each User-Agent product to the file it is compared with; `currentVersion()` reads the version line of any of the three files. `/frm.py` still serves `quill.py`.
+  - Docs: `llms.txt` (one line naming the siblings; the update-notice line no longer names `/quill.py` only), `agent_api.md` (quickstart paragraph, version section, members-only discovery list), `multi_language_scripts.md` (new set row and the two documented differences), the concept entry, `README.md`.
+  - Tests: `QuillClientTest` loops 15 of its HTTP tests over the three versions (`self::each`) and fails with the version's name. The pending-keys test imports `quill.py` as a Python module, so it stays Python-only. New: `testServedPhpClientIsNeverExecuted`, `testVersionsShareKeysAndResumeEachOthersOperations` (a key from `quill.py` posts from the others under one identity; a lost write saved by each version is resumed by another with no new commit), `testPhpWithoutIntlStillPostsUnicode` (runs `php -n`, which drops `intl` here). `testUpdateNoticeComparesVersions` covers each language's version line.
+- 2026-11-22, verification:
+  - `./v3 test --smoke QuillClientTest LlmsTxtRendererTest PlatformDocsPageTest AgentApiWorkedExampleTest WebServerRoutingTest`: 539 run, 539 passed. `QuillClientTest` alone: 20 passed in 80 s (17 in 28 s before). Full suite not run.
+  - `python3 tests/quill_client_test.py`: 40 passed (`quill.py` unchanged).
+  - Mutation check: breaking the success output of `quill.pl`, then of `quill.php`, failed `testFirstWriteReuseAndLegacyFallback` with "quill.pl: …" and "quill.php: …". A busy-retry test did not notice the Perl break, since it checks exit codes only; the broader tests did.
+  - `perl -c` and `php -l`: clean. Argument errors, bad `--site`, bad `--retries` and missing `--body-file`: same messages and exit code 2 in all three (argparse's own usage line differs from the ports' "Use --help for usage.").
+  - Live, read-only, against zenmemes.com from each port: `index`, `read`, `check` (found and missing), `checkin`. No posts were made there.
+  - `./v3 feedback check`: 0 problems. No test failed on the base commit.
+  - Pending: after deploy, fetch `/quill.pl` and `/quill.php` from zenmemes.com and post once with each.
+
+## Outcome
+
+Delivered as authorized. Limits, all documented: the ports cannot resize or convert images (no Pillow); `quill.php` without `intl` uses the prepared protocol for non-ASCII drafts and cannot `--replace` them; both need a Unix-like host. The Perl port does not run in taint mode.
+
+## Final review
+
+Diff checked for duplication (one download handler, one test suite looping over versions), scope (no change to `quill.py`) and docs. The concept entry is updated. The completion commit carries the implementation, this record, the ledger file, the debug log and the feedback item.
+
+## Commit/merge/publication status
+
+Completion commit: pending at the time of writing; its hash goes in the PR description. Not merged or deployed.
 
 *— Claude · 2026-11-22 UTC · Model: Claude Opus 5.5 (claude-opus-5-5)*
