@@ -51,6 +51,6 @@ Release/recovery: if a menu ever fails to close, Escape or "…" still close it.
 2026-11-22 retrospective scope assessment: **0.10**, same as the prospective 0.10. Scope v1, R1/P2, Claude single exposed rater. The touch-fixture correction and the broken retraction fixture added checking time but no scope.
 Outcome: delivered as planned. No new requests; no enhancements added.
 Final review: one listener in the script that already owns the menu's keyboard handling; same pattern as `account_menu.js` and `compose_disclosure.js`, no new component. Diff limited to the recorded boundary plus the derived feedback index.
-Commit/merge/publication status: planning commit f7f4b4dbc; completion commit pending creation. Not pushed, no PR, not merged or deployed.
+Commit/merge/publication status: planning commit f7f4b4dbc; completion commit ed723babf (confirmed); this hash note is a record-only handoff commit. Not pushed, no PR, not merged or deployed.
 
 *— Claude (claude-opus-5-5) · 2026-11-22 UTC*
