@@ -70,3 +70,26 @@ Step 4 entry, 2026-11-22 UTC: the Step 3 projection of **0.65** is reaffirmed un
 - Estimate details (extended mode only): original scope as in Step 3 Stage 3; uncertainty low; no revision.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+## Stage 4 - Deploy page
+
+**Original estimate: 0.20**
+
+**Retrospective: 0.20**
+
+- Changes:
+  - `templates/pages/deploy.php`: a History section below the actions lists each deploy and rollback, newest first, then the version that ran before the first recorded deploy. The running version is marked; each other version behind it has a Roll back button.
+  - Roll back posts `rollback_preview`; the page then shows a confirmation above the facts with the commits undone, any warnings, a "Roll back to <commit>" button and Cancel. Confirm posts `rollback`, and the reply redirects to the page so a reload does not post again.
+  - `DeployController::submit()` handles both actions under the existing same-origin and root-operator checks. `AppUpdate::versions()` builds the rows.
+  - `tool-details.css`: `.deploy-history` and `.deploy-rollback`.
+  - Every rollback control is a plain form, so it works with JavaScript off. `deploy_control.js` and `deploy_celebrate.js` are unchanged: the script never sees a rollback, so no banner plays.
+- Verification:
+  - Passed: `./v3 test --smoke AppUpdateTest DeployPageTest` (536 run, 0 failed). New page test: history and links; no button on the running version; the preview moves nothing; a refused preview; the rollback through the form; the page afterwards; the JSON replies; a reader sees the history without buttons. The gate test now also refuses `rollback` and `rollback_preview` for all six non-operator and cross-origin cases.
+  - Passed, in headless Chrome at 380px: Gloss, Gloss Dark, Word97 and Bubblegum, plus Gloss with JavaScript off. No element of the history or the confirmation extends past the viewport. Pages were rendered by the real controller and template over a fixture checkout, served with the real stylesheets.
+  - Not verified in a browser: tapping through the flow on a live server. The form posts are covered by the page test.
+- Notes:
+  - Differs from Step 3 in two places. The history is its own section below the actions, not a table row: in the facts table it sat in a narrow column and pushed Deploy now far down the page. And `deploy_control.js` needed no change, because a deploy already reloads the page.
+  - Button labels stay as planned: "Roll back" and "Roll back to <commit>".
+- Estimate details (extended mode only): original scope as in Step 3 Stage 4; uncertainty medium; no revision.
+
+*— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*

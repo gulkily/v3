@@ -402,6 +402,41 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
     }
 
     /**
+     * The history as the Deploy page shows it: one row per deploy or rollback, newest first,
+     * then the version that ran before the first recorded deploy. `running` marks the newest
+     * row for HEAD; `can_roll_back` marks the newest row of each other commit behind HEAD.
+     *
+     * @return list<array{commit: string, deployed_at: string, action: string, subject: string, running: bool, can_roll_back: bool}>
+     */
+    public function versions(int $limit = self::HISTORY_LIMIT): array
+    {
+        $history = $this->history($limit);
+        if ($history === []) {
+            return [];
+        }
+        $rows = [];
+        foreach ($history as $entry) {
+            $rows[] = ['commit' => $entry['new_commit'], 'deployed_at' => $entry['deployed_at'], 'action' => $entry['action'], 'subject' => $entry['subject']];
+        }
+        $first = $history[count($history) - 1]['old_commit'];
+        if (count($history) < $limit && preg_match('/^[0-9a-f]{40,64}$/', $first) === 1) {
+            $rows[] = ['commit' => $first, 'deployed_at' => '', 'action' => 'earlier', 'subject' => (string) $this->gitValue(['log', '-1', '--format=%s', $first, '--'])];
+        }
+        $head = $this->gitValue(['rev-parse', '--verify', 'HEAD']);
+        $onMain = $this->gitValue(['symbolic-ref', '--quiet', '--short', 'HEAD']) === self::BRANCH;
+        $seen = [];
+        foreach ($rows as $i => $row) {
+            $newest = !isset($seen[$row['commit']]);
+            $seen[$row['commit']] = true;
+            $rows[$i]['running'] = $newest && $row['commit'] === $head;
+            $rows[$i]['can_roll_back'] = $newest && $onMain && $head !== null && $row['commit'] !== $head
+                && $this->git(['merge-base', '--is-ancestor', $row['commit'], $head], 30)['code'] === 0;
+        }
+
+        return $rows;
+    }
+
+    /**
      * Every commit the history names, as a deploy's old or new commit: the versions a rollback
      * may return to.
      *

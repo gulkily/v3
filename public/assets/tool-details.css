@@ -646,6 +646,41 @@ form.feature-flag-control,
   margin: 0.3rem 0 0;
 }
 
+/* Deploy history, below the actions: one version per item, its Roll back button on a line of its own. */
+.deploy-history {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.deploy-history li + li {
+  margin-top: 0.6rem;
+}
+
+.deploy-history .meta {
+  display: block;
+}
+
+.deploy-history button {
+  width: auto;
+  margin-top: 0.3rem;
+}
+
+/* The confirmation a Roll back button leads to, above the facts it is about. */
+.deploy-rollback {
+  margin-bottom: 1rem;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+}
+
+.deploy-rollback h2 {
+  margin: 0 0 0.4rem;
+}
+
+.deploy-rollback .deploy-actions {
+  align-items: center;
+}
+
 /* Deploy now leads; Queue deploy and Check for updates sit beside it as
    quieter secondary buttons. One row when it fits, wrapping on phones. */
 .deploy-actions {
