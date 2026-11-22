@@ -199,6 +199,59 @@ final class AppUpdateTest
         assertSame($second, $this->head($app));
     }
 
+    public function testRollbackPreviewListsWhatItUndoesAndChangesNothing(): void
+    {
+        [$app, $first, $second, $third] = $this->deployedTwice();
+        $update = new AppUpdate($app);
+
+        $preview = $update->rollbackPreview(substr($first, 0, 12));
+
+        assertSame($first, $preview['commit']);
+        assertSame(['third', 'second'], array_column($preview['commits'], 'subject'));
+        assertSame([$third, $second], array_column($preview['commits'], 'commit'));
+        assertSame(0, $preview['more']);
+        assertSame([], $preview['warnings']);
+        assertSame($third, $this->head($app));
+
+        assertSame('already_running', $update->rollbackPreview($third)['reason']);
+        assertSame('not_deployed_here', $update->rollbackPreview(str_repeat('a', 40))['reason']);
+        assertSame(null, $update->rollbackPreview($third)['commit']);
+    }
+
+    public function testRollbackPreviewWarnsWhenTheRangeCrossesAFormatChange(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $update = new AppUpdate($app);
+        $write = function (string $path, string $content) use ($seed): string {
+            @mkdir(dirname($seed . '/' . $path), 0777, true);
+            file_put_contents($seed . '/' . $path, $content);
+
+            return $this->pushCommit($seed, 'change-' . md5($path . $content));
+        };
+        $metadata = 'src/ForumRewrite/ReadModel/ReadModelMetadata.php';
+        $base = $write($metadata, "<?php\n    public const SCHEMA_VERSION = '55';\n");
+        $update->deploy('openpgp:test', AppUpdate::MODE_INSTANT);
+        $plain = $write('notes.txt', "notes\n");
+        $update->deploy('openpgp:test', AppUpdate::MODE_INSTANT);
+        assertSame([], $update->rollbackPreview($base)['warnings']);
+
+        $write($metadata, "<?php\n    public const SCHEMA_VERSION = '56';\n");
+        $update->deploy('openpgp:test', AppUpdate::MODE_INSTANT);
+        $warnings = $update->rollbackPreview($plain)['warnings'];
+        assertSame(1, count($warnings));
+        assertStringContains('(56 back to 55)', $warnings[0]);
+
+        $write('src/ForumRewrite/Canonical/RecordParser.php', "<?php\n");
+        $write('docs/specs/record.md', "spec\n");
+        $update->deploy('openpgp:test', AppUpdate::MODE_INSTANT);
+        $warnings = $update->rollbackPreview($plain)['warnings'];
+        assertSame(3, count($warnings));
+        assertStringContains('reads records', $warnings[1]);
+        assertStringContains('docs/specs/', $warnings[2]);
+        // Warnings never block.
+        assertSame('rolled_back', $update->rollback($plain, 'openpgp:test', AppUpdate::MODE_INSTANT)['outcome']);
+    }
+
     public function testCliRollbackReturnsToAVersionFromTheHistory(): void
     {
         [$app, , $second, $third] = $this->deployedTwice();
@@ -207,6 +260,7 @@ final class AppUpdateTest
 
         assertSame(0, $code, $out);
         assertStringContains("Outcome: rolled_back\n", $out);
+        assertStringContains('Undoes-Commit: ' . substr($third, 0, 12) . ' ', $out);
         assertStringContains('Old-Commit: ' . $third . "\n", $out);
         assertStringContains('New-Commit: ' . $second . "\n", $out);
         assertSame($second, $this->head($app));

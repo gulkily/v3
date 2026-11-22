@@ -103,6 +103,18 @@ if ($mode === 'check') {
 
 $user = function_exists('posix_getpwuid') && function_exists('posix_geteuid') ? (posix_getpwuid(posix_geteuid())['name'] ?? '') : '';
 $actor = 'cli' . ($user !== '' ? ':' . $user : '');
+if ($mode === 'rollback') {
+    $preview = $update->rollbackPreview($rollbackTo);
+    foreach ($preview['commits'] as $commit) {
+        echo 'Undoes-Commit: ' . substr($commit['commit'], 0, 12) . ' ' . $commit['date'] . ' ' . $commit['subject'] . "\n";
+    }
+    if ($preview['more'] > 0) {
+        echo 'Undoes-More: ' . $preview['more'] . "\n";
+    }
+    foreach ($preview['warnings'] as $warning) {
+        echo 'Warning: ' . $warning . "\n";
+    }
+}
 $result = $mode === 'rollback'
     ? $update->rollback($rollbackTo, $actor, AppUpdate::MODE_CLI, $timeout)
     : $update->deploy($actor, AppUpdate::MODE_CLI, $timeout);

@@ -51,3 +51,22 @@ Step 4 entry, 2026-11-22 UTC: the Step 3 projection of **0.65** is reaffirmed un
 - Estimate details (extended mode only): original scope as in Step 3 Stage 2; uncertainty medium; no revision.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+## Stage 3 - Preview and warnings
+
+**Original estimate: 0.10**
+
+**Retrospective: 0.10**
+
+- Changes:
+  - `AppUpdate::rollbackPreview()` returns the commits a rollback undoes (same shape and cap as incoming commits) and up to three warnings: a read-model version change, changes under `src/ForumRewrite/Canonical/`, and changes under `docs/specs/`. It changes nothing.
+  - `incoming()` and the preview share `commitList()`; `rollback()` and the preview share `rollbackRefusal()`, so both judge a target the same way.
+  - `./v3 deploy --rollback=COMMIT` prints `Undoes-Commit:` and `Warning:` lines before the result.
+- Verification:
+  - Passed: `./v3 test AppUpdateTest DeployPageTest` (49 run, 0 failed), with two new tests: the commit list and refusals; each warning off and on, including a `SCHEMA_VERSION` change from 55 to 56, and a rollback that goes through despite three warnings.
+  - The second High risk from Step 3 (older code misreads newer records) has its early validation here; the mitigation is the warning plus Deploy now.
+- Notes:
+  - Over SSH the warnings print and the rollback proceeds; the operator already chose the commit. The page (Stage 4) asks for a confirmation.
+- Estimate details (extended mode only): original scope as in Step 3 Stage 3; uncertainty low; no revision.
+
+*— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*

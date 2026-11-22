@@ -177,23 +177,7 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
      */
     private function incoming(array $state, string $remote): array
     {
-        $commits = [];
-        $log = $this->git(['log', '--no-color', '--no-merges', '-n', (string) self::INCOMING_LIMIT, '--format=%H%x1f%s%x1f%an%x1f%cI', 'HEAD..' . $remote], 30);
-        if ($log['code'] === 0) {
-            foreach (preg_split('/\R/', trim($log['out'])) ?: [] as $line) {
-                $fields = explode("\x1f", $line);
-                if (count($fields) === 4 && preg_match('/^[0-9a-f]{40,64}$/', $fields[0]) === 1) {
-                    $commits[] = ['commit' => $fields[0], 'subject' => $fields[1], 'author' => $fields[2], 'date' => substr($fields[3], 0, 10)];
-                }
-            }
-        }
-
-        // Merge commits are left out of the list (they repeat what the
-        // merged commits say), so "more" counts non-merge commits too.
-        $total = count($commits);
-        if ($total === self::INCOMING_LIMIT) {
-            $total = (int) ($this->gitValue(['rev-list', '--no-merges', '--count', 'HEAD..' . $remote]) ?? $total);
-        }
+        [$commits, $more] = $this->commitList('HEAD..' . $remote);
 
         $stat = null;
         $shortstat = $this->gitValue(['diff', '--no-color', '--shortstat', 'HEAD...' . $remote]);
@@ -216,10 +200,102 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
 
         return [
             'incoming_commits' => $commits,
-            'incoming_more' => max(0, $total - count($commits)),
+            'incoming_more' => $more,
             'incoming_stat' => $stat,
             'incoming_local_overlap' => $overlap,
         ];
+    }
+
+    /**
+     * The non-merge commits in $range, newest first and capped, and how many more there are.
+     * Merge commits are left out (they repeat what the merged commits say), so "more" counts
+     * non-merge commits too.
+     *
+     * @return array{0: list<array{commit: string, subject: string, author: string, date: string}>, 1: int}
+     */
+    private function commitList(string $range): array
+    {
+        $commits = [];
+        $log = $this->git(['log', '--no-color', '--no-merges', '-n', (string) self::INCOMING_LIMIT, '--format=%H%x1f%s%x1f%an%x1f%cI', $range], 30);
+        if ($log['code'] === 0) {
+            foreach (preg_split('/\R/', trim($log['out'])) ?: [] as $line) {
+                $fields = explode("\x1f", $line);
+                if (count($fields) === 4 && preg_match('/^[0-9a-f]{40,64}$/', $fields[0]) === 1) {
+                    $commits[] = ['commit' => $fields[0], 'subject' => $fields[1], 'author' => $fields[2], 'date' => substr($fields[3], 0, 10)];
+                }
+            }
+        }
+        $total = count($commits);
+        if ($total === self::INCOMING_LIMIT) {
+            $total = (int) ($this->gitValue(['rev-list', '--no-merges', '--count', $range]) ?? $total);
+        }
+
+        return [$commits, max(0, $total - count($commits))];
+    }
+
+    /**
+     * What rolling back to $commit would undo, and whether it crosses a format change that the
+     * older code may not handle. Reads local Git state only and changes nothing.
+     *
+     * @return array{commit: ?string, reason: ?string, message: string, commits: list<array{commit: string, subject: string, author: string, date: string}>, more: int, warnings: list<string>}
+     */
+    public function rollbackPreview(string $commit): array
+    {
+        $old = $this->isCheckout() ? $this->gitValue(['rev-parse', '--verify', 'HEAD']) : null;
+        $refusal = $old === null ? ['not_a_checkout', 'The application directory is not a Git checkout.'] : $this->rollbackRefusal($commit, $old);
+        if (is_array($refusal)) {
+            return ['commit' => null, 'reason' => $refusal[0], 'message' => $refusal[1], 'commits' => [], 'more' => 0, 'warnings' => []];
+        }
+        [$commits, $more] = $this->commitList($refusal . '..' . $old);
+
+        return ['commit' => $refusal, 'reason' => null, 'message' => '', 'commits' => $commits, 'more' => $more, 'warnings' => $this->formatWarnings($refusal, (string) $old)];
+    }
+
+    /**
+     * @return string|array{0: string, 1: string} the full target commit, or the reason and message of a refusal
+     */
+    private function rollbackRefusal(string $commit, string $old): string|array
+    {
+        $target = preg_match('/^[0-9a-f]{7,64}$/', $commit) === 1 ? $this->gitValue(['rev-parse', '--verify', '--quiet', $commit . '^{commit}']) : null;
+        if ($target === null || !in_array($target, $this->deployedCommits(), true)) {
+            return ['not_deployed_here', 'That version was never deployed here; ./v3 deploy --history lists the ones that were.'];
+        }
+        if ($target === $old) {
+            return ['already_running', 'That version is already running.'];
+        }
+        if ($this->git(['merge-base', '--is-ancestor', $target, $old], 30)['code'] !== 0) {
+            return ['not_behind', 'That version is not behind the running one; deploy to move forward.'];
+        }
+
+        return $target;
+    }
+
+    /**
+     * Older code cannot be expected to read what newer code wrote. These warn; they never block.
+     *
+     * @return list<string>
+     */
+    private function formatWarnings(string $target, string $old): array
+    {
+        $warnings = [];
+        $version = function (string $commit): ?string {
+            $source = $this->git(['show', $commit . ':src/ForumRewrite/ReadModel/ReadModelMetadata.php'], 30);
+
+            return $source['code'] === 0 && preg_match("/SCHEMA_VERSION\\s*=\\s*'([^']+)'/", $source['out'], $m) === 1 ? $m[1] : null;
+        };
+        [$from, $to] = [$version($old), $version($target)];
+        if ($from !== $to) {
+            $warnings[] = 'The site data format changes (' . ($from ?? '?') . ' back to ' . ($to ?? '?') . '). The site rebuilds its data after rolling back, and again when you deploy forward.';
+        }
+        $changed = static fn (array $result): bool => $result['code'] === 0 && trim($result['out']) !== '';
+        if ($changed($this->git(['diff', '--name-only', $target, $old, '--', 'src/ForumRewrite/Canonical'], 30))) {
+            $warnings[] = 'The code that reads records changed. The older version may not show records written since.';
+        }
+        if ($changed($this->git(['diff', '--name-only', $target, $old, '--', 'docs/specs'], 30))) {
+            $warnings[] = 'Format specs in docs/specs/ changed.';
+        }
+
+        return $warnings;
     }
 
     /**
@@ -592,15 +668,9 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
             if ($branch !== self::BRANCH || $old === null) {
                 return $refuse('wrong_branch', 'The checkout is on ' . ($branch ?? 'a detached HEAD') . ', not ' . self::BRANCH . '.', $old);
             }
-            $target = preg_match('/^[0-9a-f]{7,64}$/', $commit) === 1 ? $this->gitValue(['rev-parse', '--verify', '--quiet', $commit . '^{commit}']) : null;
-            if ($target === null || !in_array($target, $this->deployedCommits(), true)) {
-                return $refuse('not_deployed_here', 'That version was never deployed here; ./v3 deploy --history lists the ones that were.', $old);
-            }
-            if ($target === $old) {
-                return $refuse('already_running', 'That version is already running.', $old);
-            }
-            if ($this->git(['merge-base', '--is-ancestor', $target, $old], 30)['code'] !== 0) {
-                return $refuse('not_behind', 'That version is not behind the running one; deploy to move forward.', $old);
+            $target = $this->rollbackRefusal($commit, $old);
+            if (is_array($target)) {
+                return $refuse($target[0], $target[1], $old);
             }
             $changed = $this->trackedChangedFiles();
             if ($changed === null) {
