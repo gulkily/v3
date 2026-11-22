@@ -151,6 +151,19 @@ final class InstanceImportTaskTest
         assertSame('waiting', $again['payload']['state']['start']);
     }
 
+    public function testResultIsReadFromTheImportsOwnOutput(): void
+    {
+        $result = \ForumRewrite\Import\InstanceImportRequests::resultFromLog("Progress: images\n\nImport result: partial\nimport: 12\nduplicate: 1\nconflict: 2\ninvalid: 0\nImages: complete\nimages_added: 3\nElapsed time: 4 seconds\n");
+        assertSame('partial', $result['outcome']);
+        assertSame('complete', $result['images']);
+        assertSame(['import' => 12, 'duplicate' => 1, 'conflict' => 2, 'invalid' => 0], $result['counts']);
+        assertSame(null, $result['failure']);
+        $failed = \ForumRewrite\Import\InstanceImportRequests::resultFromLog("Downloading repository archive...\nImport failed: Unable to download source archive.\nElapsed time: 0.02 seconds\n");
+        assertSame('Unable to download source archive.', $failed['failure']);
+        assertSame([], $failed['counts']);
+        assertSame(null, $failed['outcome']);
+    }
+
     private function queueStore(string $queuePath): array
     {
         mkdir(dirname($queuePath), 0700, true);

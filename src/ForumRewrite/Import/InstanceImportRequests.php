@@ -265,6 +265,30 @@ final class InstanceImportRequests
         return strlen($log) > 131072 ? "Earlier output omitted.\n" . substr($log, -131072) : $log;
     }
 
+    /**
+     * What an import's own output says about its result. The saved report is not used here:
+     * InstanceImportStatus picks the newest run by name, which is ambiguous for runs started in
+     * the same second, and the output always belongs to the request it came from.
+     *
+     * @return array{outcome: ?string, images: ?string, counts: array<string, int>, failure: ?string}
+     */
+    public static function resultFromLog(string $log): array
+    {
+        $counts = [];
+        foreach (['import', 'duplicate', 'conflict', 'invalid', 'unsupported', 'excluded'] as $category) {
+            if (preg_match('/^' . $category . ': (\d+)$/m', $log, $match) === 1) {
+                $counts[$category] = (int) $match[1];
+            }
+        }
+
+        return [
+            'outcome' => preg_match('/^Import result: (\S+)$/m', $log, $match) === 1 ? $match[1] : null,
+            'images' => preg_match('/^Images: (\S+)$/m', $log, $match) === 1 ? $match[1] : null,
+            'counts' => $counts,
+            'failure' => preg_match('/^Import failed: (.+)$/m', $log, $match) === 1 ? $match[1] : null,
+        ];
+    }
+
     private function existingStore(): ?SqliteTaskQueueStore
     {
         if (!is_file($this->queueDatabasePath)) {

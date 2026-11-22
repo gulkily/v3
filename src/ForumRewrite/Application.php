@@ -196,10 +196,7 @@ final class Application
 
         if (\ForumRewrite\Support\LocalDevelopmentImport::isEntry($requestUri) && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {
             (new \ForumRewrite\Http\LocalDevelopmentPageController($this->routeServices(),
-                new \ForumRewrite\Support\LocalDevelopmentImport(
-                    $this->projectRoot, $this->repositoryRoot, $this->databasePath,
-                    $this->staticHtmlRoot ?? \ForumRewrite\PresentationPathResolver::staticHtmlRoot($this->projectRoot, \ForumRewrite\SiteProfileRegistry::active()),
-                ),
+                new \ForumRewrite\Support\LocalDevelopmentImport($this->repositoryRoot),
                 $this->localImportRequests(),
             ))->handle($method);
             return;

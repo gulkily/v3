@@ -49,7 +49,7 @@ $details = array_slice($details, 0, $detailLimit);
 <?php else: ?>
             <strong><?= $e($outcomeLabels[$s['last']['outcome']] ?? $s['last']['outcome']) ?></strong> <?= $e($s['last']['at']) ?><?php if (($s['last']['report']['source'] ?? '') !== ''): ?> from <?= $e($s['last']['report']['source']) ?><?php endif; ?>
 <?php if ($counts !== []): ?>
-            <br><span class="meta"><?php $first = true; foreach ($counts as $category => $count): if ((int) $count === 0) continue; ?><?= $first ? '' : ' · ' ?><?= $e($category === 'import' ? 'imported' : $category) ?> <?= $e((string) $count) ?><?php $first = false; endforeach; ?><?php if ($first): ?>nothing new<?php endif; ?></span>
+            <br><?= trim($partial('partials/import_run.php', ['part' => 'counts', 'counts' => $counts])) ?>
 <?php endif; ?>
 <?php if ($s['images'] !== null && $s['last']['outcome'] !== 'canceled'): ?>
             <br><span class="meta">images <?= $e($s['images']) ?></span>

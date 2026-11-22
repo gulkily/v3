@@ -2,7 +2,15 @@
 $s = $importState;
 $pending = $s['pending'] !== null;
 $failed = !$s['busy'] && ($s['task']['status'] ?? null) === 'failed';
-$finished = !$s['busy'] && ($s['task']['status'] ?? null) === 'completed';
+$finished = !$s['busy'] && !$pending && ($s['task']['status'] ?? null) === 'completed';
+// The result comes from the import's own output ($result), so it always matches this request.
+// A finished import still needs attention when records were held back or images are missing.
+$review = $finished && (($result['outcome'] ?? 'complete') !== 'complete' || ($result['images'] ?? 'complete') !== 'complete');
+$counts = $finished && $result['counts'] !== [] ? $result['counts'] : null;
+$failure = $result['failure'] !== null ? $result['failure'] . ' Retry or resume below.' : 'Import did not finish. Check import details, then retry or resume below.';
+// A partial import that still brought records in keeps the link to them.
+$imported = $finished && (!$review || ($result['counts']['import'] ?? 0) > 0);
+$alert = $notice ?? ($failed ? $failure : ($review ? 'Some content needs review or images could not be copied. Check import details.' . ($imported ? '' : ' Local content is available below.') : null));
 ?>
 <section class="stack">
   <article class="card stack">
@@ -12,12 +20,16 @@ $finished = !$s['busy'] && ($s['task']['status'] ?? null) === 'completed';
   </article>
   <article class="card stack" data-import-root data-import-busy="<?= $s['busy'] ? '1' : '0' ?>">
     <h2>Import public content</h2>
-<?php if ($notice !== null): ?>
-    <p role="alert"><?= $e($notice) ?></p>
-<?php elseif ($finished && !$pending): ?>
-    <p><a href="/threads/?view=all">Browse imported threads</a></p>
+<?php if ($alert !== null): ?>
+    <p role="alert" data-import-result><?= $e($alert) ?></p>
 <?php endif; ?>
-<?= $indent($partial('partials/import_run.php', ['s' => $s, 'part' => 'run', 'action' => '/local/']), 4) ?>
+<?php if ($counts !== null && $notice === null): ?>
+    <p data-import-result><?= trim($partial('partials/import_run.php', ['part' => 'counts', 'counts' => $counts])) ?></p>
+<?php endif; ?>
+<?php if ($imported && $notice === null): ?>
+    <p data-import-result><a href="/threads/?view=all">Browse imported threads</a></p>
+<?php endif; ?>
+<?= $indent($partial('partials/import_run.php', ['s' => $s, 'part' => 'run', 'action' => '/local/', 'failureLine' => false]), 4) ?>
     <form method="post" action="/local/" class="stack import-actions" data-local-import data-import-form<?= $s['busy'] ? ' hidden' : '' ?>>
       <p>Local posts and settings stay. Private messages and approval authority are excluded. Conflicts keep the local version.</p>
 <?php if ($pending): ?>
@@ -27,7 +39,7 @@ $finished = !$s['busy'] && ($s['task']['status'] ?? null) === 'completed';
       <label>Source <input type="text" name="source" value="<?= $e($source) ?>" required maxlength="2048"<?= $pending ? ' readonly' : '' ?>></label>
       <div class="button-row">
         <button type="submit" name="action" value="<?= $pending ? 'resume' : 'import' ?>"><?= $pending ? 'Resume import' : ($failed ? 'Retry import' : ($finished ? 'Import again' : 'Import')) ?></button>
-<?php if ($failed): ?>
+<?php if ($failed || ($review && !$imported)): ?>
         <a href="/threads/?view=all">Browse local content</a>
 <?php endif; ?>
       </div>
@@ -35,7 +47,7 @@ $finished = !$s['busy'] && ($s['task']['status'] ?? null) === 'completed';
 <?= $indent($partial('partials/import_run.php', ['s' => $s, 'part' => 'not_started', 'action' => '/local/', 'token' => $token]), 4) ?>
     <p class="meta" role="status" aria-live="polite" data-import-status hidden></p>
 <?php if ($log !== null && !$s['busy']): ?>
-    <details>
+    <details data-import-result>
       <summary>Import details</summary>
       <pre><?= $e($log) ?></pre>
     </details>

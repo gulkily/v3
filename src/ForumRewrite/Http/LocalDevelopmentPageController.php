@@ -86,9 +86,11 @@ final class LocalDevelopmentPageController
             : ($postedSource ?? (($state['task']['source'] ?? '') !== '' ? $state['task']['source']
                 : ($state['known'][0]['url'] ?? '')));
 
+        $log = $this->requests->latestLog();
+
         return $this->routes->renderPageTemplate('local_development.php', [
             'source' => $source, 'token' => $this->import->token(), 'importState' => $state,
-            'notice' => $notice, 'log' => $this->requests->latestLog(),
+            'notice' => $notice, 'log' => $log, 'result' => InstanceImportRequests::resultFromLog((string) $log),
         ], 'Local development', 'board', ['/assets/import_control.js']);
     }
 }

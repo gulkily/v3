@@ -87,3 +87,34 @@ Step 3 approved 2026-11-22 ("approved step 3"). Branch `feat/local_import_progre
 - Estimate details: original scope unchanged.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+## Stage 4 - Result, failures and removing the blocking run
+
+**Original estimate: 0.08**
+**Retrospective: 0.12**
+
+- Changes:
+  - The card's end states, in `templates/pages/local_development.php`:
+    - Finished: one line of counts ("imported 8813 · duplicate 1 · …"), then "Browse imported threads", with the full output under Import details.
+    - Needs review (held-back records or missing images): the existing sentence, the counts, and "Browse imported threads" when any record came in. When none did, "Browse local content", as before.
+    - Failed: the command's reason plus "Retry or resume below.", the source kept, Retry import, and "Browse local content".
+    - Interrupted: Resume import with the source read-only, as before.
+  - `InstanceImportRequests::resultFromLog()` reads the outcome, image status, counts and failure reason from the import's own output.
+  - `import_run.php` gains a `counts` part, now used by both pages, and a `failureLine` switch so the local page shows its own failure sentence.
+  - `import_control.js` hides elements marked `data-import-result` while an import runs, so a new import started by the script replaces the last result.
+  - `LocalDevelopmentImport::run()`, `pending()` and `pendingSource()` are removed with the controller's exit-code mapping. The class keeps the guard and the token.
+  - `tests/browser/local_development.py` is reworked for the queued flow.
+- Verification:
+  - `./v3 test --smoke LocalDevelopmentImportTest ImportPageTest InstanceImportTaskTest ImportProgressViewTest`: 502 run, 502 passed.
+  - `LocalDevelopmentImportTest` asserts each state's visible line and button: the download reason with Retry, the interrupted notice with Resume, no alert after a clean resume, "Import again" with "duplicate 1" on a repeat, and "needs review" with "conflict 1" and "Browse local content" on a conflict.
+  - New `InstanceImportTaskTest::testResultIsReadFromTheImportsOwnOutput`.
+  - `python3 tests/browser/local_development.py`: passed. Fresh checkout under `./v3 start`, every offered theme at 390 and 1280, scripts on and off. It checks: failure with the reason and Retry; steps within 2 seconds of the click; the form, the old alert and Import details hidden while running; the timer ticking; a thread page answering mid-import; a reload showing the same step; the scripts-off page moving on by itself; the result counts; an imported thread opening.
+  - `node tests/browser/tools_import.mjs`: passed, 80 cases unchanged, with the shared counts part.
+  - `git diff --check`: clean. Full suite not run.
+- Notes:
+  - **Deviation from Step 3:** the result comes from the import's output, not from the saved report through `InstanceImportStatus`. That class picks the newest run by directory name, and names carry a time to the second. Two quick imports in one second showed the wrong run's counts in the test. The output always belongs to its own request. `InstanceImportStatus` is unchanged; Tools → Import can show the same mix-up for two imports within one second, noted for follow-up.
+  - In-scope refinement: after a real zenmemes.com import the result is always "needs review" (4 conflicts, 249 invalid). The old page then offered only "Browse local content". It now keeps "Browse imported threads" when records came in.
+  - The counts are printed without thousands separators, as on Tools → Import, since both use one partial.
+- Estimate details: retrospective higher for the report mix-up and the browser check rework.
+
+*— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*

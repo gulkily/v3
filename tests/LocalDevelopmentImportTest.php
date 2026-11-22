@@ -63,6 +63,9 @@ final class LocalDevelopmentImportTest
         // No worker runs beside this test server, so the page starts one (the --no-worker case).
         $body = $this->finished($server->url);
         assertStringContains('Retry import', $body);
+        assertStringContains('<p role="alert" data-import-result>Unable to download source archive (connection, timeout, or TLS failure). Retry or resume below.</p>', $body);
+        assertStringNotContains('Last request failed', $body);
+        assertStringContains('Browse local content', $body);
         assertStringContains('value="http://127.0.0.1:1"', $body);
         assertTrue(!is_file($target . '/records/posts/local-import-example.txt'));
 
@@ -72,6 +75,8 @@ final class LocalDevelopmentImportTest
         $w->put($environment['FORUM_STATIC_HTML_ROOT'] . '/offline', 'Blocked publication directory');
         $body = $this->import($server->url, $data);
         assertStringContains('Resume import', $body);
+        assertStringContains('An interrupted import needs to finish', $body);
+        assertStringContains('role="alert"', $body);
         assertTrue(is_file($target . '/records/posts/local-import-example.txt'));
         assertTrue(is_file($target . '/.git/instance-import/pending.json'));
         assertStringContains('value="' . $remote->url . '"', $body);
@@ -82,6 +87,7 @@ final class LocalDevelopmentImportTest
         unlink($environment['FORUM_STATIC_HTML_ROOT'] . '/offline');
         $body = $this->import($server->url, array_merge($data, ['action' => 'resume']));
         assertStringContains('Browse imported threads', $body);
+        assertStringNotContains('role="alert"', $body);
         assertTrue(!is_file($target . '/.git/instance-import/pending.json'));
         $board = $this->request($server->url, '/threads/?view=all')[1];
         assertStringContains('Imported local-import-example', $board);
@@ -89,11 +95,17 @@ final class LocalDevelopmentImportTest
         $body = $this->import($server->url, $data);
         assertStringContains('Browse imported threads', $body);
         assertStringContains("\nimport: 0\n", $body);
+        assertStringContains('Import again', $body);
+        assertTrue(preg_match('/<p data-import-result><span class="meta">[^<]*duplicate 1[^<]*<\/span><\/p>/', $body) === 1, substr($body, (int) strpos($body, 'data-import-root'), 1500));
         assertSame(1, count(glob($target . '/records/posts/local-import-example.txt')));
         $original = file_get_contents($target . '/records/posts/root-001.txt');
         $w->put($source . '/records/posts/root-001.txt', $w->post('root-001', '', 'A conflicting remote version'));
         $w->command(['tar', '-czf', $w->root . '/source.tar.gz', '-C', $w->root, 'source']);
         $body = $this->import($server->url, $data);
+        assertStringContains('Some content needs review', $body);
+        assertStringContains('conflict 1', $body);
+        assertStringNotContains('Browse imported threads', $body);
+        assertStringContains('Browse local content', $body);
         assertSame($original, file_get_contents($target . '/records/posts/root-001.txt'));
     }
 

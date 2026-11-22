@@ -1,11 +1,14 @@
 <?php
 // The running import as both import pages show it: Tools → Import and the local start page.
-// $s is InstanceImportRequests::state(); $part is "run" (steps, timing, log, failure) or
-// "not_started" (the worker notice, posting Try again to $action with an optional $token).
+// $s is InstanceImportRequests::state(); $part is "run" (steps, timing, log, and the failure
+// line unless $failureLine is false), "not_started" (the worker notice, posting Try again to
+// $action with an optional $token) or "counts" (one line from a report's $counts).
 // $action is the page's own address; "run" uses it for the reload without JavaScript.
 // import_control.js redraws these elements; keep its wording in step with this file.
 ?>
-<?php if ($part === 'run'): ?>
+<?php if ($part === 'counts'): ?>
+<span class="meta"><?php $first = true; foreach ($counts as $category => $count): if ((int) $count === 0) continue; ?><?= $first ? '' : ' · ' ?><?= $e($category === 'import' ? 'imported' : $category) ?> <?= $e((string) $count) ?><?php $first = false; endforeach; ?><?php if ($first): ?>nothing new<?php endif; ?></span>
+<?php elseif ($part === 'run'): ?>
 <?php
 $formatCount = static function (array $step): string {
     if ($step['done'] === null || ($step['done'] === 0 && $step['total'] === null)) return '';
@@ -38,7 +41,8 @@ if ($timing !== null) {
   </ol>
   <p class="meta import-timing" data-import-timing<?= $timing === null ? ' hidden' : '' ?> data-elapsed="<?= $e((string) ($timing['elapsed'] ?? 0)) ?>" data-since-update="<?= $e((string) ($timing['since_update'] ?? 0)) ?>" data-seconds-left="<?= $e((string) ($timing['seconds_left'] ?? $timing['step_seconds_left'] ?? '')) ?>" data-left-scope="<?= $timing !== null && $timing['seconds_left'] === null && $timing['step_seconds_left'] !== null ? 'step' : 'total' ?>"><?= $e($timingText) ?></p>
 </div>
-<?php if ($s['task'] !== null && ($s['busy'] || $s['task']['status'] === 'failed') && $s['progress'] !== []): ?>
+<?php $failureLine = $failureLine ?? true; ?>
+<?php if ($s['task'] !== null && ($s['busy'] || ($failureLine && $s['task']['status'] === 'failed')) && $s['progress'] !== []): ?>
 <details class="import-log">
   <summary>Log</summary>
   <ol class="import-progress" data-import-progress>
@@ -53,7 +57,7 @@ if ($timing !== null) {
   <ol class="import-progress" data-import-progress></ol>
 </details>
 <?php endif; ?>
-<?php if ($s['task'] !== null && $s['task']['status'] === 'failed' && !$s['busy']): ?>
+<?php if ($failureLine && $s['task'] !== null && $s['task']['status'] === 'failed' && !$s['busy']): ?>
 <p><strong>Last request failed:</strong> <?= $e($s['task']['failure']) ?></p>
 <?php endif; ?>
 <?php else: ?>

@@ -15,8 +15,14 @@
   if (!form || !status || !progress) return;
   const controls = Array.from(form.querySelectorAll('button, input'));
   const say = (text) => { status.textContent = text; status.hidden = text === ''; };
-  // While an import runs the step list replaces the form.
-  const setBusy = (on) => { controls.forEach((control) => { control.disabled = on; }); form.hidden = on; };
+  // The last import's result, where the page shows one beside the form (the local start page).
+  const results = Array.from(document.querySelectorAll('[data-import-result]'));
+  // While an import runs the step list replaces the form and the last result.
+  const setBusy = (on) => {
+    controls.forEach((control) => { control.disabled = on; });
+    form.hidden = on;
+    results.forEach((result) => { result.hidden = on; });
+  };
 
   const showLog = (lines) => {
     if (!Array.isArray(lines) || lines.length === 0) return;
