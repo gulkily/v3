@@ -589,6 +589,10 @@ Activity, tickets, logs, or shell history.
 
 The default is enabled. `/api/version` remains available when the notification is disabled.
 
+`/api/version` and forum `app-version` metadata report the application checkout's Git HEAD, independently of content commits. Source-only deployments return `no-git` and cannot detect Git updates. Navbar copies track code and content separately through `page-version`; Docs uses its own release version.
+
+After deploying the application-version fix, operators who disabled notifications to suppress false notices can enable App version notification on Tools → Feature Flags. Remove a disabling private-config/environment override first if present; restart the service for an environment change. Verify that posting leaves `/api/version` unchanged and a later code deploy raises Reload on an older open page.
+
 If production serves prebuilt static HTML artifacts, rebuild those artifacts after changing this flag so rendered pages include or omit the notification markup consistently.
 
 ## HTTP, HTTPS, and Browser OpenPGP

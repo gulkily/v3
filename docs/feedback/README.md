@@ -250,6 +250,7 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | --- | --- | --- | --- | --- | --- |
 | [PF-20261021-B03](items/PF-20261021-B03.txt) | Saved draft starts collapsed | blocked | locally-verified | 0.15 | 1 |
 | [PF-20261030-B03](items/PF-20261030-B03.txt) | Submitted draft stays in composer | blocked | locally-verified | — | 11 |
+| [PF-20261030-B18](items/PF-20261030-B18.txt) | Content hash labeled as app version | blocked | locally-verified | — | 2 |
 | [PF-20261030-B25](items/PF-20261030-B25.txt) | Posting helper wrong uncertain-write message | blocked | locally-verified | — | 1 |
 | [PF-20261030-B26](items/PF-20261030-B26.txt) | llms.txt character rules mismatch | blocked | locally-verified | — | 1 |
 | [PF-20261104-B21](items/PF-20261104-B21.txt) | Empty space below textarea | blocked | locally-verified | — | 1 |
@@ -278,7 +279,6 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261030-B15](items/PF-20261030-B15.txt) | Long bookmarklet clips fail | untriaged | unknown | — | 2 |
 | [PF-20261030-B16](items/PF-20261030-B16.txt) | Busy API returns HTML | untriaged | unknown | — | 1 |
 | [PF-20261030-B17](items/PF-20261030-B17.txt) | Code-heavy posts get HTML 500 | untriaged | unknown | — | 1 |
-| [PF-20261030-B18](items/PF-20261030-B18.txt) | Content hash labeled as app version | untriaged | unknown | — | 2 |
 | [PF-20261030-B19](items/PF-20261030-B19.txt) | Busy homepage from absent retraction targets | untriaged | unknown | — | 1 |
 | [PF-20261030-B20](items/PF-20261030-B20.txt) | Activity loads slowly | untriaged | unknown | — | 2 |
 | [PF-20261030-B21](items/PF-20261030-B21.txt) | CSS hex color becomes a label | untriaged | unknown | — | 1 |

@@ -194,6 +194,11 @@ final class TagUnlocksTest
             $reply = $this->card($this->render($app, '/threads/root-001'), 'reply-001');
             assertSame(0, preg_match('/data-tag="claimed"[^>]*hidden/', $reply));
             assertStringContains('>Claim</button>', $reply);
+            assertStringContains('>Resolve</button>', $reply);
+            assertStringContains('>Close</button>', $reply);
+            assertSame(1, preg_match('/data-tag="resolved"\s+data-applied-label="Resolved"/', $reply), 'the applied label stays past tense');
+            assertSame(1, preg_match('/data-tag="claimed"\s+data-applied-label="Claimed"/', $reply));
+            assertStringNotContains('>Resolved</button>', $reply);
 
             $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'claimed', 'author_identity_id' => self::APPROVED, 'action_at' => '2026-11-13T10:00:00Z']);
             $name = (string) (new PDO('sqlite:' . $database))->query("SELECT COALESCE(NULLIF(username, ''), fallback_label) FROM profiles WHERE identity_id = '" . self::APPROVED . "'")->fetchColumn();
@@ -215,6 +220,7 @@ final class TagUnlocksTest
             $reply = $this->card($this->render($app, '/threads/root-001'), 'reply-001');
             assertSame(1, preg_match('/<details class="post-resolution" data-role="post-resolution">/', $reply));
             assertStringContains('>Reopen</button>', $reply);
+            assertSame(1, preg_match('/data-tag="open"\s+data-applied-label="Reopen"/', $reply), 'thread_reactions.js maps Reopen to "Reopened."');
         });
     }
 

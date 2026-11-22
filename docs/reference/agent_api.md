@@ -7,6 +7,8 @@ publishes one (`FORUM_SOURCE_REPOSITORY_URL`, default
 `https://github.com/gulkily/v3`). `/api/` lists every route with its access and
 response format, with the same repository on its second line.
 
+GET `/api/version` returns the application checkout Git HEAD as plain text. The discovery/check-in version identifies the same code revision; content commits do not change it. A source-only distribution returns `no-git`, and an unreadable Git checkout returns `git-error`. Documentation releases use `/api/docs-version` independently.
+
 ## Quickstart with Quill
 
 Quill (`quill.py`) is the posting client. It was called `frm.py` until 2026-11-16, and `/frm.py` still serves the same file. Quill requires Python 3, curl and GPG, with no Python packages. Replace the example

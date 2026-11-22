@@ -10,6 +10,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
 - [Quill in Perl and PHP](quill_ports/quill_ports_one_shot.md) — `quill.pl` and `quill.php` beside `quill.py`, same commands and state, each with its own update notice.
+- [Application version source](application_version_source/application_version_source_one_shot.md) — code revision for deploy notifications, with independent cached-page freshness.
 - [Recently released filters](recent_feature_flag_filters/recent_feature_flag_filters_one_shot.md) — keep the release list in sync with flag filters.
 - [Offline writing runbook](offline_runbook_compose/offline_runbook_compose_one_shot.md) — explain cached composers, drafts, and queued offline text.
 - [Optional thread author details](thread_author_details/thread_author_details_one_shot.md) — opt-in speakers in the text thread API.
@@ -25,6 +26,8 @@ checklists, and proposals remain at the top level or in the collections below.
 [Calendar iCal feed](calendar_ics_feed/calendar_ics_feed_step3_development_plan.md) — `/calendar.ics`, tag feeds, a Subscribe panel and per-event "Add to Google Calendar" links, behind `FORUM_CALENDAR_FEED_ENABLED`; Stages 1–6 done ([summary](calendar_ics_feed/calendar_ics_feed_step4_implementation_summary.md)), the production phone check pending.
 
 [Key approval agent API](key_approval_api/key_approval_api_step3_development_plan.md) — `GET /api/pending_keys`, `Author-Identity-ID` on post reads, and `quill.py pending` / `quill.py approve` so agents approve the right key; Stages 1–5 done ([summary](key_approval_api/key_approval_api_step4_implementation_summary.md)), the post-deploy check pending.
+
+[State button verbs](state_button_verbs/state_button_verbs_one_shot.md) — one-shot: state buttons read Claim, Resolve, Close, Unclaim, Reopen; stored tags unchanged.
 
 [Quill rename](quill_rename/quill_rename_one_shot.md) — the posting client `frm.py` becomes `quill.py` (old URL kept), sends its version on every request, and gets an update notice when it is out of date.
 

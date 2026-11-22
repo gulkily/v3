@@ -95,6 +95,7 @@ final class TemplateRenderer
         private readonly string $versionStorageKey = 'forum_pending_app_version',
         /** Returns the current request path, for page themes. */
         private readonly ?\Closure $requestPath = null,
+        private readonly ?string $pageVersion = null,
     ) {
     }
 
@@ -279,6 +280,7 @@ final class TemplateRenderer
             'openBesideCssPath' => $this->assetPath('/assets/open-beside.css'),
             'siteName' => SiteConfig::displayName(),
             'appVersion' => $this->appVersion,
+            'pageVersion' => $this->pageVersion ?? $this->appVersion,
             'versionEndpoint' => $this->versionEndpoint,
             'versionStorageKey' => $this->versionStorageKey,
             'appVersionNotificationEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION),
