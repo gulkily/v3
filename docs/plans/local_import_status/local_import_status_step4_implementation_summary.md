@@ -81,3 +81,57 @@ Step 3 approved 2026-11-22 ("approved step 3"). Branch `feat/local_import_status
 - Estimate details: retrospective higher for the no-current-step defect and the two flaky assertions.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+## Stage 4 - Real copy and docs
+
+**Original estimate: 0.06**
+**Retrospective: 0.06**
+
+- Changes:
+  - The time in the cost line keeps its unit on the same line ("9 s" no longer wraps between the number and the unit at 390 px).
+  - Docs: `docs/concepts/local_development_import.md` describes the status card and where the status comes from; `docs/reference/v3_cli.md` and the UI copy checklist are updated.
+  - New feedback item `PF-20261122-F02`. `PF-20261122-F01` notes PR #357 as merged. `PF-20261122-B02` notes that the local page no longer depends on the ordering it describes.
+- Verification, on one copy under `./v3 start` holding real https://zenmemes.com content, in Chromium at 390 px:
+  - **A copy imported before this work:** the copy ran `origin/main` `d9e9a91`, imported from the page, then was switched to this branch. The card read "Imported from zenmemes.com just now · 8,837 imported", "360 held back for review · 4 conflicts", Browse imported threads, Check for new content, "Downloads everything again; last time took 32 s." Passed.
+  - **After `./v3 import-instance https://zenmemes.com` from the terminal:** "… just now · nothing new", the same held-back line, and "Downloads everything again." with no time. Passed.
+  - **After Check for new content:** one click, the live steps, then "… just now · nothing new" and "last time took 9 s." in 12 seconds. Passed.
+  - **After a failed re-import from an unreachable source:** the reason, its details, then the zenmemes.com status below, and Retry import. Passed.
+  - No page errors and no sideways overflow in any of these. Screenshots reviewed: Gloss 390 and 1280, Word97 390 and 1280, Bubblegum 390, with Change source open.
+  - `./v3 test --smoke LocalDevelopmentImportTest ImportPageTest InstanceImportTaskTest LastImportSummaryTest ImportProgressViewTest`: 510 run, 510 passed.
+  - `python3 tests/browser/local_development.py` and `node tests/browser/tools_import.mjs` (80 cases): passed.
+  - `./v3 feedback check`: 0 problems. `git diff --check`: clean. Concept links resolve.
+  - Final diff review against Step 3: only files named in Stages 1–4, plus `Application.php` (one constructor argument) and `tests/ImportPageTest.php` (the separator expectation). No dependency, schema, flag or stored state was added.
+  - Full suite not run.
+- Not verified:
+  - The maintainer's own copy. That is the release condition.
+  - "N new" with a real nonzero number: zenmemes.com had nothing new between the runs. Tests cover it with a test source.
+  - An age older than a week, where the existing helper prints a date. The line then reads "Imported from zenmemes.com Nov 12, 2026 · …".
+  - Browsers other than Chromium, and physical phones.
+- Notes, for follow-up outside this cycle:
+  - After a failed import from a *changed* source, Retry and the Change source field both hold the failed source. Going back to the copy's own source means typing it.
+  - The card's heading still reads "Import public content" when it is showing a status.
+  - Step 1's Option B (the board as home page after an import) is the proposed next cycle.
+- Estimate details: original scope unchanged.
+
+*— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+## Enhancement requests
+
+- Carried from Step 2, both not approved and not started: the board as home page after an import; automatic re-import.
+- None received during Step 4.
+
+## Completion Contract check
+
+- Normal entry and end-to-end outcome: passed locally on a copy with real zenmemes.com content.
+- Recovery: failed re-import with Retry above the earlier status, Change source, and the never-imported form all passed.
+- Deployment: no schema change, no new flag, nothing new stored. Tools → Import changes in number formatting and in the first step being current after the worker's claim.
+- Release: pending the PR's merge and the maintainer's own run.
+
+## Study closeout
+
+- Retrospective scope assessment (not a measured actual): **0.27** for scope v1 as delivered, against the 0.25 projection. Stage 1 was smaller than planned; Stage 3 was larger for one defect and two flaky assertions.
+- Stage retrospectives: 0.06, 0.07, 0.10, 0.06 (not summed).
+- Maintainer comfortable-fit judgment: pending. Acceptance: pending.
+- Claude single exposed rater, R1 (hashes not re-verified this session), P2, 2026-11-22 UTC. Measured time unknown.
+
+*— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*

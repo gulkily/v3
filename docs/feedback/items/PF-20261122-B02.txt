@@ -16,3 +16,4 @@ Two imports started within one second show the later run as the last import.
 
 Notes:
 2026-11-22: Found by tests during v3/local_import_progress (Stage 4). Small sources finish in well under a second; real imports take longer, so this is rare in use. Source: src/ForumRewrite/Import/InstanceImportStatus.php.
+2026-11-22: The local start page no longer depends on this ordering: LastImportSummary (v3/local_import_status) orders runs by when each report was written. Tools → Import still uses InstanceImportStatus and could adopt the same rule.

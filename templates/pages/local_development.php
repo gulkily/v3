@@ -23,7 +23,8 @@ $again = $failed && ($s['task']['source'] ?? '') !== '' ? $s['task']['source'] :
 // What a re-import costs, from the last run's own output when this page has it.
 $took = '';
 if ($sameRun && $result['seconds'] !== null) {
-    $took = $result['seconds'] < 90 ? max(1, (int) round($result['seconds'])) . ' s' : 'about ' . (int) round($result['seconds'] / 60) . ' min';
+    // A no-break space keeps the number and its unit on one line.
+    $took = $result['seconds'] < 90 ? max(1, (int) round($result['seconds'])) . "\u{00A0}s" : 'about ' . (int) round($result['seconds'] / 60) . "\u{00A0}min";
 }
 ?>
 <section class="stack">

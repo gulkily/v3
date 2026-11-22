@@ -101,7 +101,7 @@ final class LocalDevelopmentImportTest
         // One action re-imports from the copy's own source; the field is folded under Change source.
         assertStringContains('>Check for new content</button>', $body);
         assertStringContains('<input type="hidden" name="source" value="' . $remote->url . '">', $body);
-        assertTrue(preg_match('#<p class="meta">Downloads everything again; last time took \d+ s\.</p>#', $body) === 1);
+        assertTrue(preg_match('#<p class="meta">Downloads everything again; last time took \d+\x{00A0}s\.</p>#u', $body) === 1);
         assertTrue(preg_match('#<details data-import-result>\s*<summary>Change source</summary>.*?<input type="text" name="source" value="' . preg_quote($remote->url, '#') . '" required#s', $body) === 1);
         assertStringNotContains('Local posts and settings stay', $body);
         // A failed re-import from another source: its reason and Retry, above the last good status.

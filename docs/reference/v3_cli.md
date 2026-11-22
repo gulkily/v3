@@ -103,6 +103,9 @@ Import form. `/local/` returns to that page; `/threads/?view=all` opens all loca
 threads. Import queues the existing `import-instance` command for the task worker
 and shows its steps, elapsed time and time left; other pages stay usable while it
 runs. With `--no-worker` the page starts a worker for the import itself.
+After an import the card reports the source, the age and the result of the last
+import, including one run with `./v3 import-instance`, and offers Check for new
+content, which imports again from the same source.
 Failures retain the source; Resume finishes interrupted publication.
 These controls require a loopback peer and Host without proxy headers. Remote
 clients and deployed servers keep their existing homepage. Imports merge content;
