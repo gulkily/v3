@@ -100,8 +100,10 @@ rebuilds and offline snapshots run locally. `--no-worker` turns that off. A work
 still busy when the server stops finishes its task on its own.
 Loopback browsers get a local exploration homepage with a prefilled public-content
 Import form. `/local/` returns to that page; `/threads/?view=all` opens all local
-threads. Import uses the existing `import-instance` command and its recovery
-journal. Failures retain the source; Resume finishes interrupted publication.
+threads. Import queues the existing `import-instance` command for the task worker
+and shows its steps, elapsed time and time left; other pages stay usable while it
+runs. With `--no-worker` the page starts a worker for the import itself.
+Failures retain the source; Resume finishes interrupted publication.
 These controls require a loopback peer and Host without proxy headers. Remote
 clients and deployed servers keep their existing homepage. Imports merge content;
 they do not copy private messages, settings or approval authority.

@@ -664,3 +664,5 @@ and repair its navigation and affected references. See the
 - [Test fixture insert columns](test_fixture_insert_columns/test_fixture_insert_columns_one_shot.md) — one-shot: inserts in test fixtures name their columns.
 - [Named-column inserts](named_column_inserts/named_column_inserts_one_shot.md) — one-shot: every runtime SQL insert names its columns, with a guard test.
 - [Read-model insert columns](read_model_insert_columns/read_model_insert_columns_one_shot.md) — one-shot: the four read-model schema inserts name their columns.
+
+- [Local import progress](local_import_progress/local_import_progress_step1_solution_assessment.md) — staged: the local start page queues its import and shows the Tools → Import steps, timer and time left.

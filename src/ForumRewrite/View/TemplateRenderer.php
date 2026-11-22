@@ -54,6 +54,7 @@ final class TemplateRenderer
         'operations.php' => ['/assets/tool-details.css'],
         'deploy.php' => ['/assets/tool-details.css'],
         'tools_import.php' => ['/assets/tool-details.css'],
+        'local_development.php' => ['/assets/tool-details.css'],
         'feature_flag_change.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
         'offline_health.php' => ['/assets/tool-details.css'],

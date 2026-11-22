@@ -109,9 +109,70 @@ final class InstanceImportTaskTest
     }
 
     /** @return array{0: SqliteTaskQueueStore, 1: InstanceImportTask} */
+    public function testRequestsQueueForANamedRequesterAndReportTheQueuedSteps(): void
+    {
+        // The local start page has no signed-in identity; it queues under a fixed name.
+        $w = new ImportTestWorkspace();
+        $target = $w->repository('target', true);
+        $w->git($target);
+        $queuePath = $w->root . '/private/tasks.sqlite3';
+        $launches = 0;
+        $requests = new \ForumRewrite\Import\InstanceImportRequests($target, $queuePath, static function () use (&$launches): string { $launches++; return 'launched'; }, static fn (): int => time());
+
+        assertSame(400, $requests->perform('bogus', null, 'local-development')['code']);
+        assertSame(409, $requests->perform('resume', null, 'local-development')['code']);
+        assertSame(400, $requests->perform('import', '', 'local-development')['code']);
+        $result = $requests->perform('import', 'http://127.0.0.1:1', 'local-development');
+        assertSame(200, $result['code'], json_encode($result));
+        assertSame(1, $launches);
+        $state = $result['payload']['state'];
+        assertTrue($state['busy']);
+        assertSame('starting', $state['start']);
+        assertSame('Starting the task worker', $state['steps'][0]['label']);
+        assertSame('current', $state['steps'][0]['status']);
+        assertSame('download', $state['steps'][1]['key']);
+        assertTrue($state['timing'] !== null);
+        [$store, $task] = $this->existingQueue($queuePath);
+        $request = $task->request((string) $store->findById($state['task']['id'])['deduplication_key']);
+        assertSame('local-development', $request['Requested-By']);
+        assertSame(409, $requests->perform('import', 'http://127.0.0.1:1', 'local-development')['code']);
+        assertSame(200, $requests->perform('status', null, 'local-development')['code']);
+
+        // A worker that ran a moment ago (for example the one an earlier import started) is no
+        // promise of another: the next import starts its own.
+        $store->claimNext();
+        $store->markFailed((int) $state['task']['id'], 'instance_import_failed', 'Import failed: test', false);
+        $run = $store->startExecutorRun();
+        $store->completeExecutorRun((int) $run['id'], [], []);
+        assertSame('fresh', $requests->state()['worker']);
+        $again = $requests->perform('import', 'http://127.0.0.1:1', 'local-development');
+        assertSame(200, $again['code'], json_encode($again));
+        assertSame(2, $launches);
+        assertSame('waiting', $again['payload']['state']['start']);
+    }
+
+    public function testResultIsReadFromTheImportsOwnOutput(): void
+    {
+        $result = \ForumRewrite\Import\InstanceImportRequests::resultFromLog("Progress: images\n\nImport result: partial\nimport: 12\nduplicate: 1\nconflict: 2\ninvalid: 0\nImages: complete\nimages_added: 3\nElapsed time: 4 seconds\n");
+        assertSame('partial', $result['outcome']);
+        assertSame('complete', $result['images']);
+        assertSame(['import' => 12, 'duplicate' => 1, 'conflict' => 2, 'invalid' => 0], $result['counts']);
+        assertSame(null, $result['failure']);
+        $failed = \ForumRewrite\Import\InstanceImportRequests::resultFromLog("Downloading repository archive...\nImport failed: Unable to download source archive.\nElapsed time: 0.02 seconds\n");
+        assertSame('Unable to download source archive.', $failed['failure']);
+        assertSame([], $failed['counts']);
+        assertSame(null, $failed['outcome']);
+    }
+
     private function queueStore(string $queuePath): array
     {
         mkdir(dirname($queuePath), 0700, true);
+
+        return $this->existingQueue($queuePath);
+    }
+
+    private function existingQueue(string $queuePath): array
+    {
         $pdo = new PDO('sqlite:' . $queuePath);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
