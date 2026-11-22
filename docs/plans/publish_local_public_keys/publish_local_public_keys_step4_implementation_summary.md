@@ -6,7 +6,7 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.65**
 
-Status: implementation in progress; production untouched and acceptance pending.
+Status: all four implementation stages locally complete; production untouched and acceptance pending.
 Branch: feat/publish-local-public-keys
 Application baseline: 8b00a78be (freshly fetched origin/main)
 Planning commit: 68e4c4269
@@ -48,7 +48,7 @@ Reuse and risks: use the existing inspector, identity/name/retirement parsers, p
 
 **Retrospective stage work: 0.17**
 
-- Status: locally complete.
+- Status: locally complete; commit f3d24dd33.
 - Changes: reused SingleRequestHttpTest::server/FrontendTestServer and the ordinary bash v3 CLI against the actual FrontController/get_profile/link_identity routes. Verified registered key/name, unchanged local source, destination commit changes only on first publish, unapproved status and duplicate-free rerun. Corrected JSON access-denial classification and required the exact typed missing-profile response.
 - Verification: final focused PublicKeyPublishHttpTest 5/5 passed: actual registration and restricted instance, TLS failure, oversized/unexpected 404, timeout/recovery, cryptographically verified rename and incomplete retirement evidence. Each unsafe source check made zero requests. Smoke plus PublicKeyPublishHttpTest/PublicKeyPublisherTest/PublishKeysCommandTest/IdentityBootstrapDiagnosticsTest and the two link-identity name/bootstrap WriteApiSmokeTest cases: 505 run, 501 passed, only the four reproduced baseline Unicode failures. All new and selected shared-consumer tests passed. Syntax and diff checks passed. Full suite not run.
 - Notes: no browser UI, themes, roles, schema/migration or deployment changes; UI/theme checks inapplicable. Existing registration/inspector semantics remain intact; shared bootstrap consumers selected for verification. Live production and physical-device acceptance remain pending and require separate authorization.
@@ -58,6 +58,22 @@ Reuse and risks: use the existing inspector, identity/name/retirement parsers, p
 
 **Original estimate: 0.08**
 
-- Status: pending; shared release documentation owner.
+**Retrospective stage work: 0.08**
+
+- Status: locally complete; shared release documentation owner.
+- Changes: documented ordinary preview/publish/retry, explicit source and destination, plan placement, exit states and approval boundary in docs/reference/v3_cli.md; indexed the launcher in scripts/README.md and added its required command comment. Updated plan index and retained F03 as an open broader request.
+- Verification: ScriptsIndexTest initially found the missing launcher comment; corrected and reran 3/3 passed. CLI help, all changed PHP syntax, bash syntax and git diff --check passed. Feedback check: 356 items, zero problems, 36 existing source-review notices; regenerated index unchanged. New/changed feature links and concept source paths resolve. The wider plans README already contains a broken Windows ME link on untouched 8b00a78be; left outside scope. No runtime changes in this stage, so prior Stage 3 smoke/ordinary CLI evidence applies. Full suite not run.
+- Notes: no dependencies, schema, migration, browser UI or theme changes. Production, deployment, merge and physical-device checks not performed; live acceptance pending. No external messages, push or PR. Original workspace drafts and mockups preserved; this branch/worktree is the canonical implementation, not a separate study outcome.
+- Estimate details: original 0.08 retained; retrospective 0.08. Same v1/A/R1/P2 and exposed rater, not measured labor.
+
+## Closeout
+
+**Retrospective cycle scope assessment: 0.75**
+
+2026-11-22: Whole-cycle judgment made separately from stage values, including planning/inspection, strict public-only validation, bound review artifacts, ordinary CLI/API acceptance and fault checks; not the sum of stage values. Original 0.50 and projection 0.65 retained. R1 hashes reverified. Scope v1/A unchanged; start 8b00a78be; planning 68e4c4269; preview 78da8c12c; publication 3304d9083; acceptance f3d24dd33; documentation commit is the commit introducing this closeout. Four planned stages completed. Measured active work unknown. Maintainer comfortable-fit judgment, acceptance date and production outcome pending.
+
+Final review: the diff contains only this CLI slice, its strict inspector extension, tests, feedback progress and approved documentation. Reused identity/name/retirement parsers and existing profile/registration APIs; no server payload or registration behavior changed. No new request or scope expansion. Applicable local entry, source safety and partial/uncertain retry checks pass. The four retained Unicode failures are baseline failures; full-suite success is unclaimed.
+
+Next unaided action: from this worktree, run the documented preview with an explicit destination and a new plan filename, review fingerprints, then publish selected keys only when authorized for that destination. For an uncertain outcome, resolve access/connectivity and rerun the same selection; for changed source or refused eligibility, resolve it and create a fresh preview. Production trial is a separate authorization and acceptance step. Broader approval propagation/message access and reverse-content import remain out of scope.
 
 *— Codex · 2026-11-22 UTC*

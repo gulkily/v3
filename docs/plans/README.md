@@ -9,7 +9,7 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
-- [Publish local public keys](publish_local_public_keys/publish_local_public_keys_step3_development_plan.md) — approved local CLI publisher; implementation in progress.
+- [Publish local public keys](publish_local_public_keys/publish_local_public_keys_step4_implementation_summary.md) — reviewed public-key CLI publication verified locally; production acceptance pending.
 - [Recently released filters](recent_feature_flag_filters/recent_feature_flag_filters_one_shot.md) — keep the release list in sync with flag filters.
 - [Offline writing runbook](offline_runbook_compose/offline_runbook_compose_one_shot.md) — explain cached composers, drafts, and queued offline text.
 - [Optional thread author details](thread_author_details/thread_author_details_one_shot.md) — opt-in speakers in the text thread API.

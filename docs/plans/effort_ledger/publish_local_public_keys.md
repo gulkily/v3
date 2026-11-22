@@ -2,7 +2,7 @@
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
-| v3/publish_local_public_keys | Step 4 Stage 1 locally complete; production pending | v1/A / R1 / P2 | 0.65 | [Intake/Step 1](../publish_local_public_keys/publish_local_public_keys_step1_solution_assessment.md#study-snapshots); [Step 2](../publish_local_public_keys/publish_local_public_keys_step2_feature_description.md#study-snapshot); [Step 3](../publish_local_public_keys/publish_local_public_keys_step3_development_plan.md#concepts-and-study-checkpoint) | Related accepted feedback PF-20261121-F03/F11; acceptance pending |
+| v3/publish_local_public_keys | Step 4 all stages locally complete; acceptance pending | v1/A / R1 / P2 | 0.65 | [Intake/Step 1](../publish_local_public_keys/publish_local_public_keys_step1_solution_assessment.md#study-snapshots); [Step 2](../publish_local_public_keys/publish_local_public_keys_step2_feature_description.md#study-snapshot); [Step 3](../publish_local_public_keys/publish_local_public_keys_step3_development_plan.md#concepts-and-study-checkpoint) | Related accepted feedback PF-20261121-F03/F11; acceptance pending |
 
 2026-11-22T21:04:12+00:00: Intake 0.50, Codex single exposed rater, scope v1, baseline 22fc9f10a4d4f8cba9ecaed501aba2ea90d129e4. Standing enrollment; R1 hashes verified. Prior import/API review disclosed; no independent or measured-effort claim. Planning remains uncommitted.
 
@@ -17,3 +17,5 @@
 2026-11-22: Stage 2 locally complete; original stage work 0.22, retrospective 0.25. Cycle projection 0.65 reaffirmed, same v1/A/R1/P2 and exposed rater. Focused publication/recovery checks pass; known smoke failures retained. No measured labor or production acceptance increment.
 
 2026-11-22: Stage 3 locally complete; original 0.15, retrospective 0.17. Actual isolated API/CLI acceptance and selected shared consumers pass; four baseline smoke failures remain. Same v1/A/R1/P2/exposed rater, projection 0.65 unchanged. No production acceptance or measured labor.
+
+2026-11-22: Stage 4 original 0.08, retrospective 0.08; docs/index/help checks passed after correcting the launcher comment. Four planned stages complete. Independent retrospective cycle scope assessment 0.75 (planning/inspection and integrated recovery evidence included), prior 0.50/0.65 preserved. Same v1/A/R1/P2 and exposed Codex rater; hashes reverified. Baseline 8b00a78be; planning 68e4c4269, preview 78da8c12c, publication 3304d9083, acceptance f3d24dd33; final documentation revision is this entry's commit. Stage 3 smoke 505/501 with four reproduced baseline failures; focused API 5/5 and script index 3/3 pass. Full suite not run. Production, maintainer comfortable-fit judgment and acceptance date pending; measured active work unknown. No study acceptance increment; worktree copies are not independent outcomes. Final summary links all evidence and next action.

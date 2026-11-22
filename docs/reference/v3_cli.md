@@ -630,6 +630,42 @@ Use `--verbose` for recent individual work rows. See
 [Fastmod](fast_post_scoring.md) for pricing configuration, retention, and the
 controlled operator workflow.
 
+## Publish local public keys
+
+```sh
+./v3 publish-keys https://forum.example --plan=/tmp/key-review.txt
+./v3 publish-keys https://forum.example --publish=/tmp/key-review.txt --key=FULL_FINGERPRINT
+```
+
+Review the first command's names, fingerprints and states, then replace
+`FULL_FINGERPRINT` with a selected fingerprint. Repeat `--key` for additional
+selections. Without `--plan` or `--publish`, the command only previews.
+
+The source defaults to `FORUM_REPOSITORY_ROOT`, then `state/local_repository`.
+Use `--repository-root=/path/repository` to choose another source and
+`--timeout=SECONDS` (1–120, default 10) to bound each request. The destination
+must be an explicit HTTP(S) URL, without credentials, query or fragment.
+
+Plans use `Key: value`, contain public metadata and source hashes, and must be
+new files outside the canonical repository. Publication binds the reviewed
+source and destination. A source change requires a new preview and filename.
+Only selected missing keys are registered; existing identities are skipped.
+Names that differ from registration names, retired keys and destination name
+conflicts are refused. Resolve the reported issue before creating a new plan.
+
+`State: published` means destination read-back confirmed the identity. After a
+partial or unknown result, resolve the destination issue and rerun the same
+publication command: confirmed keys are skipped and still-missing selections
+can be attempted again. There is no automatic registration retry. Exit status
+1 means at least one result was refused/unknown, or the command failed before
+publication. Exit status 0 means all reported results were checked successfully;
+a preview's `State: missing` does not indicate publication.
+
+Registration sends only public keys through the existing API and creates its
+normal bootstrap anchor. It does not establish key possession, membership or
+message access. Private keys, approvals and message history stay local.
+See [public-key publication](../concepts/public_key_publication.md).
+
 ## Import content from a remote instance
 
 ```

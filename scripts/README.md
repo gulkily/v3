@@ -36,6 +36,7 @@ Run by: a `./v3` command, another script or class, or "you" (run it by hand).
 | `local_server_start.sh` | `./v3 start` | Start the local development server |
 | `diagnose_offline_reading.php` | `./v3 offline diagnose` | Check the offline snapshot |
 | `publish_offline_snapshot.php` | `./v3 offline publish` | Publish the offline reading snapshot |
+| `publish_public_keys.php` | `./v3 publish-keys` | Preview and publish selected public identities ([CLI](../docs/reference/v3_cli.md#publish-local-public-keys)) |
 | `openpgp_smoke.php` | `./v3 openpgp smoke` | Read-only check of the served OpenPGP bundles ([OpenPGP](../docs/reference/openpgp.md)) |
 | `openpgp_production_canary.mjs` | `./v3 openpgp canary` | **Writes to production**: browser signing canary over HTTP |
 | `purge_history.php` | `./v3 purge-history` | Purge history ([history purge](../docs/concepts/history_purge.md)) |

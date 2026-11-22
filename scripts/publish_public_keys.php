@@ -1,4 +1,5 @@
 <?php
+// Run with ./v3 publish-keys --help.
 declare(strict_types=1);
 
 require dirname(__DIR__) . '/autoload.php';
