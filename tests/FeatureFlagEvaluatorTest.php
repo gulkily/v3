@@ -239,6 +239,7 @@ final class FeatureFlagEvaluatorTest
             FeatureFlagRegistry::TEXT_BACKUP_ENABLED,
             FeatureFlagRegistry::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED,
             FeatureFlagRegistry::IMAGE_CONTENT_ENABLED,
+            FeatureFlagRegistry::IMAGE_DIRECT_SERVING_ENABLED,
             FeatureFlagRegistry::LIST_THUMBNAILS_ENABLED,
             FeatureFlagRegistry::IMAGE_GALLERY_ENABLED,
             FeatureFlagRegistry::PRIVATE_MESSAGES_ENABLED,

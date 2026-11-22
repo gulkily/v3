@@ -22,6 +22,14 @@ final class ImageController
 
     public function __construct(private readonly RouteServices $services, private readonly string $repositoryRoot, private readonly FeatureFlagEvaluator $flags) {}
 
+    /** With direct serving on, the next request for this address is answered by the web server. */
+    private function publish(string $name, string $path): void
+    {
+        if (\ForumRewrite\Images\PublishedImages::allowed($this->flags)) {
+            \ForumRewrite\Images\PublishedImages::forProject()->publish($name, $path);
+        }
+    }
+
     public function serve(string $method, string $name): void
     {
         // Error answers are never kept; a served image replaces the first header with KEEP.
@@ -58,6 +66,7 @@ final class ImageController
             header('Content-Disposition: inline; filename="' . $name . '"');
         }
         if ($method === 'GET') { readfile($path); }
+        $this->publish($name, $path);
     }
 
     /**
@@ -105,5 +114,7 @@ final class ImageController
             header('Content-Disposition: inline; filename="' . basename($cached) . '"');
         }
         if ($method === 'GET') { readfile($cached); }
+        // Published only under the address it was asked for; a legacy name that was answered in a newer format is not.
+        if (basename($cached) === $requested) { $this->publish('thumbs/' . $requested, $cached); }
     }
 }

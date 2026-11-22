@@ -6,6 +6,7 @@ require_once __DIR__ . '/Support/ImportTestWorkspace.php';
 require_once __DIR__ . '/Support/ImportHttpServer.php';
 
 use ForumRewrite\Images\ImageStore;
+use ForumRewrite\Images\PublishedImages;
 use ForumRewrite\Images\ThumbnailStore;
 
 /** How images are answered over HTTP: what a browser may keep, and what it may not. */
@@ -112,6 +113,128 @@ final class ImageServingTest
         assertStringContains('Content-Type: image/png', $headers);
         assertSame(file_get_contents($flat), $body);
         assertStringContains('max-age=31536000', $headers);
+    }
+
+    public function testAMembersOnlyBoardPublishesNothingAndLockingEmptiesTheFolder(): void
+    {
+        [$w, , $reference] = $this->site();
+        $name = \ForumRewrite\Images\ImageReference::filename($reference);
+        $published = new PublishedImages($w->root . '/published');
+        $on = ['FORUM_IMAGE_CONTENT_ENABLED' => 'true', 'FORUM_IMAGE_DIRECT_SERVING_ENABLED' => 'true', 'FORUM_PUBLISHED_IMAGE_ROOT' => $published->root];
+
+        // Members-only with the flag on: the image is refused and nothing is published.
+        $locked = $this->server($w, ['FORUM_APPROVED_MEMBERS_ONLY' => 'true'] + $on);
+        [$status] = $this->request($locked->url . '/images/' . $name);
+        assertTrue($status !== 200, 'status ' . $status);
+        assertSame(false, is_dir($published->root));
+
+        // Copies published while the board was public are gone after the locked board's next request of any kind.
+        $published->publish($name, $w->root . '/images/' . $name);
+        $published->publish('thumbs/' . ThumbnailStore::filename($reference, 'tile'), $w->root . '/images/' . $name);
+        assertSame(2, count($published->names()));
+        $this->request($locked->url . '/');
+        assertSame([], $published->names());
+        assertSame(false, is_dir($published->root));
+        unset($locked);
+
+        // The same when the board stays public and the flag goes off, or image attachments go off.
+        foreach ([['FORUM_IMAGE_DIRECT_SERVING_ENABLED' => 'false'], ['FORUM_IMAGE_CONTENT_ENABLED' => 'false']] as $change) {
+            $published->publish($name, $w->root . '/images/' . $name);
+            assertSame([$name], $published->names());
+            $server = $this->server($w, $change + $on);
+            $this->request($server->url . '/api/version');
+            assertSame(false, is_dir($published->root));
+            unset($server);
+        }
+
+        // With the flag off on a public board, serving an image publishes nothing.
+        $off = $this->server($w, ['FORUM_IMAGE_DIRECT_SERVING_ENABLED' => 'false'] + $on);
+        [$status] = $this->request($off->url . '/images/' . $name);
+        assertSame(200, $status);
+        assertSame(false, is_dir($published->root));
+    }
+
+    public function testAPublicBoardPublishesWhatItServesAndRemovalTakesItAway(): void
+    {
+        [$w, $store, $reference] = $this->site();
+        $name = \ForumRewrite\Images\ImageReference::filename($reference);
+        $published = new PublishedImages($w->root . '/published');
+        $server = $this->server($w, ['FORUM_IMAGE_CONTENT_ENABLED' => 'true', 'FORUM_IMAGE_DIRECT_SERVING_ENABLED' => 'true', 'FORUM_PUBLISHED_IMAGE_ROOT' => $published->root]);
+
+        // Nothing is published until it has been served.
+        $this->request($server->url . '/threads/picture-thread');
+        assertSame([], $published->names());
+
+        [$status, , $body] = $this->request($server->url . '/images/' . $name);
+        assertSame(200, $status);
+        assertSame([$name], $published->names());
+        assertSame($body, file_get_contents($published->root . '/' . $name));
+        assertSame('0644', substr(sprintf('%o', fileperms($published->root . '/' . $name)), -4));
+        $rules = (string) file_get_contents($published->root . '/.htaccess');
+        assertStringContains('Header set Cache-Control "private, max-age=31536000, immutable"', $rules);
+        assertStringContains('Options -Indexes', $rules);
+
+        $expected = [$name];
+        if (ThumbnailStore::available() && ThumbnailStore::format() === 'webp') {
+            $wide = ThumbnailStore::filename($reference, 'wide');
+            [$status, , $copy] = $this->request($server->url . '/images/thumbs/' . $wide);
+            assertSame(200, $status);
+            assertSame($copy, file_get_contents($published->root . '/thumbs/' . $wide));
+            $expected[] = 'thumbs/' . $wide;
+
+            // A legacy name answered in the current format is not published under the legacy name.
+            [$status] = $this->request($server->url . '/images/thumbs/' . $reference['sha256'] . '-tile.png');
+            assertSame(200, $status);
+            // A copy answered with the original (no smaller) is not published under the copy's name.
+            $flat = $w->root . '/flat.png';
+            $canvas = imagecreate(600, 400);
+            imagecolorallocate($canvas, 240, 235, 225);
+            imagepng($canvas, $flat, 9);
+            $flatReference = ImageStore::inspect($flat, 'Flat');
+            $store->put($flat, $flatReference);
+            [$status] = $this->request($server->url . '/images/thumbs/' . ThumbnailStore::filename($flatReference, 'wide'));
+            assertSame(200, $status);
+            $expected[] = \ForumRewrite\Images\ImageReference::filename($flatReference);
+        }
+        sort($expected);
+        assertSame($expected, $published->names());
+
+        // A missing image and a made-up name publish nothing.
+        $this->request($server->url . '/images/' . str_repeat('0', 64) . '.png');
+        $published->publish('../escape.png', $w->root . '/images/' . $name);
+        $published->publish('thumbs/../../escape.png', $w->root . '/images/' . $name);
+        assertSame($expected, $published->names());
+        assertSame(false, file_exists($w->root . '/escape.png'));
+
+        // Removing the image removes its published original and copies; other images stay.
+        $old = getenv('FORUM_PUBLISHED_IMAGE_ROOT');
+        putenv('FORUM_PUBLISHED_IMAGE_ROOT=' . $published->root);
+        try {
+            assertSame(true, $store->remove($reference));
+        } finally {
+            putenv($old === false ? 'FORUM_PUBLISHED_IMAGE_ROOT' : 'FORUM_PUBLISHED_IMAGE_ROOT=' . $old);
+        }
+        assertSame(array_values(array_filter($expected, static fn (string $n): bool => !str_contains($n, $reference['sha256']))), $published->names());
+        [$status, $headers] = $this->request($server->url . '/images/' . $name);
+        assertSame(404, $status);
+        assertStringContains('no-store', $headers);
+    }
+
+    public function testTheApacheRuleMatchesExactlyThePublishedNames(): void
+    {
+        $htaccess = (string) file_get_contents(__DIR__ . '/../public/.htaccess');
+        assertSame(1, preg_match('/^RewriteRule \^images\/(\S+)\$ \.published-images\/\$1 \[END\]$/m', $htaccess, $rule));
+        $pattern = '#^images/' . $rule[1] . '$#';
+        $sha = str_repeat('a', 64);
+        foreach (["images/$sha.png", "images/$sha.jpg", "images/thumbs/$sha-tile.png.webp", "images/thumbs/$sha-wide.jpg.webp", "images/thumbs/$sha-sq2x.png"] as $served) {
+            assertSame(1, preg_match($pattern, $served), $served);
+        }
+        foreach (["images/.htaccess", "images/../index.php", "images/thumbs/../$sha.png", "images/$sha.png/x", "images/$sha.php", "images/thumbs/$sha-dot.png.webp.php", "images/x/$sha.png"] as $refused) {
+            assertSame(0, preg_match($pattern, $refused), $refused);
+        }
+        // The folder is not an address, and the rule only fires for a file that exists.
+        assertStringContains('RewriteRule ^\.published-images(?:/|$) - [F,NC,L]', $htaccess);
+        assertStringContains('RewriteCond %{DOCUMENT_ROOT}/.published-images/$1 -f', $htaccess);
     }
 
     /** @return array{ImportTestWorkspace, ImageStore, array<string, mixed>} a public site holding one 900x600 image */

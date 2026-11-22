@@ -118,3 +118,33 @@ Branch `image-loading`, from `origin/main` `22fc9f1` with `a4a4aea` merged in. P
 - Estimate details (extended mode only): original scope as Step 3 Stage 4; uncertainty low; no revisions.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+## Stage 5 - Direct serving behind a flag
+
+**Original estimate: 0.30**
+
+**Retrospective stage-work assessment: 0.30**
+
+- Changes:
+  - New flag `FORUM_IMAGE_DIRECT_SERVING_ENABLED` ("Direct image serving"), off by default, site-changeable, needs image attachments on.
+  - New `Images/PublishedImages`: a folder `public/.published-images` (ignored by git). When the application serves an original or a copy and the site may publish, it also places that file there under the address it was served at. A site may publish only with the flag on, image attachments on, and members-only off.
+  - `Application::handle()` starts by emptying and removing the folder when the site may no longer publish. With no folder this is one file-system check.
+  - `ImageStore::remove()` also removes the image's published original and copies.
+  - `public/.htaccess` carries the rules, shipped and inert until the folder exists: `/images/…` is answered from the folder when that exact file is there, for GET and HEAD without a query; everything else goes to the application as before. The folder's own address is refused. The folder gets its own small `.htaccess` with the same one-year header the application sends.
+  - New deployment setting `FORUM_PUBLISHED_IMAGE_ROOT`, for a document root that is not the checkout's `public/` (and for tests).
+- Verification:
+  - `tests/ImageServingTest.php`, three new tests: a members-only board refuses the image and publishes nothing; copies left from when it was public are gone after its next request of any kind; the same when the flag or image attachments go off; a public board with the flag off publishes nothing. A public board with the flag on publishes exactly what it served, byte for byte, readable by the web server; a legacy thumbnail name and a copy answered with its original are not published under the wrong name; path tricks publish nothing. Removing the image removes its files and its address answers 404. The rule's pattern accepts every name the application serves and refuses seven others.
+  - **A real Apache** (installed in the workspace for this): new `tests/image_direct_serving_apache_test.py` runs the shipped `public/.htaccess` in a private server. A published original and a published WebP copy are answered by Apache with the right type and the one-year header; an unpublished image, a query string, a POST and odd names all reach the application; the folder's address is refused in any letter case; after removal, and after emptying, the addresses reach the application again. It passes.
+  - `./v3 test --smoke ImageServingTest ImageContentTest DeploymentSettingsTest FeatureFlagEvaluatorTest FeatureFlagsBehaviorTest HighTrafficTest HighTrafficPublicationTest WebServerRoutingTest GalleryPageTest BoardListTest ImageZipBackupTest ImageZipRestoreTest InstanceImageImportTest StatusCommandTest PrivateConfigSchemaTest`: 537 run, 537 passed. The full suite was not run.
+- Notes:
+  - **Changed from the plan:** the rules ship in `public/.htaccess` and do nothing without the folder, as high-traffic mode's rules already do. Nothing writes to `.htaccess` when the flag is turned on, so there is no managed block and no shared block writer.
+  - **Changed from the plan:** an image is published when it is first served, not when its post is written. What gets published is exactly what the application was already giving any visitor.
+  - **Changed from the plan:** the code and the rules were written in one pass, and the members-only test was written straight after, not before.
+  - **Found on the way:** the first version of the emptying check sat after some early returns, so `/api/version` never ran it. The test caught it; the check is now the first thing a request does.
+  - **Found on the way:** the folder's refusal rule missed upper-case spellings. The Apache test caught it.
+  - **Limits:** a page served by the static fast path doesn't run the application, so after the flag goes off on a public board the folder is emptied at the next request that does. On a members-only board every request does. A document root other than `public/` needs `FORUM_PUBLISHED_IMAGE_ROOT`.
+  - **Still High risk and not verified:** whether DreamHost serves the folder. The local Apache is not their setup. `tests/image_content_apache_test.py` (the older test) was not run; it needs a fixture from another script.
+  - `StatusCommandTest` fails while `public/.htaccess` has uncommitted changes, because the status command warns about local edits. It passes on a committed tree.
+- Estimate details (extended mode only): original scope as Step 3 Stage 5; uncertainty stays high on the host; the simpler rule design offset the time spent installing Apache and writing a real server test; no revisions.
+
+*— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*

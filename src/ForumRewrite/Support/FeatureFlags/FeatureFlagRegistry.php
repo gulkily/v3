@@ -12,6 +12,7 @@ final class FeatureFlagRegistry
     public const LIST_THUMBNAILS_ENABLED = 'FORUM_LIST_THUMBNAILS_ENABLED';
     public const IMAGE_GALLERY_ENABLED = 'FORUM_IMAGE_GALLERY_ENABLED';
     public const IMAGE_CONTENT_ENABLED = 'FORUM_IMAGE_CONTENT_ENABLED';
+    public const IMAGE_DIRECT_SERVING_ENABLED = 'FORUM_IMAGE_DIRECT_SERVING_ENABLED';
     public const PRIVATE_MESSAGES_ENABLED = 'FORUM_PRIVATE_MESSAGES_ENABLED';
     public const PRIVATE_MESSAGE_CACHE_ENABLED = 'FORUM_PRIVATE_MESSAGE_CACHE_ENABLED';
     public const UNICODE_AUTHORED_TEXT = 'FORUM_UNICODE_AUTHORED_TEXT';
@@ -74,7 +75,7 @@ final class FeatureFlagRegistry
         'ACCESS' => [self::PRIVATE_MESSAGES_ENABLED, self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
             self::APPROVED_MEMBERS_ONLY, self::AUTOMATIC_GUEST_KEYPAIR_ENABLED, self::USERNAME_CHANGES_ENABLED,
             self::VERIFIED_ATTRIBUTION, self::SESSION_KEY_BOOTSTRAP_ENABLED, self::SESSION_KEY_BOOTSTRAP_HTTP_ENABLED],
-        'AUTHORING' => [self::IMAGE_CONTENT_ENABLED, self::LIST_THUMBNAILS_ENABLED, self::IMAGE_GALLERY_ENABLED, self::UNICODE_AUTHORED_TEXT,
+        'AUTHORING' => [self::IMAGE_CONTENT_ENABLED, self::IMAGE_DIRECT_SERVING_ENABLED, self::LIST_THUMBNAILS_ENABLED, self::IMAGE_GALLERY_ENABLED, self::UNICODE_AUTHORED_TEXT,
             self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED, self::EVENT_WHEN_ENABLED,
             self::CALENDAR_FEED_ENABLED],
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
@@ -189,6 +190,17 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 group: 'AUTHORING',
                 releasedOn: '2026-10-13',
+            ),
+            new FeatureFlagDefinition(
+                self::IMAGE_DIRECT_SERVING_ENABLED,
+                'Direct image serving',
+                'For public boards. The web server answers for images it has served before, without starting the application, so images stay fast when the site is busy. An image address then works for anyone who has it. Nothing is served this way on a members-only board, and turning this off or making the board members-only removes the published copies.',
+                false,
+                self::IMAGE_DIRECT_SERVING_ENABLED,
+                siteMutable: true,
+                requiresEnabledFlag: self::IMAGE_CONTENT_ENABLED,
+                group: 'AUTHORING',
+                releasedOn: '2026-11-22',
             ),
             new FeatureFlagDefinition(
                 self::LIST_THUMBNAILS_ENABLED,
