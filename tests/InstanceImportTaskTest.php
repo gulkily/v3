@@ -109,9 +109,45 @@ final class InstanceImportTaskTest
     }
 
     /** @return array{0: SqliteTaskQueueStore, 1: InstanceImportTask} */
+    public function testRequestsQueueForANamedRequesterAndReportTheQueuedSteps(): void
+    {
+        // The local start page has no signed-in identity; it queues under a fixed name.
+        $w = new ImportTestWorkspace();
+        $target = $w->repository('target', true);
+        $w->git($target);
+        $queuePath = $w->root . '/private/tasks.sqlite3';
+        $launches = 0;
+        $requests = new \ForumRewrite\Import\InstanceImportRequests($target, $queuePath, static function () use (&$launches): string { $launches++; return 'launched'; }, static fn (): int => time());
+
+        assertSame(400, $requests->perform('bogus', null, 'local-development')['code']);
+        assertSame(409, $requests->perform('resume', null, 'local-development')['code']);
+        assertSame(400, $requests->perform('import', '', 'local-development')['code']);
+        $result = $requests->perform('import', 'http://127.0.0.1:1', 'local-development');
+        assertSame(200, $result['code'], json_encode($result));
+        assertSame(1, $launches);
+        $state = $result['payload']['state'];
+        assertTrue($state['busy']);
+        assertSame('starting', $state['start']);
+        assertSame('Starting the task worker', $state['steps'][0]['label']);
+        assertSame('current', $state['steps'][0]['status']);
+        assertSame('download', $state['steps'][1]['key']);
+        assertTrue($state['timing'] !== null);
+        [$store, $task] = $this->existingQueue($queuePath);
+        $request = $task->request((string) $store->findById($state['task']['id'])['deduplication_key']);
+        assertSame('local-development', $request['Requested-By']);
+        assertSame(409, $requests->perform('import', 'http://127.0.0.1:1', 'local-development')['code']);
+        assertSame(200, $requests->perform('status', null, 'local-development')['code']);
+    }
+
     private function queueStore(string $queuePath): array
     {
         mkdir(dirname($queuePath), 0700, true);
+
+        return $this->existingQueue($queuePath);
+    }
+
+    private function existingQueue(string $queuePath): array
+    {
         $pdo = new PDO('sqlite:' . $queuePath);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
