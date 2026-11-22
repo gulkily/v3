@@ -45,6 +45,8 @@ use ForumRewrite\Support\ExecutionLock;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\Tagsets;
+use ForumRewrite\Canonical\TagsetsChangeRecord;
+use ForumRewrite\Canonical\TagsetsChangeRecordParser;
 use ForumRewrite\Support\UnicodeTextPolicy;
 use ForumRewrite\Security\ApprovalPolicy;
 use ForumRewrite\Security\AttributionCutoff;
@@ -3599,6 +3601,151 @@ class LocalWriteService
                 ? ['attribution_cutoff_at' => AttributionCutoff::resolve($this->repositoryRoot)['cutoff_at'] ?? '']
                 : []);
         });
+    }
+
+    /**
+     * Prepare an operator's change to the site tagsets: `operation` set with `text`, or reset.
+     * Text that fails Tagsets::check() is refused with every error, one per line.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function prepareTagsetsChange(array $input, string $operatorIdentityId): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId): array {
+            $this->assertWritableRepository();
+            $operatorIdentityId = $this->requireTagsetsOperator($operatorIdentityId);
+            $operation = (string) ($input['operation'] ?? TagsetsChangeRecord::SET);
+            if (!in_array($operation, [TagsetsChangeRecord::SET, TagsetsChangeRecord::RESET], true)) {
+                throw new RuntimeException('operation must be set or reset.');
+            }
+            $text = $operation === TagsetsChangeRecord::SET ? self::normalizeTagsetsText((string) ($input['text'] ?? '')) : '';
+            if ($operation === TagsetsChangeRecord::SET && ($errors = Tagsets::check($text)) !== []) {
+                throw new RuntimeException(implode("\n", $errors));
+            }
+            $sitePath = $this->repositoryRoot . '/' . CanonicalPathResolver::tagsets();
+            $current = is_file($sitePath) ? (string) file_get_contents($sitePath) : null;
+            if (($operation === TagsetsChangeRecord::RESET && $current === null) || ($operation === TagsetsChangeRecord::SET && $current === $text)) {
+                return ['status' => 'ok', 'wrote_record' => 'no', 'operation' => $operation];
+            }
+
+            $recordId = $this->generateRecordId('tagsets-change');
+            $canonicalRecord = $this->buildTagsetsChangeRecord($recordId, $this->canonicalTimestampNow(), $operation, $operatorIdentityId, $text);
+            $recordPath = CanonicalPathResolver::tagsetsChange($recordId);
+            $prepared = $this->storePreparedPost($recordPath, $canonicalRecord, [
+                'kind' => 'tagsets-change', 'record_id' => $recordId, 'operation' => $operation,
+                'operator_identity_id' => $operatorIdentityId,
+            ]);
+
+            return array_merge($prepared, [
+                'status' => 'ok', 'wrote_record' => 'yes', 'operation' => $operation, 'record_id' => $recordId,
+                'record_path' => $recordPath, 'canonical_record' => $canonicalRecord,
+            ]);
+        });
+    }
+
+    /**
+     * Verify the operator's signature, then write the change record and set or remove
+     * records/instance/tagsets.txt in one commit.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function finalizePreparedTagsetsChange(array $input, string $operatorIdentityId): array
+    {
+        return $this->withTimedWriteLock(function () use ($input, $operatorIdentityId): array {
+            $this->assertWritableRepository();
+            $prepareToken = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+            $prepared = $this->loadPreparedPost($prepareToken);
+            if (($prepared['kind'] ?? '') !== 'tagsets-change') {
+                throw new RuntimeException('Prepared record is not a tagsets change.');
+            }
+            if (strtotime((string) ($prepared['expires_at'] ?? '')) < time()) {
+                throw new RuntimeException('Prepared tagsets change has expired. Save again.');
+            }
+            $operatorIdentityId = $this->requireTagsetsOperator($operatorIdentityId);
+            if ($operatorIdentityId !== (string) ($prepared['operator_identity_id'] ?? '')) {
+                throw new RuntimeException('Prepared tagsets change operator identity mismatch.');
+            }
+            $canonicalRecord = (string) ($input['canonical_record'] ?? '');
+            if ($canonicalRecord === '' || !hash_equals((string) ($prepared['canonical_sha256'] ?? ''), hash('sha256', $canonicalRecord))) {
+                throw new RuntimeException('Prepared tagsets change canonical record mismatch.');
+            }
+            $recordPath = $this->requirePreparedMatch($input, $prepared, 'record_path');
+            $recordId = $this->requirePreparedMatch($input, $prepared, 'record_id');
+            $action = (new TagsetsChangeRecordParser())->parse($canonicalRecord);
+            if ($action->recordId !== $recordId || CanonicalPathResolver::tagsetsChange($action->recordId) !== $recordPath
+                || $action->operatorIdentityId !== $operatorIdentityId || $action->operation !== (string) ($prepared['operation'] ?? '')) {
+                throw new RuntimeException('Prepared tagsets change does not match its canonical action record.');
+            }
+            if ($action->operation === TagsetsChangeRecord::SET && ($errors = Tagsets::check($action->text)) !== []) {
+                throw new RuntimeException(implode("\n", $errors));
+            }
+            if (is_file($this->repositoryRoot . '/' . $recordPath) || is_file($this->repositoryRoot . '/' . $recordPath . '.asc')) {
+                throw new RuntimeException('Tagsets change record already exists.');
+            }
+            $signature = $this->normalizeAsciiBody((string) ($input['detached_signature'] ?? ''), 'detached_signature');
+            [$publicKey, $expectedFingerprint] = $this->publicKeyForIdentity($operatorIdentityId);
+            $verification = $this->signatureVerifier->verifyDetached($publicKey, $canonicalRecord, $signature, $expectedFingerprint);
+            if (!$verification['ok']) {
+                throw new RuntimeException('Detached signature verification failed: ' . $verification['status']);
+            }
+
+            $snapshotPath = CanonicalPathResolver::tagsets();
+            $this->writeFile($recordPath, $canonicalRecord);
+            $this->writeFile($recordPath . '.asc', $signature);
+            if ($action->operation === TagsetsChangeRecord::SET) {
+                $this->writeFile($snapshotPath, $action->text);
+            } elseif (is_file($this->repositoryRoot . '/' . $snapshotPath) && !unlink($this->repositoryRoot . '/' . $snapshotPath)) {
+                throw new RuntimeException('Unable to remove the site tagsets record.');
+            }
+            $commitResult = $this->commitCanonicalWrite(
+                [$snapshotPath, $recordPath, $recordPath . '.asc'],
+                ($action->operation === TagsetsChangeRecord::SET ? 'Set site tagsets' : 'Reset site tagsets to the shipped default')
+                    . ' by ' . $operatorIdentityId
+            );
+            Tagsets::forget();
+            $this->deletePreparedPost($prepareToken);
+
+            return [
+                'status' => 'ok', 'wrote_record' => 'yes', 'operation' => $action->operation,
+                'source' => Tagsets::stateFor($this->repositoryRoot)['source'],
+                'record_id' => $recordId, 'record_path' => $recordPath, 'signature_path' => $recordPath . '.asc',
+                'operator_identity_id' => $operatorIdentityId, 'commit_sha' => $commitResult['commit_sha'],
+                'timings' => $commitResult['timings'],
+            ];
+        });
+    }
+
+    private function requireTagsetsOperator(string $operatorIdentityId): string
+    {
+        $operatorIdentityId = $this->requireOpenPgpIdentityId($operatorIdentityId, 'operator_identity_id');
+        if (!$this->isApprovedIdentity($operatorIdentityId) || !ApprovalPolicy::isOperator($this->repositoryRoot, $operatorIdentityId)) {
+            throw new RuntimeException('Tagset changes require an approved operator identity.');
+        }
+
+        return $operatorIdentityId;
+    }
+
+    /** LF line endings, no trailing spaces, exactly one final newline; empty text stays empty. */
+    public static function normalizeTagsetsText(string $text): string
+    {
+        $lines = array_map('rtrim', explode("\n", str_replace(["\r\n", "\r"], "\n", $text)));
+        $text = rtrim(implode("\n", $lines), "\n");
+
+        return $text === '' ? '' : $text . "\n";
+    }
+
+    private function buildTagsetsChangeRecord(string $recordId, string $createdAt, string $operation, string $operatorIdentityId, string $text): string
+    {
+        $contents = "Record-ID: {$recordId}\n"
+            . "Created-At: {$createdAt}\n"
+            . "Operation: {$operation}\n"
+            . "Operator-Identity-ID: {$operatorIdentityId}\n\n"
+            . $text;
+        (new TagsetsChangeRecordParser())->parse($contents);
+
+        return $contents;
     }
 
     /**

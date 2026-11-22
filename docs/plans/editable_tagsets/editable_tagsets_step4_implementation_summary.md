@@ -37,3 +37,24 @@ None during Step 4 so far. Earlier requests stay in [Step 2](./editable_tagsets_
   - Estimate details: original scope as in Step 3; no revision.
 
 *— Claude · 2026-11-22 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Signed save and reset
+
+**Original estimate: 0.15**
+
+**Retrospective: 0.15**
+
+- Changes:
+  - New `Canonical\TagsetsChangeRecord` and `TagsetsChangeRecordParser` for `records/tagsets-changes/tagsets-change-<id>.txt`. The headers are Record-ID, Created-At, Operation (`set` or `reset`) and Operator-Identity-ID. The body is the full tagsets text, so the signature covers the rules themselves. A reset record has no body.
+  - `LocalWriteService::prepareTagsetsChange()` and `finalizePreparedTagsetsChange()` follow the feature-flag pair. Both need an approved operator (`ApprovalPolicy::isOperator`). Both refuse text that fails `Tagsets::check()`, with every error on its own line. Finalize verifies the detached signature, then writes the record, its `.asc`, and writes or removes `records/instance/tagsets.txt`, all in one commit. Saving the same text, or resetting with no site record, writes nothing.
+  - `normalizeTagsetsText()`: LF line endings, no trailing spaces, one final newline.
+  - Path rules: `CanonicalPathResolver::tagsets()` and `tagsetsChange()`; `SourcePathValidator` accepts both paths and their signatures; `ArchiveRecordCatalog` accepts the site file as `instance:tagsets` (change records stay out of archives, as feature-flag changes do); `ActivityService` labels both.
+- Verification:
+  - Passed: `./v3 test --smoke EditableTagsetsTest TagsetsTest TagUnlocksTest CanonicalRecordParsersTest ContentImportPlannerTest CommitMapTest ApprovalAcceptanceTest` (534 run, 534 passed).
+  - New `EditableTagsetsTest`: an operator sets and resets, with the commit holding the three files and the reset commit deleting the site file. Saving twice and resetting twice write nothing. Built-in tags are refused with both errors. A forged signature and a tampered record are refused with nothing written. A linked but unapproved key is refused.
+  - Full suite not run.
+- Notes:
+  - The archive-import early check in Step 3 became a path-rule assertion: no importer code branches on `instance:feature-flags`, so the catalog entry is all an import needs.
+  - Estimate details: original scope as in Step 3; no revision.
+
+*— Claude · 2026-11-22 UTC · Model: claude-opus-5-5*
