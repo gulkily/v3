@@ -8,12 +8,12 @@ final class PrivateMessageHistoryRevision
     public static function statements(string $table, string $prefix, array $accounts, ?string $when = null): array
     {
         $sql=["CREATE TABLE IF NOT EXISTS {$prefix}_revision (account TEXT PRIMARY KEY, token TEXT NOT NULL)"];
-        if($prefix==='history_keys')$sql[]="INSERT INTO {$prefix}_revision VALUES ('*',lower(hex(randomblob(16))))";
+        if($prefix==='history_keys')$sql[]="INSERT INTO {$prefix}_revision (account,token) VALUES ('*',lower(hex(randomblob(16))))";
         foreach(['INSERT'=>['NEW'],'UPDATE'=>['OLD','NEW'],'DELETE'=>['OLD']] as $event=>$versions) {
             $body='';
             foreach($versions as $version) foreach($accounts as $account) {
                 $expr=$account==='*'?"'*'":str_replace('@',$version,$account);
-                $body.="INSERT INTO {$prefix}_revision VALUES ({$expr},lower(hex(randomblob(16)))) ON CONFLICT(account) DO UPDATE SET token=excluded.token;";
+                $body.="INSERT INTO {$prefix}_revision (account,token) VALUES ({$expr},lower(hex(randomblob(16)))) ON CONFLICT(account) DO UPDATE SET token=excluded.token;";
             }
             $condition=$event==='UPDATE' && $when!==null?' WHEN '.$when:'';
             $sql[]="CREATE TRIGGER IF NOT EXISTS {$prefix}_".strtolower($event)." AFTER {$event} ON {$table}{$condition} BEGIN {$body} END";

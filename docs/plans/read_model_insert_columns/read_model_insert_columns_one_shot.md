@@ -8,7 +8,7 @@ Effort study: `railspike-effort` / `v3/read_model_insert_columns`; host ledger [
 
 **Cycle estimate: 0.05**
 
-Status: plan written; next permitted action: implement.
+Status: implemented, PR open; next permitted action: maintainer merge.
 
 ## Original request
 
@@ -44,10 +44,27 @@ No new code paths. The guard and the rule already exist; this removes the guard'
 
 Smoke set plus `SqlInsertColumnsTest`, `ReadModelSchemaTest`, and the activity and direct-message history tests pass; `./v3 rebuild` succeeds locally. PR open. Feedback: no matching item in `docs/feedback/items/`. Concepts touched: [read-model rebuild](../../concepts/read_model_rebuild.md), used unchanged.
 
-Starting revision and branch: `cc6680c9`, `fix/read-model-insert-columns`.
+Starting revision and branch: `cc6680c9`, `fix/read-model-insert-columns`. Planning commit: `78c084bd`.
 
 ## Study history
 
 - 2026-11-22 UTC, intake and entry: **0.05**. Claude, single exposed rater (already knew the code from the parent cycle). R1 not reverified this session.
+- 2026-11-22 UTC, closeout: retrospective **0.05**. Same rater.
+
+## Outcome
+
+The four inserts name their columns. `SqlInsertColumnsTest` has no exception list, and `CONTRIBUTING.md` says so. Tables and trigger behavior are unchanged; the read-model fingerprint changes, as planned.
+
+## Verification
+
+- Passed: `./v3 test --smoke SqlInsertColumnsTest ReadModelSchemaTest ActivityProjectionTest PrivateMessageHistorySyncTest PrivateMessageHistoryCryptoTest PrivateMessageStoreTest` (519 run, 0 failed).
+- Passed: the full schema list built in an in-memory database: 15 `activity_counts` rows, the `activity_local_state` row `(1, 0, '')`, the `history_keys_revision` seed, and the profile trigger changing the token.
+- Not run: the full suite; `./v3 rebuild` against real content (the smoke set builds a read model from fixtures). Not verified: the one rebuild on production at deploy.
+
+## Final review
+
+Diff: two source files, the guard test, one sentence in `CONTRIBUTING.md`, this record, the index, the ledger and the debug log. No dependency, no duplication.
+
+Commit, merge and publication: pushed to `fix/read-model-insert-columns` with an open PR; not merged, not deployed.
 
 — Claude · 2026-11-22 UTC · Model: claude-fable-5-2

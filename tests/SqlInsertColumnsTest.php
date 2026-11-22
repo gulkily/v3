@@ -11,19 +11,6 @@ require __DIR__ . '/../autoload.php';
  */
 final class SqlInsertColumnsTest
 {
-    /**
-     * Statements in the read-model schema list. ReadModelSchema::fingerprint() hashes that
-     * list, so editing them forces a full rebuild on every instance. They run only beside
-     * the CREATE TABLE in the same list. Name their columns the next time SCHEMA_VERSION
-     * changes for another reason, then remove them here. Do not add entries for new code.
-     *
-     * path => number of inserts without a column list
-     */
-    private const READ_MODEL_SCHEMA_EXCEPTIONS = [
-        'src/ForumRewrite/ReadModel/ActivityCounterSchema.php' => 2,
-        'src/ForumRewrite/Messaging/PrivateMessageHistoryRevision.php' => 2,
-    ];
-
     public function testEveryInsertNamesItsColumns(): void
     {
         $root = dirname(__DIR__);
@@ -44,14 +31,9 @@ final class SqlInsertColumnsTest
 
         $problems = [];
         foreach ($found as $path => $lines) {
-            if (count($lines) !== (self::READ_MODEL_SCHEMA_EXCEPTIONS[$path] ?? 0)) {
-                $problems[] = $path . ':' . implode(',', $lines);
-            }
+            $problems[] = $path . ':' . implode(',', $lines);
         }
         assertSame([], $problems, 'Name the columns: INSERT INTO t (a, b) VALUES (?, ?). Found without a column list: ' . implode('; ', $problems));
-
-        $stale = array_values(array_diff(array_keys(self::READ_MODEL_SCHEMA_EXCEPTIONS), array_keys($found)));
-        assertSame([], $stale, 'Remove fixed files from READ_MODEL_SCHEMA_EXCEPTIONS: ' . implode(', ', $stale));
     }
 
     public function testPatternFlagsOnlyInsertsWithoutColumns(): void
