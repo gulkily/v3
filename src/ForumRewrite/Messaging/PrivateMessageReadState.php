@@ -28,7 +28,7 @@ final class PrivateMessageReadState
                     throw new RuntimeException('Private message tracking metadata needs repair.');
                 }
                 $last = $this->pdo->query('SELECT rowid AS position, message_id FROM private_messages ORDER BY rowid DESC LIMIT 1')->fetch();
-                $stmt = $this->pdo->prepare('INSERT INTO private_message_tracking VALUES (1, :row, :id, :secret)');
+                $stmt = $this->pdo->prepare('INSERT INTO private_message_tracking (singleton, baseline_row, baseline_id, signing_secret) VALUES (1, :row, :id, :secret)');
                 $stmt->execute(['row' => $last['position'] ?? 0, 'id' => $last['message_id'] ?? '', 'secret' => bin2hex(random_bytes(32))]);
             });
         }

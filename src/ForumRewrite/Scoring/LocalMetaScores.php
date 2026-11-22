@@ -35,7 +35,7 @@ final class LocalMetaScores
     /** @param array{probability:float, top_words:list<string>, signals:list<string>} $score */
     public function save(string $postId, string $contentHash, string $build, array $score, ?string $scoredAt = null): void
     {
-        $this->pdo->prepare('INSERT OR REPLACE INTO local_rubric_scores VALUES (?, ?, ?, ?, ?, ?, ?, ?)')->execute([
+        $this->pdo->prepare('INSERT OR REPLACE INTO local_rubric_scores (post_id, content_hash, rubric, model_build, probability, top_words_json, signals_json, scored_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')->execute([
             $postId, $contentHash, self::RUBRIC, $build, $score['probability'],
             json_encode(array_values($score['top_words']), JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
             json_encode(array_values($score['signals']), JSON_THROW_ON_ERROR), $scoredAt ?? gmdate('Y-m-d\TH:i:s\Z'),

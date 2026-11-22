@@ -115,6 +115,14 @@ Verify creation and `private-config refresh-template` preserve every template
 setting and existing custom values with `PrivateConfigCommandTest`; run the
 schema and affected configuration-consumer checks as well.
 
+## SQL inserts name their columns
+
+Write `INSERT INTO t (a, b) VALUES (?, ?)`, never `INSERT INTO t VALUES (?, ?)`. The same goes for `REPLACE INTO` and `INSERT ... SELECT`, and for inserts inside triggers. An insert without a column list breaks as soon as its table gains a column. That makes a rollback to older code fail, and it makes newer code fail against a table it hasn't migrated yet.
+
+For the same reason, add a column to a SQLite store outside the read model only with a default (or as nullable), so code that doesn't know the column can still insert. A stored trigger keeps its old text, so a migration that changes a table a trigger writes to must recreate that trigger.
+
+`SqlInsertColumnsTest` enforces the first rule across `src/` and `scripts/`. Its short exception list covers statements in the read-model schema list only; do not add new code to it.
+
 ## Read-model schema changes
 
 `state/cache/post_index.sqlite3` is a disposable derived read model, rebuilt
