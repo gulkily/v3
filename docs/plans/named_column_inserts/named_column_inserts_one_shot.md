@@ -66,7 +66,7 @@ Concepts touched: none.
 
 `./v3 test --smoke SqlInsertColumnsTest PrivateMessageReadStateTest PrivateMessageHistorySyncTest LocalMetaSweepTest` plus any Fastmod meta-read test found. Full suite not run.
 
-Starting revision and branch: `09a15f6a`, `fix/named-column-inserts`. Planning commit: `625f2795`.
+Starting revision and branch: `09a15f6a` (rebased onto `a4a4aead` on 2026-11-22, smoke and store tests rerun: 528 run, 0 failed), `fix/named-column-inserts`. Planning commit: `1939231d`.
 
 ## Study history
 
@@ -96,6 +96,6 @@ Follow-ups, not done: name the columns in the four exceptions at the next `SCHEM
 
 Diff checked: five source files, one new test, its entries in `tests/run.php` and `tests/smoke.txt`, `CONTRIBUTING.md`, this record, the index, the ledger and the debug log. No dependency, no duplication, no concept entry touched.
 
-Commit, merge and publication: completion commit `b394c3ff`; pushed to `fix/named-column-inserts`; not merged, not deployed.
+Commit, merge and publication: completion commit `758e5c5d`; pushed to `fix/named-column-inserts`; not merged, not deployed.
 
 — Claude · 2026-11-21 UTC · Model: claude-fable-5-2
