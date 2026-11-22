@@ -55,3 +55,29 @@ Step 3 approved 2026-11-22 ("approved step 3"). Branch `feat/local_import_status
 - Estimate details: original scope unchanged.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+## Stage 3 - One re-import action, its cost, and Change source
+
+**Original estimate: 0.07**
+**Retrospective: 0.10**
+
+- Changes:
+  - On a copy that has imported, the form is one button, "Check for new content", carrying the copy's source in a hidden field. Under it: "Downloads everything again; last time took 17 s." The time comes from the last run's own output and is left out when this page has none (a terminal import).
+  - The source field sits in a "Change source" disclosure with its own Import button. A refused request from it reopens it with what was typed.
+  - After a failed request the button reads "Retry import" and carries the failed source. The reason shows above the last good status.
+  - A copy that never imported, and an interrupted import, keep the previous form. The explanation paragraph shows only there.
+  - `InstanceImportRequests::steps()` marks the first step current once the worker has claimed an import and before its first line.
+  - `tests/browser/local_development.py` covers the status card.
+- Verification:
+  - `./v3 test --smoke LocalDevelopmentImportTest ImportPageTest InstanceImportTaskTest LastImportSummaryTest ImportProgressViewTest`: passed (smoke set included).
+  - `LocalDevelopmentImportTest` asserts: the button and its hidden source; the cost line with a time; the closed disclosure holding the field; no explanation paragraph; a failed re-import from another source with its reason, Retry, the failed source, and the earlier status below the alert; a refused source reopening the disclosure.
+  - `python3 tests/browser/local_development.py`: passed 6 times in a row after the fixes below. It submits Change source and Retry with scripts on and off, in every offered theme at 390 and 1280 px, with no overflow.
+  - `node tests/browser/tools_import.mjs`: passed, 80 cases unchanged.
+  - Full suite not run.
+- Notes:
+  - **Found by the browser check:** with scripts off, a page loaded just after the worker claimed the import showed no current step until the next reload. The list had every step pending. The first step is now current in that window. This is shared with Tools → Import.
+  - **Two flaky assertions fixed in the browser check.** One was there before this cycle: it read the board right after a click without waiting for the page (about 1 run in 5 failed). The other, from the last cycle, assumed the first paint never shows "Downloading".
+  - Two forms, not one: the script follows only the main form. Change source posts natively, lands on the page with the steps, and the script takes over from there.
+- Estimate details: retrospective higher for the no-current-step defect and the two flaky assertions.
+
+*— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*

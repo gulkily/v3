@@ -141,6 +141,11 @@ final class InstanceImportTaskTest
         // A worker that ran a moment ago (for example the one an earlier import started) is no
         // promise of another: the next import starts its own.
         $store->claimNext();
+        // Claimed, before the import prints anything: the list stays whole and its first step is current.
+        $running = $requests->state()['steps'];
+        assertSame(['Task worker started', 'done'], [$running[0]['label'], $running[0]['status']]);
+        assertSame(['download', 'current'], [$running[1]['key'], $running[1]['status']]);
+        assertSame('pending', $running[2]['status']);
         $store->markFailed((int) $state['task']['id'], 'instance_import_failed', 'Import failed: test', false);
         $run = $store->startExecutorRun();
         $store->completeExecutorRun((int) $run['id'], [], []);

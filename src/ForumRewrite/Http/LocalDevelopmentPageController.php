@@ -94,6 +94,8 @@ final class LocalDevelopmentPageController
         return $this->routes->renderPageTemplate('local_development.php', [
             'source' => $source, 'token' => $this->import->token(), 'importState' => $state,
             'notice' => $notice, 'log' => $log, 'result' => $result,
+            // A refused request from the Change source form reopens it with what was typed.
+            'changeOpen' => $notice !== null && $postedSource !== null,
             // The newest finished import, from the page or the terminal; null on a copy that never imported.
             'last' => $this->lastImport->read($result['run_id']),
         ], 'Local development', 'board', ['/assets/import_control.js']);

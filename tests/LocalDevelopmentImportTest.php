@@ -97,12 +97,29 @@ final class LocalDevelopmentImportTest
         $body = $this->import($server->url, $data);
         assertStringContains('Browse imported threads', $body);
         assertStringContains("\nimport: 0\n", $body);
-        assertStringContains('Import again', $body);
+        assertStringNotContains('role="alert"', $body);
+        // One action re-imports from the copy's own source; the field is folded under Change source.
+        assertStringContains('>Check for new content</button>', $body);
+        assertStringContains('<input type="hidden" name="source" value="' . $remote->url . '">', $body);
+        assertTrue(preg_match('#<p class="meta">Downloads everything again; last time took \d+ s\.</p>#', $body) === 1);
+        assertTrue(preg_match('#<details data-import-result>\s*<summary>Change source</summary>.*?<input type="text" name="source" value="' . preg_quote($remote->url, '#') . '" required#s', $body) === 1);
+        assertStringNotContains('Local posts and settings stay', $body);
+        // A failed re-import from another source: its reason and Retry, above the last good status.
+        $body = $this->import($server->url, ['token' => $token, 'source' => 'http://127.0.0.1:1', 'action' => 'import']);
+        assertStringContains('Unable to download source archive (connection, timeout, or TLS failure). Retry or resume below.', $body);
+        assertStringContains('>Retry import</button>', $body);
+        assertStringContains('<input type="hidden" name="source" value="http://127.0.0.1:1">', $body);
+        assertTrue(strpos($body, 'role="alert"') < strpos($body, 'data-import-last'));
+        assertStringContains('Imported from <strong>' . substr($remote->url, 7) . '</strong>', $body);
+        assertStringContains('· nothing new</p>', $body);
+        // A refused request from Change source reopens it with what was typed.
+        [$code, $refused] = $this->request($server->url, '/local/', ['token' => $token, 'source' => '-bad', 'action' => 'import']);
+        assertSame(400, $code, $refused);
+        assertTrue(preg_match('#<details data-import-result open>\s*<summary>Change source</summary>.*?value="-bad"#s', $refused) === 1);
         // The card reports on the copy: source, age and what came in. "duplicate" stays in the details.
         assertTrue(preg_match('#<p data-import-result data-import-last>Imported from <strong>127\.0\.0\.1:\d+</strong> <time [^>]*>just now</time> · nothing new</p>#', $body) === 1, substr($body, (int) strpos($body, 'data-import-root'), 600));
         assertStringContains('<summary>Import details</summary>', $body);
         assertStringNotContains('duplicate', substr($body, 0, (int) strpos($body, '<summary>')));
-        assertStringNotContains('role="alert"', $body);
         assertSame(1, count(glob($target . '/records/posts/local-import-example.txt')));
         $original = file_get_contents($target . '/records/posts/root-001.txt');
         $w->put($source . '/records/posts/root-001.txt', $w->post('root-001', '', 'A conflicting remote version'));

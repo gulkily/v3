@@ -130,8 +130,13 @@ final class InstanceImportRequests
             return [$worker, ...$pending];
         }
         $worker['label'] = 'Task worker started';
-        // Between the claim and the import's first line, keep the list as it was while queued.
+        // Between the claim and the import's first line, keep the list as it was while queued,
+        // with its first step current: the command starts on it at once, and a list with no
+        // current step reads as stalled.
         $steps = $state['view']['steps'] ?? [];
+        if ($steps === [] && $pending !== []) {
+            $pending[0]['status'] = 'current';
+        }
 
         return [$worker, ...($steps === [] ? $pending : $steps)];
     }

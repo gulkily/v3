@@ -18,6 +18,13 @@ if ($last !== null && $last['held_back'] > 0) {
     if ($last['conflicts'] > 0) $heldBack[] = number_format($last['conflicts']) . ($last['conflicts'] === 1 ? ' conflict' : ' conflicts');
 }
 if ($sameRun && ($result['images'] ?? 'complete') !== 'complete') $heldBack[] = 'some images not copied';
+// Importing again: the failed request's source when retrying, otherwise the copy's own source.
+$again = $failed && ($s['task']['source'] ?? '') !== '' ? $s['task']['source'] : ($last['source'] ?? '');
+// What a re-import costs, from the last run's own output when this page has it.
+$took = '';
+if ($sameRun && $result['seconds'] !== null) {
+    $took = $result['seconds'] < 90 ? max(1, (int) round($result['seconds'])) . ' s' : 'about ' . (int) round($result['seconds'] / 60) . ' min';
+}
 ?>
 <section class="stack">
   <article class="card stack">
@@ -48,6 +55,7 @@ if ($sameRun && ($result['images'] ?? 'complete') !== 'complete') $heldBack[] = 
     <p data-import-result><a href="/threads/?view=all">Browse imported threads</a></p>
 <?php endif; ?>
 <?= $indent($partial('partials/import_run.php', ['s' => $s, 'part' => 'run', 'action' => '/local/', 'failureLine' => false]), 4) ?>
+<?php if ($pending || $last === null): ?>
     <form method="post" action="/local/" class="stack import-actions" data-local-import data-import-form<?= $s['busy'] ? ' hidden' : '' ?>>
       <p>Local posts and settings stay. Private messages and approval authority are excluded. Conflicts keep the local version.</p>
 <?php if ($pending): ?>
@@ -56,12 +64,35 @@ if ($sameRun && ($result['images'] ?? 'complete') !== 'complete') $heldBack[] = 
       <input type="hidden" name="token" value="<?= $e($token) ?>">
       <label>Source <input type="text" name="source" value="<?= $e($source) ?>" required maxlength="2048"<?= $pending ? ' readonly' : '' ?>></label>
       <div class="button-row">
-        <button type="submit" name="action" value="<?= $pending ? 'resume' : 'import' ?>"><?= $pending ? 'Resume import' : ($failed ? 'Retry import' : ($last !== null ? 'Import again' : 'Import')) ?></button>
-<?php if ($failed && $last === null): ?>
+        <button type="submit" name="action" value="<?= $pending ? 'resume' : 'import' ?>"><?= $pending ? 'Resume import' : ($failed ? 'Retry import' : 'Import') ?></button>
+<?php if ($failed): ?>
         <a href="/threads/?view=all">Browse local content</a>
 <?php endif; ?>
       </div>
     </form>
+<?php else: ?>
+<?php // One action for a copy that has imported: the button carries its source, so no field has to be visible or valid. ?>
+    <form method="post" action="/local/" class="stack import-actions" data-local-import data-import-form<?= $s['busy'] ? ' hidden' : '' ?>>
+      <input type="hidden" name="token" value="<?= $e($token) ?>">
+      <input type="hidden" name="source" value="<?= $e($again) ?>">
+      <div class="button-row">
+        <button type="submit" name="action" value="import"><?= $failed ? 'Retry import' : 'Check for new content' ?></button>
+      </div>
+      <p class="meta">Downloads everything again<?= $took !== '' ? '; last time took ' . $e($took) : '' ?>.</p>
+    </form>
+<?php if (!$s['busy']): ?>
+    <details data-import-result<?= $changeOpen ? ' open' : '' ?>>
+      <summary>Change source</summary>
+      <form method="post" action="/local/" class="stack">
+        <input type="hidden" name="token" value="<?= $e($token) ?>">
+        <label>Source <input type="text" name="source" value="<?= $e($source) ?>" required maxlength="2048"></label>
+        <div class="button-row">
+          <button type="submit" name="action" value="import">Import</button>
+        </div>
+      </form>
+    </details>
+<?php endif; ?>
+<?php endif; ?>
 <?= $indent($partial('partials/import_run.php', ['s' => $s, 'part' => 'not_started', 'action' => '/local/', 'token' => $token]), 4) ?>
     <p class="meta" role="status" aria-live="polite" data-import-status hidden></p>
   </article>
