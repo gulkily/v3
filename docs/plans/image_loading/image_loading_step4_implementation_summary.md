@@ -148,3 +148,43 @@ Branch `image-loading`, from `origin/main` `22fc9f1` with `a4a4aea` merged in. P
 - Estimate details (extended mode only): original scope as Step 3 Stage 5; uncertainty stays high on the host; the simpler rule design offset the time spent installing Apache and writing a real server test; no revisions.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+## Stage 6 - Docs, checks and closeout
+
+**Original estimate: 0.05**
+
+**Retrospective stage-work assessment: 0.05**
+
+- Changes:
+  - New `docs/concepts/image_serving.md`: storage, copies and sizes, the one-year lifetime, the retry, what deletion can and can't reach, and direct serving with how to turn it on and check it.
+  - `docs/concepts/zen_strip.md` revised for the compressed copy and the stand-in.
+- Verification:
+  - `./v3 test --smoke ImageServingTest BoardListTest ZenStripTest MediaEmbedRendererTest GalleryPageTest FeatureFlagEvaluatorTest StatusCommandTest PlatformDocsCatalogTest DocsPublicationTest`: 523 run, 523 passed. The full suite was not run.
+  - A real thread page on the local copy, in a browser at 380px (2x) and 1280px: the image shown is the `wide` copy, it links the stored original, the answer carries the one-year header, and after a reload the image's transfer size is 0, so it came from the browser's store.
+  - Final diff review against Step 2: 24 files outside `docs/`, 825 lines added and 25 removed, most of it tests. No dependency added to the project and no schema change.
+- Notes:
+  - **Pending, all on production:** the outside header check after deploy; turning the flag on and checking that Apache answers; the maintainer's phone check.
+  - **Not done here:** the ZenMemes thread reporting the change is posted after the PR is open.
+- Estimate details (extended mode only): original scope as Step 3 Stage 6; uncertainty low; no revisions.
+
+## Step 2 success criteria
+
+| Criterion | Result |
+| --- | --- |
+| Served image: one-year private lifetime, no `no-store`; errors `no-store` | Met, tested over HTTP |
+| Reloading makes no image requests | Met on the local copy in Chrome |
+| No page's HTML names a stored original inside an image tag | Met for images over 480px (tested on thread, board list, Recent, gallery, home). Smaller originals are shown as they are |
+| A thread photo's shown copy is under half the original's bytes | Met for the test photo and five of six real images; the sixth is a small banner that is sent as the original |
+| Flag on: answered without the application; flag off or locked: folder empty | Met locally, including a real Apache. **Not verified on DreamHost** |
+| After deletion every address answers "not found" in both paths | Met locally |
+| First request blocked once, the image appears without a reload | Met in Chrome and WebKit |
+| The maintainer's phone check | **Unverified** |
+
+## Closeout
+
+- Retrospective scope assessment: **0.95**. Delivered as planned, with quality raised for display copies after a real comparison and a real Apache test added. Claude, single exposed rater. Maintainer comfortable-fit judgment: pending. Measured time unknown.
+- Checks: stage tests passed; smoke set passed (523 of 523 on the last run); full suite not run; Apache rules passed in a private Apache; older Apache test not run (needs a fixture); retry passed in Chrome and WebKit; production and the maintainer's phone pending.
+- Enhancement requests: keeping images for the offline web app stays a later cycle (PF-20261111-F14). Shrinking oversized API uploads was not taken up.
+- Unknown still: why the original image request failed on the maintainer's phone.
+
+*— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
