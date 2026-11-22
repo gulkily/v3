@@ -270,7 +270,7 @@ final class InstanceImportRequests
      * InstanceImportStatus picks the newest run by name, which is ambiguous for runs started in
      * the same second, and the output always belongs to the request it came from.
      *
-     * @return array{outcome: ?string, images: ?string, counts: array<string, int>, failure: ?string}
+     * @return array{outcome: ?string, images: ?string, counts: array<string, int>, failure: ?string, seconds: ?float, run_id: ?string}
      */
     public static function resultFromLog(string $log): array
     {
@@ -286,6 +286,9 @@ final class InstanceImportRequests
             'images' => preg_match('/^Images: (\S+)$/m', $log, $match) === 1 ? $match[1] : null,
             'counts' => $counts,
             'failure' => preg_match('/^Import failed: (.+)$/m', $log, $match) === 1 ? $match[1] : null,
+            'seconds' => preg_match('/^Elapsed time: ([0-9.]+) seconds$/m', $log, $match) === 1 ? (float) $match[1] : null,
+            // The saved report this output belongs to, as LastImportSummary names runs.
+            'run_id' => preg_match('#^Review: .*/([^/]+)/report\.json$#m', $log, $match) === 1 ? $match[1] : null,
         ];
     }
 
