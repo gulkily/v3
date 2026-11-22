@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./image_loading_step1_solution_assessment.md) · Step 2 · Step 3 · Step 4
+> **Feature plan:** [Step 1](./image_loading_step1_solution_assessment.md) · [Step 2](./image_loading_step2_feature_description.md) · Step 3 · Step 4
 
 Cycle: `v3/image_loading`. Follows [zen_hero](../zen_hero/zen_hero_step1_solution_assessment.md) (PR #350, merged), which put a large image at the top of the home page.
 
@@ -118,7 +118,8 @@ Vertical slice: on an iPhone SE, open zenmemes.com signed out. The big meme's bo
 
 - 2026-11-22 UTC, intake after measuring production and reading `ImageController.php`, `ImageStore.php`, `ThumbnailStore.php`, `service_worker.js`, `public/.htaccess` and `partials/zen_strip.php`: 0.80 projected total for the recommended scope. No pristine intake. Claude, single exposed rater; R1 hashes not re-verified this session; baseline `origin/main` `22fc9f1`.
 - Step 1 handoff: 0.80 for Option A (alternatives B 0.45, C 1.10; not summed). No implementation.
-- 2026-11-22 UTC revision after the maintainer's answers: one-year caching, a retry, and compressed copies on every page join Option A. Projected total **0.90** for Option A, up from 0.80, for the site-wide display copies and the retry. B and C unchanged for the record. Awaiting `Approved Step 1`.
+- 2026-11-22 UTC revision after the maintainer's answers: one-year caching, a retry, and compressed copies on every page join Option A. Projected total **0.90** for Option A, up from 0.80, for the site-wide display copies and the retry. B and C unchanged for the record.
+- 2026-11-22 UTC: **Approved Step 1** by the maintainer ("approved step 1"), Option A as revised.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
 

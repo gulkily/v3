@@ -22,3 +22,24 @@
 
 - The maintainer asked for all three fixes; Option B does less than that. It is kept as an alternative because it avoids the access trade-off, and the recommendation stays with what was asked.
 - Timings were taken from a distant workspace and can't separate PHP from network time.
+
+## 2026-11-22T21:40Z — Step 2
+
+### Necessary/useful instructions
+
+- `step2_feature_description.md`, Known user or environment: the blank image was on the maintainer's phone in the installed app. The section says a desktop test does not satisfy it and that the original cause is unknown.
+- `step2_feature_description.md`, Shared component inventory: found that threads show the stored original inline (`MediaEmbedRenderer`), which makes "compressed copies on every page" a real change, and that high-traffic mode is the precedent for Apache serving prepared files.
+- `step2_feature_description.md`, Risks with earliest validation: put the locked-site test before any Apache rule and the host check before the folder logic.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- No supported findings.
+
+### Uncertain assessments
+
+- The document runs longer than the one page the step asks for. The scope has six requirements and four risks; cutting further would drop a risk.
+- Whether DreamHost will serve the published folder is unknown until tried on production.
