@@ -193,7 +193,7 @@ final class ApprovalPolicyTest
             $pdo = new PDO('sqlite:' . $db);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             foreach (ReadModelSchema::statements() as $sql) $pdo->exec($sql);
-            $stmt = $pdo->prepare('INSERT INTO metadata VALUES (?, ?)');
+            $stmt = $pdo->prepare('INSERT INTO metadata (key, value) VALUES (?, ?)');
             foreach (array_merge(ReadModelMetadata::expectedSchemaIdentity(), ['repository_root' => $root, 'repository_head' => 'no-git']) as $k => $v) $stmt->execute([$k, $v]);
             file_put_contents($root . '/records/approval-seeds/openpgp-' . substr($this->id(1), 8) . '.txt', 'Approved-Identity-ID: ' . $this->id(1) . "\nSeed-Reason: test\n\nRoot.\n");
             $stmt = $pdo->prepare('INSERT INTO profiles (identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint, bootstrap_post_id, bootstrap_thread_id, public_key, is_approved, approved_by_label) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
