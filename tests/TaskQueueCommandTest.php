@@ -344,7 +344,7 @@ final class TaskQueueCommandTest
         try {
             $read = new PDO('sqlite:' . $readPath);
             $read->exec('CREATE TABLE posts (post_id TEXT PRIMARY KEY, thread_id TEXT NOT NULL, parent_id TEXT NULL, subject TEXT NULL, body TEXT NOT NULL, sequence_number INTEGER NOT NULL)');
-            $read->exec("INSERT INTO posts VALUES ('post-1', 'post-1', NULL, 'Subject', 'Body', 1)");
+            $read->exec("INSERT INTO posts (post_id, thread_id, parent_id, subject, body, sequence_number) VALUES ('post-1', 'post-1', NULL, 'Subject', 'Body', 1)");
             $fetchPost = static function (string $postId) use ($read): ?array {
                 $stmt = $read->prepare('SELECT post_id, thread_id, parent_id, subject, body FROM posts WHERE post_id = :post_id');
                 $stmt->execute(['post_id' => $postId]);
@@ -401,8 +401,8 @@ final class TaskQueueCommandTest
         $pdo->exec('CREATE TABLE threads (root_post_id TEXT PRIMARY KEY, root_post_created_at TEXT, last_activity_at TEXT, subject TEXT, body_preview TEXT, board_tags_json TEXT, thread_labels_json TEXT, score_total INTEGER)');
         $pdo->exec('CREATE TABLE posts (post_id TEXT PRIMARY KEY, created_at TEXT, thread_id TEXT, parent_id TEXT, subject TEXT, body TEXT, board_tags_json TEXT, thread_type TEXT, author_identity_id TEXT, author_label TEXT, author_profile_slug TEXT, sequence_number INTEGER, is_hidden INTEGER)');
         $pdo->exec('CREATE TABLE profiles (identity_id TEXT PRIMARY KEY, signer_fingerprint TEXT, public_key TEXT, is_approved INTEGER)');
-        $pdo->exec("INSERT INTO threads VALUES ('root', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z', 'Subject', 'Preview', '[]', '[]', 0)");
-        $pdo->exec("INSERT INTO posts VALUES ('root', '2026-01-01T00:00:00Z', 'root', NULL, 'Subject', 'Body', '[]', NULL, NULL, 'Author', NULL, 1, 0)");
+        $pdo->exec("INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, board_tags_json, thread_labels_json, score_total) VALUES ('root', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z', 'Subject', 'Preview', '[]', '[]', 0)");
+        $pdo->exec("INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, thread_type, author_identity_id, author_label, author_profile_slug, sequence_number, is_hidden) VALUES ('root', '2026-01-01T00:00:00Z', 'root', NULL, 'Subject', 'Body', '[]', NULL, NULL, 'Author', NULL, 1, 0)");
         // The read model has post_score_total; public listings hide negative scores (ScoreVisibility).
         $pdo->exec('ALTER TABLE posts ADD COLUMN post_score_total INTEGER NOT NULL DEFAULT 0');
     }

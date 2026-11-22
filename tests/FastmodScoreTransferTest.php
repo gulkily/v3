@@ -205,7 +205,7 @@ final class FastmodScoreTransferTest
             mkdir($source . '/records/posts/2026/04/10', 0700, true);
             rename($source . '/records/posts/post-1.txt', $source . '/records/posts/2026/04/10/post-1.txt');
             $pdo = new PDO('sqlite:' . $path); new \ForumRewrite\Scoring\SqliteFastScoreStore($pdo);
-            $pdo->exec('CREATE TABLE fastmod_meta(post_id TEXT, suppressed INTEGER)'); $pdo->exec("INSERT INTO fastmod_meta VALUES('post-1', 1)");
+            $pdo->exec('CREATE TABLE fastmod_meta(post_id TEXT, suppressed INTEGER)'); $pdo->exec("INSERT INTO fastmod_meta (post_id, suppressed) VALUES('post-1', 1)");
             $head = trim($w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]);
             $report = $runner->run($source, static function () {}); assertSame(1, $report['scores']['counts']['imported']);
             assertSame($head, trim($w->command(['git', '-C', $target, 'rev-parse', 'HEAD'])[1]));

@@ -66,8 +66,8 @@ final class PublicOfflineSnapshotManifestTest
             author_identity_id TEXT, author_label TEXT, author_profile_slug TEXT, sequence_number INTEGER, is_hidden INTEGER
         )');
         $pdo->exec('CREATE TABLE profiles (identity_id TEXT PRIMARY KEY, signer_fingerprint TEXT, public_key TEXT, is_approved INTEGER)');
-        $thread = $pdo->prepare('INSERT INTO threads VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $post = $pdo->prepare('INSERT INTO posts VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $thread = $pdo->prepare('INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $post = $pdo->prepare('INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, thread_type, author_identity_id, author_label, author_profile_slug, sequence_number, is_hidden) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
         for ($number = 1; $number <= $threadCount; $number++) {
             $id = sprintf('thread-%03d', $number);
             $time = sprintf('2026-01-%02dT00:00:00Z', $number);

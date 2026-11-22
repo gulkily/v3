@@ -63,12 +63,12 @@ final class PrivateMessageReadStateTest
         // Cycle 3 schema/data, before the tracking tables exist.
         $pdo->exec('CREATE TABLE private_messages (message_id TEXT PRIMARY KEY, created_at TEXT NOT NULL,
             sender_username_token TEXT NOT NULL, recipient_username_token TEXT NOT NULL, sender_identity_id TEXT NOT NULL, encrypted_envelope TEXT NOT NULL)');
-        $pdo->exec("INSERT INTO private_messages VALUES ('old', '2020-01-01', 'bob', 'alice', 'key', 'cipher')");
+        $pdo->exec("INSERT INTO private_messages (message_id, created_at, sender_username_token, recipient_username_token, sender_identity_id, encrypted_envelope) VALUES ('old', '2020-01-01', 'bob', 'alice', 'key', 'cipher')");
         $store = new PrivateMessageStore($pdo);
         assertSame(0, $store->unreadStateFor('alice')['unread_count']);
         $before = $pdo->query('SELECT * FROM private_message_tracking')->fetch();
         // Old code can still insert unchanged envelopes during rollback.
-        $pdo->exec("INSERT INTO private_messages VALUES ('during-rollback', '2020-01-01', 'bob', 'alice', 'key', 'cipher')");
+        $pdo->exec("INSERT INTO private_messages (message_id, created_at, sender_username_token, recipient_username_token, sender_identity_id, encrypted_envelope) VALUES ('during-rollback', '2020-01-01', 'bob', 'alice', 'key', 'cipher')");
         $store = new PrivateMessageStore($pdo);
         assertSame(1, $store->unreadStateFor('alice')['unread_count']);
         (new PrivateMessageReadState($pdo))->mark('alice', 'bob', 'during-rollback');
