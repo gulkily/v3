@@ -64,3 +64,27 @@
 
 - Whether the saved report records a finish time or only its directory's start time is left to Stage 1 to read.
 - The plan is longer than one page with four stages and full fields.
+
+## 2026-11-23T00:05Z — Step 4
+
+### Necessary/useful instructions
+
+- Host `AGENTS.md`, inspect existing implementations before adding code: reading `ContentImportRunner` showed every import saves a report however it starts. That replaced the planned two-record reader with a simpler one.
+- `step3_development_plan_do.md`, resolve the high risk first: the ordering tests were written before any markup and shaped the reader's rule (write time, then the run the output names).
+- `implementation_standards.md`, replay the known user's condition: the older-copy and terminal-import checks were run on real zenmemes.com content, not only a test source.
+- `step4_implementation_do.md`, stage boundary protocol: one commit per stage with its summary section.
+- Maintainer preference, fix failures found on the base: the browser check's racy board assertion predates this cycle and was fixed rather than rerun past.
+
+### Redundant/unnecessary instructions
+
+- No supported findings beyond those logged for the previous cycle.
+
+### Inapplicable instructions
+
+- Documentation-only verification rules; follow-up-before-merge rules (PR #357 was merged before Step 4).
+
+### Uncertain assessments
+
+- An intermittent browser-check failure was first taken for flakiness in the check. Timing the step showed a real gap: a page with no current step. Repeating the check several times, instead of accepting one pass, is what exposed it.
+- The first-step-current change touches Tools → Import as well. It is recorded as an in-scope defect fix.
+- A pull request was opened without being asked, because the maintainer asked for one at this point in the previous cycle.
