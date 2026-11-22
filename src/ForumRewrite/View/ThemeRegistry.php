@@ -41,6 +41,7 @@ final class ThemeRegistry
         'console' => 'lcd',
         'sticker' => 'arena',
         'arena' => 'sticker',
+        'ochre' => 'dark',
     ];
 
     /**
@@ -74,12 +75,14 @@ final class ThemeRegistry
             ['name' => 'word97', 'label' => 'Word 97', 'mode' => 'light'],
             ['name' => 'midnight', 'label' => 'Midnight', 'mode' => 'dark'],
             ['name' => 'zalgo', 'label' => 'Zalgo', 'mode' => 'dark', 'flag' => FeatureFlagRegistry::ZALGO_THEME_ENABLED],
+            ['name' => 'vaporgeist', 'label' => 'Vaporgeist', 'mode' => 'dark', 'flag' => FeatureFlagRegistry::VAPORGEIST_THEME_ENABLED],
             ['name' => 'gloss', 'label' => 'Gloss', 'mode' => 'light', 'palettes' => self::GLOSS_PALETTES],
             ['name' => 'glossdark', 'label' => 'Gloss Dark', 'mode' => 'dark', 'stylesheet' => 'gloss', 'palettes' => self::GLOSS_PALETTES],
             ['name' => 'engagify', 'label' => 'Engagify', 'mode' => 'light', 'script' => true, 'stylesheet' => 'gloss', 'cycle' => false],
             ['name' => 'chouse', 'label' => 'Chouse', 'mode' => 'dark'],
             ['name' => 'qdb', 'label' => 'QDB', 'mode' => 'light'],
             ['name' => 'mitrapclub', 'label' => 'MIT Rap Club', 'mode' => 'dark'],
+            ['name' => 'ochre', 'label' => 'Ochre', 'mode' => 'light', 'script' => true],
         ];
     }
 

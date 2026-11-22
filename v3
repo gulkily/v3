@@ -149,6 +149,9 @@ case "${COMMAND}" in
     fi
     PORT_NUMBER=$((10#${BASH_REMATCH[2]}))
     (( PORT_NUMBER >= 1 && PORT_NUMBER <= 65535 )) || { echo "Invalid port: ${PORT_NUMBER}" >&2; exit 1; }
+    if (( ADDRESS_SEEN == 0 )) || [[ "${ADDRESS_ARGUMENT}" == "--listen-all" ]]; then
+      DEV_SERVER_ARGS+=(--try-ports)
+    fi
     if ! local_server_dependencies_check startup; then
       [[ -t 0 && -t 1 ]] || exit 1
       local_server_dependencies_install startup || exit 1

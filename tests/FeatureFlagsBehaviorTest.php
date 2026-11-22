@@ -34,6 +34,33 @@ final class FeatureFlagsBehaviorTest
         }
     }
 
+    public function testEveryFlagHasAReleaseDate(): void
+    {
+        foreach ((new FeatureFlagRegistry())->all() as $definition) {
+            $date = $definition->releasedOn;
+            assertTrue($date !== null && \DateTimeImmutable::createFromFormat('!Y-m-d', $date)?->format('Y-m-d') === $date,
+                $definition->key . ' needs releasedOn (YYYY-MM-DD, the day it shipped)');
+        }
+    }
+
+    public function testRecentlyReleasedCountsTwoDaysBackFromTheNewestRelease(): void
+    {
+        $registry = new FeatureFlagRegistry();
+        $state = static fn (string $key, ?string $releasedOn): \ForumRewrite\Support\FeatureFlags\FeatureFlagState => new \ForumRewrite\Support\FeatureFlags\FeatureFlagState(
+            new \ForumRewrite\Support\FeatureFlags\FeatureFlagDefinition($key, $key, '', false, $key, releasedOn: $releasedOn), false, 'default');
+        $keys = static fn (array $states): array => array_map(static fn ($flag) => $flag->definition->key, $states);
+        // Known keys keep presentation order within a day; the window ignores today.
+        $recent = $registry->recentlyReleased([
+            $state(FeatureFlagRegistry::READING_MARGINS_ENABLED, '2026-03-01'),
+            $state('TEST_OLD', '2026-02-27'),
+            $state(FeatureFlagRegistry::PLEDGES_ENABLED, '2026-03-02'),
+            $state(FeatureFlagRegistry::INBOX_ENABLED, '2026-03-02'),
+            $state('TEST_UNDATED', null),
+        ]);
+        assertSame([FeatureFlagRegistry::INBOX_ENABLED, FeatureFlagRegistry::PLEDGES_ENABLED, FeatureFlagRegistry::READING_MARGINS_ENABLED], $keys($recent));
+        assertSame([], $registry->recentlyReleased([$state('TEST_UNDATED', null)]));
+    }
+
     public function testRenderedOrderIgnoresRegistryInputOrder(): void
     {
         $registry = new FeatureFlagRegistry();

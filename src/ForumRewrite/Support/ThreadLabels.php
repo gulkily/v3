@@ -40,17 +40,38 @@ final class ThreadLabels
      */
     public static function isTagOnly(array $post): bool
     {
+        return self::isBookkeepingOnly($post, false);
+    }
+
+    /**
+     * Like isTagOnly, but one `title:` line (see TitleDirective) also counts, alone or with labels.
+     *
+     * @param array<string, mixed> $post a posts read-model row
+     */
+    public static function isTagOrTitleOnly(array $post): bool
+    {
+        return self::isBookkeepingOnly($post, true);
+    }
+
+    /** @param array<string, mixed> $post */
+    private static function isBookkeepingOnly(array $post, bool $allowTitle): bool
+    {
         foreach (['subject', 'thread_type', 'agent_response_json', 'retracted_at'] as $field) {
             if (trim((string) ($post[$field] ?? '')) !== '') {
                 return false;
             }
         }
         $body = (string) ($post['body'] ?? '');
-        if (self::fromBody($body) === []) {
-            return false;
-        }
+        $titleLines = 0;
         foreach (explode("\n", $body) as $line) {
             if (self::isQuoted($line)) {
+                continue;
+            }
+            if ($allowTitle && TitleDirective::lineValue($line) !== null) {
+                // Only the first `title:` line takes effect; a second one is ordinary text.
+                if (++$titleLines > 1) {
+                    return false;
+                }
                 continue;
             }
             $rest = preg_replace_callback(
@@ -63,7 +84,7 @@ final class ThreadLabels
             }
         }
 
-        return true;
+        return $titleLines > 0 || self::fromBody($body) !== [];
     }
 
     private static function isQuoted(string $line): bool

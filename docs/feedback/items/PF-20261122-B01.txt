@@ -1,0 +1,18 @@
+ID: PF-20261122-B01
+Title: Tools → Import failure line shows the elapsed time, not the reason
+Kind: bug
+Workflow: ready
+Created: 2026-11-22
+Evidence: unknown
+
+Request:
+When an import request fails, Tools → Import shows "Last request failed:" followed by the command's last output line, which is "Elapsed time: … seconds". The reason ("Import failed: …") is one line earlier.
+
+Sources:
+- Session: Claude chat with the maintainer, 2026-11-22
+
+Done when:
+A failed import on Tools → Import shows the import's own reason.
+
+Notes:
+2026-11-22: Found during v3/local_import_progress. The local start page already reads the reason with InstanceImportRequests::resultFromLog(); Tools → Import could use the same. See docs/plans/local_import_progress/local_import_progress_step4_implementation_summary.md#stage-5---real-imports-and-docs.

@@ -86,18 +86,24 @@ repair. The marker file is not created by installation or tracked in Git.
 ## Start the local dev server
 
 ```
-./v3 start [--listen-all|host:port] [--verbose|--quiet] [--no-worker] [--log-file=/path/dev.log]
+./v3 start [--listen-all|port|host:port] [--verbose|--quiet] [--no-worker] [--log-file=/path/dev.log]
 ```
 
-Starts the PHP built-in dev server on `127.0.0.1:8000` by default.
+Starts the PHP built-in dev server on `127.0.0.1:8000` by default. If occupied,
+tries successive ports through 8009 and prints the actual URL after binding.
+`--listen-all` uses the same range on `0.0.0.0`. Explicit ports, including
+`8000`, `:8000` and `127.0.0.1:8000`, never fall back. Exhaustion or another
+startup error exits nonzero; choose another port with `./v3 start 8010`.
 It also runs the internal task worker (`scripts/task_queue.php run --limit=1`) every
 5 seconds while the server runs, as cron does on a server, so queued imports,
 rebuilds and offline snapshots run locally. `--no-worker` turns that off. A worker
 still busy when the server stops finishes its task on its own.
 Loopback browsers get a local exploration homepage with a prefilled public-content
 Import form. `/local/` returns to that page; `/threads/?view=all` opens all local
-threads. Import uses the existing `import-instance` command and its recovery
-journal. Failures retain the source; Resume finishes interrupted publication.
+threads. Import queues the existing `import-instance` command for the task worker
+and shows its steps, elapsed time and time left; other pages stay usable while it
+runs. With `--no-worker` the page starts a worker for the import itself.
+Failures retain the source; Resume finishes interrupted publication.
 These controls require a loopback peer and Host without proxy headers. Remote
 clients and deployed servers keep their existing homepage. Imports merge content;
 they do not copy private messages, settings or approval authority.
@@ -113,7 +119,7 @@ once with the original address, logging options and caller identity; failures
 return 1 without starting a listener. Redirected startup never prompts or installs.
 Options are validated before recovery. Stop the launcher with Ctrl+C or SIGTERM.
 
-- `--listen-all` — bind `0.0.0.0:8000` instead of `127.0.0.1:8000`
+- `--listen-all` — bind all interfaces, trying ports 8000–8009
 - `host:port` — bind an explicit address or bare port number instead of the default
 - `--verbose` / `--quiet` — show all requests / server errors only
 - `--log-file=...` — append plain request logs to the chosen file
@@ -380,10 +386,10 @@ the recorded target applies to this host, not arbitrary OS scheduling delays.
 ## Update the application checkout
 
 ```
-./v3 deploy [--check|--status] [--timeout=SECONDS]
+./v3 deploy [--check|--status|--history|--rollback=COMMIT] [--timeout=SECONDS]
 ```
 
-Fetches `origin/main` and fast-forwards this application checkout, the same routine as **Tools → Deploy**. `--check` only fetches and reports how far behind the checkout is; `--status` reports local state and the latest attempt without contacting GitHub. The default timeout is 120 seconds.
+Fetches `origin/main` and fast-forwards this application checkout, the same routine as **Tools → Deploy**. `--check` only fetches and reports how far behind the checkout is; `--status` reports local state and the latest attempt without contacting GitHub. `--history` lists the versions this checkout has run, newest first. `--rollback=COMMIT` returns to one of them (7 or more hex digits): it prints the commits it undoes and any format warnings, never contacts GitHub, and leaves the checkout on `main` so the next deploy moves forward again; see [deploy history and rollback](../runbooks/production_deploy.md#deploy-history-and-rollback). The default timeout is 120 seconds.
 
 Local edits to tracked files are kept (stashed, then reapplied after the fast-forward). It refuses with the checkout unchanged when the update conflicts with a local edit, on a branch other than `main`, diverged history or a deploy already running, and prints `Outcome`, `Reason`, `Old-Commit`, `New-Commit` and `Message`. Exit status: 0 deployed, up to date or checked; 1 refused or failed; 2 usage error. Pull only; see [Deploy from the Site](../runbooks/production_deploy.md#deploy-from-the-site).
 

@@ -15,7 +15,7 @@ final class FastmodDerivedTagsTest
             $pdo = new PDO('sqlite:' . $path);
             $store = new SqliteFastScoreStore($pdo);
             $pdo->exec('CREATE TABLE fastmod_meta(post_id TEXT, suppressed INTEGER, active INTEGER)');
-            $pdo->exec("INSERT INTO fastmod_meta VALUES('suppressed',1,0),('old-active',0,1)");
+            $pdo->exec("INSERT INTO fastmod_meta (post_id, suppressed, active) VALUES('suppressed',1,0),('old-active',0,1)");
             foreach (['low'=>0.89, 'equal'=>0.9, 'high'=>1, 'suppressed'=>1] as $id=>$score) {
                 $store->save($id, 'hash', 'r', ['status'=>'scored','source'=>'llm','scores'=>['meta'=>$score]]);
             }
@@ -56,8 +56,8 @@ final class FastmodDerivedTagsTest
             $hash = new \ForumRewrite\Scoring\FastScoreContextFactory(static fn($id)=>null);
             foreach (['root','human','edited','reply','hidden','retracted'] as $id) {
                 $post = ['post_id'=>$id,'subject'=>'Subject','body'=>'Body'];
-                $read->prepare('INSERT INTO posts VALUES(?,?,?,?,?,NULL)')->execute([$id,$id==='reply'?'root':$id,'Subject','Body',(int)($id==='hidden')]);
-                if ($id !== 'reply') $read->prepare('INSERT INTO threads VALUES(?,?,7)')->execute([$id,$id==='human'?'["meta","human"]':'["human"]']);
+                $read->prepare('INSERT INTO posts (post_id, thread_id, subject, body, is_hidden, retracted_at) VALUES(?,?,?,?,?,NULL)')->execute([$id,$id==='reply'?'root':$id,'Subject','Body',(int)($id==='hidden')]);
+                if ($id !== 'reply') $read->prepare('INSERT INTO threads (root_post_id, thread_labels_json, score_total) VALUES(?,?,7)')->execute([$id,$id==='human'?'["meta","human"]':'["human"]']);
                 $store->save($id,$hash->contentHashForPost($post),'r',['status'=>'scored','source'=>'llm','scores'=>['meta'=>0.9]]);
             }
             $read->exec("UPDATE posts SET body='Changed' WHERE post_id='edited'");
@@ -110,8 +110,8 @@ final class FastmodDerivedTagsTest
             };
             $read->exec('CREATE TABLE posts(post_id TEXT PRIMARY KEY,thread_id TEXT,subject TEXT,body TEXT,is_hidden INTEGER,retracted_at TEXT)');
             $read->exec('CREATE TABLE threads(root_post_id TEXT PRIMARY KEY,thread_labels_json TEXT)');
-            $post=$read->prepare('INSERT INTO posts VALUES(?,?,?,?,0,NULL)');
-            $thread=$read->prepare('INSERT INTO threads VALUES(?,?)');
+            $post=$read->prepare('INSERT INTO posts (post_id, thread_id, subject, body, is_hidden, retracted_at) VALUES(?,?,?,?,0,NULL)');
+            $thread=$read->prepare('INSERT INTO threads (root_post_id, thread_labels_json) VALUES(?,?)');
             $hash=new \ForumRewrite\Scoring\FastScoreContextFactory(static fn($id)=>null);
             $private->beginTransaction();
             for($i=0;$i<1001;$i++) {
@@ -138,7 +138,7 @@ final class FastmodDerivedTagsTest
             putenv('FASTMOD_AUTOMATIC_TAGGING_ENABLED=true');putenv('FAST_SCORING_ENABLED=true');
             $read=new PDO('sqlite::memory:');
             $read->exec('CREATE TABLE threads(thread_labels_json TEXT)');
-            $read->prepare('INSERT INTO threads VALUES(?)')->execute(['["human"]']);
+            $read->prepare('INSERT INTO threads (thread_labels_json) VALUES(?)')->execute(['["human"]']);
             assertSame($read,\ForumRewrite\Scoring\FastmodMetaRead::forApplication($read,$root,$root.'/repository'));
             assertSame('["human"]',$read->query('SELECT thread_labels_json FROM threads')->fetchColumn());
         } finally {

@@ -71,7 +71,7 @@ window.forumAccountInitialNameHint();
     <div class="account-row" data-tone="neutral">
       <span class="account-row__title">Name</span>
       <span class="account-row__value" data-role="name-row-value">guest</span>
-      <button type="button" class="account-row__action" data-action="rename-profile"<?= $usernameChangesEnabled ? '' : ' hidden' ?>>Change</button>
+      <button type="button" class="account-row__action" data-action="rename-profile"<?= $usernameChangesEnabled ? '' : ' hidden' ?>><span class="account-name-action--change">Change</span><span class="account-name-action--choose">Choose a name</span></button>
     </div>
     <form class="account-name-editor" data-role="name-editor" hidden>
       <label>Name <input type="text" data-role="name-editor-input" autocomplete="nickname" autocapitalize="none" spellcheck="false" maxlength="80" required></label>
@@ -554,7 +554,8 @@ No browser private key saved yet.
 
       change.addEventListener('click', function () {
         editor.hidden = false;
-        input.value = readStorageValue('forum_pki_username') || '';
+        var current = readStorageValue('forum_pki_username') || '';
+        input.value = current === 'guest' ? '' : current;
         input.focus();
         input.select();
       });
@@ -565,6 +566,23 @@ No browser private key saved yet.
           close();
         }
       });
+    }
+
+    // #choose-name (the composer's "Choose a name" link): straight to naming.
+    function openChooseNameFromHash() {
+      var root = accountKeyRoot();
+      if (!root || window.location.hash !== '#choose-name') {
+        return;
+      }
+      if (root.dataset.accountState === 'guest') {
+        var field = root.querySelector('[data-role="account-name-input"]');
+        if (field) field.focus();
+        return;
+      }
+      var change = root.querySelector('[data-action="rename-profile"]');
+      if (change && change.getClientRects().length > 0) {
+        change.click();
+      }
     }
 
     function initAccountKeySimpleUi() {
@@ -594,6 +612,7 @@ No browser private key saved yet.
         syncSimpleUI();
       });
       window.addEventListener('pageshow', mirrorAdvancedStatus);
+      openChooseNameFromHash();
 
       if (statusNode && typeof MutationObserver === 'function') {
         new MutationObserver(function () {

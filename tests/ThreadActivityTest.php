@@ -51,4 +51,17 @@ final class ThreadActivityTest
         $parts = ThreadActivity::partition(['post_id' => 'root'], $replies, ['thread_likes' => 'broken'], false);
         assertSame(['shown' => $replies, 'moved' => [], 'entries' => []], $parts);
     }
+
+    public function testTitleOnlyReplyBecomesTaggedEntryWithTitle(): void
+    {
+        $post = static fn (string $id, string $body, int $seq): array =>
+            ['post_id' => $id, 'parent_id' => 'root', 'body' => $body, 'sequence_number' => $seq, 'author_label' => 'e', 'author_profile_slug' => 'e', 'created_at' => '2026-11-18T10:00:00Z', 'retracted_at' => null];
+        $replies = [$post('r1', 'Hi', 1), $post('t', "title: Better name\n#meta", 2)];
+        $actors = ['thread_likes' => [], 'posts' => []];
+
+        assertSame(['r1', 't'], array_column(ThreadActivity::partition(['post_id' => 'root'], $replies, $actors, false)['shown'], 'post_id'));
+        $parts = ThreadActivity::partition(['post_id' => 'root'], $replies, $actors, false, [], true);
+        assertSame(['r1'], array_column($parts['shown'], 'post_id'));
+        assertSame([['tagged', 'Better name', ['meta']]], array_map(static fn (array $e): array => [$e['kind'], $e['title'], $e['labels']], $parts['entries']));
+    }
 }

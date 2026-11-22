@@ -2,6 +2,7 @@
 :root[data-theme="forge"],
 .theme-menu__option[data-theme-option="forge"] {
   color-scheme: dark;
+  --media-dim: 0.85;
   --page-bg: #0f0e0d;
   --body-background:
     linear-gradient(

@@ -1,9 +1,9 @@
 ID: PF-20261021-F07
 Title: Default port fallback
 Kind: feature
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-10-21
-Evidence: unknown
+Evidence: locally-verified
 Estimate: 0.2
 Aliases: 2026-10-21/F07, 2026-10-30/F35
 
@@ -17,6 +17,7 @@ Done when:
 Occupied default ports advance within a fixed range; actual URL, exhaustion, and shutdown behave correctly.
 
 Notes:
+2026-11-21: Implemented default and --listen-all fallback across ports 8000–8009, preserving explicit-port requests. Binding confirmation precedes success output, registration and worker startup. Exhaustion exits nonzero with recovery guidance. Verified real ./v3 start on 8002 with 8000/8001 occupied, all-ten exhaustion and release/retry on 8009, HTTP 200 static assets, logs, frontend registration and shutdown with/without PCNTL. Focused startup/worker/log checks 15/15 and frontend checks 14/14 pass. Smoke 492/496 passes; all four failures reproduce on untouched main. Full suite not run. See docs/plans/local_start_port_fallback/local_start_port_fallback_one_shot.md. Blocked pending merge and maintainer acceptance; no deployment or push.
 Register status at migration: workflow state: untriaged; delivery evidence: unknown; production report not reproduced by this migration. Reviewed 2026-10-23 from existing documents, no runtime audit.
 Open — resolution not verified. Triage context: Startup selects one address; bounded retries can preserve explicit-address behavior. Source (v3).
 Next action: Confirm current default/explicit port behavior, then scope bounded fallback and exhaustion checks.

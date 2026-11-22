@@ -237,6 +237,40 @@ final class CalendarPageTest
         calendarAssertContains('Member couch', $this->render($application, '/calendar/couches', ['month' => '2026-11']));
     }
 
+    public function testAnApprovedMembersApprovedLabelPutsAGuestEventOnTheCalendar(): void
+    {
+        [$root, $service, $application] = $this->environment();
+        $guest = $this->event($service, 'couches', 'Guest couch', 'Couch', '2026-11-29', null, '');
+        $other = $this->event($service, 'couches', 'Other guest couch', 'Couch', '2026-11-29', null, '');
+        $onCalendar = fn (string $title): bool => str_contains($this->render($application, '/calendar/couches', ['month' => '2026-11']), $title);
+        calendarAssertSame(false, $onCalendar('Guest couch'));
+
+        // An unsigned reply's label has no approved writer, so it does not count.
+        $service->createReply(['thread_id' => $guest, 'parent_id' => $guest, 'body' => '#approved', 'author_identity_id' => '']);
+        calendarAssertSame(false, $onCalendar('Guest couch'));
+
+        $service->createReply(['thread_id' => $guest, 'parent_id' => $guest, 'body' => '#approved', 'author_identity_id' => self::OPERATOR]);
+        $service->createReply(['thread_id' => $other, 'parent_id' => $other, 'body' => '#approve', 'author_identity_id' => self::OPERATOR]);
+        foreach (['/calendar' => ['month' => '2026-11'], '/calendar/couches' => ['month' => '2026-11'], '/calendar/2026-11-29' => [], '/calendar/couches/2026-11-29' => []] as $path => $query) {
+            $html = $this->render($application, $path, $query);
+            calendarAssertContains('Guest couch', $html);
+            calendarAssertContains('Other guest couch', $html);
+        }
+
+        // The label counts only while its writer is approved, checked when the calendar is read.
+        $database = new PDO('sqlite:' . $root . '.sqlite3');
+        $approve = $database->prepare('UPDATE profiles SET is_approved = :approved WHERE identity_id = :id');
+        $approve->execute(['approved' => 0, 'id' => self::OPERATOR]);
+        calendarAssertSame(false, $onCalendar('Guest couch'));
+        $approve->execute(['approved' => 1, 'id' => self::OPERATOR]);
+        calendarAssertSame(true, $onCalendar('Guest couch'));
+
+        // A label that is no longer on the thread (fully retracted) stops counting.
+        $database->prepare("UPDATE threads SET thread_labels_json = '[]' WHERE root_post_id = ?")->execute([$guest]);
+        calendarAssertSame(false, $onCalendar('Guest couch'));
+        calendarAssertSame(true, $onCalendar('Other guest couch'));
+    }
+
     public function testMembersOnlySiteKeepsTheCalendarFromUnapprovedVisitors(): void
     {
         [, $service, $application] = $this->environment();
@@ -370,6 +404,24 @@ final class CalendarPageTest
         calendarAssertSame(404, http_response_code());
     }
 
+    public function testTimedEventExportsUseTheZenmemesTimeZone(): void
+    {
+        [, $service, $application] = $this->environment();
+        $zone = new DateTimeZone('America/New_York');
+        $local = new DateTimeImmutable('+3 days', $zone);
+        $date = $local->format('Y-m-d');
+        $utc = new DateTimeZone('UTC');
+        $start = $local->setTime(19, 0)->setTimezone($utc)->format('Ymd\THis\Z');
+        $end = $local->setTime(20, 0)->setTimezone($utc)->format('Ymd\THis\Z');
+        $thread = $this->event($service, 'couches', 'Concert', 'Concert', $date, time: '19:00');
+
+        foreach (['/calendar.ics', '/calendar/couches.ics', '/threads/' . $thread . '.ics'] as $path) {
+            $ics = $this->render($application, $path);
+            calendarAssertContains("DTSTART:$start\r\nDTEND:$end\r\n", $ics);
+        }
+        calendarAssertContains("dates={$start}%2F{$end}", $this->render($application, '/threads/' . $thread));
+    }
+
     public function testEventLinksAndFileAreGoneWhileTheFeedIsOff(): void
     {
         [, $service, $application] = $this->environment(true, "FORUM_CALENDAR_FEED_ENABLED: false\n");
@@ -405,11 +457,11 @@ final class CalendarPageTest
     }
 
     /** Events are authored by the approved fixture operator unless $author says otherwise ('' for anonymous). */
-    private function event(LocalWriteService $service, string $tags, string $subject, string $body, string $first, ?string $last = null, string $author = self::OPERATOR): string
+    private function event(LocalWriteService $service, string $tags, string $subject, string $body, string $first, ?string $last = null, string $author = self::OPERATOR, string $time = ''): string
     {
         return (string) $service->createThread([
             'board_tags' => $tags, 'subject' => $subject, 'body' => $body,
-            'event_date' => $first, 'event_end_date' => $last ?? '', 'author_identity_id' => $author,
+            'event_date' => $first, 'event_end_date' => $last ?? '', 'event_time' => $time, 'author_identity_id' => $author,
         ])['thread_id'];
     }
 

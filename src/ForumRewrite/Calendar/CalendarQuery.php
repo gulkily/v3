@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Calendar;
 
+use ForumRewrite\ReadModel\ApprovalLabel;
 use ForumRewrite\ReadModel\ThreadKeysetPage;
 use PDO;
 
@@ -14,7 +15,9 @@ use PDO;
  *
  * Only approved members put events on the calendar: the thread's author must be approved
  * (approved when retired, for retired keys) and the post must count toward that author, so
- * an unverified post naming an approved identity stays off. Other events still show on
+ * an unverified post naming an approved identity stays off. An approved member's
+ * `#approved` label (ApprovalLabel) puts any other event on too, a guest's included.
+ * Other events still show on
  * their thread. Checked here at read time, so it covers every write and sync path and
  * follows approval as it changes.
  */
@@ -28,8 +31,8 @@ final class CalendarQuery
     {
         $sql = self::selectSql()
             . ThreadKeysetPage::listedRootsSql()
-            . ' AND posts.attribution_counted = 1
-                AND ' . self::AUTHOR_IS_APPROVED_SQL . ' = 1
+            . ' AND ((posts.attribution_counted = 1 AND ' . self::AUTHOR_IS_APPROVED_SQL . ' = 1)
+                    OR ' . ApprovalLabel::threadSql() . ')
                 AND threads.event_date IS NOT NULL
                 AND threads.event_date <= :to
                 AND COALESCE(threads.event_end_date, threads.event_date) >= :from';
@@ -73,7 +76,7 @@ final class CalendarQuery
         return 'SELECT threads.root_post_id, threads.root_post_created_at, threads.subject, threads.body_preview, threads.retracted_at,
                     threads.event_date, threads.event_end_date, threads.event_time, threads.event_location,
                     threads.event_link, threads.event_when,
-                    posts.author_label, posts.author_profile_slug, posts.attribution_counted, posts.body_format,
+                    posts.author_label, posts.ported_from, posts.ported_created_at, posts.author_profile_slug, posts.attribution_counted, posts.body_format,
                     (SELECT profiles.username_token FROM profiles WHERE profiles.identity_id = posts.author_identity_id) AS author_username_token,
                     ' . self::AUTHOR_IS_APPROVED_SQL . ' AS author_is_approved';
     }

@@ -20,6 +20,13 @@ $commitLink = static fn (string $sha): string => $commitLinkBase === null ? '' :
 $incoming = $s['incoming_commits'] ?? [];
 $stat = $s['incoming_stat'] ?? null;
 $queuedAt = ($task['status'] ?? null) === 'queued' ? (string) ($task['requested_at'] ?? '') : '';
+$versions = $deployVersions ?? [];
+$preview = $rollbackPreview ?? null;
+$commitCode = static function (string $sha) use ($e, $commitLink, $commitLinkBase): string {
+    $code = '<code>' . $e(substr($sha, 0, 8)) . '</code>';
+
+    return $commitLinkBase === null ? $code : '<a href="' . $e($commitLink($sha)) . '">' . $code . '</a>';
+};
 $workerLabels = ['fresh' => 'running normally', 'running' => 'running now', 'stale' => 'has not run recently', 'not_observed' => 'never seen', 'failed' => 'last run failed', 'unavailable' => 'unavailable'];
 ?>
 <section class="stack">
@@ -28,6 +35,31 @@ $workerLabels = ['fresh' => 'running normally', 'running' => 'running now', 'sta
 <?php if (!$s['is_checkout']): ?>
     <p>This application directory is not a Git checkout.</p>
 <?php else: ?>
+<?php if ($preview !== null && $canDeploy): ?>
+<?php $undone = count($preview['commits']) + (int) $preview['more']; ?>
+    <form method="post" action="/tools/deploy/" class="deploy-rollback">
+      <h2>Roll back to <?= $commitCode($preview['commit']) ?>?</h2>
+<?php foreach ($preview['warnings'] as $warning): ?>
+      <p><strong><?= $e($warning) ?></strong></p>
+<?php endforeach; ?>
+      <details class="deploy-incoming"<?= $undone <= 5 ? ' open' : '' ?>>
+        <summary>Undoes <?= $e($undone . ' commit' . ($undone === 1 ? '' : 's')) ?></summary>
+        <ol>
+<?php foreach ($preview['commits'] as $c): ?>
+          <li><?= $commitCode($c['commit']) ?> <?= $e($c['subject']) ?> <span class="meta"><?= $e($c['author']) ?>, <?= $e($c['date']) ?></span></li>
+<?php endforeach; ?>
+        </ol>
+<?php if ($preview['more'] > 0): ?>
+        <p class="meta">and <?= $e((string) $preview['more']) ?> more</p>
+<?php endif; ?>
+      </details>
+      <input type="hidden" name="commit" value="<?= $e($preview['commit']) ?>">
+      <div class="deploy-actions">
+        <button type="submit" name="action" value="rollback" class="deploy-actions__primary">Roll back to <?= $e(substr($preview['commit'], 0, 8)) ?></button>
+        <a href="/tools/deploy/">Cancel</a>
+      </div>
+    </form>
+<?php endif; ?>
     <table class="codebase-facts">
       <tbody>
         <tr>
@@ -128,6 +160,23 @@ $summary = implode(' · ', $parts);
     <p class="meta" role="status" aria-live="polite" data-deploy-status<?= $statusText === '' ? ' hidden' : '' ?>><?= $e($statusText) ?></p>
 <?php elseif (($deployNotice ?? '') !== ''): ?>
     <p class="meta" role="status"><?= $e($deployNotice) ?></p>
+<?php endif; ?>
+<?php if ($versions !== [] && $s['is_checkout']): ?>
+    <h2>History</h2>
+    <ol class="deploy-history">
+<?php foreach ($versions as $v): ?>
+      <li>
+        <?= $commitCode($v['commit']) ?> <?= $e($v['subject']) ?>
+        <span class="meta"><?= $e($v['action'] === 'earlier' ? 'before the first recorded deploy' : ($v['action'] === 'rollback' ? 'rolled back ' : 'deployed ') . $v['deployed_at']) ?><?= $v['running'] ? ' · running' : '' ?></span>
+<?php if ($v['can_roll_back'] && $canDeploy): ?>
+        <form method="post" action="/tools/deploy/">
+          <input type="hidden" name="commit" value="<?= $e($v['commit']) ?>">
+          <button type="submit" name="action" value="rollback_preview" class="deploy-actions__secondary">Roll back</button>
+        </form>
+<?php endif; ?>
+      </li>
+<?php endforeach; ?>
+    </ol>
 <?php endif; ?>
   </article>
 <?= $indent($partial('partials/tools_nav_card.php'), 2) ?>

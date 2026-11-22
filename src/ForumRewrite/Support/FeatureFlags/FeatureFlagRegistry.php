@@ -12,6 +12,7 @@ final class FeatureFlagRegistry
     public const LIST_THUMBNAILS_ENABLED = 'FORUM_LIST_THUMBNAILS_ENABLED';
     public const IMAGE_GALLERY_ENABLED = 'FORUM_IMAGE_GALLERY_ENABLED';
     public const IMAGE_CONTENT_ENABLED = 'FORUM_IMAGE_CONTENT_ENABLED';
+    public const IMAGE_DIRECT_SERVING_ENABLED = 'FORUM_IMAGE_DIRECT_SERVING_ENABLED';
     public const PRIVATE_MESSAGES_ENABLED = 'FORUM_PRIVATE_MESSAGES_ENABLED';
     public const PRIVATE_MESSAGE_CACHE_ENABLED = 'FORUM_PRIVATE_MESSAGE_CACHE_ENABLED';
     public const UNICODE_AUTHORED_TEXT = 'FORUM_UNICODE_AUTHORED_TEXT';
@@ -23,7 +24,10 @@ final class FeatureFlagRegistry
     public const THREAD_DENSITY_TOGGLE_ENABLED = 'FORUM_THREAD_DENSITY_TOGGLE_ENABLED';
     public const READING_MARGINS_ENABLED = 'FORUM_READING_MARGINS_ENABLED';
     public const DRAGGABLE_WINDOWS_ENABLED = 'FORUM_DRAGGABLE_WINDOWS_ENABLED';
+    public const OPEN_BESIDE_ENABLED = 'FORUM_OPEN_BESIDE_ENABLED';
     public const GUESTBOOK_ENABLED = 'FORUM_GUESTBOOK_ENABLED';
+    public const ZEN_STRIP_ENABLED = 'FORUM_ZEN_STRIP_ENABLED';
+    public const AGENT_CHECKIN_ENABLED = 'FORUM_AGENT_CHECKIN_ENABLED';
     public const TITLE_DIRECTIVE_ENABLED = 'FORUM_TITLE_DIRECTIVE_ENABLED';
     public const TITLE_DIRECTIVE_APPROVED_MEMBERS = 'FORUM_TITLE_DIRECTIVE_APPROVED_MEMBERS';
     public const INBOX_ENABLED = 'FORUM_INBOX_ENABLED';
@@ -34,6 +38,7 @@ final class FeatureFlagRegistry
     public const AGENT_PROMPT_ENABLED = 'FORUM_AGENT_PROMPT_ENABLED';
     public const ENGAGIFY_PASSWORD_NEWSLETTER = 'FORUM_ENGAGIFY_PASSWORD_NEWSLETTER';
     public const ZALGO_THEME_ENABLED = 'FORUM_ZALGO_THEME_ENABLED';
+    public const VAPORGEIST_THEME_ENABLED = 'FORUM_VAPORGEIST_THEME_ENABLED';
     public const MEDIA_EMBEDS_ENABLED = 'FORUM_MEDIA_EMBEDS_ENABLED';
     public const MEDIA_EMBEDS_INLINE_PLAYER_ENABLED = 'FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED';
     public const TAG_LINKS_ENABLED = 'FORUM_TAG_LINKS_ENABLED';
@@ -58,6 +63,8 @@ final class FeatureFlagRegistry
     public const USAGE_REPORTS_ENABLED = 'FORUM_USAGE_REPORTS_ENABLED';
     public const THREAD_ACTIVITY_DRAWER_ENABLED = 'FORUM_THREAD_ACTIVITY_DRAWER_ENABLED';
     public const PLEDGES_ENABLED = 'FORUM_PLEDGES_ENABLED';
+    public const THREAD_PORT_ENABLED = 'FORUM_THREAD_PORT_ENABLED';
+    public const THREAD_PORT_GUESTS_ENABLED = 'FORUM_THREAD_PORT_GUESTS_ENABLED';
     public const SESSION_KEY_BOOTSTRAP_ENABLED = 'FORUM_SESSION_KEY_BOOTSTRAP_ENABLED';
     public const SESSION_KEY_BOOTSTRAP_HTTP_ENABLED = 'FORUM_SESSION_KEY_BOOTSTRAP_HTTP_ENABLED';
     public const FAST_NAVIGATION_ENABLED = 'FORUM_FAST_NAVIGATION_ENABLED';
@@ -68,16 +75,16 @@ final class FeatureFlagRegistry
         'ACCESS' => [self::PRIVATE_MESSAGES_ENABLED, self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
             self::APPROVED_MEMBERS_ONLY, self::AUTOMATIC_GUEST_KEYPAIR_ENABLED, self::USERNAME_CHANGES_ENABLED,
             self::VERIFIED_ATTRIBUTION, self::SESSION_KEY_BOOTSTRAP_ENABLED, self::SESSION_KEY_BOOTSTRAP_HTTP_ENABLED],
-        'AUTHORING' => [self::IMAGE_CONTENT_ENABLED, self::LIST_THUMBNAILS_ENABLED, self::IMAGE_GALLERY_ENABLED, self::UNICODE_AUTHORED_TEXT,
+        'AUTHORING' => [self::IMAGE_CONTENT_ENABLED, self::IMAGE_DIRECT_SERVING_ENABLED, self::LIST_THUMBNAILS_ENABLED, self::IMAGE_GALLERY_ENABLED, self::UNICODE_AUTHORED_TEXT,
             self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED, self::EVENT_WHEN_ENABLED,
             self::CALENDAR_FEED_ENABLED],
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
             self::TITLE_DIRECTIVE_ENABLED, self::TITLE_DIRECTIVE_APPROVED_MEMBERS, self::INBOX_ENABLED,
             self::DEPLOY_HEADER_PROMPT_ENABLED, self::INSTANCE_IMPORT_PAGE_ENABLED, self::ENGAGIFY_PASSWORD_NEWSLETTER,
-            self::ZALGO_THEME_ENABLED, self::PRIVATE_MESSAGE_CACHE_ENABLED,
-            self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED,
-            self::READING_MARGINS_ENABLED, self::DRAGGABLE_WINDOWS_ENABLED, self::GUESTBOOK_ENABLED, self::POST_RECORDS_ENABLED,
-            self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED,
+            self::ZALGO_THEME_ENABLED, self::VAPORGEIST_THEME_ENABLED, self::PRIVATE_MESSAGE_CACHE_ENABLED,
+            self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED, self::AGENT_CHECKIN_ENABLED,
+            self::READING_MARGINS_ENABLED, self::DRAGGABLE_WINDOWS_ENABLED, self::OPEN_BESIDE_ENABLED, self::GUESTBOOK_ENABLED, self::ZEN_STRIP_ENABLED, self::POST_RECORDS_ENABLED,
+            self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED, self::THREAD_PORT_ENABLED, self::THREAD_PORT_GUESTS_ENABLED,
             self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED, self::QDB_QUEUE_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
@@ -115,6 +122,30 @@ final class FeatureFlagRegistry
     }
 
     /**
+     * Flags released on the newest release date or the day before, newest first,
+     * then in presentation order. Counted from the newest release rather than
+     * today, so the list is never empty after a quiet stretch.
+     *
+     * @param list<FeatureFlagState> $flags
+     * @return list<FeatureFlagState>
+     */
+    public function recentlyReleased(array $flags): array
+    {
+        $dated = array_values(array_filter($flags, static fn (FeatureFlagState $flag): bool => $flag->definition->releasedOn !== null));
+        if ($dated === []) {
+            return [];
+        }
+        $newest = max(array_map(static fn (FeatureFlagState $flag): string => (string) $flag->definition->releasedOn, $dated));
+        $since = (new \DateTimeImmutable($newest))->modify('-1 day')->format('Y-m-d');
+        $order = array_flip(array_merge(...array_values(self::PRESENTATION_ORDER)));
+        $recent = array_values(array_filter($dated, static fn (FeatureFlagState $flag): bool => $flag->definition->releasedOn >= $since));
+        usort($recent, static fn (FeatureFlagState $a, FeatureFlagState $b): int => [$b->definition->releasedOn, $order[$a->definition->key] ?? PHP_INT_MAX]
+            <=> [$a->definition->releasedOn, $order[$b->definition->key] ?? PHP_INT_MAX]);
+
+        return $recent;
+    }
+
+    /**
      * @return list<FeatureFlagDefinition>
      */
     public function all(): array
@@ -128,6 +159,7 @@ final class FeatureFlagRegistry
                 self::IMAGE_BACKUP_ENABLED,
                 siteMutable: true,
                 group: 'BACKUP',
+                releasedOn: '2026-10-26',
             ),
             new FeatureFlagDefinition(
                 self::TEXT_BACKUP_ENABLED,
@@ -137,6 +169,7 @@ final class FeatureFlagRegistry
                 self::TEXT_BACKUP_ENABLED,
                 siteMutable: true,
                 group: 'BACKUP',
+                releasedOn: '2026-10-26',
             ),
             new FeatureFlagDefinition(
                 self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED,
@@ -146,6 +179,7 @@ final class FeatureFlagRegistry
                 self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',
+                releasedOn: '2026-10-21',
             ),
             new FeatureFlagDefinition(
                 self::IMAGE_CONTENT_ENABLED,
@@ -155,6 +189,18 @@ final class FeatureFlagRegistry
                 self::IMAGE_CONTENT_ENABLED,
                 siteMutable: true,
                 group: 'AUTHORING',
+                releasedOn: '2026-10-13',
+            ),
+            new FeatureFlagDefinition(
+                self::IMAGE_DIRECT_SERVING_ENABLED,
+                'Direct image serving',
+                'For public boards. The web server answers for images it has served before, without starting the application, so images stay fast when the site is busy. An image address then works for anyone who has it. Nothing is served this way on a members-only board, and turning this off or making the board members-only removes the published copies.',
+                false,
+                self::IMAGE_DIRECT_SERVING_ENABLED,
+                siteMutable: true,
+                requiresEnabledFlag: self::IMAGE_CONTENT_ENABLED,
+                group: 'AUTHORING',
+                releasedOn: '2026-11-22',
             ),
             new FeatureFlagDefinition(
                 self::LIST_THUMBNAILS_ENABLED,
@@ -165,6 +211,7 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 requiresEnabledFlag: self::IMAGE_CONTENT_ENABLED,
                 group: 'AUTHORING',
+                releasedOn: '2026-11-05',
             ),
             new FeatureFlagDefinition(
                 self::IMAGE_GALLERY_ENABLED,
@@ -175,6 +222,7 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 requiresEnabledFlag: self::IMAGE_CONTENT_ENABLED,
                 group: 'AUTHORING',
+                releasedOn: '2026-11-05',
             ),
             new FeatureFlagDefinition(
                 self::PRIVATE_MESSAGES_ENABLED,
@@ -184,6 +232,7 @@ final class FeatureFlagRegistry
                 self::PRIVATE_MESSAGES_ENABLED,
                 siteMutable: true,
                 group: 'ACCESS',
+                releasedOn: '2026-10-13',
             ),
             new FeatureFlagDefinition(
                 self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
@@ -193,6 +242,7 @@ final class FeatureFlagRegistry
                 self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
                 siteMutable: true,
                 group: 'ACCESS',
+                releasedOn: '2026-10-11',
             ),
             new FeatureFlagDefinition(
                 self::APPROVED_MEMBERS_ONLY,
@@ -202,6 +252,7 @@ final class FeatureFlagRegistry
                 self::APPROVED_MEMBERS_ONLY,
                 siteMutable: true,
                 group: 'ACCESS',
+                releasedOn: '2026-09-13',
             ),
             new FeatureFlagDefinition(
                 self::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
@@ -211,6 +262,7 @@ final class FeatureFlagRegistry
                 self::AUTOMATIC_GUEST_KEYPAIR_ENABLED,
                 siteMutable: true,
                 group: 'ACCESS',
+                releasedOn: '2026-10-08',
             ),
             new FeatureFlagDefinition(
                 self::USERNAME_CHANGES_ENABLED,
@@ -220,6 +272,7 @@ final class FeatureFlagRegistry
                 self::USERNAME_CHANGES_ENABLED,
                 siteMutable: true,
                 group: 'ACCESS',
+                releasedOn: '2026-10-16',
             ),
             new FeatureFlagDefinition(
                 self::VERIFIED_ATTRIBUTION,
@@ -229,6 +282,7 @@ final class FeatureFlagRegistry
                 self::VERIFIED_ATTRIBUTION,
                 siteMutable: true,
                 group: 'ACCESS',
+                releasedOn: '2026-10-23',
             ),
             new FeatureFlagDefinition(
                 self::SESSION_KEY_BOOTSTRAP_ENABLED,
@@ -238,6 +292,7 @@ final class FeatureFlagRegistry
                 self::SESSION_KEY_BOOTSTRAP_ENABLED,
                 siteMutable: true,
                 group: 'ACCESS',
+                releasedOn: '2026-11-16',
             ),
             new FeatureFlagDefinition(
                 self::SESSION_KEY_BOOTSTRAP_HTTP_ENABLED,
@@ -248,6 +303,7 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 requiresEnabledFlag: self::SESSION_KEY_BOOTSTRAP_ENABLED,
                 group: 'ACCESS',
+                releasedOn: '2026-11-16',
             ),
             new FeatureFlagDefinition(
                 self::UNICODE_AUTHORED_TEXT,
@@ -257,6 +313,7 @@ final class FeatureFlagRegistry
                 self::UNICODE_AUTHORED_TEXT,
                 siteMutable: true,
                 group: 'AUTHORING',
+                releasedOn: '2026-06-27',
             ),
             new FeatureFlagDefinition(
                 self::EMOJI_AUTHORED_TEXT,
@@ -267,15 +324,17 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 requiresEnabledFlag: self::UNICODE_AUTHORED_TEXT,
                 group: 'AUTHORING',
+                releasedOn: '2026-07-03',
             ),
             new FeatureFlagDefinition(
                 self::EVENT_SUPPORT_ENABLED,
                 'Event support',
-                'Allow threads to include and display optional event date, location, and link details.',
+                'Allow event date, location, and link details on threads and show the calendar.',
                 false,
                 self::EVENT_SUPPORT_ENABLED,
                 siteMutable: true,
                 group: 'AUTHORING',
+                releasedOn: '2026-10-09',
             ),
             new FeatureFlagDefinition(
                 self::EVENT_WHEN_ENABLED,
@@ -286,6 +345,7 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 requiresEnabledFlag: self::EVENT_SUPPORT_ENABLED,
                 group: 'AUTHORING',
+                releasedOn: '2026-11-10',
             ),
             new FeatureFlagDefinition(
                 self::CALENDAR_FEED_ENABLED,
@@ -296,6 +356,7 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 requiresEnabledFlag: self::EVENT_SUPPORT_ENABLED,
                 group: 'AUTHORING',
+                releasedOn: '2026-11-17',
             ),
             new FeatureFlagDefinition(
                 self::APP_VERSION_NOTIFICATION,
@@ -305,6 +366,7 @@ final class FeatureFlagRegistry
                 self::APP_VERSION_NOTIFICATION,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-06-27',
             ),
             new FeatureFlagDefinition(
                 self::THREAD_DENSITY_TOGGLE_ENABLED,
@@ -314,6 +376,7 @@ final class FeatureFlagRegistry
                 self::THREAD_DENSITY_TOGGLE_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-09-22',
             ),
             new FeatureFlagDefinition(
                 self::TITLE_DIRECTIVE_ENABLED,
@@ -323,6 +386,7 @@ final class FeatureFlagRegistry
                 self::TITLE_DIRECTIVE_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-03',
             ),
             new FeatureFlagDefinition(
                 self::TITLE_DIRECTIVE_APPROVED_MEMBERS,
@@ -333,6 +397,7 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 requiresEnabledFlag: self::TITLE_DIRECTIVE_ENABLED,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-03',
             ),
             new FeatureFlagDefinition(
                 self::INBOX_ENABLED,
@@ -342,6 +407,7 @@ final class FeatureFlagRegistry
                 self::INBOX_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-07',
             ),
             new FeatureFlagDefinition(
                 self::TAG_UNLOCKS_ENABLED,
@@ -351,15 +417,17 @@ final class FeatureFlagRegistry
                 self::TAG_UNLOCKS_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-12',
             ),
             new FeatureFlagDefinition(
                 self::AGENT_PROMPT_ENABLED,
                 'Agent prompt',
-                'Offer /agent/ (Prompts in the main nav): the library of prompts members share as #prompt threads, with copy, search and categories, plus the site\'s own prompts for being introduced, posting as an agent, or running a copy. About, the first-visit intro and Tools link to it. Only sites whose profile has prompts show it.',
+                'Offer the community prompt library at /agent/ and the site\'s agent getting-started prompts at /agent/start/. Only sites whose profile has prompts show these pages.',
                 true,
                 self::AGENT_PROMPT_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-13',
             ),
             new FeatureFlagDefinition(
                 self::QDB_QUEUE_ENABLED,
@@ -369,6 +437,7 @@ final class FeatureFlagRegistry
                 self::QDB_QUEUE_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-17',
             ),
             new FeatureFlagDefinition(
                 self::DEPLOY_HEADER_PROMPT_ENABLED,
@@ -378,6 +447,7 @@ final class FeatureFlagRegistry
                 self::DEPLOY_HEADER_PROMPT_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-10',
             ),
             new FeatureFlagDefinition(
                 self::INSTANCE_IMPORT_PAGE_ENABLED,
@@ -387,6 +457,7 @@ final class FeatureFlagRegistry
                 self::INSTANCE_IMPORT_PAGE_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-16',
             ),
             new FeatureFlagDefinition(
                 self::PRIVATE_MESSAGE_CACHE_ENABLED,
@@ -396,6 +467,7 @@ final class FeatureFlagRegistry
                 self::PRIVATE_MESSAGE_CACHE_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-11',
             ),
             new FeatureFlagDefinition(
                 self::READING_MARGINS_ENABLED,
@@ -405,6 +477,7 @@ final class FeatureFlagRegistry
                 self::READING_MARGINS_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-12',
             ),
             new FeatureFlagDefinition(
                 self::DRAGGABLE_WINDOWS_ENABLED,
@@ -414,6 +487,17 @@ final class FeatureFlagRegistry
                 self::DRAGGABLE_WINDOWS_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-17',
+            ),
+            new FeatureFlagDefinition(
+                self::OPEN_BESIDE_ENABLED,
+                'Open beside',
+                'Let desktop readers turn on a Beside mode, on the reading-margins ruler or in Preferences. With it on, a click on a link in a page\'s content opens that page in a pane beside the column when there is room. Off by default for every reader.',
+                false,
+                self::OPEN_BESIDE_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+                releasedOn: '2026-11-17',
             ),
             new FeatureFlagDefinition(
                 self::GUESTBOOK_ENABLED,
@@ -423,6 +507,27 @@ final class FeatureFlagRegistry
                 self::GUESTBOOK_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-13',
+            ),
+            new FeatureFlagDefinition(
+                self::ZEN_STRIP_ENABLED,
+                'Zen strip',
+                "Open the home page with Zen memes: threads an approved member tagged with every tag the site profile names (on zenmemes.com, #zen and #meme). The top-liked one shows large, and a row of tiny thumbnails under it opens their tag page. Sites whose profile names no tags show none.",
+                true,
+                self::ZEN_STRIP_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+                releasedOn: '2026-11-20',
+            ),
+            new FeatureFlagDefinition(
+                self::AGENT_CHECKIN_ENABLED,
+                'Agent check-in',
+                'Offer GET /api/checkin: one plain-text request that shows an agent the newest threads and open #issue items, plus, for a signed-in approved key, unread replies and conversations, each with the exact next request.',
+                true,
+                self::AGENT_CHECKIN_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+                releasedOn: '2026-11-20',
             ),
             new FeatureFlagDefinition(
                 self::ENGAGIFY_PASSWORD_NEWSLETTER,
@@ -432,6 +537,7 @@ final class FeatureFlagRegistry
                 self::ENGAGIFY_PASSWORD_NEWSLETTER,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-08',
             ),
             new FeatureFlagDefinition(
                 self::ZALGO_THEME_ENABLED,
@@ -441,6 +547,17 @@ final class FeatureFlagRegistry
                 self::ZALGO_THEME_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-16',
+            ),
+            new FeatureFlagDefinition(
+                self::VAPORGEIST_THEME_ENABLED,
+                'Vaporgeist theme',
+                'Offer the Vaporgeist theme: Vapor\'s pink, cyan and purple with a sinking sun and grid, corrupted as heavily as Zalgo. Off by default; while it is off, anyone who chose Vaporgeist sees the site default.',
+                false,
+                self::VAPORGEIST_THEME_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+                releasedOn: '2026-11-19',
             ),
             new FeatureFlagDefinition(
                 self::MEDIA_EMBEDS_ENABLED,
@@ -450,6 +567,7 @@ final class FeatureFlagRegistry
                 self::MEDIA_EMBEDS_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',
+                releasedOn: '2026-10-08',
             ),
             new FeatureFlagDefinition(
                 self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
@@ -460,6 +578,7 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 requiresEnabledFlag: self::MEDIA_EMBEDS_ENABLED,
                 group: 'RENDERING',
+                releasedOn: '2026-10-09',
             ),
             new FeatureFlagDefinition(
                 self::POST_RECORDS_ENABLED,
@@ -469,6 +588,7 @@ final class FeatureFlagRegistry
                 self::POST_RECORDS_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-14',
             ),
             new FeatureFlagDefinition(
                 self::PENDING_CHIP_APPROVAL_ENABLED,
@@ -478,6 +598,7 @@ final class FeatureFlagRegistry
                 self::PENDING_CHIP_APPROVAL_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-14',
             ),
             new FeatureFlagDefinition(
                 self::USAGE_REPORTS_ENABLED,
@@ -487,6 +608,7 @@ final class FeatureFlagRegistry
                 self::USAGE_REPORTS_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-14',
             ),
             new FeatureFlagDefinition(
                 self::PLEDGES_ENABLED,
@@ -496,6 +618,27 @@ final class FeatureFlagRegistry
                 self::PLEDGES_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-15',
+            ),
+            new FeatureFlagDefinition(
+                self::THREAD_PORT_ENABLED,
+                'Thread port',
+                'A bookmarklet copies a Hacker News thread, nested, into a new #ported thread that agents are invited to join. Approved members port; each comment shows its author on Hacker News. Off hides the bookmarklet and the port pages.',
+                false,
+                self::THREAD_PORT_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+                releasedOn: '2026-11-19',
+            ),
+            new FeatureFlagDefinition(
+                self::THREAD_PORT_GUESTS_ENABLED,
+                'Thread port: guests',
+                'Guests can send a thread to port too. Their port waits until an approved member ports it. Off: only approved members can port.',
+                false,
+                self::THREAD_PORT_GUESTS_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+                releasedOn: '2026-11-19',
             ),
             new FeatureFlagDefinition(
                 self::FAST_NAVIGATION_ENABLED,
@@ -505,6 +648,7 @@ final class FeatureFlagRegistry
                 self::FAST_NAVIGATION_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-16',
             ),
             new FeatureFlagDefinition(
                 self::NAV_CACHED_COPY_ENABLED,
@@ -514,6 +658,7 @@ final class FeatureFlagRegistry
                 self::NAV_CACHED_COPY_ENABLED,
                 siteMutable: true,
                 group: 'EXPERIENCE',
+                releasedOn: '2026-11-16',
             ),
             new FeatureFlagDefinition(
                 self::POST_MARKDOWN_ENABLED,
@@ -523,6 +668,7 @@ final class FeatureFlagRegistry
                 self::POST_MARKDOWN_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',
+                releasedOn: '2026-11-03',
             ),
             new FeatureFlagDefinition(
                 self::TAG_LINKS_ENABLED,
@@ -532,6 +678,7 @@ final class FeatureFlagRegistry
                 self::TAG_LINKS_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',
+                releasedOn: '2026-11-05',
             ),
             new FeatureFlagDefinition(
                 self::THREAD_ACTIVITY_DRAWER_ENABLED,
@@ -541,6 +688,7 @@ final class FeatureFlagRegistry
                 self::THREAD_ACTIVITY_DRAWER_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',
+                releasedOn: '2026-11-14',
             ),
             new FeatureFlagDefinition(
                 self::STATIC_PROFILE_PAGES_ENABLED,
@@ -550,6 +698,7 @@ final class FeatureFlagRegistry
                 self::STATIC_PROFILE_PAGES_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',
+                releasedOn: '2026-10-30',
             ),
             new FeatureFlagDefinition(
                 self::STATIC_DETAIL_PAGES_ENABLED,
@@ -559,6 +708,7 @@ final class FeatureFlagRegistry
                 self::STATIC_DETAIL_PAGES_ENABLED,
                 siteMutable: true,
                 group: 'RENDERING',
+                releasedOn: '2026-10-06',
             ),
             new FeatureFlagDefinition(
                 self::DEDALUS_AGENT_REPLIES_ENABLED,
@@ -567,6 +717,7 @@ final class FeatureFlagRegistry
                 true,
                 self::DEDALUS_AGENT_REPLIES_ENABLED,
                 'private',
+                releasedOn: '2026-06-27',
             ),
             new FeatureFlagDefinition(
                 self::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
@@ -576,6 +727,7 @@ final class FeatureFlagRegistry
                 self::DEDALUS_AGENT_REPLIES_AUTOMATIC_ENABLED,
                 'private',
                 requiresEnabledFlag: self::DEDALUS_AGENT_REPLIES_ENABLED,
+                releasedOn: '2026-06-27',
             ),
             new FeatureFlagDefinition(
                 self::AGENT_RESPONSE_REQUESTS_ENABLED,
@@ -585,6 +737,7 @@ final class FeatureFlagRegistry
                 self::AGENT_RESPONSE_REQUESTS_ENABLED,
                 'private',
                 group: 'DEDALUS',
+                releasedOn: '2026-10-05',
             ),
             new FeatureFlagDefinition(
                 self::LLM_CONVERSATION_RECORDING_ENABLED,
@@ -593,6 +746,7 @@ final class FeatureFlagRegistry
                 true,
                 self::LLM_CONVERSATION_RECORDING_ENABLED,
                 'private',
+                releasedOn: '2026-09-06',
             ),
             new FeatureFlagDefinition(
                 self::LLM_CONVERSATION_UI_ENABLED,
@@ -601,6 +755,7 @@ final class FeatureFlagRegistry
                 true,
                 self::LLM_CONVERSATION_UI_ENABLED,
                 'private',
+                releasedOn: '2026-09-06',
             ),
             new FeatureFlagDefinition(
                 self::FAST_SCORING_ENABLED,
@@ -610,6 +765,7 @@ final class FeatureFlagRegistry
                 self::FAST_SCORING_ENABLED,
                 'private',
                 group: 'FASTMOD',
+                releasedOn: '2026-09-27',
             ),
             new FeatureFlagDefinition(
                 self::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED,
@@ -620,6 +776,7 @@ final class FeatureFlagRegistry
                 'private',
                 requiresEnabledFlag: self::FAST_SCORING_ENABLED,
                 group: 'FASTMOD',
+                releasedOn: '2026-09-27',
             ),
             new FeatureFlagDefinition(
                 self::FASTMOD_AUTOMATIC_TAGGING_ENABLED,
@@ -630,6 +787,7 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 requiresEnabledFlag: self::FAST_SCORING_ENABLED,
                 group: 'FASTMOD',
+                releasedOn: '2026-10-20',
             ),
         ];
     }

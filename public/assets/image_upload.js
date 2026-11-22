@@ -177,6 +177,15 @@
     form.__imageEligible = allowed;
     lock(form, Boolean(form.__imageBusy));
   }
+  // The identity last confirmed allowed, so a resumed or reloaded page can offer Attach image before
+  // the profile check answers (on iOS that request can take seconds after the app was suspended).
+  // Only the menu item depends on it: assertEligible() re-checks before any upload. Not a forum_pki_
+  // key, so writing it does not trigger other tabs' identity re-checks.
+  const rememberedKey = 'forum_image_eligible_identity';
+  function remembered() { try { return localStorage.getItem(rememberedKey) || ''; } catch { return ''; } }
+  function remember(identity) {
+    try { if (identity) localStorage.setItem(rememberedKey, identity); else localStorage.removeItem(rememberedKey); } catch {}
+  }
   async function refreshEligibility(form, preserveCurrent = false) {
     const serial = form.__imageEligibilitySerial = (form.__imageEligibilitySerial || 0) + 1;
     if (!preserveCurrent) displayEligibility(form, false);
@@ -190,6 +199,7 @@
       if (serial !== form.__imageEligibilitySerial) return false;
       if (identity !== form.__imageEligibleIdentity) displayEligibility(form, false);
       if (!/^openpgp:[a-f0-9]{40,64}$/.test(identity)) return false;
+      if (form.__imageEligible !== true && identity === remembered()) displayEligibility(form, true);
       const controller = new AbortController();
       timer = setTimeout(() => controller.abort(), 8000);
       const response = await fetch('/api/get_profile?profile_slug=' + encodeURIComponent(identity.replace(':','-')), {credentials:'same-origin',cache:'no-store',signal:controller.signal});
@@ -200,6 +210,8 @@
       if (serial !== form.__imageEligibilitySerial) return false;
       if (identity !== currentIdentity) { displayEligibility(form, false); return false; }
       form.__imageEligibleIdentity = allowed ? identity : null;
+      if (allowed) remember(identity);
+      else if (response.ok && remembered() === identity) remember('');
       displayEligibility(form, allowed);
       return allowed;
     } catch {

@@ -17,6 +17,7 @@ $address = null;
 $mode = DevServerLog::MODE_DEFAULT;
 $logFile = null;
 $runWorker = true;
+$tryPorts = false;
 
 foreach (array_slice($argv, 1) as $argument) {
     if (str_starts_with($argument, '--address=')) {
@@ -29,6 +30,8 @@ foreach (array_slice($argv, 1) as $argument) {
         $logFile = substr($argument, strlen('--log-file='));
     } elseif ($argument === '--no-worker') {
         $runWorker = false;
+    } elseif ($argument === '--try-ports') {
+        $tryPorts = true;
     } else {
         fwrite(STDERR, "Unknown dev server option: {$argument}\n");
         exit(1);
@@ -41,8 +44,6 @@ if ($address === null || $address === '') {
 }
 
 $root = dirname(__DIR__);
-$url = 'http://' . $address . '/';
-$port = preg_replace('/^.*:(\d+)$/', ':$1', $address) ?? $address;
 $checkout = basename($root);
 $isTty = stream_isatty(STDOUT);
 $color = $isTty && getenv('NO_COLOR') === false;
@@ -73,26 +74,10 @@ register_shutdown_function(static function () use (&$savedTty): void {
     }
 });
 
-putenv('V3_DEV_LOG=1');
-$process = proc_open(
-    [PHP_BINARY, '-S', $address, '-t', $root . '/public', $root . '/public/router.php'],
-    [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['pipe', 'w']],
-    $pipes,
-    $root,
-);
-if (!is_resource($process)) {
-    fwrite(STDERR, "Could not start the PHP development server.\n");
-    exit(1);
-}
-$serverErrors = $pipes[2];
-$registration = \ForumRewrite\Support\DevServerRegistry::register(
-    $root,
-    \ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: $root . '/state/local_repository',
-    \ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: $root . '/state/cache/post_index.sqlite3',
-    proc_get_status($process)['pid'],
-    $address,
-);
-$shutdownServer = static function () use (&$process, $serverErrors, $registration): void {
+$process = null;
+$serverErrors = null;
+$registration = null;
+$shutdownServer = static function () use (&$process, &$serverErrors, &$registration): void {
     if (!is_resource($process)) {
         return;
     }
@@ -126,6 +111,73 @@ if ($canSignal) {
         $resized = true;
     });
 }
+
+// Wait for PHP's own bind result. A preliminary socket probe races other
+// launchers and can mistake an existing server for this child.
+putenv('V3_DEV_LOG=1');
+$separator = strrpos($address, ':');
+$host = substr($address, 0, $separator);
+$firstPort = (int) substr($address, $separator + 1);
+$lastPort = $tryPorts ? min(65535, $firstPort + 9) : $firstPort;
+for ($candidate = $firstPort; $candidate <= $lastPort; $candidate++) {
+    $address = $host . ':' . $candidate;
+    $process = proc_open(
+        [PHP_BINARY, '-S', $address, '-t', $root . '/public', $root . '/public/router.php'],
+        [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['pipe', 'w']],
+        $pipes,
+        $root,
+    );
+    if (!is_resource($process)) {
+        fwrite(STDERR, "Could not start the PHP development server.\n");
+        exit(1);
+    }
+    $serverErrors = $pipes[2];
+    stream_set_blocking($serverErrors, false);
+    $startup = '';
+    $listening = false;
+    $deadline = microtime(true) + 5.0;
+    while (!$stopping && microtime(true) < $deadline) {
+        $readable = [$serverErrors];
+        if ($controlInput !== null) { $readable[] = $controlInput; }
+        $write = $except = null;
+        if (@stream_select($readable, $write, $except, 0, 100000) === false) { continue; }
+        if ($controlInput !== null && in_array($controlInput, $readable, true)) {
+            $stopping = true;
+            break;
+        }
+        $startup .= fgets($serverErrors) ?: '';
+        if (preg_match('/Development Server \([^\r\n]+\) started/', $startup) === 1) {
+            $listening = true;
+            break;
+        }
+        if (feof($serverErrors)) { break; }
+    }
+    if ($stopping) { $shutdownServer(); exit(0); }
+    if ($listening) {
+        stream_set_blocking($serverErrors, true);
+        break;
+    }
+    $shutdownServer();
+    $occupied = str_contains($startup, 'Failed to listen on ' . $address)
+        && stripos($startup, 'Address already in use') !== false;
+    if ($occupied && $candidate < $lastPort) { continue; }
+    $failure = trim($startup) ?: "Timed out waiting for PHP to listen on {$address}.";
+    if ($occupied && $tryPorts) {
+        $failure .= "\nNo available port on {$host}:{$firstPort}-{$lastPort}. Try ./v3 start " . ($lastPort < 65535 ? $lastPort + 1 : 8000) . '.';
+    }
+    fwrite(STDERR, $failure . "\n");
+    if ($logHandle !== false) { fwrite($logHandle, $failure . "\n"); }
+    exit(1);
+}
+$url = 'http://' . $address . '/';
+$port = ':' . $candidate;
+$registration = \ForumRewrite\Support\DevServerRegistry::register(
+    $root,
+    \ForumRewrite\Support\DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: $root . '/state/local_repository',
+    \ForumRewrite\Support\DeploymentSettings::value('FORUM_DATABASE_PATH') ?: $root . '/state/cache/post_index.sqlite3',
+    proc_get_status($process)['pid'],
+    $address,
+);
 
 function terminalRows(): int
 {
@@ -191,6 +243,9 @@ if ($headerOn) {
     fwrite(STDOUT, "\e[" . terminalRows() . ";1H");
 } else {
     $emit("v3 {$port} listening on {$url}  ({$checkout})");
+}
+foreach (explode("\n", trim($startup)) as $line) {
+    if ($line !== '' && !DevServerLog::isBuiltInNoise($line)) { $emit($line); }
 }
 
 // Queued work (imports, rebuilds, offline snapshots) runs here the way cron runs it on a server.
@@ -290,4 +345,4 @@ if ($workerBusy) {
 if ($logHandle !== false) {
     fclose($logHandle);
 }
-exit(0);
+exit($stopping ? 0 : 1);

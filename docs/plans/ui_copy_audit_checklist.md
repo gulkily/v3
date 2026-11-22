@@ -967,5 +967,15 @@ Verification: Chromium; `private_message_redesign.mjs` in all 18 themes with 390
 ## Tools → Import progress — 2026-11-17
 
 - [x] The step list replaces the "Importing…" status line and the Task worker row. The form is hidden while an import runs. Raw output is folded under Log. New copy is limited to step names, "Elapsed · updated · time left", and the not-started recovery: "The task worker didn't start.", the command and Try again. Checked in 8 themes at 390 and 1280 px ([Step 4](import_without_worker/import_without_worker_step4_implementation_summary.md)).
+
+## Local start page import progress — 2026-11-22
+
+- [x] Removed "Importing… This can take several minutes. Keep this page open." The shared step list replaces it; the form and its explanation are hidden while an import runs. No new copy beyond what Tools → Import already uses, plus one line of counts after an import. The review sentence drops "Local content is available below." when records were imported and the link to them shows. Checked in every offered theme at 390 and 1280 px, scripts on and off ([Step 4](local_import_progress/local_import_progress_step4_implementation_summary.md)).
 - 2026-11-17, [new instance home quickfix](./new_instance_home/new_instance_home_quickfix.md). Changed: the empty Liked text ("Threads you like will show up here." → "Threads people like show up here.", since Liked is anyone's likes). Added: a "Getting started" link on the board only while it falls back to All, and on "No threads yet"; the `/start/` page. `/local/`'s "search your local content" became "search" (shared partial).
 - 2026-11-17, [issue tagset quickfix](./issue_tagset/issue_tagset_quickfix.md). Changed: the tag-unlocks flag description and the tour line now name #issue instead of #meta. No text added.
+- 2026-11-18, [guest name visibility](./guest_name_visibility/guest_name_visibility_one_shot.md). Added: "Posting as guest · Choose a name" under Post in every composer, for guest browsers only (hidden before paint once this browser's key has a name). Changed: Account's Name row action reads "Choose a name" instead of "Change" for a key still named guest. The removed "Post as {name} · Change" row (2026-10-28, "takes up way too much space") was a full-width row with an inline editor for everyone; this is one meta line, guests only.
+
+## Event support search — 2026-11-20
+
+- Clarified the flag's existing description so the calendar query finds Event support as well as Calendar feed. No new UI or renamed switch.
+- Verified exact query and clearing using the rendered canonical fixture and actual filter script. Added the browser regression; Chromium launch and visual checks remain pending in this executor. [Verification record](calendar_flag_search/calendar_flag_search_one_shot.md#delivery-and-verification).

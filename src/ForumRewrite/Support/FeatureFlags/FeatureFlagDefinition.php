@@ -16,6 +16,8 @@ final class FeatureFlagDefinition
         public readonly bool $siteMutable = false,
         public readonly ?string $requiresEnabledFlag = null,
         public readonly ?string $group = null,
+        /** YYYY-MM-DD the flag shipped; set when adding a flag (feature flags page, Recently released). */
+        public readonly ?string $releasedOn = null,
     ) {
     }
 

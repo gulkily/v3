@@ -144,6 +144,7 @@ final class ToolsPageController
                 'threadDensityEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_DENSITY_TOGGLE_ENABLED),
                 'readingMarginsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::READING_MARGINS_ENABLED),
                 'draggableWindowsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::DRAGGABLE_WINDOWS_ENABLED),
+                'openBesideEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::OPEN_BESIDE_ENABLED),
                 'usageLogEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED),
                 'toolNavOptions' => ToolsPageSupport::navOptions('preferences'),
             ],
@@ -201,7 +202,23 @@ final class ToolsPageController
                         'description' => 'Tweet text, author, and link from x.com.',
                         'bookmarklet_kind' => 'tweet',
                     ],
+                    ...($this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_PORT_ENABLED) ? [
+                        [
+                            'label' => 'Port HN',
+                            'mode' => 'same-window',
+                            'description' => 'The Hacker News thread, nested, or the comment holding your selection and its replies.',
+                            'bookmarklet_kind' => 'hn-port',
+                        ],
+                        [
+                            'label' => 'Port HN',
+                            'mode' => 'new-window',
+                            'description' => 'The Hacker News thread, nested, or the comment holding your selection and its replies.',
+                            'bookmarklet_kind' => 'hn-port',
+                        ],
+                    ] : []),
                 ],
+                'portsWaitingLink' => $this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_PORT_ENABLED)
+                    && $this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_PORT_GUESTS_ENABLED),
                 'toolNavOptions' => ToolsPageSupport::navOptions('bookmarklets'),
             ],
             'Bookmarklets',

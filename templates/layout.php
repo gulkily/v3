@@ -33,6 +33,16 @@
         }
       } catch (error) {}
       try {
+        // Named browser: a saved key with a name other than guest, or a chosen name still pending
+        // (same keys as Account's guest naming). Hides the composer's "Posting as guest" line.
+        var namedFingerprint = (localStorage.getItem('forum_pki_fingerprint') || '').trim().toLowerCase();
+        if (localStorage.getItem('forum_pki_public_key') && localStorage.getItem('forum_pki_private_key')
+          && ((localStorage.getItem('forum_pki_username') || 'guest').trim().toLowerCase() !== 'guest'
+            || localStorage.getItem('forum_pending_profile_name:openpgp:' + namedFingerprint))) {
+          document.documentElement.setAttribute('data-viewer-named', '');
+        }
+      } catch (error) {}
+      try {
         // Zoom table text size per kind (ZoomTable, table_zoom.js), restored before paint.
         var tableZoomKeys = <?= json_encode(\ForumRewrite\View\ZoomTable::KINDS, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
         Object.keys(tableZoomKeys).forEach(function (kind) {
@@ -205,6 +215,27 @@
       } catch (error) {
       }
 <?php endif; ?>
+<?php if ($openBesideEnabled ?? false): ?>
+      try {
+        // Open beside (open_beside.js): a page shown in the pane's frame has no
+        // site header, ruler, status bar or offline mode bar, from the first frame. Only the
+        // pane's own frame name counts, so other frames (the tour) keep theirs.
+        // The mode itself is restored before paint too, so the ruler's Beside
+        // toggle is drawn pressed from the first frame.
+        if (localStorage.getItem(browserRuntime.openBesideStorageKey) === 'on') {
+          document.documentElement.setAttribute('data-open-beside', 'on');
+        }
+        if (window.name === 'forum-open-beside' && window.parent !== window && window.parent.location.origin === location.origin) {
+          document.documentElement.setAttribute('data-open-beside-framed', '');
+          var framedStyle = document.createElement('style');
+          framedStyle.textContent = ':root[data-open-beside-framed] .site-header,:root[data-open-beside-framed] .shell-sky,'
+            + ':root[data-open-beside-framed] .reading-margins,:root[data-open-beside-framed] .site-status-bar,'
+            + ':root[data-open-beside-framed] .app-version-banner,:root[data-open-beside-framed] .offline-mode-bar{display:none!important}';
+          document.head.appendChild(framedStyle);
+        }
+      } catch (error) {
+      }
+<?php endif; ?>
 <?php if ($draggableWindowsEnabled ?? false): ?>
       try {
         // Window controls (theme-bubblegum.js) are on unless this browser turned them off in Preferences.
@@ -233,12 +264,18 @@
   </script>
 <?php if ($appVersionNotificationEnabled): ?>
   <meta name="app-version" content="<?= $e($appVersion) ?>">
+<?php if (($navCachedCopyScriptPath ?? null) !== null): ?>
+  <meta name="page-version" content="<?= $e($pageVersion) ?>">
+<?php endif; ?>
   <meta name="app-version-endpoint" content="<?= $e($versionEndpoint) ?>">
 <?php if ($versionStorageKey !== 'forum_pending_app_version'): ?>
   <meta name="app-version-storage-key" content="<?= $e($versionStorageKey) ?>">
 <?php endif; ?>
 <?php endif; ?>
   <link rel="icon" href="<?= $e($faviconPath) ?>" sizes="32x32">
+<?php if (($touchIconPath ?? null) !== null): ?>
+  <link rel="apple-touch-icon" href="<?= $e($touchIconPath) ?>">
+<?php endif; ?>
 <?php if (!$approvedMembersOnlyEnabled): ?>
   <link rel="manifest" href="/manifest.webmanifest">
 <?php endif; ?>
@@ -268,6 +305,10 @@
 <?php endif; ?>
 <?php if ($showReadingMargins ?? false): ?>
   <script src="<?= $e($readingMarginsScriptPath) ?>" defer></script>
+<?php endif; ?>
+<?php if ($openBesideEnabled ?? false): ?>
+  <link rel="stylesheet" href="<?= $e($openBesideCssPath) ?>">
+  <script src="<?= $e($openBesideScriptPath) ?>" defer></script>
 <?php endif; ?>
 <?php foreach ($scriptPaths as $scriptPath): ?>
   <script src="<?= $e($scriptPath) ?>" defer></script>

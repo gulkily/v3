@@ -57,6 +57,33 @@ final class TagPaginationTest
         } finally { @unlink($database); }
     }
 
+    public function testAPairOfTagsListsThreadsCarryingBoth(): void
+    {
+        [$app, $pdo, $database] = $this->environment();
+        try {
+            // Odd threads carry #page as a board tag; every thread has the #page label. Add #zen to a few.
+            $pdo->exec("UPDATE threads SET thread_labels_json = '[\"page\",\"zen\"]' WHERE root_post_id IN ('paged-001','paged-002','paged-003')");
+            $pdo->exec("UPDATE threads SET board_tags_json = '[\"ZEN\"]', thread_labels_json = '[]' WHERE root_post_id = 'paged-004'");
+            assertSame(['paged-003', 'paged-002', 'paged-001'], array_column(TagPage::page($pdo, ['page', 'zen'])['items'], 'root_post_id'));
+            assertSame(4, count(TagPage::page($pdo, ['zen'])['items']));
+
+            $html = $this->render($app, '/tags/Page+Zen');
+            assertSame(200, http_response_code());
+            assertStringContains('<h1>#page + #zen</h1>', $html);
+            assertStringContains('paged-003', $html);
+            assertStringNotContains('paged-004', $html);
+            assertStringNotContains('rel="next"', $html);
+            // Both orders list the same threads; a single tag is unchanged.
+            assertStringContains('<h1>#zen + #page</h1>', $this->render($app, '/tags/zen+page'));
+            assertStringContains('paged-004', $this->render($app, '/tags/zen'));
+            assertStringContains('/tags/page+zen#post-paged-001', $this->render($app, '/tags/page+zen?with=paged-001'));
+            foreach (['/tags/page+page', '/tags/a+b+c+d+e', '/tags/page+', '/tags/page+no-such-tag'] as $url) {
+                $this->render($app, $url);
+                assertSame(404, http_response_code(), $url);
+            }
+        } finally { @unlink($database); }
+    }
+
     public function testVersion38StartupRebuildsBeforeTagQuery(): void
     {
         [$app, $pdo, $database] = $this->environment();

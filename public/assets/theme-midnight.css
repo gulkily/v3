@@ -2,6 +2,7 @@
 :root[data-theme="midnight"],
 .theme-menu__option[data-theme-option="midnight"] {
   color-scheme: dark;
+  --media-dim: 0.85;
   --page-bg: #063a3a;
   --body-background: linear-gradient(180deg, #063a3a 0%, #042b2b 100%);
   --ink: #c8c8c8;
@@ -824,6 +825,16 @@ html[data-theme="midnight"] ::-webkit-scrollbar-corner {
 }
 
 @media (max-width: 40rem) {
+  :root[data-theme="midnight"] .gallery-grid {
+    --gallery-columns: 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(max(1, round(nearest, calc(var(--gallery-columns) / var(--gallery-zoom, 1)), 1)), minmax(0, 1fr));
+    padding: 0.75rem calc(0.75rem + 1px) calc(0.75rem + 1px) 0.75rem;
+  }
+}
+
+/* A narrow reading-margins column gets the phone layout too. */
+@container (max-width: 36rem) {
   :root[data-theme="midnight"] .gallery-grid {
     --gallery-columns: 2;
     grid-template-columns: repeat(2, minmax(0, 1fr));

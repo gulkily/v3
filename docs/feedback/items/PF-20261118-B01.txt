@@ -1,0 +1,18 @@
+ID: PF-20261118-B01
+Title: Offline reader browser tests print an undefined-variable warning
+Kind: bug
+Workflow: blocked
+Created: 2026-11-18
+Evidence: locally-verified
+
+Request:
+"Please fix it", after Claude reported that the offline reader page logs a PHP warning ("Undefined variable $tagLinksEnabled") on every render. On inspection the site does not log it: three browser tests include templates/pages/offline_reader.php outside the renderer without setting the variable, and the warning is printed in their output.
+
+Sources:
+- Session: Claude chat with the maintainer, 2026-11-18
+
+Done when:
+The offline reader browser tests run without the warning, and a test would catch the reader really losing its hashtag-links setting.
+
+Notes:
+2026-11-18: one-shot on fix/offline_reader_tag_links (record docs/plans/offline_reader_tag_links/offline_reader_tag_links_one_shot.md). Test-only change; no application code changed. Blocked on review and merge.

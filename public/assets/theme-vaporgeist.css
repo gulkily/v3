@@ -1,0 +1,297 @@
+/* Theme: vaporgeist */
+/* Vaporgeist: Vapor's palette turned up into a neon cyberpunk night. A striped
+ * sun sinks behind a perspective grid that runs toward the viewer; panels are
+ * smoked glass with cyan corner brackets; headings and the brand glow like
+ * neon tubes. Reading text stays plain.
+ *
+ * Motion (the grid run and a rare neon flicker on the brand) runs only for
+ * readers who have not asked for reduced motion.
+ *
+ * Offered only while the "Vaporgeist theme" feature flag is on (see
+ * ThemeRegistry). */
+:root[data-theme="vaporgeist"],
+.theme-menu__option[data-theme-option="vaporgeist"] {
+  color-scheme: dark;
+  --neon-pink: #ff71ce;
+  --neon-cyan: #01cdfe;
+  --neon-violet: #9d4dff;
+  --neon-yellow: #fff3a3;
+  --page-bg: #120021;
+  --body-background:
+    linear-gradient(180deg, rgba(255, 113, 206, 0.75) 0 2px, transparent 2px 4%, rgba(255, 113, 206, 0.55) 4% calc(4% + 1px), transparent calc(4% + 1px) 10%, rgba(255, 113, 206, 0.5) 10% calc(10% + 1px), transparent calc(10% + 1px) 19%, rgba(255, 113, 206, 0.45) 19% calc(19% + 1px), transparent calc(19% + 1px) 32%, rgba(255, 113, 206, 0.45) 32% calc(32% + 2px), transparent calc(32% + 2px) 50%, rgba(255, 113, 206, 0.4) 50% calc(50% + 2px), transparent calc(50% + 2px) 74%, rgba(255, 113, 206, 0.4) 74% calc(74% + 3px), transparent calc(74% + 3px)),
+    repeating-conic-gradient(from 90deg at 50% 0%, transparent 0 5.4deg, rgba(1, 205, 254, 0.42) 5.4deg 6deg),
+    linear-gradient(180deg, #3a0d6b 0%, #1a0533 45%, #090314 100%),
+    repeating-linear-gradient(180deg, transparent 0 9px, #1d0438 9px 13px),
+    radial-gradient(circle closest-side, #fff3a3 0%, #ffb86b 36%, #ff71ce 74%, #c13cff 98%, transparent 99%),
+    radial-gradient(ellipse at 50% 60%, rgba(255, 113, 206, 0.28), transparent 45%),
+    radial-gradient(circle at top, rgba(1, 205, 254, 0.22), transparent 40%),
+    linear-gradient(180deg, #2b0b59 0%, #120021 52%, #090314 100%);
+  --ink: #7afcff;
+  --ink-soft: #ff9de2;
+  --line: #ff71ce;
+  --panel: rgba(33, 9, 63, 0.82);
+  --input-bg: rgba(19, 4, 38, 0.92);
+  --button-bg: rgba(255, 113, 206, 0.16);
+  --button-alt-bg: rgba(122, 252, 255, 0.16);
+  --feedback-ok-bg: rgba(122, 252, 255, 0.12);
+  --feedback-error-bg: rgba(255, 113, 206, 0.12);
+  --status-error: #ffb3de;
+  --status-ok: #9bffeb;
+  --status-warning: #ffd67a;
+  --active-bg: rgba(255, 113, 206, 0.24);
+  --active-ink: #ffffff;
+  --active-line: #ff71ce;
+  --active-ring: rgba(255, 113, 206, 0.2);
+  --body-font: "Trebuchet MS", "Century Gothic", "Segoe UI", sans-serif;
+  --ui-font: "Trebuchet MS", "Century Gothic", "Segoe UI", sans-serif;
+  --code-font: "Courier New", monospace;
+}
+
+.theme-swatch[data-theme="vaporgeist"] {
+  background:
+    linear-gradient(180deg, transparent 0 58%, #120021 58% 62%, transparent 62% 70%, #120021 70% 73%, transparent 73%),
+    radial-gradient(circle at 50% 62%, #fff3a3 0 18%, #ff71ce 36%, transparent 37%),
+    linear-gradient(180deg, #2b0b59 0%, #120021 62%, #01cdfe 63%, #120021 66%);
+  border-color: #ff71ce;
+  box-shadow: inset 0 0 0 0.12rem #120021, 0 0 6px rgba(255, 113, 206, 0.6);
+}
+
+.theme-menu__option[data-theme-option="vaporgeist"] {
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 4px #ff71ce, 0 0 10px rgba(255, 113, 206, 0.6);
+}
+
+/* The sun sinks behind the floor; layers match --body-background: grid
+ * lines, grid rays and floor share the bottom 40%; stripes cut the lower half
+ * of the sun; the rest fill the screen. */
+:root[data-theme="vaporgeist"] body::before {
+  background-repeat: no-repeat;
+  background-size:
+    100% 40%, 100% 40%, 100% 40%,
+    min(52vmin, 23.3rem) min(29vmin, 13rem),
+    min(58vmin, 26rem) min(58vmin, 26rem),
+    cover, cover, cover;
+  background-position:
+    0 100%, 0 100%, 0 100%,
+    50% calc(60vh - min(29vmin, 13rem)),
+    50% calc(60vh - min(43.5vmin, 19.5rem)),
+    0 0, 0 0, 0 0;
+}
+
+/* Pages with the app shell get a true perspective grid instead of the flat
+ * lines above; the floor colour stays in the page background. */
+:root[data-theme="vaporgeist"]:has(.shell-sky) body::before {
+  background-size:
+    0 0, 0 0, 100% 40%,
+    min(52vmin, 23.3rem) min(29vmin, 13rem),
+    min(58vmin, 26rem) min(58vmin, 26rem),
+    cover, cover, cover;
+}
+
+:root[data-theme="vaporgeist"] .shell-sky {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  perspective: 22rem;
+  perspective-origin: 50% 60vh;
+}
+
+:root[data-theme="vaporgeist"] .shell-sky::before {
+  content: "";
+  position: absolute;
+  left: -60%;
+  right: -60%;
+  top: 60vh;
+  height: 140vh;
+  transform-origin: 50% 0;
+  transform: rotateX(78deg);
+  background:
+    linear-gradient(90deg, rgba(1, 205, 254, 0.55) 0 2px, transparent 2px) 0 0 / 3rem 3rem,
+    linear-gradient(0deg, rgba(255, 113, 206, 0.6) 0 2px, transparent 2px) 0 0 / 3rem 3rem;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 12%, #000 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 12%, #000 100%);
+}
+
+/* Faint scanlines over the page, like a CRT in a dark room. */
+:root[data-theme="vaporgeist"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.14) 0 1px, transparent 1px 3px);
+}
+
+/* Neon headings. */
+:root[data-theme="vaporgeist"] h1,
+:root[data-theme="vaporgeist"] h2 {
+  color: #fdf2ff;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  text-shadow:
+    0 0 2px #fff,
+    0 0 6px var(--neon-pink),
+    0 0 16px rgba(255, 113, 206, 0.7),
+    0 0 32px rgba(157, 77, 255, 0.45);
+}
+
+@media (max-width: 40rem) {
+  :root[data-theme="vaporgeist"] h1,
+  :root[data-theme="vaporgeist"] h2 {
+    letter-spacing: 0.04em;
+  }
+}
+
+:root[data-theme="vaporgeist"] h3,
+:root[data-theme="vaporgeist"] .thread-row__title,
+:root[data-theme="vaporgeist"] .thread-row__title a {
+  color: var(--ink);
+  text-decoration: none;
+  text-shadow: 0 0 6px rgba(1, 205, 254, 0.55);
+}
+
+:root[data-theme="vaporgeist"] .site-brand {
+  color: #ffe6f6;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 2px #fff,
+    0 0 7px var(--neon-pink),
+    0 0 18px var(--neon-pink),
+    0 0 36px rgba(255, 113, 206, 0.5);
+}
+
+:root[data-theme="vaporgeist"] .eyebrow {
+  color: var(--neon-yellow);
+  letter-spacing: 0.22em;
+  text-shadow: 0 0 6px rgba(255, 243, 163, 0.45);
+}
+
+:root[data-theme="vaporgeist"] a {
+  color: var(--neon-pink);
+  text-decoration-color: rgba(255, 113, 206, 0.5);
+  text-underline-offset: 0.2em;
+}
+
+:root[data-theme="vaporgeist"] a:hover {
+  color: #ffc4ea;
+  text-shadow: 0 0 8px rgba(255, 113, 206, 0.8);
+}
+
+:root[data-theme="vaporgeist"] .site-header:not(.site-header--app)::after {
+  content: "";
+  display: block;
+  margin-top: 0.7rem;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-cyan) 15%, var(--neon-pink) 50%, var(--neon-violet) 85%, transparent);
+  box-shadow: 0 0 10px rgba(255, 113, 206, 0.7);
+}
+
+/* Smoked-glass panels with cyan corner brackets. */
+:root[data-theme="vaporgeist"] .card {
+  border-color: rgba(255, 113, 206, 0.75);
+  border-radius: 2px;
+  background:
+    linear-gradient(var(--neon-cyan), var(--neon-cyan)) top left / 0.9rem 2px no-repeat,
+    linear-gradient(var(--neon-cyan), var(--neon-cyan)) top left / 2px 0.9rem no-repeat,
+    linear-gradient(var(--neon-cyan), var(--neon-cyan)) top right / 0.9rem 2px no-repeat,
+    linear-gradient(var(--neon-cyan), var(--neon-cyan)) top right / 2px 0.9rem no-repeat,
+    linear-gradient(var(--neon-cyan), var(--neon-cyan)) bottom left / 0.9rem 2px no-repeat,
+    linear-gradient(var(--neon-cyan), var(--neon-cyan)) bottom left / 2px 0.9rem no-repeat,
+    linear-gradient(var(--neon-cyan), var(--neon-cyan)) bottom right / 0.9rem 2px no-repeat,
+    linear-gradient(var(--neon-cyan), var(--neon-cyan)) bottom right / 2px 0.9rem no-repeat,
+    var(--panel);
+  box-shadow:
+    0 0 0 1px rgba(1, 205, 254, 0.12) inset,
+    0 0 18px rgba(255, 113, 206, 0.22),
+    0 0 40px rgba(157, 77, 255, 0.15);
+  -webkit-backdrop-filter: blur(6px) saturate(1.2);
+  backdrop-filter: blur(6px) saturate(1.2);
+}
+
+:root[data-theme="vaporgeist"] .thread-row + .thread-row {
+  border-top-color: rgba(255, 113, 206, 0.3);
+}
+
+:root[data-theme="vaporgeist"] .nav-link,
+:root[data-theme="vaporgeist"] input,
+:root[data-theme="vaporgeist"] textarea,
+:root[data-theme="vaporgeist"] select,
+:root[data-theme="vaporgeist"] .feedback {
+  border-radius: 2px;
+}
+
+:root[data-theme="vaporgeist"] .nav-link {
+  border-color: rgba(255, 113, 206, 0.55);
+}
+
+:root[data-theme="vaporgeist"] .nav-link[aria-current="page"],
+:root[data-theme="vaporgeist"] .nav-link.is-active {
+  background: linear-gradient(180deg, rgba(255, 113, 206, 0.35), rgba(157, 77, 255, 0.3));
+  border-color: var(--neon-pink);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(255, 113, 206, 0.55);
+}
+
+:root[data-theme="vaporgeist"] input,
+:root[data-theme="vaporgeist"] textarea,
+:root[data-theme="vaporgeist"] select {
+  border-color: rgba(1, 205, 254, 0.55);
+  box-shadow: 0 0 0 1px rgba(1, 205, 254, 0.08) inset;
+}
+
+:root[data-theme="vaporgeist"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option) {
+  border-radius: 2px;
+  border-color: var(--neon-cyan);
+  color: var(--ink);
+  box-shadow: 0 0 8px rgba(1, 205, 254, 0.35);
+}
+
+:root[data-theme="vaporgeist"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):hover {
+  background: rgba(1, 205, 254, 0.16);
+  box-shadow: 0 0 14px rgba(1, 205, 254, 0.6);
+}
+
+/* Focus: a clean yellow ring, a colour no border or glow uses. */
+:root[data-theme="vaporgeist"] :focus-visible {
+  outline: 2px solid var(--neon-yellow);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+:root[data-theme="vaporgeist"] ::selection {
+  background: var(--neon-pink);
+  color: #120021;
+}
+
+:root[data-theme="vaporgeist"] ::placeholder {
+  color: #b48fd0;
+}
+
+html[data-theme="vaporgeist"] {
+  scrollbar-color: var(--neon-pink) #120021;
+  scrollbar-width: thin;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes vaporgeist-grid-run {
+    from { background-position: 0 0, 0 0; }
+    to { background-position: 0 3rem, 0 3rem; }
+  }
+
+  @keyframes vaporgeist-neon {
+    0%, 91%, 93%, 96%, 100% { opacity: 1; }
+    92% { opacity: 0.55; }
+    95% { opacity: 0.8; }
+  }
+
+  :root[data-theme="vaporgeist"] .shell-sky::before {
+    animation: vaporgeist-grid-run 2.4s linear infinite;
+  }
+
+  :root[data-theme="vaporgeist"] .site-brand {
+    animation: vaporgeist-neon 9s steps(1, end) infinite;
+  }
+}

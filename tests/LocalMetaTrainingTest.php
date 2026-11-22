@@ -19,7 +19,7 @@ final class LocalMetaTrainingTest
         $pdo->exec("CREATE TABLE posts (post_id TEXT PRIMARY KEY, thread_id TEXT, subject TEXT, body TEXT, board_tags_json TEXT NOT NULL DEFAULT '[]', post_tags_json TEXT NOT NULL DEFAULT '[]', is_hidden INTEGER NOT NULL DEFAULT 0, retracted_at TEXT NULL)");
         $pdo->exec('CREATE TABLE threads (root_post_id TEXT PRIMARY KEY, thread_labels_json TEXT NOT NULL)');
         $post = $pdo->prepare('INSERT INTO posts (post_id, thread_id, subject, body) VALUES (?, ?, ?, ?)');
-        $thread = $pdo->prepare('INSERT INTO threads VALUES (?, ?)');
+        $thread = $pdo->prepare('INSERT INTO threads (root_post_id, thread_labels_json) VALUES (?, ?)');
         foreach ($roots as [$id, $subject, $body, $labels]) {
             $post->execute([$id, $id, $subject, $body]);
             $thread->execute([$id, json_encode($labels)]);
@@ -36,11 +36,11 @@ final class LocalMetaTrainingTest
         $pdo->exec('CREATE TABLE post_fast_scores (post_id TEXT, content_hash TEXT, rubric_revision TEXT, status TEXT, source TEXT, scores_json TEXT, updated_at TEXT)');
         $pdo->exec('CREATE TABLE fastmod_meta (post_id TEXT, suppressed INTEGER)');
         $hasher = new FastScoreContextFactory(static fn (string $_): ?array => null);
-        $insert = $pdo->prepare("INSERT INTO post_fast_scores VALUES (?, ?, 'r1', 'scored', 'llm', ?, '2026-11-01')");
+        $insert = $pdo->prepare("INSERT INTO post_fast_scores (post_id, content_hash, rubric_revision, status, source, scores_json, updated_at) VALUES (?, ?, 'r1', 'scored', 'llm', ?, '2026-11-01')");
         foreach ($scores as $id => [$subject, $body, $meta]) {
             $insert->execute([$id, $hasher->contentHashForPost(['post_id' => $id, 'subject' => $subject, 'body' => $body]), json_encode(['meta' => $meta, 'moderation' => 0.1])]);
         }
-        foreach ($suppressed as $id) $pdo->exec("INSERT INTO fastmod_meta VALUES ('$id', 1)");
+        foreach ($suppressed as $id) $pdo->exec("INSERT INTO fastmod_meta (post_id, suppressed) VALUES ('$id', 1)");
         return $pdo;
     }
 
@@ -87,6 +87,44 @@ final class LocalMetaTrainingTest
         assertFalse(isset($byId['russian']));
     }
 
+    public function testOperatorLabelsOverrideEverythingAndAreCounted(): void
+    {
+        [$read, $scores] = self::fixture();
+        $labels = LocalMetaFiles::parseLabels("# corrections\nsuppressed: meta\nother-1: meta  # a support post nobody tagged\nsupport-2: not\n\nuntagged: not\n");
+        ['examples' => $examples, 'counts' => $counts] = (new LocalMetaTraining($read, $scores, $labels))->collect(false);
+        $byId = array_column($examples, null, 'post_id');
+        assertTrue($byId['suppressed']['meta']);
+        assertTrue($byId['other-1']['meta']);
+        assertFalse($byId['support-2']['meta']);
+        assertSame('operator_other', $byId['untagged']['label_source']);
+        assertSame(2, $counts['operator_meta']);
+        assertSame(2, $counts['operator_other']);
+        assertSame(1, $counts['unlabeled']);
+        $threw = null;
+        try { LocalMetaFiles::parseLabels("ok-1: meta\nbroken line\n"); } catch (InvalidArgumentException $error) { $threw = $error; }
+        assertStringContains('line 2', (string) $threw?->getMessage());
+    }
+
+    public function testRunAndSaveReadsTheLabelsFileAndOldModelsCountAsMissing(): void
+    {
+        $dir = sys_get_temp_dir() . '/local-meta-labels-' . bin2hex(random_bytes(5));
+        mkdir($dir . '/state/private', 0700, true);
+        try {
+            $files = new LocalMetaFiles($dir);
+            file_put_contents($files->modelPath(), json_encode(['format' => 'fastmod-local-meta-v1']));
+            assertSame(null, $files->loadModel());
+            file_put_contents($files->labelsPath(), "untagged: meta\n");
+            [$read, $scores] = self::fixture();
+            $report = (new LocalMetaTraining($read, $scores))->runAndSave($files, false);
+            assertSame(1, $report['labels']['operator_meta']);
+            assertStringContains('operator 1', (string) $files->readReport());
+            assertTrue($files->loadModel() instanceof LocalMetaModel);
+        } finally {
+            foreach (glob($dir . '/state/private/*') ?: [] as $file) unlink($file);
+            rmdir($dir . '/state/private'); rmdir($dir . '/state'); rmdir($dir);
+        }
+    }
+
     public function testWeakNegativesOnlyWhenAsked(): void
     {
         [$read, $scores] = self::fixture();
@@ -103,7 +141,8 @@ final class LocalMetaTrainingTest
         $second = (new LocalMetaTraining($read, $scores))->run(false, '2026-11-14T00:00:00Z');
         assertSame($first['report'], $second['report']);
         $report = $first['report'];
-        assertTrue($report['holdout'] > 0 && $report['holdout'] < 64);
+        assertSame($report['meta'] + $report['other'], $report['checked']);
+        assertSame(5, $report['folds']);
         assertSame($report['threshold'], $first['model']->threshold());
         assertTrue($report['threshold'] !== null);
         assertTrue($report['precision'] >= LocalMetaTraining::TARGET_PRECISION);

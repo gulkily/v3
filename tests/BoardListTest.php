@@ -363,6 +363,96 @@ final class BoardListTest
     }
 
     /** Text of the rows container with the given class. */
+    public function testZenMemesOpenTheHomePageOnly(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment(60);
+        $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+        assertStringNotContains('class="zen-strip"', $this->markup($this->render($application, '/')));
+
+        // Make one thread's signed author an approved member who tagged it #zen #meme.
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $pdo->exec("INSERT INTO profiles (identity_id,profile_slug,username,username_token,fallback_label,signer_fingerprint,bootstrap_post_id,bootstrap_thread_id,public_key,is_approved,was_approved) VALUES ('id-zen','zen','zen','zen','zen','fp','b','b','k',1,1)");
+        $pdo->exec("UPDATE posts SET author_identity_id = 'id-zen', attribution_counted = 1 WHERE post_id = 'board-list-030'");
+        $pdo->exec("UPDATE threads SET board_tags_json = '[\"zen\",\"meme\"]' WHERE root_post_id = 'board-list-030'");
+        $pdo = null;
+
+        $first = $this->markup($this->render($application, '/'));
+        assertSame(1, substr_count($first, 'class="zen-strip"'));
+        assertTrue(strpos($first, 'class="zen-strip"') < strpos($first, 'data-visitor-intro'), 'The strip should come before the visitor intro.');
+        assertStringContains('<a class="zen-strip__card zen-strip__card--text" href="/threads/board-list-030"><span>Thread 30</span></a>', $first);
+        // One Zen meme: no thumbnail row, and never a separate All link.
+        assertStringNotContains('zen-strip__row', $first);
+        assertStringNotContains('zen-strip__more', $first);
+
+        // A second, better-liked meme takes the top spot; the first drops into the row, which is one link to All.
+        $pdo = new PDO('sqlite:' . $databasePath);
+        $pdo->exec("UPDATE posts SET author_identity_id = 'id-zen', attribution_counted = 1 WHERE post_id = 'board-list-010'");
+        $pdo->exec("UPDATE threads SET board_tags_json = '[\"zen\",\"meme\"]', score_total = 3 WHERE root_post_id = 'board-list-010'");
+        $pdo = null;
+        $first = $this->markup($this->render($application, '/'));
+        $strip = substr($first, strpos($first, '<section class="zen-strip"'), 1200);
+        $strip = substr($strip, 0, strpos($strip, '</section>'));
+        assertStringContains('<a class="zen-strip__card zen-strip__card--text" href="/threads/board-list-010"><span>Thread 10</span></a>', $strip);
+        assertStringContains('<a class="zen-strip__row" href="/tags/zen+meme" aria-label="All Zen memes">', $strip);
+        assertStringContains('<span class="zen-strip__thumb zen-strip__thumb--text" aria-hidden="true">Thread 30</span>', $strip);
+        assertSame(2, substr_count($strip, '<a '));
+        assertStringNotContains('zen-strip__more', $first);
+        preg_match('/rel="next" href="([^"]+)">Show older threads</', $first, $next);
+        // Not on the threads page, a chosen view or sort, or a later page.
+        foreach (['/threads/', '/?view=all', '/?view=liked', '/?sort=top', '/threads/?view=all&sort=newest', html_entity_decode($next[1])] as $elsewhere) {
+            assertStringNotContains('class="zen-strip"', $this->markup($this->render($application, $elsewhere)), $elsewhere);
+        }
+
+        putenv('FORUM_ZEN_STRIP_ENABLED=false');
+        try {
+            $off = $this->markup($this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/'));
+        } finally {
+            putenv('FORUM_ZEN_STRIP_ENABLED');
+        }
+        assertStringNotContains('class="zen-strip"', $off);
+    }
+
+    public function testTheFeaturedZenMemeShowsACompressedCopyOverAStandIn(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);
+        $imageRoot = $repositoryRoot . '-images';
+        $flag = \ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_CONTENT_ENABLED;
+        $old = getenv($flag);
+        try {
+            $source = $repositoryRoot . '-meme.png';
+            $canvas = imagecreatetruecolor(900, 600);
+            imagefill($canvas, 0, 0, imagecolorallocate($canvas, 240, 235, 225));
+            imagepng($canvas, $source);
+            $reference = \ForumRewrite\Images\ImageStore::inspect($source, 'A calm pond');
+            (new \ForumRewrite\Images\ImageStore($repositoryRoot))->put($source, $reference);
+            file_put_contents($repositoryRoot . '/records/posts/zen-image.txt', "Post-ID: zen-image\nCreated-At: 2026-07-01T00:00:00Z\nBoard-Tags: zen meme\nSubject: Pond\n\n" . \ForumRewrite\Images\ImageReference::line($reference) . "\n");
+            $this->runCommand($repositoryRoot, 'git add .');
+            $this->runCommand($repositoryRoot, 'git commit -m "Add a Zen meme"');
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            putenv($flag . '=true');
+            $this->render($application, '/threads/?view=all&sort=newest');
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $pdo->exec("INSERT INTO profiles (identity_id,profile_slug,username,username_token,fallback_label,signer_fingerprint,bootstrap_post_id,bootstrap_thread_id,public_key,is_approved,was_approved) VALUES ('id-zen','zen','zen','zen','zen','fp','b','b','k',1,1)");
+            $pdo->exec("UPDATE posts SET author_identity_id = 'id-zen', attribution_counted = 1 WHERE post_id = 'zen-image'");
+            $pdo = null;
+
+            $tile = '/images/thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, 'tile');
+            $wide = '/images/thumbs/' . \ForumRewrite\Images\ThumbnailStore::filename($reference, 'wide');
+            $full = '/images/' . \ForumRewrite\Images\ImageReference::filename($reference);
+            $board = $this->markup($this->render($application, '/'));
+            // A compressed copy at the original's width, fetched first, over a tiny inline stand-in; never the stored original.
+            assertSame(1, preg_match('#<a class="zen-strip__card zen-strip__card--image zen-strip__card--standin" href="/threads/zen-image"><img style="background-image:url\\((data:image/webp;base64,[A-Za-z0-9+/=]+)\\)" src="' . preg_quote($wide, '#') . '" srcset="' . preg_quote($tile . ' 480w, ' . $wide . ' 900w', '#') . '" sizes="\\(min-width: 48rem\\) 45rem, 100vw" alt="A calm pond" width="900" height="600" fetchpriority="high" decoding="async"></a>#', $board, $standin));
+            assertTrue(strlen($standin[1]) < 1024, 'stand-in is ' . strlen($standin[1]) . ' bytes');
+            $dot = getimagesizefromstring(base64_decode(substr($standin[1], strlen('data:image/webp;base64,'))));
+            assertSame([16, 11], [$dot[0], $dot[1]]);
+            $strip = substr($board, strpos($board, '<section class="zen-strip"'));
+            assertStringNotContains($full, substr($strip, 0, strpos($strip, '</section>')));
+        } finally {
+            putenv($old === false ? $flag : $flag . '=' . $old);
+            exec('rm -rf ' . escapeshellarg($imageRoot) . ' ' . escapeshellarg($imageRoot . '-thumbs') . ' ' . escapeshellarg($repositoryRoot . '-meme.png'));
+        }
+    }
+
     private function section(string $html, string $class): string
     {
         preg_match('/<div class="thread-rows ' . $class . '">.*?<\/div>/s', $html, $match);

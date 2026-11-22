@@ -14,7 +14,7 @@ require $argv[1] . '/tests/AbsentRetractionSnapshotTest.php';
 (new ForumRewrite\\Offline\\PublicOfflineSnapshotBuilder())->build($database, $root . '/snapshot.sqlite3');
 echo $root . '/snapshot.sqlite3';
 `, project], { encoding: 'utf8' });
-const section = execFileSync('php', ['-r', 'include $argv[1];', project + '/templates/pages/offline_reader.php'], { encoding: 'utf8' });
+const section = execFileSync('php', ['-r', '$tagLinksEnabled = true; include $argv[1];', project + '/templates/pages/offline_reader.php'], { encoding: 'utf8' });
 const styles = ['site', 'sqlite', 'thread-list', 'tags'].map(name => `<link rel="stylesheet" href="/assets/${name}.css">`).join('') + '<style>body { padding-top: 3.5rem; }</style>';
 
 (async () => {

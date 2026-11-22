@@ -62,6 +62,43 @@ final class TestRunnerBehaviorTest
         }
     }
 
+    public function testNamedTestThatMatchesNothingFailsTheRunEvenBesideTheSmokeSet(): void
+    {
+        $list = sys_get_temp_dir() . '/forum-runner-smoke-' . bin2hex(random_bytes(6)) . '.txt';
+        file_put_contents($list, "RunnerTimingFixtureTest::testFast\n");
+        $fixture = 'FORUM_TEST_SMOKE_LIST=' . escapeshellarg($list) . ' ' . $this->phpCommand() . ' tests/fixtures/test_runner_timing.php';
+        try {
+            foreach ([' --smoke NoSuchTest', ' NoSuchTest', ' RunnerTimingFixtureTest::testNoSuchMethod', ' --jobs=2 RunnerTimingFixtureTest NoSuchTest'] as $arguments) {
+                [$exitCode, $stdout, $stderr] = $this->runCommand(dirname(__DIR__), $fixture . $arguments);
+                assertSame(1, $exitCode, $arguments . $stdout);
+                assertStringContains('Test not found: ' . trim(substr($arguments, (int) strrpos($arguments, ' '))), $stderr);
+                assertStringNotContains('Summary:', $stdout);
+                assertStringNotContains('PASS ', $stdout);
+            }
+        } finally {
+            @unlink($list);
+        }
+    }
+
+    public function testTestFilesMissingFromTheListAreStillLoaded(): void
+    {
+        $directory = sys_get_temp_dir() . '/forum-runner-files-' . bin2hex(random_bytes(6));
+        mkdir($directory);
+        try {
+            foreach (['ListedTest.php', 'ZebraTest.php', 'AppleTest.php', 'helper.php', 'NotATestHelper.php'] as $name) {
+                touch($directory . '/' . $name);
+            }
+
+            assertSame(
+                [$directory . '/AppleTest.php', $directory . '/ZebraTest.php'],
+                unlistedTestFiles([$directory . '/ListedTest.php'], $directory)
+            );
+        } finally {
+            array_map('unlink', glob($directory . '/*') ?: []);
+            rmdir($directory);
+        }
+    }
+
     public function testParallelRunMatchesSerialResultsAndExitCode(): void
     {
         $fixture = $this->phpCommand() . ' tests/fixtures/test_runner_timing.php';

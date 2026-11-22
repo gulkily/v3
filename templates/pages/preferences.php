@@ -48,6 +48,15 @@ $tableZoomKeys = array_values(\ForumRewrite\View\ZoomTable::KINDS);
         </select>
       </div>
 <?php endif; ?>
+<?php if ($openBesideEnabled ?? false): ?>
+      <div class="account-row" data-tone="neutral">
+        <label class="account-row__title" for="preference-open-beside">Open links beside</label>
+        <select id="preference-open-beside" class="preferences-page__select" data-preference="open-beside">
+          <option value="off">Off</option>
+          <option value="on">On</option>
+        </select>
+      </div>
+<?php endif; ?>
       <div class="account-row" data-tone="neutral">
         <span class="account-row__title">Table text size</span>
         <span class="account-row__value" data-preference-value="table-size">Site default</span>
@@ -100,6 +109,8 @@ $tableZoomKeys = array_values(\ForumRewrite\View\ZoomTable::KINDS);
       margins: runtime.readingMarginsStorageKey || '',
       windowControls: runtime.windowControlsStorageKey || '',
       collapsedWindows: runtime.collapsedWindowsStorageKey || '',
+      openBeside: runtime.openBesideStorageKey || '',
+      openBesidePane: runtime.openBesidePaneStorageKey || '',
       tableSizes: <?= json_encode($tableZoomKeys, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>,
       gallerySize: 'gallery-zoom',
       navSlots: 'forum_nav_slots',
@@ -146,6 +157,8 @@ $tableZoomKeys = array_values(\ForumRewrite\View\ZoomTable::KINDS);
       if (density) density.value = get(keys.density) === 'compact' ? 'compact' : 'comfortable';
       var windowControls = page.querySelector('[data-preference="window-controls"]');
       if (windowControls) windowControls.value = get(keys.windowControls) === 'off' ? 'off' : 'on';
+      var openBeside = page.querySelector('[data-preference="open-beside"]');
+      if (openBeside) openBeside.value = get(keys.openBeside) === 'on' ? 'on' : 'off';
       var margins = root.hasAttribute('data-reading-margins');
       show('reading-margins', margins ? 'Custom' : 'Site default', margins);
       var tableSize = keys.tableSizes.some(function (key) { return get(key) !== null; });

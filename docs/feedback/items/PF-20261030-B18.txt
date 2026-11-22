@@ -1,9 +1,9 @@
 ID: PF-20261030-B18
 Title: Content hash labeled as app version
 Kind: bug
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-10-30
-Evidence: unknown
+Evidence: locally-verified
 Aliases: 2026-10-30/B18
 
 Request:
@@ -16,3 +16,4 @@ Sources:
 Notes:
 Status in the October 30 summary: Open — resolution not verified
 Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row B18; that summary is a local snapshot review and its request wording is preserved here.
+2026-11-21: Implemented in v3/application_version_source. /api/version and forum metadata now use the code checkout; System status already showed code and content independently. Cached-navbar page freshness has separate code/content metadata and pending state; Docs versions stay separate. Local endpoint, Git checkout modes, desktop/phone notification recovery and cached navigation verified. Deployment, re-enabling the production notification flag and production acceptance remain pending. See docs/plans/application_version_source/application_version_source_one_shot.md for checks and baseline failures.

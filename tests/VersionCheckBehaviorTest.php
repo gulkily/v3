@@ -4,6 +4,49 @@ declare(strict_types=1);
 
 final class VersionCheckBehaviorTest
 {
+    public function testPageFreshnessDoesNotPollutePendingApplicationUpdates(): void
+    {
+        $result = $this->runScript(<<<'NODE'
+const source = require('fs').readFileSync(process.argv[1], 'utf8');
+const vm = require('vm');
+const store = {}, redirects = [];
+function load(pageVersion) {
+  const handlers = {}, timers = [];
+  const banner = {hidden:true, querySelector() {return {addEventListener(name, fn) {handlers.reload = fn;}};}};
+  const window = {
+    sessionStorage: {getItem:k=>store[k], setItem(k,v) {store[k]=v;}, removeItem(k) {delete store[k];}},
+    location: {href:'https://example.test/', origin:'https://example.test', assign:v=>redirects.push(v), replace:v=>redirects.push(v)},
+    fetch:()=>Promise.resolve({ok:true, text:()=>Promise.resolve('code')}),
+    setTimeout:fn=>timers.push(fn), addEventListener() {}
+  };
+  const document = {addEventListener() {}, documentElement:{getAttribute:()=> '1'}, querySelector(selector) {
+    if (selector === '[data-role="app-version-banner"]') return banner;
+    const values = {'meta[name="app-version"]':'code', 'meta[name="page-version"]':pageVersion};
+    return selector in values ? {getAttribute:()=>values[selector]} : null;
+  }};
+  vm.runInNewContext(source, {window,document,URL});
+  return {window,banner,handlers,timers};
+}
+(async()=>{
+  const first = load('code:content-old');
+  first.window.ForumAppVersion.showPage('code');
+  const oldWorkerHidden = first.banner.hidden;
+  first.window.ForumAppVersion.showPage('code:content-new');
+  const pendingBefore = {...store};
+  first.handlers.reload();
+  const fresh = load('code:content-new');
+  fresh.timers[0]();
+  await new Promise(resolve=>setImmediate(resolve));
+  process.stdout.write(JSON.stringify({pendingBefore, store, redirects, oldWorkerHidden, hidden:fresh.banner.hidden}));
+})().catch(error=>{console.error(error);process.exit(1);});
+NODE);
+        assertSame(['forum_pending_page_version' => 'code:content-new'], $result['pendingBefore']);
+        assertSame([], (array) $result['store']);
+        assertSame(['https://example.test/?__v=code%3Acontent-new'], $result['redirects']);
+        assertSame(true, $result['hidden']);
+        assertSame(true, $result['oldWorkerHidden']);
+    }
+
     public function testVersionCheckerLeavesUrlCleanupToUrlHints(): void
     {
         $result = $this->runScript(<<<'NODE'

@@ -42,7 +42,7 @@
     var channel = new MessageChannel();
     channel.port1.onmessage = function (event) {
       var version = event.data && event.data.version;
-      if (version && window.ForumAppVersion) window.ForumAppVersion.show(version);
+      if (version && window.ForumAppVersion && window.ForumAppVersion.showPage) window.ForumAppVersion.showPage(version);
     };
     worker.postMessage({ type: "nav-copy-status", path: location.pathname }, [channel.port2]);
   }

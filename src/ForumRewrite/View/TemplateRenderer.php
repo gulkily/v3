@@ -22,13 +22,14 @@ final class TemplateRenderer
     // Reading margins show on every page rendered with layout.php except these:
     // the gallery lays its rows out for the normal column width, and a redirect
     // page is gone before anyone reads it.
-    private const READING_MARGINS_EXCLUDED_PAGE_TEMPLATES = ['gallery.php', 'redirect.php'];
+    private const READING_MARGINS_EXCLUDED_PAGE_TEMPLATES = ['redirect.php'];
     /** @var array<string, list<string>> */
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],
         'guestbook.php' => ['/assets/compose.css', '/assets/guestbook.css'],
         'themes.php' => ['/assets/themes.css'],
         'agent.php' => ['/assets/agent.css'],
+        'agent_start.php' => ['/assets/agent.css'],
         'activity.php' => ['/assets/activity.css', '/assets/access-history.css'],
         'account_key.php' => ['/assets/identity.css', '/assets/account.css'],
         'bookmarklets.php' => ['/assets/tools.css'],
@@ -53,6 +54,7 @@ final class TemplateRenderer
         'operations.php' => ['/assets/tool-details.css'],
         'deploy.php' => ['/assets/tool-details.css'],
         'tools_import.php' => ['/assets/tool-details.css'],
+        'local_development.php' => ['/assets/tool-details.css'],
         'feature_flag_change.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
         'offline_health.php' => ['/assets/tool-details.css'],
@@ -93,6 +95,7 @@ final class TemplateRenderer
         private readonly string $versionStorageKey = 'forum_pending_app_version',
         /** Returns the current request path, for page themes. */
         private readonly ?\Closure $requestPath = null,
+        private readonly ?string $pageVersion = null,
     ) {
     }
 
@@ -218,6 +221,8 @@ final class TemplateRenderer
         $scriptPaths = array_values(array_unique($scriptPaths));
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED)) {
             array_unshift($scriptPaths, '/assets/image_prepare.js', '/assets/image_upload.js');
+            // Every page that can show an image retries a failed one once.
+            $scriptPaths[] = '/assets/image_retry.js';
         }
         $assetScriptPaths = [];
         foreach ($scriptPaths as $scriptPath) {
@@ -270,8 +275,12 @@ final class TemplateRenderer
             'showThreadDensityToggle' => $showThreadDensityToggle,
             'showReadingMargins' => $showReadingMargins,
             'draggableWindowsEnabled' => $draggableWindowsEnabled,
+            'openBesideEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::OPEN_BESIDE_ENABLED),
+            'openBesideScriptPath' => $this->assetPath('/assets/open_beside.js'),
+            'openBesideCssPath' => $this->assetPath('/assets/open-beside.css'),
             'siteName' => SiteConfig::displayName(),
             'appVersion' => $this->appVersion,
+            'pageVersion' => $this->pageVersion ?? $this->appVersion,
             'versionEndpoint' => $this->versionEndpoint,
             'versionStorageKey' => $this->versionStorageKey,
             'appVersionNotificationEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION),
@@ -279,6 +288,7 @@ final class TemplateRenderer
             'navIconsCssPath' => $this->assetPath('/assets/theme-nav-icons.css'),
             'faviconPath' => $this->versionEndpoint === '/api/docs-version'
                 ? '/docs/_assets/' . basename(FaviconRegistry::resolve($profile)) : FaviconRegistry::resolve($profile),
+            'touchIconPath' => $this->versionEndpoint === '/api/docs-version' ? null : FaviconRegistry::touchIcon($profile),
             'browserRuntimeAssetPaths' => [
                 'openpgpV6' => $this->assetPath('/assets/openpgp.min.js'),
                 'openpgpV5' => $this->assetPath('/assets/openpgp.v5.11.3.min.js'),
@@ -578,7 +588,7 @@ final class TemplateRenderer
             array_splice($items, $after === false ? 1 : $after + 1, 0, [['href' => '/gallery/', 'label' => 'Gallery', 'section' => 'gallery']]);
         }
 
-        // Prompts (/agent/) follows the content destinations while the agent page is on.
+        // Agents (/agent/start/) follows the content destinations while the agent page is on.
         if (!$isQdbNavigation && $this->agentPageEnabled()) {
             $sections = array_column($items, 'section');
             $after = false;
@@ -586,7 +596,7 @@ final class TemplateRenderer
                 $after = array_search($section, $sections, true);
                 if ($after !== false) break;
             }
-            array_splice($items, $after === false ? 1 : $after + 1, 0, [['href' => '/agent/', 'label' => 'Prompts', 'section' => 'agent']]);
+            array_splice($items, $after === false ? 1 : $after + 1, 0, [['href' => '/agent/start/', 'label' => 'Agents', 'section' => 'agent']]);
         }
 
         // Tools stays reachable by direct URL even when hidden from the nav,
@@ -663,6 +673,8 @@ final class TemplateRenderer
         }
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED)) {
             array_unshift($scriptPaths, '/assets/image_prepare.js', '/assets/image_upload.js');
+            // Every page that can show an image retries a failed one once.
+            $scriptPaths[] = '/assets/image_retry.js';
         }
         $assetScriptPaths = [];
         foreach (array_values(array_unique($scriptPaths)) as $scriptPath) {
@@ -690,6 +702,7 @@ final class TemplateRenderer
             'scriptPaths' => $assetScriptPaths,
             'siteCssPath' => $this->assetPath('/assets/site.css'),
             'faviconPath' => FaviconRegistry::resolve($profile),
+            'touchIconPath' => FaviconRegistry::touchIcon($profile),
             'additionalCssPaths' => $assetAdditionalCssPaths,
             'themeStorageKey' => BrowserRuntimeProfile::fromProfile($profile)['themeStorageKey'],
             'defaultTheme' => $this->defaultThemeName($profile, array_column($themes, 'name')),
@@ -893,6 +906,14 @@ final class TemplateRenderer
             $authorLabel = 'guest';
         }
 
+        // A ported post's label is "name on Site" (set by the read model); the site links to the original.
+        $portedFrom = (string) ($record['ported_from'] ?? '');
+        $site = $portedFrom !== '' ? \ForumRewrite\Canonical\PortedSource::siteLabel($portedFrom) : null;
+        if ($site !== null && str_ends_with($authorLabel, ' on ' . $site)) {
+            $name = substr($authorLabel, 0, -strlen(' on ' . $site));
+            return '<span class="ported-author">' . $escape($name) . ' on <a href="' . $escape($portedFrom) . '" rel="nofollow noopener">' . $escape($site) . '</a></span>';
+        }
+
         if (((int) ($record['attribution_counted'] ?? 1)) === 0) {
             return $escape($authorLabel) . ' <span class="meta">(unsigned)</span>';
         }
@@ -916,13 +937,20 @@ final class TemplateRenderer
         return '<a href="' . $profilesBase . $escape($authorProfileSlug) . '"' . $summaryAttrs . '>' . $escape($authorLabel) . '</a> <span class="meta">(unapproved)</span>';
     }
 
+    /** A ported post's byline shows when it was written on its source site, not when it was ported. */
+    private function portedTime(array $record): ?string
+    {
+        $at = (string) ($record['ported_created_at'] ?? '');
+        return $at !== '' && (string) ($record['ported_from'] ?? '') !== '' ? $at : null;
+    }
+
     /**
      * @param callable(mixed): string $escape
      */
     private function renderContentMeta(array $record, string $timeField, string $timeLabel, callable $escape, bool $forteTarget = false): string
     {
         $authorHtml = $this->renderAuthorHtml($record, $escape, $forteTarget);
-        $timestampHtml = $this->renderTimestampHtml((string) ($record[$timeField] ?? ''), $escape);
+        $timestampHtml = $this->renderTimestampHtml((string) ($this->portedTime($record) ?? $record[$timeField] ?? ''), $escape);
         $prefix = trim($timeLabel);
 
         if ($timestampHtml !== '') {
@@ -944,7 +972,7 @@ final class TemplateRenderer
         $authorHtml = $this->renderAuthorHtml($record, $escape);
         $authorHtml = str_replace(' <span class="meta">(unapproved)</span>', '', $authorHtml, $unapproved);
         $parts = $withAuthor ? [$authorHtml] : [];
-        $dateHtml = $this->renderShortDateHtml((string) ($record[$timeField] ?? ''), $escape);
+        $dateHtml = $this->renderShortDateHtml((string) ($this->portedTime($record) ?? $record[$timeField] ?? ''), $escape);
         if ($dateHtml !== '') {
             $parts[] = $dateHtml;
         }

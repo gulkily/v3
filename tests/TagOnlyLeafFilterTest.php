@@ -23,4 +23,21 @@ final class TagOnlyLeafFilterTest
         assertSame(['leaf', 'chain1', 'chain2'], array_column($split['moved'], 'post_id'));
         assertSame(['kept' => [], 'moved' => []], TagOnlyLeafFilter::split([]));
     }
+
+    public function testTitleOnlyRepliesMoveOnlyWhenAsked(): void
+    {
+        $reply = static fn (string $id, string $body): array =>
+            ['post_id' => $id, 'parent_id' => 'root', 'body' => $body, 'retracted_at' => null];
+        $replies = [
+            $reply('title', 'title: New name'),
+            $reply('title-tag', "title: New name\n#bug"),
+            $reply('title-text', "title: New name\nAnd some words"),
+            $reply('two-titles', "title: One\ntitle: Two"),
+            $reply('quoted', '> title: New name'),
+        ];
+        assertSame([], TagOnlyLeafFilter::split($replies)['moved']);
+        $split = TagOnlyLeafFilter::split($replies, true);
+        assertSame(['title', 'title-tag'], array_column($split['moved'], 'post_id'));
+        assertSame(['title-text', 'two-titles', 'quoted'], array_column($split['kept'], 'post_id'));
+    }
 }

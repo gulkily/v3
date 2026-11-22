@@ -2355,8 +2355,8 @@ PHP;
         assertStringContains('/threads/root-001', $tagPage);
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertFingerprintedAsset($pendingUsers, 'pending_approvals.js');
-        assertStringContains('meta name="app-version" content="no-git"', $board);
-        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","bubblegum","spearmint","arena","thermal","whitehot","word97","midnight","gloss","glossdark","engagify"];', $board);
+        assertStringContains('meta name="app-version" content="' . ReadModelMetadata::repositoryHead(dirname(__DIR__)) . '"', $board);
+        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","bubblegum","spearmint","arena","thermal","whitehot","word97","midnight","gloss","glossdark","engagify","ochre"];', $board);
         assertStringContains('data-role="theme-menu"', $board);
         assertStringContains('aria-haspopup="menu"', $board);
         assertStringContains('data-theme-option="auto"', $board);
@@ -2369,6 +2369,7 @@ PHP;
         assertStringContains('data-theme-option="word97"', $board);
         assertStringContains('data-theme-option="midnight"', $board);
         assertStringContains('data-theme-option="engagify"', $board);
+        assertStringContains('data-theme-option="ochre"', $board);
         assertStringNotContains('data-theme-option="qdb"', $board);
         assertStringContains('class="site-status-bar"', $board);
         assertStringContains('data-heat="', $thread);
@@ -2440,6 +2441,9 @@ PHP;
         assertStringContains('data-role="compose-identity-status" hidden', $composeThread);
         assertStringContains('data-action="submit-anonymous-compose"', $composeThread);
         assertStringContains('<details class="compose-action-menu" data-role="compose-action-menu">', $composeThread);
+        // Guests see who they post as and where to choose a name; the head script hides it for a named browser.
+        assertStringContains('<p class="meta compose-guest-note">Posting as guest · <a href="/account/key/#choose-name">Choose a name</a></p>', $composeThread);
+        assertStringContains("document.documentElement.setAttribute('data-viewer-named', '')", $composeThread);
         assertStringContains('Bookmarklets', $bookmarklets);
         assertStringContains('class="nav"', $bookmarklets);
         assertStringContains('class="nav-link is-active" href="/tools/bookmarklets/"', $bookmarklets);
@@ -2453,6 +2457,7 @@ PHP;
         assertStringNotContains('/assets/inline_reply_form.js', $composeReply);
         assertStringContains('data-role="compose-identity-status" hidden', $composeReply);
         assertStringContains('data-action="submit-anonymous-compose"', $composeReply);
+        assertStringContains('class="meta compose-guest-note"', $composeReply);
         assertStringContains('Storage and privacy', $account);
         assertStringContains('You’re posting as <span data-role="guest-name">guest</span>', $account);
         assertStringContains('data-action="clear-browser-identity"', $account);
@@ -2536,6 +2541,9 @@ PHP;
         assertStringContains($href, $post);
         assertSame(1, substr_count($post, $href));
         assertOrdered($post, '<th scope="row">Signature</th>', '<th scope="row">Public key</th>');
+        // The file links open in small windows (file_windows.js); the links stay plain links.
+        assertStringContains('<table class="codebase-facts post-facts" data-file-windows>', $post);
+        assertFingerprintedAsset($post, 'file_windows.js');
     }
 
     public function testThreadRootCardOmitsDuplicateTitleLine(): void
@@ -2899,7 +2907,7 @@ PHP;
             assertStringNotContains('data-reading-margin-edge', $thread);
             // The ruler sits between the header and the column it moves.
             assertTrue(strpos($thread, 'data-role="reading-margins"') < strpos($thread, '<main class="main">'));
-            // Every page in the main layout gets the ruler, except the gallery.
+            // Every page in the main layout gets the ruler, the gallery included.
             foreach (['/', '/threads/?view=all', '/tags/bug/', '/recent/', '/search?q=hello', '/users/', '/unread',
                 '/messages/', '/about/', '/tools/', '/docs/', '/tools/bookmarklets'] as $rulerPath) {
                 $page = $this->render($application, $rulerPath);
@@ -2916,8 +2924,8 @@ PHP;
                 putenv('FORUM_IMAGE_GALLERY_ENABLED');
             }
             assertStringContains('<main class="main">', $gallery);
-            assertStringNotContains('data-role="reading-margins"', $gallery);
-            assertStringNotContains('reading_margins', $gallery);
+            assertStringContains('data-role="reading-margins"', $gallery);
+            assertFingerprintedAsset($gallery, 'reading_margins.js');
 
             $css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/reading-margins.css');
             assertStringContains(':root[data-reading-margins] .main', $css);
@@ -3245,7 +3253,7 @@ PHP;
         assertStringContains('Created-At: 2026-04-10T12:00:00Z', $post);
         assertStringContains('Profile-Slug: openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $profile);
         assertStringContains('Approved: yes', $profile);
-        assertSame("no-git\n", $version);
+        assertSame(ReadModelMetadata::repositoryHead(dirname(__DIR__)) . "\n", $version);
         assertStringContains('status=ready', $readModelStatus);
         assertStringContains('lock_status=unlocked', $readModelStatus);
         assertStringContains('stale_marker=absent', $readModelStatus);
@@ -3986,6 +3994,16 @@ PHP;
         assertStringContains('class="stack thread-list" data-offline-reader', $reader);
         assertStringContains('data-snapshot-url="/offline/snapshot.sqlite3"', $reader);
         assertStringContains('data-snapshot-revision=""', $reader);
+        // Hashtag links follow the site's flag, which is on by default.
+        assertStringContains('data-tag-links="1"', $reader);
+        $previousTagLinks = getenv('FORUM_TAG_LINKS_ENABLED');
+        putenv('FORUM_TAG_LINKS_ENABLED=false');
+        try {
+            $withoutTagLinks = $this->render(new Application(dirname(__DIR__), $this->repositoryRoot, $this->databasePath), '/offline/reader/');
+        } finally {
+            putenv($previousTagLinks === false ? 'FORUM_TAG_LINKS_ENABLED' : 'FORUM_TAG_LINKS_ENABLED=' . $previousTagLinks);
+        }
+        assertStringContains('data-tag-links="0"', $withoutTagLinks);
         assertStringMatches('#data-reader-revision="/assets/offline_reader\.[a-f0-9]{12}\.js"#', $reader);
         assertStringContains('data-role="offline-reader-status"', $reader);
         assertStringContains('data-role="offline-mode-bar"', $reader);
@@ -4026,6 +4044,8 @@ PHP;
 
         assertStringContains('rel="manifest" href="/manifest.webmanifest"', $board);
         assertStringContains('/assets/pwa_registration.', $board);
+        // A home-screen install gets a real icon on iPhone.
+        assertStringContains('<link rel="apple-touch-icon" href="/assets/app-icon-180.png">', $board);
         assertStringNotContains('href="/offline/"', $board);
         assertStringContains('refresh-offline-reader', $serviceWorker);
         assertStringContains('status: "unchanged"', $serviceWorker);
@@ -4511,6 +4531,22 @@ PHP;
 
                 assertStringContains('"id": "/offline/?site=' . $runtime['namespace'] . '"', $manifest);
                 assertStringContains('"name": "' . $runtime['manifestName'] . '"', $manifest);
+                // Home-screen icons follow the favicon slot: the default (ZenMemes) art has
+                // its own PNGs; slots without art keep the favicon only.
+                $icons = json_decode($manifest, true, 512, JSON_THROW_ON_ERROR)['icons'];
+                $sizes = array_column($icons, 'sizes');
+                $hasAppIcons = \ForumRewrite\PresentationSlotRegistry::resolve($contract['profile'], 'favicon') === 'default';
+                assertTrue($profileId !== 'zenmemes' || $hasAppIcons, 'ZenMemes uses the default favicon slot');
+                if ($hasAppIcons) {
+                    assertTrue($sizes === ['32x32', '192x192', '512x512', '512x512'], 'ZenMemes manifest icon sizes: ' . implode(' ', $sizes));
+                    assertTrue(($icons[3]['purpose'] ?? '') === 'maskable', 'largest icon also maskable');
+                    foreach (array_slice($icons, 1) as $icon) {
+                        $size = getimagesize(dirname(__DIR__) . '/public' . $icon['src']);
+                        assertTrue($icon['sizes'] === $size[0] . 'x' . $size[1], $icon['src'] . ' is ' . $size[0] . 'x' . $size[1]);
+                    }
+                } else {
+                    assertTrue($sizes === ['32x32'], $profileId . ' manifest keeps the favicon only');
+                }
                 assertStringContains('self.__forumBrowserRuntime = {"namespace":"' . $runtime['namespace'] . '"', $worker);
                 assertStringContains('"offlineCacheName":"' . $runtime['offlineCacheName'] . '"', $worker);
             }

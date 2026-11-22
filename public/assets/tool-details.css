@@ -264,7 +264,9 @@
 
 .feature-flags-toolbar[hidden],
 .feature-flag-group[hidden],
-.feature-flag-row[hidden] {
+.feature-flag-row[hidden],
+.feature-flags-recent[hidden],
+.feature-flags-recent-list li[hidden] {
   display: none;
 }
 
@@ -289,6 +291,30 @@
 .feature-flag-list {
   border: 1px solid var(--line);
   background: var(--panel);
+}
+
+/* Links to the newest flags' rows (FeatureFlagRegistry::recentlyReleased). */
+.feature-flags-recent {
+  margin-top: 0.9rem;
+}
+
+.feature-flags-recent-list {
+  margin: 0;
+  padding: 0.4rem 0.75rem;
+  list-style: none;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.feature-flags-recent-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.15rem 0;
+}
+
+.feature-flags-recent-list time {
+  flex-shrink: 0;
 }
 
 .badge {
@@ -618,6 +644,41 @@ form.feature-flag-control,
 
 .codebase-facts td p {
   margin: 0.3rem 0 0;
+}
+
+/* Deploy history, below the actions: one version per item, its Roll back button on a line of its own. */
+.deploy-history {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.deploy-history li + li {
+  margin-top: 0.6rem;
+}
+
+.deploy-history .meta {
+  display: block;
+}
+
+.deploy-history button {
+  width: auto;
+  margin-top: 0.3rem;
+}
+
+/* The confirmation a Roll back button leads to, above the facts it is about. */
+.deploy-rollback {
+  margin-bottom: 1rem;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+}
+
+.deploy-rollback h2 {
+  margin: 0 0 0.4rem;
+}
+
+.deploy-rollback .deploy-actions {
+  align-items: center;
 }
 
 /* Deploy now leads; Queue deploy and Check for updates sit beside it as

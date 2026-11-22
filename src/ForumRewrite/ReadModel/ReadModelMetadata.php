@@ -8,7 +8,7 @@ use PDO;
 
 final class ReadModelMetadata
 {
-    public const SCHEMA_VERSION = '55';
+    public const SCHEMA_VERSION = '56';
 
     /**
      * @return array{schema_version:string,schema_fingerprint:string}
@@ -35,7 +35,7 @@ final class ReadModelMetadata
 
     public static function repositoryHead(string $repositoryRoot): string
     {
-        if (!is_dir($repositoryRoot . '/.git')) {
+        if (!is_dir($repositoryRoot . '/.git') && !is_file($repositoryRoot . '/.git')) {
             return 'no-git';
         }
 

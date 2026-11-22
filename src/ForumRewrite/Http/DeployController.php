@@ -27,7 +27,10 @@ final class DeployController
     ) {
     }
 
-    public function render(?string $notice = null): string
+    /**
+     * @param array<string, mixed>|null $rollbackPreview from {@see AppUpdate::rollbackPreview()}, to ask for confirmation
+     */
+    public function render(?string $notice = null, ?array $rollbackPreview = null): string
     {
         $canDeploy = $this->routeServices->securityReviewAllowed();
 
@@ -38,6 +41,8 @@ final class DeployController
                 'canDeploy' => $canDeploy,
                 'deployState' => $this->state(),
                 'deployNotice' => $notice,
+                'deployVersions' => $this->update->versions(),
+                'rollbackPreview' => $rollbackPreview,
                 'commitLinkBase' => $this->commitLinkBase(),
             ],
             'Deploy',
@@ -47,7 +52,8 @@ final class DeployController
     }
 
     /**
-     * POST /tools/deploy/ with `action` = status | check | queue | now. `check` takes an optional
+     * POST /tools/deploy/ with `action` = status | check | queue | now | rollback_preview | rollback
+     * (the last two take `commit`, a version from the history). `check` takes an optional
      * `max_age` in seconds: a fetch newer than that is reused instead of contacting GitHub.
      * The page script sends JSON with `X-Requested-With: ForumDeploy` and gets
      * JSON back; a plain form post (no script) gets the page with a notice.
@@ -73,6 +79,8 @@ final class DeployController
             'check' => $this->update->check(self::INSTANT_TIMEOUT_SECONDS, self::maxAge($input['max_age'] ?? null)),
             'queue' => $this->queue($actor),
             'now' => $this->deployNow($actor),
+            'rollback_preview' => $this->update->rollbackPreview((string) ($input['commit'] ?? '')) + ['outcome' => 'preview'],
+            'rollback' => $this->rollbackNow((string) ($input['commit'] ?? ''), $actor),
             default => null,
         };
         if ($result === null) {
@@ -80,6 +88,16 @@ final class DeployController
             return;
         }
         unset($result['state']);
+        if ($action === 'rollback' && !$wantsJson && ($result['outcome'] ?? null) === 'rolled_back') {
+            // Send the browser back to the page, so a reload does not post the rollback again.
+            $this->routeServices->sendRedirect('/tools/deploy/', (string) $result['message'], 303, $headers, 'tools');
+            return;
+        }
+        if ($action === 'rollback_preview' && !$wantsJson) {
+            // Without a script the page itself asks for confirmation, or says why it cannot.
+            $this->routeServices->sendHtml($this->render($result['commit'] === null ? $result['message'] : null, $result['commit'] === null ? null : $result), 200, $headers);
+            return;
+        }
         $this->respond($wantsJson, 200, ['status' => 'ok', 'action' => $action, 'result' => $result, 'state' => $this->publicState()], $headers);
     }
 
@@ -147,6 +165,20 @@ final class DeployController
         }
 
         return $this->update->deploy($actor, AppUpdate::MODE_INSTANT, self::INSTANT_TIMEOUT_SECONDS);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function rollbackNow(string $commit, string $actor): array
+    {
+        // As with Deploy now: finish even if the phone drops the connection.
+        ignore_user_abort(true);
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(self::INSTANT_TIMEOUT_SECONDS * 2 + 30);
+        }
+
+        return $this->update->rollback($commit, $actor, AppUpdate::MODE_INSTANT, self::INSTANT_TIMEOUT_SECONDS);
     }
 
     /**

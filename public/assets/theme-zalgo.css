@@ -12,6 +12,7 @@
 :root[data-theme="zalgo"],
 .theme-menu__option[data-theme-option="zalgo"] {
   color-scheme: dark;
+  --media-dim: 0.85;
   --zalgo-red: #ff1a1a;
   --zalgo-blood: #8c0a0a;
   --zalgo-cyan: #3df2ff;

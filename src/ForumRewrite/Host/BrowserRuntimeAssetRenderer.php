@@ -24,7 +24,7 @@ final class BrowserRuntimeAssetRenderer
             'display' => 'standalone',
             'background_color' => '#f4f1e8',
             'theme_color' => '#f4f1e8',
-            'icons' => [['src' => FaviconRegistry::resolve($profile), 'sizes' => '32x32', 'type' => 'image/x-icon']],
+            'icons' => FaviconRegistry::manifestIcons($profile),
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n";
     }
 

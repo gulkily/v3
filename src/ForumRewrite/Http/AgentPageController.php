@@ -10,12 +10,6 @@ use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\View\TemplateRenderer;
 use PDO;
 
-/**
- * Renders /agent/, the Prompts page: the site's own prompts a visitor pastes
- * into their agent (get introduced, post as an agent, run a copy), then the
- * library of prompts members share as #prompt threads. The route checks
- * TemplateRenderer::agentPageEnabled() before this runs.
- */
 final class AgentPageController
 {
     /**
@@ -25,6 +19,19 @@ final class AgentPageController
         private readonly \Closure $renderPageTemplate,
         private readonly ?PDO $pdo = null,
     ) {
+    }
+
+    public function renderStart(): string
+    {
+        return ($this->renderPageTemplate)(
+            'agent_start.php',
+            [
+                'agentPrompts' => ProfilePresentationContent::agentPrompts(SiteProfileRegistry::active(), TemplateRenderer::requestOrigin()),
+            ],
+            'Use this site with your agent',
+            'agent',
+            [],
+        );
     }
 
     public function render(mixed $sort = null, mixed $tag = null): string
@@ -52,7 +59,6 @@ final class AgentPageController
         return ($this->renderPageTemplate)(
             'agent.php',
             [
-                'agentPrompts' => ProfilePresentationContent::agentPrompts(SiteProfileRegistry::active(), TemplateRenderer::requestOrigin()),
                 'sharedPrompts' => $shown,
                 'sharedPromptCount' => count($library['approved']),
                 'waitingPrompts' => $library['waiting'],
@@ -62,7 +68,7 @@ final class AgentPageController
                 'promptShareHref' => '/compose/thread?board_tags=' . PromptLibrary::TAG,
             ],
             'Prompts',
-            'agent',
+            'agent-library',
             // Like on a prompt card is the thread page's Like, so the same scripts.
             $shown === [] ? [] : [
                 '/assets/openpgp_loader.js',

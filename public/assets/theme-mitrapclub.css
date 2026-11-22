@@ -2,6 +2,7 @@
 :root[data-theme="mitrapclub"],
 .theme-menu__option[data-theme-option="mitrapclub"] {
   color-scheme: dark;
+  --media-dim: 0.85;
   --page-bg: #15120f;
   --body-background:
     radial-gradient(circle at top, rgba(217, 79, 43, 0.10), transparent 45%),

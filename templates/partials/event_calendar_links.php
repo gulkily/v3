@@ -1,7 +1,7 @@
 <?php
 // Thread page only: add this one event to a calendar. The .ics file suits any calendar app.
 $googleEventUrl = ($eventSupportEnabled && ($calendarFeedEnabled ?? false))
-    ? \ForumRewrite\Calendar\CalendarIcs::googleEventUrl($thread)
+    ? \ForumRewrite\Calendar\CalendarIcs::googleEventUrl($thread, \ForumRewrite\SiteProfileRegistry::calendarTimeZone())
     : null;
 ?>
 <?php if ($googleEventUrl !== null): ?>

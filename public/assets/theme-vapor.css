@@ -2,6 +2,7 @@
 :root[data-theme="vapor"],
 .theme-menu__option[data-theme-option="vapor"] {
   color-scheme: dark;
+  --media-dim: 0.85;
   --page-bg: #120021;
   --body-background:
     radial-gradient(circle at top, rgba(50, 246, 255, 0.2), transparent 38%),

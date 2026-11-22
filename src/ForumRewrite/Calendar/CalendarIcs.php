@@ -10,8 +10,7 @@ use ForumRewrite\Support\ThreadTitle;
 
 /**
  * Writes calendar events as an iCalendar (RFC 5545) document, for the calendar
- * feeds and the one-event file. Times carry no zone ("floating"), so a calendar
- * app shows them as written. Each event's UID is its thread ID, so a subscriber's
+ * feeds and the one-event file. Each event's UID is its thread ID, so a subscriber's
  * copy updates in place when the thread changes.
  */
 final class CalendarIcs
@@ -29,6 +28,7 @@ final class CalendarIcs
         string $siteUrl,
         string $name,
         ?\DateTimeImmutable $now = null,
+        ?\DateTimeZone $timeZone = null,
     ): string {
         $siteUrl = rtrim($siteUrl, '/');
         $host = parse_url($siteUrl, PHP_URL_HOST);
@@ -51,7 +51,7 @@ final class CalendarIcs
             if ($threadId === '' || !isset($event['event_date'])) {
                 continue;
             }
-            array_push($lines, ...self::event($event, $states[$threadId] ?? null, $siteUrl, $host, $stamp));
+            array_push($lines, ...self::event($event, $states[$threadId] ?? null, $siteUrl, $host, $stamp, $timeZone));
         }
         $lines[] = 'END:VCALENDAR';
 
@@ -62,7 +62,7 @@ final class CalendarIcs
      * @param array<string, mixed> $event
      * @return list<string>
      */
-    private static function event(array $event, ?string $state, string $siteUrl, string $host, string $stamp): array
+    private static function event(array $event, ?string $state, string $siteUrl, string $host, string $stamp, ?\DateTimeZone $timeZone): array
     {
         $threadId = (string) $event['root_post_id'];
         $threadUrl = $siteUrl . '/threads/' . rawurlencode($threadId);
@@ -81,11 +81,9 @@ final class CalendarIcs
             $lines[] = 'DTSTART;VALUE=DATE:' . $first->format('Ymd');
             $lines[] = 'DTEND;VALUE=DATE:' . $last->modify('+1 day')->format('Ymd');
         } else {
-            [$hour, $minute] = $time;
-            $start = $first->setTime($hour, $minute);
-            $end = $last->setTime($hour, $minute)->modify('+' . self::TIMED_EVENT_MINUTES . ' minutes');
-            $lines[] = 'DTSTART:' . $start->format('Ymd\THis');
-            $lines[] = 'DTEND:' . $end->format('Ymd\THis');
+            [$start, $end] = self::timedDates($first, $last, $time, $timeZone);
+            $lines[] = 'DTSTART:' . $start;
+            $lines[] = 'DTEND:' . $end;
         }
 
         $lines[] = 'SUMMARY:' . self::text(self::title($event));
@@ -113,12 +111,11 @@ final class CalendarIcs
     }
 
     /**
-     * Google Calendar's "new event" form for one event, filled in. Dates and times carry
-     * no zone, so Google reads them in the viewer's own zone, as the feed does.
+     * Google Calendar's "new event" form for one event, filled in.
      *
      * @param array<string, mixed> $event
      */
-    public static function googleEventUrl(array $event): ?string
+    public static function googleEventUrl(array $event, ?\DateTimeZone $timeZone = null): ?string
     {
         $first = self::date((string) ($event['event_date'] ?? ''));
         if ($first === null) {
@@ -132,9 +129,7 @@ final class CalendarIcs
         if ($time === null) {
             $dates = $first->format('Ymd') . '/' . $last->modify('+1 day')->format('Ymd');
         } else {
-            [$hour, $minute] = $time;
-            $dates = $first->setTime($hour, $minute)->format('Ymd\THis') . '/'
-                . $last->setTime($hour, $minute)->modify('+' . self::TIMED_EVENT_MINUTES . ' minutes')->format('Ymd\THis');
+            $dates = implode('/', self::timedDates($first, $last, $time, $timeZone));
         }
         $details = array_values(array_filter([
             trim((string) ($event['event_when'] ?? '')),
@@ -166,6 +161,31 @@ final class CalendarIcs
             (string) ($event['root_post_id'] ?? ''),
             80,
         );
+    }
+
+    /**
+     * @param array{int, int} $time
+     * @return array{string, string}
+     */
+    private static function timedDates(
+        \DateTimeImmutable $first,
+        \DateTimeImmutable $last,
+        array $time,
+        ?\DateTimeZone $timeZone,
+    ): array {
+        [$hour, $minute] = $time;
+        if ($timeZone !== null) {
+            // Reinterpret the stored date in the event zone before setting the local clock time.
+            $first = new \DateTimeImmutable($first->format('Y-m-d'), $timeZone);
+            $last = new \DateTimeImmutable($last->format('Y-m-d'), $timeZone);
+        }
+        $utc = new \DateTimeZone('UTC');
+        $start = $first->setTime($hour, $minute)->setTimezone($utc);
+        $end = $last->setTime($hour, $minute)->setTimezone($utc)
+            ->modify('+' . self::TIMED_EVENT_MINUTES . ' minutes');
+        $format = $timeZone === null ? 'Ymd\THis' : 'Ymd\THis\Z';
+
+        return [$start->format($format), $end->format($format)];
     }
 
     private static function date(string $value): ?\DateTimeImmutable

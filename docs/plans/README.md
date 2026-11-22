@@ -9,6 +9,15 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
+- [Quill in Perl and PHP](quill_ports/quill_ports_one_shot.md) — `quill.pl` and `quill.php` beside `quill.py`, same commands and state, each with its own update notice.
+- [Application version source](application_version_source/application_version_source_one_shot.md) — code revision for deploy notifications, with independent cached-page freshness.
+- [Recently released filters](recent_feature_flag_filters/recent_feature_flag_filters_one_shot.md) — keep the release list in sync with flag filters.
+- [Offline writing runbook](offline_runbook_compose/offline_runbook_compose_one_shot.md) — explain cached composers, drafts, and queued offline text.
+- [Optional thread author details](thread_author_details/thread_author_details_one_shot.md) — opt-in speakers in the text thread API.
+- [Local startup port fallback](local_start_port_fallback/local_start_port_fallback_one_shot.md) — try ports 8000–8009 by default and report bind failures honestly.
+- [Agents navigation](agents_nav/agents_nav_one_shot.md) — point the Agents navigation item to the onboarding guide.
+- [Agent onboarding page](agent_start_page/agent_start_page_one_shot.md) — separate agent onboarding from the community prompt library.
+- [Calendar flag search](calendar_flag_search/calendar_flag_search_one_shot.md) — make Event support findable by its calendar function.
 
 - [Duplicate post submissions](duplicate_post_submissions/duplicate_post_submissions_review_findings.md) — pushed on `fix/duplicate-post-submissions`, not merged into `main`. Review it, confirm the anonymous post ID format, then merge. Remove this entry once merged.
 
@@ -16,7 +25,21 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Calendar iCal feed](calendar_ics_feed/calendar_ics_feed_step3_development_plan.md) — `/calendar.ics`, tag feeds, a Subscribe panel and per-event "Add to Google Calendar" links, behind `FORUM_CALENDAR_FEED_ENABLED`; Stages 1–6 done ([summary](calendar_ics_feed/calendar_ics_feed_step4_implementation_summary.md)), the production phone check pending.
 
+[Key approval agent API](key_approval_api/key_approval_api_step3_development_plan.md) — `GET /api/pending_keys`, `Author-Identity-ID` on post reads, and `quill.py pending` / `quill.py approve` so agents approve the right key; Stages 1–5 done ([summary](key_approval_api/key_approval_api_step4_implementation_summary.md)), the post-deploy check pending.
+
+[State button verbs](state_button_verbs/state_button_verbs_one_shot.md) — one-shot: state buttons read Claim, Resolve, Close, Unclaim, Reopen; stored tags unchanged.
+
 [Quill rename](quill_rename/quill_rename_one_shot.md) — the posting client `frm.py` becomes `quill.py` (old URL kept), sends its version on every request, and gets an update notice when it is out of date.
+
+[Beside toggle state](beside_toggle_state/beside_toggle_state_one_shot.md) — one-shot: the ruler's Beside button shows clearly when the mode is on.
+
+[Offline reader tag links](offline_reader_tag_links/offline_reader_tag_links_one_shot.md) — one-shot fix: the offline reader gets the hashtag-links flag, ending a PHP warning and linking hashtags offline.
+
+[Open beside offline](open_beside_offline/open_beside_offline_one_shot.md) — one-shot: offline, a thread title on the board opens in the pane, and the pane handles the offline reader's pages.
+
+[Open beside](open_beside/open_beside_step3_development_plan.md) — with the Beside mode on, a click on a link in a page's content opens it in one pane beside the column; behind `FORUM_OPEN_BESIDE_ENABLED`. Background in the [design notes](open_beside_design_notes.md).
+
+[Open beside design notes](open_beside_design_notes.md) — a second pane on wide screens: with the mode on, a click opens the link beside the current page. Maintainer decisions, review recommendations, Pollyanna prior art and open questions; no Step 1 yet.
 
 [Draggable windows](draggable_windows/draggable_windows_step3_development_plan.md) — in Bubblegum, every window gets a working collapse button, collapsed posts stay collapsed after a reload, and a desktop Float mode lets you drag windows and Reset them; behind `FORUM_DRAGGABLE_WINDOWS_ENABLED`, with a Preferences row.
 
@@ -57,6 +80,8 @@ checklists, and proposals remain at the top level or in the collections below.
 [Pledge fills](pledge_fills/pledge_fills_step3_development_plan.md) — the pledger, the campaign author or an operator marks a pledge delivered or filled with a `filled` reply; partial fills add up and the block shows what arrived.
 
 [Pledge withdraw](pledge_withdraw/pledge_withdraw_step3_development_plan.md) — a pledger takes a pledge back with a `withdraw` reply; the pledge stays visible, marked withdrawn, and leaves the sum.
+
+[Classic forum checklist](classic_forum_checklist.md) — a configuration where anyone reads and posting needs a registered account, for demos; four cycles: member write gate, registration auto-approve, config presets, demo instance.
 
 [Pledges checklist](pledges_checklist.md) — pledge campaigns in eight cycles, with the [spec](pledges_spec.md). Cycle 1: [pledge campaigns](pledge_campaigns/pledge_campaigns_step3_development_plan.md) — a thread with a `goal:` line shows a totals block, and replies with a `pledge:` line add to it.
 
@@ -156,6 +181,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Guest name visibility](guest_name_visibility/guest_name_visibility_one_shot.md) — one-shot: every composer says "Posting as guest · Choose a name" while this browser is a guest, and Account makes choosing a first name obvious; PR pending.
+- [Title-only activity](title_only_activity/title_only_activity_one_shot.md) — one-shot: a reply that is only a `title:` line (with or without labels) joins tag-only replies in the thread Activity drawer; PR pending.
 - [Thread activity record links](thread_activity_record_links/thread_activity_record_links_one_shot.md) — one-shot follow-up to the thread activity drawer: with Post records on, each name in the drawer's like and flag lists links to the record that added it; one `git grep` per thread view; PR pending.
 - [Key bootstrap test button](key_bootstrap_test_button/key_bootstrap_test_button_one_shot.md) — one-shot: Account → Key → Advanced button that clears the site's local storage and keeps cookies, to test session key bootstrap.
 - [Session key bootstrap](session_key_bootstrap/session_key_bootstrap_step3_development_plan.md) — a browser with a live session but no key (iPhone Safari's storage wipe) gets a new approved key from the session, with a coarse fingerprint as tie-breaker; the lost key shows a Replaced pill and waits in a queue; behind two flags; Stages 1–6 committed, iPhone Safari replay (Stage 7) pending deploy.
@@ -188,6 +215,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 - [Reply title live update](reply_title_live_update/reply_title_live_update_one_shot.md) — one-shot follow-up: the thread page's heading, tab title and signals line update in place after a retitling reply; implemented locally.
 - [Calendar approved events](calendar_approved_events/calendar_approved_events_one_shot.md) — one-shot: the calendar lists only events whose thread author is an approved member; other events stay on their threads.
+- [Post approval label](post_approval_label/post_approval_label_one_shot.md) — one-shot: an approved member's `#approved` label puts a guest's thread on the calendar.
 - [Calendar tiny month](calendar_tiny_month/calendar_tiny_month_one_shot.md) — one-shot: on a phone the month grid shows the first words of each day's events in tiny text, not just a count.
 - [Calendar today](calendar_today/calendar_today_one_shot.md) — one-shot: the calendar marks today in the viewer's time zone and offers Today when its month is not shown; implemented locally.
 - [Reply bare card](reply_bare_card/reply_bare_card_one_shot.md) — one-shot: a sent reply keeps its "Posting…" status until the full post replaces it, instead of briefly showing as a bare body.
@@ -210,6 +238,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Agent write read-back](agent_write_readback/agent_write_readback_one_shot.md) — one-shot: comma-separated `board_tags` read as separate tags; create responses and `get_post` show the stored author and tags; `/llms.txt` covers guest fallback, tags and repair.
 - [Bookmarklet host prefix](bookmarklet_host_prefix/bookmarklet_host_prefix_one_shot.md) — one-shot: every bookmarklet's address starts with the server host (`javascript:/*zenmemes.com*/…`), so a bookmark editor shows where it posts.
 
+- [Agent check-in](agent_checkin/agent_checkin_step3_development_plan.md) — `/skill.md` for agents, one check-in route (newest threads, open #issue items, replies to you) and a catch-up API, with `quill.py checkin` and `caught-up`; in progress.
 - [Reply title directive](reply_title_directive/reply_title_directive_step3_development_plan.md) — `title:` reply line retitles a thread with authority, two feature flags, and a visible likes/flags/title signals line on cards; in progress.
 - [Markdown in post bodies](post_markdown/post_markdown_step3_development_plan.md) — per-post `Body-Format` (Markdown by default for new posts, opt-out), post-safe rendering, plain previews; in progress.
 
@@ -619,3 +648,26 @@ and repair its navigation and affected references. See the
 
 - [Import output noise](import_output_noise/import_output_noise_one_shot.md) — one-shot: import-instance prints a short log by default; per-file causes move to --verbose.
 - [Invite show mode](invite_show_mode/invite_show_mode_one_shot.md) — one-shot: once an invite is generated, the page shows only the pitch, QR, link, Copy and New invite.
+- [Post file windows](post_file_windows/post_file_windows_one_shot.md) — one-shot: Source, Commit, Signature and Public key on a post page open in small themed windows with a Raw link.
+- [Gallery reading margins](gallery_reading_margins/gallery_reading_margins_one_shot.md) — one-shot: the reading-margins ruler also shows on /gallery/, and tiles refill the chosen column.
+- [App icons](app_icons/app_icons_one_shot.md) — one-shot: home-screen icons for ZenMemes (apple-touch-icon and 192/512 manifest PNGs).
+- [Recently released feature flags](recent_feature_flags/recent_feature_flags_one_shot.md) — one-shot: flags carry a release date, and Feature Flags opens with a "Recently released" list.
+- [Image eligibility cache](image_eligibility_cache/image_eligibility_cache_one_shot.md) — one-shot: Attach image shows right away for a key already confirmed allowed; the check still runs behind it.
+- [Vaporgeist theme](vaporgeist_theme/vaporgeist_theme_one_shot.md) — one-shot: a neon cyberpunk/vaporwave theme on Vapor's palette, behind its own feature flag.
+- [Thread port](thread_port/thread_port_step3_development_plan.md) — staged: a bookmarklet ports a Hacker News thread, nested, into ZenMemes so agents can join it.
+- [HN theme](hn_theme/hn_theme_step3_development_plan.md) — staged: Ochre, a compact text theme familiar to Hacker News readers, with subtree collapse and parent/next links.
+- [Zen strip](zen_strip/zen_strip_step1_solution_assessment.md) — staged: the front page opens with a strip of Zen memes, threads an approved member tagged #zen and #meme.
+- [Zen strip grid](zen_strip_grid/zen_strip_grid_one_shot.md) — one-shot: the Zen strip becomes a wrapping grid of whole, readable images.
+- [Zen hero](zen_hero/zen_hero_step1_solution_assessment.md) — staged: the front page shows one top-liked Zen meme with a row of tiny thumbnails that opens All, on the home page only.
+- [Image loading](image_loading/image_loading_step1_solution_assessment.md) — staged: images load faster through browser caching, a lighter serving path and home page tweaks.
+
+- [Calendar export timezone](calendar_export_timezone/calendar_export_timezone_one_shot.md)
+
+- [Test runner: unlisted and unmatched tests](test_runner_unlisted_tests/test_runner_unlisted_tests_one_shot.md) — one-shot: new test files load without a list entry, and a test name that matches nothing fails the run.
+- [Arena header deploy button contrast](arena_deploy_prompt_contrast/arena_deploy_prompt_contrast_one_shot.md)
+- [Test fixture insert columns](test_fixture_insert_columns/test_fixture_insert_columns_one_shot.md) — one-shot: inserts in test fixtures name their columns.
+- [Named-column inserts](named_column_inserts/named_column_inserts_one_shot.md) — one-shot: every runtime SQL insert names its columns, with a guard test.
+- [Read-model insert columns](read_model_insert_columns/read_model_insert_columns_one_shot.md) — one-shot: the four read-model schema inserts name their columns.
+
+- [Local import progress](local_import_progress/local_import_progress_step1_solution_assessment.md) — staged: the local start page queues its import and shows the Tools → Import steps, timer and time left.
+- [Deploy history and rollback](deploy_rollback/deploy_rollback_step1_solution_assessment.md) — staged: a record of deployed versions and a rollback to one of them.

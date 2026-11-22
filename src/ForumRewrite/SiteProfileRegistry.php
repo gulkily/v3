@@ -14,7 +14,7 @@ final class SiteProfileRegistry
     private static ?array $profilesForTesting = null;
 
     /**
-     * @return array<string, array{name: string, displayName: string, defaultTheme: string, permittedThemes: list<string>, browserNamespace: string, editorialContentKey: string, enabledExperienceKeys: list<string>, composerPrompt: string}>
+     * @return array<string, array{name: string, displayName: string, defaultTheme: string, permittedThemes: list<string>, browserNamespace: string, editorialContentKey: string, enabledExperienceKeys: list<string>, composerPrompt: string, calendarTimeZone?: string}>
      */
     public static function all(): array
     {
@@ -22,10 +22,11 @@ final class SiteProfileRegistry
             'zenmemes' => [
                 'name' => 'zenmemes',
                 'displayName' => 'zenmemes',
+                'calendarTimeZone' => 'America/New_York',
                 'defaultTheme' => 'auto',
                 // What Auto/System shows for a light or dark device setting.
                 'autoThemes' => ['light' => 'gloss', 'dark' => 'glossdark'],
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'spearmint', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'gloss', 'glossdark', 'engagify'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'spearmint', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'vaporgeist', 'gloss', 'glossdark', 'engagify', 'ochre'],
                 'browserNamespace' => 'zenmemes',
                 'editorialContentKey' => 'zenmemes',
                 'enabledExperienceKeys' => ['forum'],
@@ -37,13 +38,15 @@ final class SiteProfileRegistry
                 ],
                 // The thread whose top-level replies /guestbook/ shows as a book; null until it exists.
                 'guestbookThread' => null,
+                // Threads an approved member tagged with every one of these open the board as Zen memes.
+                'zenStripTags' => ['zen', 'meme'],
                 'presentationSlots' => ['navigation' => 'app', 'boardCard' => 'list', 'compose' => 'thread', 'about' => 'default', 'editorial' => 'zenmemes', 'brandedStylesheet' => 'site'],
             ],
             'chouse' => [
                 'name' => 'chouse',
                 'displayName' => 'chouse',
                 'defaultTheme' => 'chouse',
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'chouse'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'vaporgeist', 'chouse'],
                 'browserNamespace' => 'chouse',
                 'editorialContentKey' => 'chouse',
                 'enabledExperienceKeys' => ['forum'],
@@ -54,7 +57,7 @@ final class SiteProfileRegistry
                 'name' => 'qdb',
                 'displayName' => 'qdb',
                 'defaultTheme' => 'qdb',
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'qdb'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'vaporgeist', 'qdb'],
                 'browserNamespace' => 'qdb',
                 'editorialContentKey' => 'qdb',
                 'enabledExperienceKeys' => ['qdb'],
@@ -65,7 +68,7 @@ final class SiteProfileRegistry
                 'name' => 'mitrapclub',
                 'displayName' => 'MIT Rap Club',
                 'defaultTheme' => 'mitrapclub',
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'mitrapclub'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'vaporgeist', 'mitrapclub'],
                 'browserNamespace' => 'mitrapclub',
                 'editorialContentKey' => 'mitrapclub',
                 'enabledExperienceKeys' => ['forum'],
@@ -93,7 +96,7 @@ final class SiteProfileRegistry
     }
 
     /**
-     * @return array{name: string, displayName: string, defaultTheme: string, permittedThemes: list<string>, browserNamespace: string, editorialContentKey: string, enabledExperienceKeys: list<string>, composerPrompt: string}
+     * @return array{name: string, displayName: string, defaultTheme: string, permittedThemes: list<string>, browserNamespace: string, editorialContentKey: string, enabledExperienceKeys: list<string>, composerPrompt: string, calendarTimeZone?: string}
      */
     public static function active(): array
     {
@@ -128,12 +131,32 @@ final class SiteProfileRegistry
         return $path === '/' ? '/' : rtrim($path, '/');
     }
 
+    public static function calendarTimeZone(): ?\DateTimeZone
+    {
+        $zone = self::active()['calendarTimeZone'] ?? null;
+
+        return $zone === null ? null : new \DateTimeZone($zone);
+    }
+
     /** The active site's guestbook thread ID, or null when the site has none. */
     public static function guestbookThread(): ?string
     {
         $threadId = self::active()['guestbookThread'] ?? null;
 
         return is_string($threadId) && $threadId !== '' ? $threadId : null;
+    }
+
+    /**
+     * The tags a thread needs, all of them, to open the board in the Zen strip; empty when the
+     * active site has no strip.
+     *
+     * @return list<string>
+     */
+    public static function zenStripTags(): array
+    {
+        $tags = self::active()['zenStripTags'] ?? [];
+
+        return is_array($tags) ? array_values($tags) : [];
     }
 
     /** The page theme for a request path on the active site, or null. */
@@ -218,6 +241,18 @@ final class SiteProfileRegistry
 
             if (isset($profile['guestbookThread']) && (!is_string($profile['guestbookThread']) || preg_match('/^[A-Za-z0-9._-]+$/', $profile['guestbookThread']) !== 1)) {
                 throw new \RuntimeException("Site profile {$siteId} has an invalid guestbook thread ID.");
+            }
+
+            if (isset($profile['zenStripTags'])) {
+                $stripTags = $profile['zenStripTags'];
+                if (!is_array($stripTags) || $stripTags === [] || !array_is_list($stripTags) || count(array_unique($stripTags)) !== count($stripTags)) {
+                    throw new \RuntimeException("Site profile {$siteId} Zen strip tags must be a list of different tags.");
+                }
+                foreach ($stripTags as $stripTag) {
+                    if (!is_string($stripTag) || preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $stripTag) !== 1) {
+                        throw new \RuntimeException("Site profile {$siteId} has an invalid Zen strip tag.");
+                    }
+                }
             }
 
             $browserNamespace = $profile['browserNamespace'];

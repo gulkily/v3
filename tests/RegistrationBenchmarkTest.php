@@ -27,9 +27,9 @@ final class RegistrationBenchmarkTest
             (new ReadModelBuilder($repository, $database, new CanonicalRecordRepository($repository), 'benchmark_fixture'))->rebuild();
             $observer = new PDO('sqlite:' . $database);
             $observer->exec('CREATE TABLE benchmark_profile_updates (identity_id TEXT NOT NULL)');
-            $observer->exec('CREATE TRIGGER benchmark_profile_write AFTER UPDATE ON profiles BEGIN INSERT INTO benchmark_profile_updates VALUES (NEW.identity_id); END');
+            $observer->exec('CREATE TRIGGER benchmark_profile_write AFTER UPDATE ON profiles BEGIN INSERT INTO benchmark_profile_updates (identity_id) VALUES (NEW.identity_id); END');
             $observer->exec('CREATE TABLE benchmark_activity_updates (author_identity_id TEXT)');
-            $observer->exec('CREATE TRIGGER benchmark_activity_write AFTER UPDATE ON activity BEGIN INSERT INTO benchmark_activity_updates VALUES (NEW.author_identity_id); END');
+            $observer->exec('CREATE TRIGGER benchmark_activity_write AFTER UPDATE ON activity BEGIN INSERT INTO benchmark_activity_updates (author_identity_id) VALUES (NEW.author_identity_id); END');
             $existingIdentities = $observer->query('SELECT identity_id FROM profiles')->fetchAll(PDO::FETCH_COLUMN);
             $observer = null;
             $hash = hash_file('sha256', $database);

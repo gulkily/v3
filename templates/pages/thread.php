@@ -37,11 +37,19 @@ $replyPosts = \ForumRewrite\ReadModel\RetractedLeafFilter::apply($replyPosts);
 if (is_array($pledgeCampaign ?? null)) {
     $replyPosts = \ForumRewrite\ReadModel\WithdrawLeafFilter::apply($replyPosts, $pledgeCampaign['withdrawals'] ?? [], $pledgeCampaign['fills'] ?? [], $pledgeCampaign['reviews'] ?? []);
 }
-// Tag-only leaves leave the conversation for the Activity drawer; filter before runs are computed.
+// Tag-only and title-only leaves leave the conversation for the Activity drawer; filter before runs are computed.
 $threadActivityEntries = [];
 if ($threadActivityDrawerEnabled ?? false) {
     ['shown' => $replyPosts, 'entries' => $threadActivityEntries] = \ForumRewrite\View\ThreadActivity::partition(
-        $rootPost, $replyPosts, $signalActors ?? null, $postRecordsEnabled ?? false, $threadReactionRecordIds ?? []);
+        $rootPost, $replyPosts, $signalActors ?? null, $postRecordsEnabled ?? false, $threadReactionRecordIds ?? [], $titleDirectiveEnabled ?? false);
+}
+
+// A ported thread reads as a tree: each reply under the post it answers (docs/concepts/ported_thread.md).
+$replyDepths = [];
+if ($rootPost !== null && ($rootPost['ported_from'] ?? null) !== null) {
+    $replyTree = \ForumRewrite\View\ReplyTree::flatten($replyPosts);
+    $replyPosts = array_column($replyTree, 'post');
+    $replyDepths = array_column($replyTree, 'depth');
 }
 
 // Pre-compute continuation flags so the root card can show a true reply count before the reply loop runs.
@@ -53,7 +61,7 @@ $isPledgeRowPost = static fn (?array $candidate): bool => $candidate !== null &&
     && ($candidate['retracted_at'] ?? null) === null
     && (($pledgeCampaign['pledges'][(string) $candidate['post_id']]['amount'] ?? null) !== null);
 foreach ($replyPosts as $post) {
-    $isContinuation = ($collapseSameAuthorPostsEnabled ?? true) && $previousPost !== null
+    $isContinuation = ($collapseSameAuthorPostsEnabled ?? true) && $replyDepths === [] && $previousPost !== null
         && !$isPledgeRowPost($post) && !$isPledgeRowPost($previousPost)
         && $isThreadPostContinuation($previousPost, $post, $continuationWindowSeconds);
     $replyContinuationFlags[] = $isContinuation;
@@ -99,6 +107,7 @@ $showRootMetaExtras = $index === $rootRunTailIndex;
     'isRunTail' => $isRunTail,
     'showRootMetaExtras' => $showRootMetaExtras,
     'trueReplyCount' => $trueReplyCount,
+    'replyDepth' => $replyDepths[$index] ?? 0,
 ]), 1) ?>
 <?php endforeach; ?>
 <?php if ($threadActivityEntries !== []): ?>

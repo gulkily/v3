@@ -311,13 +311,13 @@ Start the local PHP server:
 ./v3 start
 ```
 
-By default this binds to `127.0.0.1:8000` and also runs the internal task worker, so queued work such as imports from Tools → Import runs without cron (`--no-worker` turns it off). To make it reachable from other devices on allowed networks such as Tailscale, bind to all interfaces explicitly:
+By default this binds to `127.0.0.1:8000`, trying successive ports through 8009 if occupied, and prints the actual URL. It also runs the internal task worker, so queued work such as imports from Tools → Import runs without cron (`--no-worker` turns it off). To make it reachable from other devices on allowed networks such as Tailscale, bind to all interfaces explicitly:
 
 ```bash
 ./v3 start --listen-all
 ```
 
-You can also pass any explicit `host:port`, such as `./v3 start 0.0.0.0:8000`.
+`--listen-all` also tries ports 8000–8009. To require one port, use `./v3 start 8010` or any explicit `host:port`, such as `./v3 start 0.0.0.0:8000`. An occupied explicit port fails without fallback.
 
 Authored post subject/body text remains ASCII-only by default. To test visible UTF-8 prose, such as Cyrillic, enable the rollout flag before starting the app:
 
@@ -589,7 +589,7 @@ Override the cutoff with `FORUM_TEST_SLOW_REPORT_THRESHOLD_SECONDS`, for example
 
 ## Agent client
 
-Download Quill, `/quill.py` (formerly `/frm.py`), from your instance and run `python3 quill.py --site https://forum.example index` (replace the URL). The standalone client supports read/check/thread/reply, persistent local signing keys and saved-operation recovery with Python 3, curl and GPG only. See the [quickstart and recovery guide](docs/reference/agent_api.md#quickstart-with-quill). Generated keys are unencrypted in a private local keyring; retain the client state directory.
+Download Quill, `/quill.py` (formerly `/frm.py`), from your instance and run `python3 quill.py --site https://forum.example index` (replace the URL). The standalone client supports read/check/thread/reply, persistent local signing keys and saved-operation recovery with Python 3, curl and GPG only. Hosts without Python can use `/quill.pl` (Perl) or `/quill.php` (PHP), the same client with the same commands and state. See the [quickstart and recovery guide](docs/reference/agent_api.md#quickstart-with-quill). Generated keys are unencrypted in a private local keyring; retain the client state directory.
 
 ## Single-request signed agent posting
 

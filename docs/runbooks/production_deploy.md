@@ -243,6 +243,19 @@ After a check finds new commits, the **Incoming** row shows what a deploy would 
 
 After a successful update, the deploy runs `./v3 task-queue check-read-model` with the new code. It reads only the read model's metadata, so the deploy stays as fast as before. When the new code expects a different read-model schema, it queues a rebuild, and the **Site data** row follows it (waiting, rebuilding with its latest progress line, done or failed). Until it finishes, visitors see a short "Back in a moment" page that reloads itself, backing off from 10 seconds to every 2 minutes (preview it at `/preview/site-update`). If the row says the task worker is not running, or the rebuild failed, run `./v3 rebuild` over SSH. The attempt log records `Read-Model: current`, `queued` or `unknown`, and `./v3 deploy --status` prints it as `Latest-Read-Model`. The check runs the command-line PHP (`PHP_BINDIR/php`), not the web server's php-fpm or php-cgi; set `FORUM_PHP_CLI` to its absolute path if that is wrong on the host. If a deploy's reply is lost or the site answers 503 while the code or site data changes, the page keeps checking status and reloads when the deploy is done.
 
+### Deploy history and rollback
+
+The **History** section of Tools → Deploy lists the versions this checkout has run, newest first, with the running one marked. The record is `state/logs/deploy_history.txt`, one `Key: value` block per deploy or rollback; it is never rotated, and its first use fills it from the deploys still in `state/logs/app_update.log`. Over SSH, `./v3 deploy --history` prints all of it.
+
+**Roll back** on an earlier version shows what it would undo, then **Roll back to <commit>** moves the checkout back to that commit. Over SSH: `./v3 deploy --rollback=<commit>`.
+
+- A rollback goes only to a commit in the history that is behind the running one. It never contacts GitHub.
+- Local edits such as `public/.htaccess` are kept, as in a deploy. If an edit does not apply at the older commit, nothing changes and the page says so.
+- The confirmation warns when the rollback crosses a site data format change, a change to the code that reads records, or a change under `docs/specs/`. Older code may not show records written since; nothing is lost, and deploying forward restores the view. A site data format change also means a rebuild after rolling back and another after deploying forward.
+- The checkout stays on `main`, behind `origin/main`. **Deploy now** returns it to the latest version; the header prompt, when on, offers that as usual.
+
+Only the application checkout moves. Content is never rolled back.
+
 ### Deploy now in the header
 
 With the **Deploy prompt** site flag (`FORUM_DEPLOY_HEADER_PROMPT_ENABLED`, off by default) on, a browser that has deployed from Tools → Deploy remembers it. Every page then checks for updates three seconds after loading, and shows **Deploy now** by the site name when the checkout is behind. The check reuses a fetch from the last three minutes, so most page loads do not contact GitHub, and it gives up after fifteen seconds. Tapping the button runs the same Deploy now as the page and reloads on success; any failure shows its message with a link to Tools → Deploy. The server still allows only root-approved operators to check or deploy. A refusal makes the browser stop checking until it deploys from Tools → Deploy again. Check for updates on the page always fetches.
@@ -588,6 +601,10 @@ Activity, tickets, logs, or shell history.
 `FORUM_APP_VERSION_NOTIFICATION=false` disables the browser-side `/api/version` polling and the "A new version is available." reload banner.
 
 The default is enabled. `/api/version` remains available when the notification is disabled.
+
+`/api/version` and forum `app-version` metadata report the application checkout's Git HEAD, independently of content commits. Source-only deployments return `no-git` and cannot detect Git updates. Navbar copies track code and content separately through `page-version`; Docs uses its own release version.
+
+After deploying the application-version fix, operators who disabled notifications to suppress false notices can enable App version notification on Tools → Feature Flags. Remove a disabling private-config/environment override first if present; restart the service for an environment change. Verify that posting leaves `/api/version` unchanged and a later code deploy raises Reload on an older open page.
 
 If production serves prebuilt static HTML artifacts, rebuild those artifacts after changing this flag so rendered pages include or omit the notification markup consistently.
 
