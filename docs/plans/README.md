@@ -670,4 +670,5 @@ and repair its navigation and affected references. See the
 - [Read-model insert columns](read_model_insert_columns/read_model_insert_columns_one_shot.md) — one-shot: the four read-model schema inserts name their columns.
 
 - [Local import progress](local_import_progress/local_import_progress_step1_solution_assessment.md) — staged: the local start page queues its import and shows the Tools → Import steps, timer and time left.
+- [Compact deploy history](deploy_history_compact/deploy_history_compact_one_shot.md) — one-shot: one compact row per version on Tools → Deploy.
 - [Deploy history and rollback](deploy_rollback/deploy_rollback_step1_solution_assessment.md) — staged: a record of deployed versions and a rollback to one of them.
