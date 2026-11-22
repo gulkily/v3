@@ -13,3 +13,5 @@
 2026-11-22T21:44:51+00:00: Maintainer approved Step 2 with "approved step 2". Step 3 handoff projection 0.65 (prior 0.50 preserved), same v1/A scope, R1/P2 and exposed Codex rater. New understanding: strict secret-packet exclusion, binding reviewed source bytes/destination and fault verification. Four stage-work estimates 0.18, 0.22, 0.15, 0.08 are supplemental and not summed. All R1 hashes verified. Awaiting Approved Step 3; no implementation/branch/commit or accepted outcome increment.
 
 2026-11-22T22:48:00+00:00: Step 3 approved. Fresh-main baseline 8b00a78be, planning commit 68e4c4269; Step 4 entry 0.65 reaffirmed. Stage 1 original 0.18, retrospective 0.20; focused checks passed with retained smoke baseline failures. No scope change, measured labor or acceptance increment. Canonical progress: ../publish_local_public_keys/publish_local_public_keys_step4_implementation_summary.md.
+
+2026-11-22: Stage 2 locally complete; original stage work 0.22, retrospective 0.25. Cycle projection 0.65 reaffirmed, same v1/A/R1/P2 and exposed rater. Focused publication/recovery checks pass; known smoke failures retained. No measured labor or production acceptance increment.

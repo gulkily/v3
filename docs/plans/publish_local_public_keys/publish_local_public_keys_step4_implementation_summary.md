@@ -25,7 +25,7 @@ Reuse and risks: use the existing inspector, identity/name/retirement parsers, p
 
 **Retrospective stage work: 0.20**
 
-- Status: locally complete; no publication path yet.
+- Status: locally complete; commit 78da8c12c.
 - Changes: added ordinary publish-keys preview, canonical inventory validation, typed bounded destination reads and opt-in strict public inspection. Reused existing parsers/inspector and left legacy inspect semantics intact. Added public-key publication concept and reconciled the exact accepted F03 intake without closing it.
 - Verification: focused PublishKeysCommandTest 4/4 passed, including GET-only preview, private packets under public armor, symlink rejection, refusal, name/retirement mismatch and unexpected responses. Syntax, help and diff checks passed. Smoke plus PublishKeysCommandTest/OpenPgpKeyInspectorTest/CanonicalRecordParsersTest: 497 run, 492 passed, five failed. Four Unicode-related failures reproduce on untouched 8b00a78be (4/4 selected baseline tests fail identically). ViewerSessionStoreTest concurrency hit a SQLite lock once, then passed individually on this branch and baseline. Full suite not run.
 - Notes: initial fixture cleanup used the wrong helper name; corrected to GpgHomeCleaner::dispose and all focused checks recovered. No product exception was hidden. Feedback check passed 356 records, zero problems; index regenerated. No source, private key or production instance was published. Existing inspector/registration consumers remain covered by smoke/inspector tests. No dependency/schema/UI changes. Source family type checks and absolute response deadline were tightened inside this stage; focused preview checks reran successfully.
@@ -35,7 +35,12 @@ Reuse and risks: use the existing inspector, identity/name/retirement parsers, p
 
 **Original estimate: 0.22**
 
-- Status: pending; Stage 1 must commit first.
+**Retrospective stage work: 0.25**
+
+- Status: locally complete.
+- Changes: explicit fingerprint selection, exclusive Key: value review files outside canonical source, source/destination binding, all-selection validation before the first write, bounded public-key-only registration and mandatory read-back. Each invocation attempts each missing selection once; reruns skip confirmed registrations and preserve mixed outcomes.
+- Verification: smoke plus PublishKeysCommandTest/PublicKeyPublisherTest: 494 run, 490 passed, four known Unicode failures reproduced on untouched baseline. Final focused PublicKeyPublisherTest: 5/5 passed, including source changes in another selected key, source-byte changes, review-file preservation, ambiguous responses, concurrent registration, partial refusal and reruns. Syntax/help/diff checks passed. Full suite not run.
+- Estimate details: original 0.22 retained, retrospective 0.25; same v1/A, R1/P2 and exposed rater. Projection 0.65 reaffirmed; not measured labor. Production untouched and acceptance pending.
 
 ## Stage 3 - Ordinary-flow acceptance
 

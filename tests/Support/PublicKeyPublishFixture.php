@@ -30,6 +30,7 @@ final class PublicKeyPublishFixture
         $this->identityPath = $this->root . '/records/identity/identity-openpgp-' . strtolower($this->fingerprint) . '.txt';
         $this->source();
         $this->response(404, "profile not found\n");
+        file_put_contents($this->directory . '/project', dirname(__DIR__, 2));
         copy(__DIR__ . '/public_key_publish_router.php', $this->directory . '/router.php');
         $socket = stream_socket_server('tcp://127.0.0.1:0', $errno, $error);
         if ($socket === false) throw new RuntimeException($error);

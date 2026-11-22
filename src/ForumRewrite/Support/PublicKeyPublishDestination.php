@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Support;
 
 use ForumRewrite\Import\InstanceArchiveDownloader;
+use ForumRewrite\Security\OpenPgpKeyInspector;
 use RuntimeException;
 
 /** Only the existing public profile and registration endpoints, without redirects or credentials. */
@@ -58,6 +59,20 @@ final class PublicKeyPublishDestination
                 'detail' => $fields['Retired'] === 'yes' ? 'Destination key is retired' : 'Already registered'];
         } catch (RuntimeException $error) {
             return ['state' => 'unknown', 'detail' => $error->getMessage()];
+        }
+    }
+
+    /** A registration response is only a hint; the caller must read the identity back. */
+    public function register(string $publicKey): array
+    {
+        (new OpenPgpKeyInspector())->inspectPublicOnly($publicKey);
+        try {
+            [$status, $body, $type] = $this->request('/api/link_identity', ['public_key' => $publicKey]);
+            return ['refused' => in_array($status, [400, 401, 403, 405], true),
+                'detail' => $status === 200 && str_starts_with($type, 'text/plain') && str_starts_with($body, "status=ok\n")
+                    ? 'Registration answered; verifying destination' : 'Registration HTTP ' . $status . '; check destination access and retry.'];
+        } catch (RuntimeException $error) {
+            return ['refused' => false, 'detail' => $error->getMessage()];
         }
     }
 
