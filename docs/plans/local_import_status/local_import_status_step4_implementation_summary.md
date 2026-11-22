@@ -125,7 +125,7 @@ Step 3 approved 2026-11-22 ("approved step 3"). Branch `feat/local_import_status
 - Normal entry and end-to-end outcome: passed locally on a copy with real zenmemes.com content.
 - Recovery: failed re-import with Retry above the earlier status, Change source, and the never-imported form all passed.
 - Deployment: no schema change, no new flag, nothing new stored. Tools → Import changes in number formatting and in the first step being current after the worker's claim.
-- Release: pending the PR's merge and the maintainer's own run.
+- Release: pending. PR https://github.com/gulkily/v3/pull/370 is open, not merged; the maintainer's own run is outstanding.
 
 ## Study closeout
 

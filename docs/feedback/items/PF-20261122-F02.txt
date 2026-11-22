@@ -16,3 +16,4 @@ On a copy that has imported, the local start page's card states where the conten
 
 Notes:
 2026-11-22: staged cycle on feat/local_import_status (docs/plans/local_import_status/). Verified locally on a copy holding a real zenmemes.com import: after a page import made by the earlier code, a terminal import, Check for new content and a failed re-import. Not in this cycle: the board as the home page after an import, automatic re-import, import history. Blocked on review, merge and the maintainer's own run.
+2026-11-22: PR https://github.com/gulkily/v3/pull/370 opened.

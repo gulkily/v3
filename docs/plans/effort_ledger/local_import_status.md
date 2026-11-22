@@ -2,7 +2,7 @@
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
-| `v3/local_import_status` | Step 4 complete; review pending | v1 / R1 / P2 | 0.25 (Steps 1–4); retrospective 0.27 | [Step 1](../local_import_status/local_import_status_step1_solution_assessment.md), [Step 2](../local_import_status/local_import_status_step2_feature_description.md), [Step 3](../local_import_status/local_import_status_step3_development_plan.md), [Step 4](../local_import_status/local_import_status_step4_implementation_summary.md) | Follows `v3/local_import_progress` (PR #357, merged); maintainer judgment pending |
+| `v3/local_import_status` | Step 4 complete; PR #370 open | v1 / R1 / P2 | 0.25 (Steps 1–4); retrospective 0.27 | [Step 1](../local_import_status/local_import_status_step1_solution_assessment.md), [Step 2](../local_import_status/local_import_status_step2_feature_description.md), [Step 3](../local_import_status/local_import_status_step3_development_plan.md), [Step 4](../local_import_status/local_import_status_step4_implementation_summary.md) | Follows `v3/local_import_progress` (PR #357, merged); maintainer judgment pending |
 
 2026-11-22 — Step 1. Intake and handoff **0.25** for Option A (B 0.40, C 0.40; alternatives, not summed). Single exposed Claude rater. Measured time unknown.
 
