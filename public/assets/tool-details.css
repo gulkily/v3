@@ -264,7 +264,9 @@
 
 .feature-flags-toolbar[hidden],
 .feature-flag-group[hidden],
-.feature-flag-row[hidden] {
+.feature-flag-row[hidden],
+.feature-flags-recent[hidden],
+.feature-flags-recent-list li[hidden] {
   display: none;
 }
 

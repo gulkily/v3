@@ -1,0 +1,18 @@
+ID: PF-20261122-B03
+Title: A queued import can wait when a one-task worker is busy with another task
+Kind: bug
+Workflow: ready
+Created: 2026-11-22
+Evidence: unknown
+
+Request:
+Pressing Import starts a worker unless one is running at that moment. If a one-task worker is busy with a different task, none is started, and that worker exits after its task. With no recurring worker, the import then waits, and the page shows "Waiting for the task worker" without offering Try again.
+
+Sources:
+- Session: Claude chat with the maintainer, 2026-11-22
+
+Done when:
+An import queued while another task runs starts once that task ends, or the page offers Try again.
+
+Notes:
+2026-11-22: Found by reading during v3/local_import_progress (Stage 2); not reproduced. Not reachable under ./v3 start with its default worker, which starts one every 5 seconds. Source: src/ForumRewrite/Import/InstanceImportRequests.php (perform, state).

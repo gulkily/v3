@@ -20,6 +20,7 @@ final class DeploymentSettings
         'FORUM_STATIC_HTML_ROOT',
         'FORUM_PUBLIC_ARTIFACT_ROOT',
         'FORUM_IMAGE_ROOT',
+        'FORUM_PUBLISHED_IMAGE_ROOT',
     ];
 
     /** @var array<string, array<string, string>> */

@@ -1599,6 +1599,14 @@ pre {
   background: var(--line);
 }
 
+/* While the featured image loads, it shows a tiny copy of itself stretched into a blur.
+   The stand-in sits on the image element, so dark schemes dim it like the image. */
+.zen-strip__card--standin img {
+  background-color: transparent;
+  background-size: cover;
+  background-position: center;
+}
+
 /* Light-backed pictures glare on a dark page, so dark schemes dim them. */
 .zen-strip img {
   filter: brightness(var(--media-dim, 1));

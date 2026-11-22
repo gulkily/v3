@@ -143,6 +143,9 @@ final class Application
             $this->routeServices = null;
         }
         $this->docsPage = $docsPage;
+        // Published image copies exist only while the site may publish them (one stat when there are none).
+        // First, so every request that reaches the application enforces it.
+        \ForumRewrite\Images\PublishedImages::forProject()->enforce($this->featureFlags());
         if ($path === '/api/text_rules') {
             if ($method !== 'GET') { $this->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405); return; }
             $this->sendJson(\ForumRewrite\Support\UnicodeTextPolicy::rules(
@@ -196,10 +199,8 @@ final class Application
 
         if (\ForumRewrite\Support\LocalDevelopmentImport::isEntry($requestUri) && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {
             (new \ForumRewrite\Http\LocalDevelopmentPageController($this->routeServices(),
-                new \ForumRewrite\Support\LocalDevelopmentImport(
-                    $this->projectRoot, $this->repositoryRoot, $this->databasePath,
-                    $this->staticHtmlRoot ?? \ForumRewrite\PresentationPathResolver::staticHtmlRoot($this->projectRoot, \ForumRewrite\SiteProfileRegistry::active()),
-                )
+                new \ForumRewrite\Support\LocalDevelopmentImport($this->repositoryRoot),
+                $this->localImportRequests(),
             ))->handle($method);
             return;
         }
@@ -1126,7 +1127,7 @@ final class Application
         }
 
         if ($path === '/api/get_thread') {
-            $this->apiTextController()->getThread((string) ($query['thread_id'] ?? ''));
+            $this->apiTextController()->getThread((string) ($query['thread_id'] ?? ''), ($query['include_authors'] ?? '') === '1');
             return;
         }
 
@@ -1589,14 +1590,30 @@ final class Application
 
     private function importController(): \ForumRewrite\Http\ImportController
     {
-        $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
-
         return new \ForumRewrite\Http\ImportController(
             $this->routeServices(),
             $this->repositoryRoot,
-            $queuePath,
-            fn (): string => (new \ForumRewrite\TaskQueue\DetachedTaskQueueLauncher($this->projectRoot, $queuePath))->launchForOperator(),
+            TaskQueueDatabaseConfig::path($this->projectRoot),
+            $this->importWorkerLauncher(),
         );
+    }
+
+    /** The local start page's import requests; the page applies its own local guard first. */
+    private function localImportRequests(): \ForumRewrite\Import\InstanceImportRequests
+    {
+        return new \ForumRewrite\Import\InstanceImportRequests(
+            $this->repositoryRoot,
+            TaskQueueDatabaseConfig::path($this->projectRoot),
+            $this->importWorkerLauncher(),
+        );
+    }
+
+    /** @return \Closure():string */
+    private function importWorkerLauncher(): \Closure
+    {
+        $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
+
+        return fn (): string => (new \ForumRewrite\TaskQueue\DetachedTaskQueueLauncher($this->projectRoot, $queuePath))->launchForOperator();
     }
 
     private function calendarPageController(): \ForumRewrite\Http\CalendarPageController
@@ -2109,14 +2126,19 @@ final class Application
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function fetchThreadPosts(string $threadId): array
+    private function fetchThreadPosts(string $threadId, bool $includeAuthors = false): array
     {
+        // Reuse get_post's earliest source row without a separate SQL call per post.
+        // The existing activity_post_id_idx bounds each lookup to this post's activity.
+        $authorSourceSelect = $includeAuthors ? ", (SELECT source_path FROM activity
+            WHERE post_id = posts.post_id AND kind IN ('thread', 'reply') AND source_path IS NOT NULL
+            ORDER BY id ASC LIMIT 1) AS author_source_path" : '';
         $stmt = $this->pdo()->prepare(
             'SELECT posts.post_id, posts.thread_id, posts.parent_id, posts.subject, posts.body, posts.body_format, posts.retracted_at, posts.retraction_class, posts.retraction_attribution, posts.author_identity_id, posts.author_label, posts.ported_from, posts.ported_created_at,
                     posts.created_at, posts.board_tags_json, posts.agent_response_json, posts.resolution_state, (SELECT COALESCE(NULLIF(profiles.username, \'\'), profiles.fallback_label) FROM profiles WHERE profiles.identity_id = posts.resolution_set_by) AS resolution_set_by_username,
                     posts.author_profile_slug, posts.attribution_counted, profiles.username_token AS author_username_token,
                     COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved,
-                    profiles.public_key AS author_public_key
+                    profiles.public_key AS author_public_key' . $authorSourceSelect . '
              FROM posts
              LEFT JOIN profiles ON profiles.identity_id = posts.author_identity_id
              WHERE posts.thread_id = :thread_id
@@ -2124,8 +2146,20 @@ final class Application
              ORDER BY posts.sequence_number ASC'
         );
         $stmt->execute(['thread_id' => $threadId]);
+        $posts = $stmt->fetchAll();
+        if ($includeAuthors) {
+            foreach ($posts as $index => $post) {
+                if ((string) ($post['author_identity_id'] ?? '') !== '') {
+                    $sourcePath = (string) ($post['author_source_path'] ?? '');
+                    if ($sourcePath === '') {
+                        $sourcePath = $this->postSourcePath((string) $post['post_id']);
+                    }
+                    $posts[$index]['source_signature_path'] = $this->sourceSignatureLink($sourcePath)['path'];
+                }
+            }
+        }
 
-        return $stmt->fetchAll();
+        return $posts;
     }
 
     /**

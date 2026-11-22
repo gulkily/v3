@@ -54,6 +54,7 @@ final class TemplateRenderer
         'operations.php' => ['/assets/tool-details.css'],
         'deploy.php' => ['/assets/tool-details.css'],
         'tools_import.php' => ['/assets/tool-details.css'],
+        'local_development.php' => ['/assets/tool-details.css'],
         'feature_flag_change.php' => ['/assets/tool-details.css'],
         'llm_exchanges.php' => ['/assets/tool-details.css'],
         'offline_health.php' => ['/assets/tool-details.css'],
@@ -220,6 +221,8 @@ final class TemplateRenderer
         $scriptPaths = array_values(array_unique($scriptPaths));
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED)) {
             array_unshift($scriptPaths, '/assets/image_prepare.js', '/assets/image_upload.js');
+            // Every page that can show an image retries a failed one once.
+            $scriptPaths[] = '/assets/image_retry.js';
         }
         $assetScriptPaths = [];
         foreach ($scriptPaths as $scriptPath) {
@@ -670,6 +673,8 @@ final class TemplateRenderer
         }
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::IMAGE_CONTENT_ENABLED)) {
             array_unshift($scriptPaths, '/assets/image_prepare.js', '/assets/image_upload.js');
+            // Every page that can show an image retries a failed one once.
+            $scriptPaths[] = '/assets/image_retry.js';
         }
         $assetScriptPaths = [];
         foreach (array_values(array_unique($scriptPaths)) as $scriptPath) {

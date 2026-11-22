@@ -60,7 +60,7 @@ final class FastmodCsvTest
     {
         $pdo = new PDO('sqlite::memory:');
         $pdo->exec('CREATE TABLE post_fast_scores (post_id TEXT NOT NULL, content_hash TEXT NOT NULL, rubric_revision TEXT NOT NULL, status TEXT NOT NULL, probability REAL NULL, source TEXT NOT NULL, signals_json TEXT NOT NULL, failure_code TEXT NULL, failure_message TEXT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (post_id, content_hash, rubric_revision))');
-        $pdo->exec("INSERT INTO post_fast_scores VALUES ('old','hash','oldrev','scored',0.7,'llm','[]',NULL,NULL,'2020','2020')");
+        $pdo->exec("INSERT INTO post_fast_scores (post_id, content_hash, rubric_revision, status, probability, source, signals_json, failure_code, failure_message, created_at, updated_at) VALUES ('old','hash','oldrev','scored',0.7,'llm','[]',NULL,NULL,'2020','2020')");
         $store = new SqliteFastScoreStore($pdo);
         $old = $store->find('old', 'hash', 'oldrev');
         assertSame(true, $old['legacy']);

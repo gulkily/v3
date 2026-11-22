@@ -7,7 +7,7 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.25**
 
-Status: locally implemented and verified; production deployment, flag re-enable and acceptance pending. Next action: completion commit; hand off for review and deployment.
+Status: locally implemented and verified; production deployment, flag re-enable and acceptance pending. Next action: open the requested PR for review and deployment.
 Original request: User selected “2” from the ranked list: fix the application-version source.
 Authorization: 2026-11-21 chat selection authorizes implementing the bounded fix in one-shot mode. No production access, deployment, flag mutation on another instance, push or merge is authorized.
 Feedback: PF-20261030-B18. Its broader request includes independent cached-page revisions; preserve that behavior as part of fixing the shared version contract.
@@ -58,7 +58,18 @@ Release/recovery: After merging/deploying, rebuild static artifacts and enable A
 2026-11-21T17:58:15Z retrospective scope assessment: 0.30, separately from the unchanged prospective 0.25. R1/P2, scope v1, Codex single exposed rater. The difference reflects shared cached-page migration/recovery and the isolated code/content browser fixture; no scope expansion or new product outcome. No measured effort or independent rating. Maintainer comfortable-fit judgment and acceptance pending.
 Outcome: Bounded application fix locally delivered; no implementation blockers remain. Production outcome and feedback-index refresh remain pending as above. No abandoned requirements or new enhancements.
 Final review: Existing Git lookup, rendering, banner, worker and router contracts reused; no duplicate UI or repository APIs. Reviewed all intended changes and touched concept/reference links. Corrected test fixture and outdated version assertions; final affected unit/browser checks passed. Smoke failures retained with unchanged-baseline evidence.
-Commit/merge/publication status: Planning commit 31f4adc738eba9e15dbbff54c5df6535dac9d5b3; completion commit pending creation (its hash will be reported in the handoff). Branch fix/application-version-source; not pushed, merged or deployed. No PR or thread reply requested.
+Commit/merge/publication status: Planning commit 31f4adc738eba9e15dbbff54c5df6535dac9d5b3; completion commit c92c1ab31. Branch fix/application-version-source; original closeout was not pushed, merged or deployed. PR subsequently requested below.
 
 
 *— Codex · 2026-11-21 UTC*
+
+## PR preparation — 2026-11-22
+
+Request: “please pr” authorizes pushing this existing unmerged cycle and opening a PR. No existing PR was found for the branch; production deployment remains outside scope.
+Integration: Fetched origin/main 8b00a78be and merged it into the existing cycle branch. Only conflict was the plans index; retained both branches' entries. Automatic merges in Application, TemplateRenderer, the API reference and test registry reviewed against main; feature diff remains bounded. Original implementation c92c1ab31 and planning commit preserved.
+Verification: Repeated the same smoke-plus-focused command from the original closeout on the integrated tree; Summary: 523 run, 517 passed, 6 failed Log: /tmp/v3-application-version-pr-tests.log. All version-specific checks pass; the identical five previously reproduced baseline failures remain. Full suite not run. Both node tests/browser/application_version.mjs and node tests/browser/nav_cached_copy.mjs passed again after integration; production and iPhone Safari acceptance remain pending.
+Feedback index: Current main fixes the unrelated malformed feedback item. ./v3 feedback index now succeeds, and ./v3 feedback check reports 355 items, 0 problems and 36 existing source-overlap reviews. Generated index now reflects PF-20261030-B18's blocked/locally-verified status. This resolves the prior index-generation limitation without changing that unrelated item ourselves.
+Study: Same v3/application_version_source, scope v1, R1/P2 and exposed rater; original 0.25 projection and 0.30 retrospective retained. PR preparation/integration is continuation of this outcome, not a new observation. No new feature, dependency, scope request or acceptance claim.
+Commit/PR status: Integration/handoff commit pending creation; then push fix/application-version-source and open PR against main as requested. No merge or deploy performed.
+
+*— Codex · 2026-11-22 UTC*

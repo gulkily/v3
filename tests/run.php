@@ -133,6 +133,7 @@ $testFiles = [
     __DIR__ . '/FastmodRubricsTest.php',
     __DIR__ . '/ImageUploadValidatorTest.php',
     __DIR__ . '/ImageContentTest.php',
+    __DIR__ . '/ImageServingTest.php',
     __DIR__ . '/ImageZipRestoreTest.php',
     __DIR__ . '/ImageZipBackupTest.php',
     __DIR__ . '/InstanceImageImportTest.php',
@@ -255,6 +256,7 @@ $testFiles = [
     __DIR__ . '/DatabaseLockProbeTest.php',
     __DIR__ . '/HealthIndicatorsTest.php',
     __DIR__ . '/ApiRouteCatalogTest.php',
+    __DIR__ . '/ThreadAuthorDetailsTest.php',
     __DIR__ . '/LlmsTxtRendererTest.php',
     __DIR__ . '/AgentApiWorkedExampleTest.php',
     __DIR__ . '/PlatformDocsCatalogTest.php',
@@ -356,6 +358,7 @@ $testFiles = [
     __DIR__ . '/ThemeToggleScriptTest.php',
     __DIR__ . '/Word97ThemeCoverageTest.php',
     __DIR__ . '/NavIconSetsTest.php',
+    __DIR__ . '/SqlInsertColumnsTest.php',
     __DIR__ . '/PostActionThemeTest.php',
     __DIR__ . '/TestRunnerBehaviorTest.php',
     __DIR__ . '/TagScoreTest.php',
@@ -395,6 +398,9 @@ $testFiles = [
     __DIR__ . '/WebServerRoutingTest.php',
     __DIR__ . '/WriteApiSmokeTest.php',
 ];
+// The list above fixes the order of the files it names. A new tests/*Test.php needs no
+// entry: unlisted files load after the listed ones, in name order.
+$testFiles = array_merge($testFiles, unlistedTestFiles($testFiles, __DIR__));
 
 // Per-task runs use the curated smoke set (tests/smoke.txt) plus the tests for what changed:
 //   ./v3 test                        smoke set
@@ -420,6 +426,7 @@ foreach ($arguments as $argument) {
     }
 }
 $filters = array_values(array_filter($arguments, static fn (string $argument): bool => !in_array($argument, ['--all', '--smoke'], true) && !str_starts_with($argument, '--jobs=')));
+$namedTests = $filters;
 $smokeEntries = [];
 if (!$runAll && ($filters === [] || $withSmoke)) {
     $smokeEntries = readSmokeList(smokeListPath());
@@ -462,11 +469,19 @@ foreach ($testFiles as $testFile) {
 
 $declared = get_declared_classes();
 foreach ($smokeEntries as $entry) {
-    [$entryClass, $entryMethod] = array_pad(explode('::', $entry, 2), 2, null);
-    if (!in_array($entryClass, $declared, true) || ($entryMethod !== null && !method_exists($entryClass, $entryMethod))) {
+    if (!testExists($entry, $declared)) {
         fwrite(STDERR, "Smoke list entry not found: {$entry} (" . smokeListPath() . ")\n");
         exit(1);
     }
+}
+// A named test that matches nothing must fail the run, even when the smoke set runs beside it.
+$missingTests = array_values(array_filter($namedTests, static fn (string $name): bool => !testExists($name, $declared)));
+if ($missingTests !== []) {
+    foreach ($missingTests as $name) {
+        fwrite(STDERR, "Test not found: {$name}\n");
+    }
+    fwrite(STDERR, "Name a test class (FooTest) or one method (FooTest::testBar) from tests/.\n");
+    exit(1);
 }
 if ($jobs > 1) {
     $workerUnits = planParallelUnits($declared, $filters, openTestHistoryStore()->durations());
@@ -807,6 +822,28 @@ function smokeListPath(): string
 {
     $path = getenv('FORUM_TEST_SMOKE_LIST');
     return $path === false || trim($path) === '' ? __DIR__ . '/smoke.txt' : $path;
+}
+
+/**
+ * Test files in $directory that $listed does not name, in name order.
+ *
+ * @param list<string> $listed
+ * @return list<string>
+ */
+function unlistedTestFiles(array $listed, string $directory): array
+{
+    $found = glob($directory . '/*Test.php') ?: [];
+    sort($found);
+
+    return array_values(array_diff($found, $listed));
+}
+
+/** @param list<string> $declared Whether $name (Class or Class::method) is a loaded test. */
+function testExists(string $name, array $declared): bool
+{
+    [$class, $method] = array_pad(explode('::', $name, 2), 2, null);
+
+    return in_array($class, $declared, true) && ($method === null || method_exists($class, $method));
 }
 
 /** @return list<string> Class or Class::method names, one per line; # starts a comment. */

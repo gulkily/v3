@@ -144,7 +144,7 @@ final class ImageStore
     }
 
     /**
-     * Deletes a stored original and its cached thumbnails. The caller must hold the publication
+     * Deletes a stored original, its cached thumbnails and any published copies. The caller must hold the publication
      * lock and must already have checked that no remaining record references the image.
      * Returns false when the original was not stored.
      */
@@ -160,6 +160,8 @@ final class ImageStore
                 if (is_file($thumb) && !is_link($thumb)) @unlink($thumb);
             }
         }
+        // Copies published for direct serving go with it, so its addresses stop answering at once.
+        PublishedImages::forProject()->removeImage(ImageReference::validate($reference)['sha256']);
         return $present;
     }
 

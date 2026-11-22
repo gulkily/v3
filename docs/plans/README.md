@@ -10,6 +10,9 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
 - [Application version source](application_version_source/application_version_source_one_shot.md) — code revision for deploy notifications, with independent cached-page freshness.
+- [Recently released filters](recent_feature_flag_filters/recent_feature_flag_filters_one_shot.md) — keep the release list in sync with flag filters.
+- [Offline writing runbook](offline_runbook_compose/offline_runbook_compose_one_shot.md) — explain cached composers, drafts, and queued offline text.
+- [Optional thread author details](thread_author_details/thread_author_details_one_shot.md) — opt-in speakers in the text thread API.
 - [Local startup port fallback](local_start_port_fallback/local_start_port_fallback_one_shot.md) — try ports 8000–8009 by default and report bind failures honestly.
 - [Agents navigation](agents_nav/agents_nav_one_shot.md) — point the Agents navigation item to the onboarding guide.
 - [Agent onboarding page](agent_start_page/agent_start_page_one_shot.md) — separate agent onboarding from the community prompt library.
@@ -653,7 +656,14 @@ and repair its navigation and affected references. See the
 - [Zen strip](zen_strip/zen_strip_step1_solution_assessment.md) — staged: the front page opens with a strip of Zen memes, threads an approved member tagged #zen and #meme.
 - [Zen strip grid](zen_strip_grid/zen_strip_grid_one_shot.md) — one-shot: the Zen strip becomes a wrapping grid of whole, readable images.
 - [Zen hero](zen_hero/zen_hero_step1_solution_assessment.md) — staged: the front page shows one top-liked Zen meme with a row of tiny thumbnails that opens All, on the home page only.
+- [Image loading](image_loading/image_loading_step1_solution_assessment.md) — staged: images load faster through browser caching, a lighter serving path and home page tweaks.
 
 - [Calendar export timezone](calendar_export_timezone/calendar_export_timezone_one_shot.md)
 
+- [Test runner: unlisted and unmatched tests](test_runner_unlisted_tests/test_runner_unlisted_tests_one_shot.md) — one-shot: new test files load without a list entry, and a test name that matches nothing fails the run.
 - [Arena header deploy button contrast](arena_deploy_prompt_contrast/arena_deploy_prompt_contrast_one_shot.md)
+- [Test fixture insert columns](test_fixture_insert_columns/test_fixture_insert_columns_one_shot.md) — one-shot: inserts in test fixtures name their columns.
+- [Named-column inserts](named_column_inserts/named_column_inserts_one_shot.md) — one-shot: every runtime SQL insert names its columns, with a guard test.
+- [Read-model insert columns](read_model_insert_columns/read_model_insert_columns_one_shot.md) — one-shot: the four read-model schema inserts name their columns.
+
+- [Local import progress](local_import_progress/local_import_progress_step1_solution_assessment.md) — staged: the local start page queues its import and shows the Tools → Import steps, timer and time left.

@@ -74,6 +74,8 @@ Before marking a UI change complete:
 
 During a task, run the smoke set plus the tests covering what you changed (the classes for the code you touched and any area runner such as `./v3 agent-reply test-local`). Do not run or wait for `--all`; the maintainer runs it periodically and follows up on failures. Records, commits and PRs list what ran and state that the full suite was not run.
 
+A new `tests/FooTest.php` runs without being added anywhere; the list in `tests/run.php` only fixes the order of the files it names. A test named on the command line must exist: an unknown class or method stops the run with `Test not found`.
+
 `--jobs=N` works with any selection. Each worker is an ordinary runner process given whole classes or, for classes whose recorded time is long, chunks of their methods; the slowest work starts first, using durations kept in test history. Write tests so they can run at the same time as any other test: use a fresh temporary directory for anything a test writes, and keep a test's read-model database in its own directory rather than directly in the system temp folder, because the rebuild lock (`forum-rewrite.lock`) sits beside the database and would otherwise be shared with every other test doing the same.
 
 The smoke set is curated, not derived from timings: each entry is a fast class (or method) covering a main path. Keep the whole set near one minute on a 2-core workspace. When you add a main path, add one fast test for it; when a smoke test gets slow, replace it with a faster one rather than growing the set. The runner fails if an entry no longer exists. Only a full `--all` run prunes test history.
@@ -114,6 +116,14 @@ and examples when operators need guidance. Do not maintain a separate key list.
 Verify creation and `private-config refresh-template` preserve every template
 setting and existing custom values with `PrivateConfigCommandTest`; run the
 schema and affected configuration-consumer checks as well.
+
+## SQL inserts name their columns
+
+Write `INSERT INTO t (a, b) VALUES (?, ?)`, never `INSERT INTO t VALUES (?, ?)`. The same goes for `REPLACE INTO` and `INSERT ... SELECT`, and for inserts inside triggers. The rule covers test fixtures too. An insert without a column list breaks as soon as its table gains a column. That makes a rollback to older code fail, and it makes newer code fail against a table it hasn't migrated yet.
+
+For the same reason, add a column to a SQLite store outside the read model only with a default (or as nullable), so code that doesn't know the column can still insert. A stored trigger keeps its old text, so a migration that changes a table a trigger writes to must recreate that trigger.
+
+`SqlInsertColumnsTest` enforces the first rule across `src/` and `scripts/`, with no exceptions.
 
 ## Read-model schema changes
 

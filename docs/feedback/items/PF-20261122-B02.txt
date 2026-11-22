@@ -1,0 +1,18 @@
+ID: PF-20261122-B02
+Title: Last import can show the wrong run for two imports in one second
+Kind: bug
+Workflow: ready
+Created: 2026-11-22
+Evidence: unknown
+
+Request:
+InstanceImportStatus picks the newest run by directory name, and the name carries a time to the second plus a random suffix. Two imports that start within the same second sort by the random part, so Tools → Import's "Last import" row can show the earlier run's counts.
+
+Sources:
+- Session: Claude chat with the maintainer, 2026-11-22
+
+Done when:
+Two imports started within one second show the later run as the last import.
+
+Notes:
+2026-11-22: Found by tests during v3/local_import_progress (Stage 4). Small sources finish in well under a second; real imports take longer, so this is rare in use. Source: src/ForumRewrite/Import/InstanceImportStatus.php.

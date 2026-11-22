@@ -75,7 +75,7 @@ for enabled, members in [(True,False),(False,False),(True,True)]:
             assert status == 200, (status,body)
             assert body == image.read_bytes()
             assert headers['X-Content-Type-Options'] == 'nosniff'
-            assert 'no-store' in headers['Cache-Control']
+            assert 'no-store' not in headers['Cache-Control'] and 'max-age=31536000' in headers['Cache-Control'], headers['Cache-Control']
         else:
             assert status != 200, status
         status, _, body = request('/')

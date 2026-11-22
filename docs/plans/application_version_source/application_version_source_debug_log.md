@@ -27,3 +27,13 @@ Source: docs/railspike/RAILSPIKE.md, Experimental Effort Estimation.
 Observation: R1 hashes were verified and exposed intake/entry plus retrospective were recorded. Prior ranking inspection prevented a pristine intake. The usefulness of the numerical projections cannot be established from this cycle; maintainer judgment remains pending. Retain honest exposure and incomplete-acceptance records.
 
 *— Codex · 2026-11-21 UTC*
+
+## 2026-11-22 PR preparation continuation
+
+Lifecycle: v3/application_version_source, same one-shot cycle; debug state restored.
+Necessary/useful instructions: one_shot.md Resumption and implementation_standards.md Final review kept the existing scope/commits and required checking shared consumers after integration. The index conflict was resolved without dropping main's entries; focused/browser checks were repeated. Retain.
+Redundant/unnecessary instructions: No supported findings.
+Inapplicable instructions: New-cycle planning and study enrollment; this is publishing the existing unmerged result at the user's request.
+Uncertain assessments: No new evidence for maintainer comfortable-fit or production acceptance.
+
+*— Codex · 2026-11-22 UTC*

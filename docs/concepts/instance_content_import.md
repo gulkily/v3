@@ -8,7 +8,7 @@ Approvals: by default approval and invitation posts and their receipts stay out 
 
 Known instances: [`resources/known_instances.txt`](../../resources/known_instances.txt), read by [`KnownInstances`](../../src/ForumRewrite/Import/KnownInstances.php), names public instances for the command line, Tools → Import and the local start page; each site leaves out its own address.
 
-Browser entry: Tools → Import queues `./v3 import-instance` (import, `--resume` or `--cancel`) as an `instance_import` task for the worker, behind the "Import page" flag and the root-operator gate; sources: [task](../../src/ForumRewrite/Import/InstanceImportTask.php), [page](../../src/ForumRewrite/Http/ImportController.php), [status](../../src/ForumRewrite/Import/InstanceImportStatus.php).
+Browser entry: Tools → Import queues `./v3 import-instance` (import, `--resume` or `--cancel`) as an `instance_import` task for the worker, behind the "Import page" flag and the root-operator gate; sources: [task](../../src/ForumRewrite/Import/InstanceImportTask.php), [page](../../src/ForumRewrite/Http/ImportController.php), [status](../../src/ForumRewrite/Import/InstanceImportStatus.php). The local start page queues the same task behind its own loopback guard ([local development import](local_development_import.md)); both pages share [queueing and state](../../src/ForumRewrite/Import/InstanceImportRequests.php), the [step list](../../templates/partials/import_run.php) and the page script.
 
 Signature checks: planning reuses successful checks saved beside the destination database, and imports each signer key into GPG once per process; see [signature check cache](signature_check_cache.md).
 

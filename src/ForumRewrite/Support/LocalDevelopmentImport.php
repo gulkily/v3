@@ -6,7 +6,10 @@ namespace ForumRewrite\Support;
 
 use RuntimeException;
 
-/** Local development convenience; never an operator endpoint on deployed sites. */
+/**
+ * The local start page's request guard and token. Local development convenience; never an
+ * operator endpoint on deployed sites. The import itself is queued by InstanceImportRequests.
+ */
 final class LocalDevelopmentImport
 {
     public static function enabled(array $server): bool
@@ -24,26 +27,7 @@ final class LocalDevelopmentImport
         return $path === '/local/' || ($path === '/' && (string) parse_url($uri, PHP_URL_QUERY) === '');
     }
 
-    public function __construct(
-        private readonly string $projectRoot,
-        private readonly string $repositoryRoot,
-        private readonly string $databasePath,
-        private readonly string $staticHtmlRoot,
-    ) {}
-
-    public function pending(): bool
-    {
-        clearstatcache(true, $this->repositoryRoot . '/.git/instance-import/pending.json');
-        return is_file($this->repositoryRoot . '/.git/instance-import/pending.json');
-    }
-
-    public function pendingSource(): ?string
-    {
-        if (!$this->pending()) return null;
-        $saved = json_decode((string) file_get_contents($this->repositoryRoot . '/.git/instance-import/pending.json'), true);
-        $source = $saved['report']['source'] ?? null;
-        return is_string($source) && $source !== '' ? $source : null;
-    }
+    public function __construct(private readonly string $repositoryRoot) {}
 
     public function token(): string
     {
@@ -71,27 +55,5 @@ final class LocalDevelopmentImport
         return self::enabled($server) && is_string($token) && hash_equals($this->token(), $token)
             && ($origin === null || $origin === $expected)
             && !in_array($server['HTTP_SEC_FETCH_SITE'] ?? '', ['cross-site'], true);
-    }
-
-    /** @return array{code:int,output:string} */
-    public function run(string $source, bool $resume): array
-    {
-        if (!$resume) $source = (new \ForumRewrite\Import\InstanceSourceResolver())->resolve($source);
-        $log = tmpfile();
-        if ($log === false) throw new RuntimeException('Cannot create import log. Check temporary storage and retry.');
-        try {
-            $command = [PHP_BINARY, $this->projectRoot . '/scripts/import_instance.php',
-                $resume ? '--resume' : $source, '--repository-root=' . $this->repositoryRoot,
-                '--database-path=' . $this->databasePath, '--static-html-root=' . $this->staticHtmlRoot,
-                '--time-limit=300'];
-            // File descriptors avoid pipe deadlocks when the importer reports many conflicts.
-            $process = proc_open($command, [0 => ['file', '/dev/null', 'r'], 1 => $log, 2 => $log], $pipes, $this->projectRoot);
-            if (!is_resource($process)) throw new RuntimeException('Cannot start import. Check PHP process permissions and retry.');
-            $code = proc_close($process);
-            $size = fstat($log)['size'];
-            fseek($log, max(0, $size - 131072));
-            $output = ($size > 131072 ? "Earlier output omitted.\n" : '') . stream_get_contents($log);
-            return ['code' => $code, 'output' => $output];
-        } finally { fclose($log); }
     }
 }

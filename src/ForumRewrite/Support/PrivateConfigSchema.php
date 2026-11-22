@@ -75,6 +75,7 @@ final class PrivateConfigSchema
             'FORUM_STATIC_HTML_ROOT' => self::definition(null, 'string'),
             'FORUM_PUBLIC_ARTIFACT_ROOT' => self::definition(null, 'string'),
             'FORUM_IMAGE_ROOT' => self::definition(null, 'string'),
+            'FORUM_PUBLISHED_IMAGE_ROOT' => self::definition(null, 'string'),
         ];
     }
 

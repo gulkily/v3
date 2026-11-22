@@ -35,7 +35,7 @@ final class ApiRouteCatalog
             ['GET', '/api/version', 'public', 'text', 'Application version.'],
             ['GET', '/api/list_index', 'public', 'text', 'Threads, one per line: thread ID, title, reply count (tab-separated).'],
             ['GET', '/api/checkin?format=<optional-json>', 'public', 'text', 'What needs attention now: open #issue items and the newest threads, each section ending with the next request. A signed-in approved session also gets unread replies and conversations. Requires the agent check-in flag.'],
-            ['GET', '/api/get_thread?thread_id=<id>', 'public', 'text', 'Thread headers (including Retracted), then one line per post.'],
+            ['GET', '/api/get_thread?thread_id=<id>', 'public', 'text', 'Thread headers (including Retracted), then one line per post. Add include_authors=1 for per-post author headers.'],
             ['GET', '/api/get_post?post_id=<id>', 'public', 'text', 'Post headers (including Retracted) and exact body.'],
             ['GET', '/api/get_profile?profile_slug=<slug>', 'public', 'text', 'Identity, username, approval, post count and newest posts.'],
             ['GET', '/api/get_username?username=<name>', 'public', 'text', 'How many approved keys use this username.'],

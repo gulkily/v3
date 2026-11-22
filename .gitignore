@@ -23,5 +23,6 @@ repository.tar.gz
 /.test-self-approval
 public/.high-traffic
 public/.high-traffic-assets
+public/.published-images
 public/assets/tour/
 __pycache__/
