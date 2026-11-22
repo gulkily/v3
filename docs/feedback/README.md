@@ -34,10 +34,12 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261111-F01](items/PF-20261111-F01.txt) | Describe an event's date in words | blocked | locally-verified | 0.90 | 1 |
 | [PF-20261111-F02](items/PF-20261111-F02.txt) | The new post form is busy below Post | blocked | locally-verified | 0.20 | 4 |
 | [PF-20261111-F03](items/PF-20261111-F03.txt) | Gloss and Gloss Dark are the ZenMemes defaults | blocked | locally-verified | 0.10 | 1 |
+| [PF-20261111-F32](items/PF-20261111-F32.txt) | Close the ... menu on outside click | blocked | locally-verified | — | 1 |
 | [PF-20261114-F01](items/PF-20261114-F01.txt) | Client-side preferences page | blocked | locally-verified | 0.15 | 2 |
 | [PF-20261114-F02](items/PF-20261114-F02.txt) | Gallery zoom | blocked | locally-verified | 0.12 | 1 |
 | [PF-20261114-F03](items/PF-20261114-F03.txt) | Deploy celebration | blocked | locally-verified | 0.10 | 1 |
 | [PF-20261114-F04](items/PF-20261114-F04.txt) | Deploy page buttons: one row, clearer main action | blocked | locally-verified | — | 1 |
+| [PF-20261116-F04](items/PF-20261116-F04.txt) | PHP and Perl versions of Quill | blocked | locally-verified | — | 0 |
 | [PF-20261117-F01](items/PF-20261117-F01.txt) | Useful local first page and browser import | blocked | locally-verified | — | 1 |
 | [PF-20261117-F02](items/PF-20261117-F02.txt) | Offer known public instances as import sources | blocked | locally-verified | — | 1 |
 | [PF-20261117-F10](items/PF-20261117-F10.txt) | Second pane: open a link beside the current page on wide screens | blocked | locally-verified | — | 1 |
@@ -201,7 +203,6 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261111-F29](items/PF-20261111-F29.txt) | Promote a much-liked reply to its own thread | untriaged | unknown | — | 3 |
 | [PF-20261111-F30](items/PF-20261111-F30.txt) | Transfer session to another browser | untriaged | unknown | — | 1 |
 | [PF-20261111-F31](items/PF-20261111-F31.txt) | Background audio playback | untriaged | unknown | — | 1 |
-| [PF-20261111-F32](items/PF-20261111-F32.txt) | Close the ... menu on outside click | untriaged | unknown | — | 1 |
 | [PF-20261111-F33](items/PF-20261111-F33.txt) | Expanded phone navbar looks like content | untriaged | unknown | — | 1 |
 | [PF-20261111-F34](items/PF-20261111-F34.txt) | Plain summary on the Offline page | untriaged | unknown | — | 1 |
 | [PF-20261111-F35](items/PF-20261111-F35.txt) | Archive and discard old media | untriaged | unknown | — | 1 |
@@ -232,7 +233,6 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261111-F60](items/PF-20261111-F60.txt) | Reach a like from the thread | untriaged | unknown | — | 1 |
 | [PF-20261111-F61](items/PF-20261111-F61.txt) | Compact #like replies | untriaged | unknown | — | 1 |
 | [PF-20261116-F03](items/PF-20261116-F03.txt) | Quill versions in use, shown in Tools | untriaged | unknown | — | 0 |
-| [PF-20261116-F04](items/PF-20261116-F04.txt) | PHP and Perl versions of Quill | untriaged | unknown | — | 0 |
 | [PF-20261116-F05](items/PF-20261116-F05.txt) | Quill's default key name | untriaged | unknown | — | 0 |
 | [PF-20261116-F06](items/PF-20261116-F06.txt) | Versioned Quill download URLs | untriaged | unknown | — | 0 |
 | [PF-20261116-F07](items/PF-20261116-F07.txt) | Move a guest or unsigned post onto an identity | untriaged | unknown | — | 1 |
