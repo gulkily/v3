@@ -656,5 +656,6 @@ and repair its navigation and affected references. See the
 
 - [Calendar export timezone](calendar_export_timezone/calendar_export_timezone_one_shot.md)
 
+- [Test runner: unlisted and unmatched tests](test_runner_unlisted_tests/test_runner_unlisted_tests_one_shot.md) — one-shot: new test files load without a list entry, and a test name that matches nothing fails the run.
 - [Arena header deploy button contrast](arena_deploy_prompt_contrast/arena_deploy_prompt_contrast_one_shot.md)
 - [Named-column inserts](named_column_inserts/named_column_inserts_one_shot.md) — one-shot: every runtime SQL insert names its columns, with a guard test.
