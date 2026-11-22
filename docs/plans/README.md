@@ -9,6 +9,7 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
+- [Close the post "…" menu on an outside click](post_menu_outside_close/post_menu_outside_close_one_shot.md) — a click elsewhere closes an open post "More actions" menu.
 - [Quill in Perl and PHP](quill_ports/quill_ports_one_shot.md) — `quill.pl` and `quill.php` beside `quill.py`, same commands and state, each with its own update notice.
 - [Application version source](application_version_source/application_version_source_one_shot.md) — code revision for deploy notifications, with independent cached-page freshness.
 - [Recently released filters](recent_feature_flag_filters/recent_feature_flag_filters_one_shot.md) — keep the release list in sync with flag filters.
