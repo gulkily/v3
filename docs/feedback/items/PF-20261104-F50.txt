@@ -3,7 +3,7 @@ Title: Import selected nested HN discussion
 Kind: feature
 Workflow: blocked
 Created: 2026-11-04
-Evidence: v3/thread_port Step 4 (docs/plans/thread_port/thread_port_step4_implementation_summary.md); production iPhone replay pending
+Evidence: locally-verified
 
 Request:
 Dream feature: select part of a Hacker News thread, use a bookmarklet/extension/unspecified tool, and about one second later have the discussion on Zenmemes with nesting.
@@ -16,3 +16,4 @@ Notes:
 Poster notes nested threads are a prerequisite. Treat as one dream workflow; no external component authorized.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
 2026-11-19: Built by Railspike cycle v3/thread_port: the Port HN bookmarklet ports a story, a comment's page, or the comment holding a selection, nested, into a #ported thread. Blocked until the maintainer deploys and ports a real thread from iPhone Safari.
+2026-11-22: Evidence field corrected to an allowed value (it held a sentence, which failed ./v3 feedback check). Its content: v3/thread_port Step 4 (docs/plans/thread_port/thread_port_step4_implementation_summary.md); production iPhone replay pending.

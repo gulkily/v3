@@ -118,3 +118,63 @@ Step 3 approved 2026-11-22 ("approved step 3"). Branch `feat/local_import_progre
 - Estimate details: retrospective higher for the report mix-up and the browser check rework.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+## Stage 5 - Real imports and docs
+
+**Original estimate: 0.08**
+**Retrospective: 0.07**
+
+- Changes:
+  - Docs:
+    - `docs/concepts/local_development_import.md` describes the queued import, its progress, the worker and the guard.
+    - `docs/concepts/instance_content_import.md` and `docs/concepts/internal_task_queue.md` name the second browser entry and the new worker start rule.
+    - `docs/runbooks/instance_content_import.md` and `docs/reference/v3_cli.md` are corrected for the same.
+    - `docs/plans/ui_copy_audit_checklist.md` has an entry for the removed sentence.
+  - New feedback item `PF-20261122-F01`, blocked on review, merge and the maintainer's own run.
+  - Baseline problem fixed: `./v3 feedback check` failed on untouched `origin/main` `22fc9f1`, because `PF-20261104-F50` held a sentence in its `Evidence` field. The field is now `locally-verified` and the sentence is kept in the item's notes. The index is regenerated.
+  - Fixes from the real runs landed in Stages 2–4: the fresh-heartbeat start, the stable step list, and the previous result giving way to a new import.
+- Verification:
+  - Final real import of https://zenmemes.com on a fresh copy of the committed code under `./v3 start`, in Chromium at 390 px:
+    - Click to first visible step: 0.33 s (limit 2 s). Passed.
+    - Longest gap without a visible change: 1.9 s (limit 10 s). Passed.
+    - `/threads/?view=all` mid-import: 60 ms (limit 2 s). Passed.
+    - Finished in 30 s with: imported 8813 · duplicate 1 · conflict 4 · invalid 249 · unsupported 103 · excluded 767, the review sentence and "Browse imported threads". No page errors.
+    - A second import from the result: the old result and the form were hidden and the steps showed. Passed.
+  - Worker conditions (recorded under Stage 3): `--no-worker` passed; `--no-worker` with no usable PHP command line showed the not-started notice at 16.3 s (limit 20 s). Passed.
+  - JavaScript off (Stage 3 and the browser check): passed.
+  - `./v3 test --smoke LocalDevelopmentImportTest ImportPageTest InstanceImportTaskTest ImportProgressViewTest`: 502 run, 502 passed.
+  - `python3 tests/browser/local_development.py` and `node tests/browser/tools_import.mjs`: passed.
+  - `./v3 feedback check`: 0 problems. `git diff --check`: clean. Concept and plan links resolve.
+  - Final diff review against Step 3: only files named in Stages 1–5, plus `TemplateRenderer.php` (one stylesheet line) and the baseline feedback item. No dependency, schema or flag was added.
+  - Full suite not run.
+- Not verified:
+  - The maintainer's own machine. That is the release condition.
+  - Browsers other than Chromium, and physical phones.
+  - Tools → Import on a deployed site. Its markup and tests are unchanged, but it now starts a worker even when a recent heartbeat exists.
+- Notes, for follow-up outside this cycle:
+  - Tools → Import's "Last request failed" line shows the command's last line (the elapsed time), not the reason. `InstanceImportRequests::resultFromLog()` could serve it.
+  - `InstanceImportStatus` orders runs by a name with one-second precision, so two imports within a second can show the wrong "Last import".
+  - If a one-task worker is busy with another task when Import is pressed, the import waits for the next recurring worker.
+- Estimate details: original scope unchanged.
+
+*— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+## Enhancement requests
+
+- None received during Step 4.
+
+## Completion Contract check
+
+- Normal entry and end-to-end outcome: passed locally with real zenmemes.com imports.
+- Recovery: Retry, Resume and Try again passed in tests and in the browser.
+- Deployment: no schema change and no new flag.
+- Release: pending. Not merged; the maintainer's own run is outstanding.
+
+## Study closeout
+
+- Retrospective scope assessment (not a measured actual): **0.48** for scope v1 as delivered, against the 0.40 projection. The extra work: the fresh-heartbeat start defect in shared code, the report mix-up that moved the result to the import's output, and the browser check rework.
+- Stage retrospectives: 0.09, 0.14, 0.08, 0.12, 0.07 (not summed).
+- Maintainer comfortable-fit judgment: pending. Acceptance: pending.
+- Claude single exposed rater, R1 (hashes not re-verified this session), P2, 2026-11-22 UTC. Measured time unknown.
+
+*— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*

@@ -17,9 +17,9 @@ destination paths, so limits, locks, exclusions and conflict rules are
 unchanged. One request runs at a time.
 
 No cron is needed to start. `./v3 start` runs the task worker every few
-seconds. On a server with no fresh worker heartbeat, pressing Import, Resume or
+seconds. Unless a worker is running at that moment, pressing Import, Resume or
 Cancel starts one detached one-task worker (`php scripts/task_queue.php run
---limit=1`). This doesn't need `FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED`; only
+--limit=1`), so the import does not wait for the next scheduled worker. This doesn't need `FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED`; only
 a root operator's request on this page can start it. If the task hasn't started
 15 seconds later, the page says the worker didn't start, shows that command to
 run in the application checkout, and offers Try again. Hosts that forbid

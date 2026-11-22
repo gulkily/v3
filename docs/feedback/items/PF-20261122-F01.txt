@@ -1,0 +1,18 @@
+ID: PF-20261122-F01
+Title: Local start page import shows what it is doing
+Kind: feature
+Workflow: blocked
+Created: 2026-11-22
+Evidence: locally-verified
+
+Request:
+"Import public content: this feature on the frontend needs much better feedback. 'Importing… This can take several minutes. Keep this page open.' is not good enough."
+
+Sources:
+- Session: Claude chat with the maintainer, 2026-11-22
+
+Done when:
+After pressing Import on the local start page under ./v3 start, the card shows the import's steps with counts, elapsed time, the time since the last update and time left, other pages load meanwhile, and the card ends in the result. The maintainer has tried it with a real zenmemes.com import on his own machine.
+
+Notes:
+2026-11-22: staged cycle on feat/local_import_progress (docs/plans/local_import_progress/). Verified locally with real zenmemes.com imports in Chromium under ./v3 start, with and without --no-worker, and with JavaScript off. Related: PF-20261117-F01 (the local start page). Blocked on review, merge and the maintainer's own run.
