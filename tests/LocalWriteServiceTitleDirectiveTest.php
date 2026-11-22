@@ -108,8 +108,8 @@ final class LocalWriteServiceTitleDirectiveTest
         $pdo = new PDO('sqlite::memory:');
         $pdo->exec('CREATE TABLE posts (post_id TEXT PRIMARY KEY, attribution_verified INTEGER NOT NULL DEFAULT 1)');
         $pdo->exec('CREATE TABLE profiles (identity_id TEXT PRIMARY KEY, is_approved INTEGER NOT NULL DEFAULT 0)');
-        $pdo->exec("INSERT INTO posts VALUES ('root-x', 1), ('root-unverified', 0)");
-        $pdo->exec("INSERT INTO profiles VALUES ('" . self::STRANGER . "', 1), ('" . self::AUTHOR . "', 0)");
+        $pdo->exec("INSERT INTO posts (post_id, attribution_verified) VALUES ('root-x', 1), ('root-unverified', 0)");
+        $pdo->exec("INSERT INTO profiles (identity_id, is_approved) VALUES ('" . self::STRANGER . "', 1), ('" . self::AUTHOR . "', 0)");
         $root = (new PostRecordParser())->parse("Post-ID: root-x\nCreated-At: 2026-04-10T12:00:00Z\nBoard-Tags: general\nAuthor-Identity-ID: " . self::AUTHOR . "\n\nBody\n");
         $unverifiedRoot = (new PostRecordParser())->parse("Post-ID: root-unverified\nCreated-At: 2026-04-10T12:00:00Z\nBoard-Tags: general\nAuthor-Identity-ID: " . self::AUTHOR . "\n\nBody\n");
         $noSeeds = sys_get_temp_dir() . '/forum-rewrite-title-authority-' . bin2hex(random_bytes(6));

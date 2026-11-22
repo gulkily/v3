@@ -27,7 +27,7 @@ final class ApiTextController
 {
     /**
      * @param \Closure(string): (array<string, mixed>|null) $fetchThread
-     * @param \Closure(string): array<int, array<string, mixed>> $fetchThreadPosts
+     * @param \Closure(string, bool=): array<int, array<string, mixed>> $fetchThreadPosts
      * @param \Closure(string, bool=): (array<string, mixed>|null) $fetchPost
      * @param \Closure(string): (array<string, mixed>|null) $fetchProfileBySlug
      * @param \Closure(array<string, mixed>): string $displayThreadTitle
@@ -113,7 +113,7 @@ final class ApiTextController
         $this->routeServices->sendText(implode("\n", $lines) . "\n", 200);
     }
 
-    public function getThread(string $threadId): void
+    public function getThread(string $threadId, bool $includeAuthors = false): void
     {
         $thread = ($this->fetchThread)($threadId);
         if ($thread === null) {
@@ -133,10 +133,21 @@ final class ApiTextController
             '',
         ];
 
-        foreach (($this->fetchThreadPosts)($threadId) as $post) {
+        foreach (($this->fetchThreadPosts)($threadId, $includeAuthors) as $post) {
+            if ($includeAuthors) {
+                $lines[] = 'Post-ID: ' . $post['post_id'];
+                $lines[] = 'Author: ' . str_replace(["\r", "\n"], ' ', (string) $post['author_label']);
+                $identityHeader = self::authorIdentityHeader($post);
+                if ($identityHeader !== '') {
+                    $lines[] = rtrim($identityHeader, "\n");
+                }
+            }
             if (str_contains($post['body'], \ForumRewrite\Images\ImageReference::PREFIX)) { $lines[] = 'Image-Bytes: separate image backup required'; }
             $marker = ($post['retracted_at'] ?? null) !== null ? '(retracted) ' : self::resolutionMarker($post);
             $lines[] = '[' . $post['post_id'] . '] ' . $marker . trim(str_replace("\n", ' ', $post['body']));
+            if ($includeAuthors) {
+                $lines[] = '';
+            }
         }
 
         $this->routeServices->sendText(implode("\n", $lines) . "\n", 200);

@@ -98,21 +98,25 @@ chmod +x "${FIXTURE}/bin/php"
 check_forwarding() {
   local address="$1"
   local logging="$2"
-  shift 2
+  local fallback="$3"
+  shift 3
   PATH="${FIXTURE}/bin" "${ROOT}/v3" start "$@" >"${FIXTURE}/out" 2>"${FIXTURE}/err"
   {
     printf '%s\n' "${ROOT}/scripts/dev_server.php" "--address=${address}"
     if [[ -n "${logging}" ]]; then
       printf '%s\n' "${logging}" "--log-file=${FIXTURE}/log with spaces.txt"
     fi
+    if [[ "${fallback}" == yes ]]; then printf '%s\n' '--try-ports'; fi
   } >"${FIXTURE}/expected"
   cmp "${FIXTURE}/expected" "${FIXTURE}/out" || fail 'startup arguments changed'
   [[ ! -s "${FIXTURE}/err" ]] || fail 'unexpected available-PHP guidance'
 }
-check_forwarding '127.0.0.1:8000' ''
-check_forwarding '127.0.0.1:8123' '' 8123
-check_forwarding '127.0.0.1:8123' '' :8123
-check_forwarding '0.0.0.0:8000' '' --listen-all
-check_forwarding '127.0.0.1:8124' '--quiet' '127.0.0.1:8124' --quiet "--log-file=${FIXTURE}/log with spaces.txt"
-check_forwarding '127.0.0.1:8000' '--verbose' --verbose "--log-file=${FIXTURE}/log with spaces.txt"
+check_forwarding '127.0.0.1:8000' '' yes
+check_forwarding '127.0.0.1:8123' '' no 8123
+check_forwarding '127.0.0.1:8123' '' no :8123
+check_forwarding '127.0.0.1:8000' '' no 8000
+check_forwarding '127.0.0.1:8000' '' no '127.0.0.1:8000'
+check_forwarding '0.0.0.0:8000' '' yes --listen-all
+check_forwarding '127.0.0.1:8124' '--quiet' no '127.0.0.1:8124' --quiet "--log-file=${FIXTURE}/log with spaces.txt"
+check_forwarding '127.0.0.1:8000' '--verbose' yes --verbose "--log-file=${FIXTURE}/log with spaces.txt"
 echo 'PASS: missing PHP, recovery forwarding, and PHP-independent help'

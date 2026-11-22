@@ -311,13 +311,13 @@ Start the local PHP server:
 ./v3 start
 ```
 
-By default this binds to `127.0.0.1:8000` and also runs the internal task worker, so queued work such as imports from Tools → Import runs without cron (`--no-worker` turns it off). To make it reachable from other devices on allowed networks such as Tailscale, bind to all interfaces explicitly:
+By default this binds to `127.0.0.1:8000`, trying successive ports through 8009 if occupied, and prints the actual URL. It also runs the internal task worker, so queued work such as imports from Tools → Import runs without cron (`--no-worker` turns it off). To make it reachable from other devices on allowed networks such as Tailscale, bind to all interfaces explicitly:
 
 ```bash
 ./v3 start --listen-all
 ```
 
-You can also pass any explicit `host:port`, such as `./v3 start 0.0.0.0:8000`.
+`--listen-all` also tries ports 8000–8009. To require one port, use `./v3 start 8010` or any explicit `host:port`, such as `./v3 start 0.0.0.0:8000`. An occupied explicit port fails without fallback.
 
 Authored post subject/body text remains ASCII-only by default. To test visible UTF-8 prose, such as Cyrillic, enable the rollout flag before starting the app:
 
