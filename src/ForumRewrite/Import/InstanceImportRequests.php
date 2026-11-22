@@ -74,7 +74,10 @@ final class InstanceImportRequests
                 return ['code' => 500, 'payload' => ['status' => 'error', 'error' => 'Could not queue the import: ' . $error->getMessage()]];
             }
             $message = $queued['enqueued'] ? 'Queued for the task worker.' : $queued['message'];
-            if ($queued['enqueued'] && $state['worker'] !== 'fresh') {
+            // A fresh heartbeat only says a worker ran lately. It may have been one this page started,
+            // which has exited, so start one unless a worker is running now; the queue's lock keeps
+            // a second worker harmless, and the import starts without waiting for the next round.
+            if ($queued['enqueued'] && $state['worker'] !== 'running') {
                 $message = $this->startWorker($queued['task_id']) === 'launched' ? 'Starting a worker…' : 'The worker could not be started here.';
             }
         }
@@ -244,6 +247,22 @@ final class InstanceImportRequests
         }
 
         return $state;
+    }
+
+    /** The newest import request's command output, at most its last 128 KiB; null when none ran. */
+    public function latestLog(): ?string
+    {
+        try {
+            $latest = $this->existingStore()?->latestByType(SqliteTaskQueueStore::INSTANCE_IMPORT);
+        } catch (\Throwable) {
+            return null;
+        }
+        $log = $latest === null ? null : InstanceImportTask::forQueue($this->queueDatabasePath)->log((string) $latest['deduplication_key']);
+        if ($log === null || $log === '') {
+            return null;
+        }
+
+        return strlen($log) > 131072 ? "Earlier output omitted.\n" . substr($log, -131072) : $log;
     }
 
     private function existingStore(): ?SqliteTaskQueueStore

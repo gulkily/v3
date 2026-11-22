@@ -137,6 +137,18 @@ final class InstanceImportTaskTest
         assertSame('local-development', $request['Requested-By']);
         assertSame(409, $requests->perform('import', 'http://127.0.0.1:1', 'local-development')['code']);
         assertSame(200, $requests->perform('status', null, 'local-development')['code']);
+
+        // A worker that ran a moment ago (for example the one an earlier import started) is no
+        // promise of another: the next import starts its own.
+        $store->claimNext();
+        $store->markFailed((int) $state['task']['id'], 'instance_import_failed', 'Import failed: test', false);
+        $run = $store->startExecutorRun();
+        $store->completeExecutorRun((int) $run['id'], [], []);
+        assertSame('fresh', $requests->state()['worker']);
+        $again = $requests->perform('import', 'http://127.0.0.1:1', 'local-development');
+        assertSame(200, $again['code'], json_encode($again));
+        assertSame(2, $launches);
+        assertSame('waiting', $again['payload']['state']['start']);
     }
 
     private function queueStore(string $queuePath): array

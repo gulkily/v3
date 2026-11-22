@@ -87,7 +87,7 @@ $details = array_slice($details, 0, $detailLimit);
 <?php endif; ?>
     </details>
 <?php endif; ?>
-<?= $indent($partial('partials/import_run.php', ['s' => $s, 'part' => 'run']), 4) ?>
+<?= $indent($partial('partials/import_run.php', ['s' => $s, 'part' => 'run', 'action' => '/tools/import/']), 4) ?>
     <form method="post" action="/tools/import/" class="deploy-actions import-actions" data-import-form<?= $s['busy'] ? ' hidden' : '' ?>>
 <?php if ($s['pending'] === null): ?>
 <?php

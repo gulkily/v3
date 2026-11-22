@@ -2,6 +2,7 @@
 // The running import as both import pages show it: Tools → Import and the local start page.
 // $s is InstanceImportRequests::state(); $part is "run" (steps, timing, log, failure) or
 // "not_started" (the worker notice, posting Try again to $action with an optional $token).
+// $action is the page's own address; "run" uses it for the reload without JavaScript.
 // import_control.js redraws these elements; keep its wording in step with this file.
 ?>
 <?php if ($part === 'run'): ?>
@@ -25,6 +26,10 @@ if ($timing !== null) {
     $timingText = 'Elapsed ' . $clock($timing['elapsed']) . ' · updated ' . $timing['since_update'] . ' s ago · ' . $leftText;
 }
 ?>
+<?php if (($s['busy'] ?? false) && ($action ?? null) !== null): ?>
+<?php // Without the page script nothing polls, so the page reloads itself while an import runs. ?>
+<noscript><meta http-equiv="refresh" content="5;url=<?= $e($action) ?>"></noscript>
+<?php endif; ?>
 <div class="import-run" data-import-run<?= ($s['steps'] ?? []) === [] ? ' hidden' : '' ?>>
   <ol class="import-steps" data-import-steps>
 <?php foreach ($s['steps'] ?? [] as $step): ?>

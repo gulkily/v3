@@ -53,40 +53,104 @@ final class LocalDevelopmentImportTest
         $server = new ImportHttpServer(realpath(__DIR__ . '/../public/router.php'), $w->root . '/dev.log', $environment);
         $token = $this->token($this->request($server->url, '/')[1]);
         $data = ['token' => $token, 'source' => 'http://127.0.0.1:1', 'action' => 'import'];
-        [$code, $body] = $this->request($server->url, '/local/', $data);
-        assertSame(200, $code, $body);
+
+        // Import answers at once with a redirect; the page then shows the queued steps.
+        $started = microtime(true);
+        [$code, , $headers] = $this->request($server->url, '/local/', $data, [], false);
+        assertSame(303, $code);
+        assertTrue(microtime(true) - $started < 1.0, 'Import should return without waiting for the import.');
+        assertStringContains('Location: /local/', implode("\n", $headers));
+        // No worker runs beside this test server, so the page starts one (the --no-worker case).
+        $body = $this->finished($server->url);
         assertStringContains('Retry import', $body);
         assertStringContains('value="http://127.0.0.1:1"', $body);
         assertTrue(!is_file($target . '/records/posts/local-import-example.txt'));
+
         $data['source'] = $remote->url;
         // Fail after copying content, then repair publication and resume through the form.
         $w->command(['rm', '-rf', '--', $environment['FORUM_STATIC_HTML_ROOT'] . '/offline']);
         $w->put($environment['FORUM_STATIC_HTML_ROOT'] . '/offline', 'Blocked publication directory');
-        [, $body] = $this->request($server->url, '/local/', $data);
+        $body = $this->import($server->url, $data);
         assertStringContains('Resume import', $body);
         assertTrue(is_file($target . '/records/posts/local-import-example.txt'));
         assertTrue(is_file($target . '/.git/instance-import/pending.json'));
-        assertStringContains('value="' . $remote->url . '"', $this->request($server->url, '/local/')[1]);
+        assertStringContains('value="' . $remote->url . '"', $body);
+        // A new import is refused while one is interrupted, and nothing is queued.
+        [$code, $refused] = $this->request($server->url, '/local/', $data);
+        assertSame(409, $code, $refused);
+        assertStringContains('resume or cancel it first', $refused);
         unlink($environment['FORUM_STATIC_HTML_ROOT'] . '/offline');
-        [, $body] = $this->request($server->url, '/local/', array_merge($data, ['action' => 'resume']));
+        $body = $this->import($server->url, array_merge($data, ['action' => 'resume']));
         assertStringContains('Browse imported threads', $body);
         assertTrue(!is_file($target . '/.git/instance-import/pending.json'));
         $board = $this->request($server->url, '/threads/?view=all')[1];
         assertStringContains('Imported local-import-example', $board);
         assertStringContains('Imported body', $this->request($server->url, '/threads/local-import-example')[1]);
-        [, $body] = $this->request($server->url, '/local/', $data);
+        $body = $this->import($server->url, $data);
         assertStringContains('Browse imported threads', $body);
         assertStringContains("\nimport: 0\n", $body);
         assertSame(1, count(glob($target . '/records/posts/local-import-example.txt')));
         $original = file_get_contents($target . '/records/posts/root-001.txt');
         $w->put($source . '/records/posts/root-001.txt', $w->post('root-001', '', 'A conflicting remote version'));
         $w->command(['tar', '-czf', $w->root . '/source.tar.gz', '-C', $w->root, 'source']);
-        [, $body] = $this->request($server->url, '/local/', $data);
-        assertStringContains('Some content needs review', $body);
-        assertStringNotContains('Browse imported threads', $body);
-        assertStringContains('Browse local content', $body);
+        $body = $this->import($server->url, $data);
         assertSame($original, file_get_contents($target . '/records/posts/root-001.txt'));
+    }
 
+    public function testQueuedImportShowsStepsAndLeavesTheSiteUsable(): void
+    {
+        $w = new ImportTestWorkspace();
+        $target = $w->repository('target', true);
+        $w->git($target);
+        // The worker the page starts cannot run here, so the import stays queued.
+        $environment = array_merge($this->environment($w, $target), ['FORUM_PHP_CLI' => '/bin/false']);
+        $server = new ImportHttpServer(realpath(__DIR__ . '/../public/router.php'), $w->root . '/dev.log', $environment);
+        $token = $this->token($this->request($server->url, '/')[1]);
+        [$code, $body] = $this->request($server->url, '/local/', ['token' => $token, 'source' => 'http://127.0.0.1:1', 'action' => 'import']);
+        assertSame(200, $code, $body);
+        assertStringContains('data-import-busy="1"', $body);
+        assertStringContains('<li class="is-current"><span>Starting the task worker</span></li>', $body);
+        assertStringContains('<li class="is-pending"><span>Downloading</span></li>', $body);
+        assertStringContains('Elapsed 0:0', $body);
+        // The form and its explanation are hidden while the steps show; scripts-off pages reload themselves.
+        assertTrue(preg_match('/<form[^>]*data-import-form hidden>/', $body) === 1, $body);
+        assertStringContains('<noscript><meta http-equiv="refresh" content="5;url=/local/"></noscript>', $body);
+        // Other pages answer while the import waits, and a reload shows the same state.
+        $started = microtime(true);
+        assertSame(200, $this->request($server->url, '/threads/?view=all')[0]);
+        assertTrue(microtime(true) - $started < 2.0);
+        assertStringContains('<li class="is-current"><span>Starting the task worker</span></li>', $this->request($server->url, '/local/')[1]);
+        // A second import is refused, as are requests without the token or from elsewhere.
+        assertSame(409, $this->request($server->url, '/local/', ['token' => $token, 'source' => 'http://127.0.0.1:1', 'action' => 'import'])[0]);
+        foreach (['import', 'resume', 'status', 'start_worker'] as $action) {
+            assertSame(403, $this->request($server->url, '/local/', ['token' => 'wrong', 'action' => $action])[0], $action);
+            foreach ([['Origin: https://evil.example'], ['Sec-Fetch-Site: cross-site'], ['X-Forwarded-For: 127.0.0.1'], ['Host: evil.example']] as $extra) {
+                $code = $this->request($server->url, '/local/', ['token' => $token, 'action' => $action], $extra)[0];
+                // Proxied and wrong-Host requests never reach the local page; ordinary routing answers them.
+                assertTrue(in_array($code, [403, 404, 405], true), $action . ' ' . $extra[0] . ' answered ' . $code);
+            }
+        }
+        assertSame(400, $this->request($server->url, '/local/', ['token' => $token, 'action' => 'cancel'])[0]);
+    }
+
+    /** Post the form, follow the redirect, and wait for the page-started worker to finish. */
+    private function import(string $url, array $data): string
+    {
+        [$code, $body] = $this->request($url, '/local/', $data);
+        assertSame(200, $code, $body);
+        assertStringContains('data-import-busy="1"', $body);
+
+        return $this->finished($url);
+    }
+
+    private function finished(string $url): string
+    {
+        for ($attempt = 0; $attempt < 300; $attempt++) {
+            $body = $this->request($url, '/local/')[1];
+            if (str_contains($body, 'data-import-busy="0"')) return $body;
+            usleep(200000);
+        }
+        throw new RuntimeException('The import did not finish: ' . substr($body, (int) strpos($body, 'data-import-root'), 3000));
     }
 
     private function environment(ImportTestWorkspace $w, string $target): array
@@ -105,13 +169,15 @@ final class LocalDevelopmentImportTest
         return $match[1];
     }
 
-    private function request(string $url, string $path, ?array $data = null, array $headers = []): array
+    private function request(string $url, string $path, ?array $data = null, array $headers = [], bool $follow = true): array
     {
-        $options = ['method' => $data === null ? 'GET' : 'POST', 'ignore_errors' => true, 'timeout' => 60,
+        $options = ['method' => $data === null ? 'GET' : 'POST', 'ignore_errors' => true, 'timeout' => 60, 'follow_location' => $follow ? 1 : 0,
             'header' => implode("\r\n", array_merge($headers, $data === null ? [] : ['Content-Type: application/x-www-form-urlencoded']))];
         if ($data !== null) $options['content'] = http_build_query($data);
         $body = file_get_contents($url . $path, false, stream_context_create(['http' => $options]));
-        preg_match('/ ([0-9]{3}) /', $http_response_header[0], $match);
+        // After a followed redirect the last status line is the page's.
+        $statusLines = array_values(array_filter($http_response_header, static fn (string $line): bool => str_starts_with($line, 'HTTP/')));
+        preg_match('/ ([0-9]{3})(?: |$)/', (string) end($statusLines), $match);
         return [(int) $match[1], $body, $http_response_header];
     }
 }

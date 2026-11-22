@@ -199,7 +199,8 @@ final class Application
                 new \ForumRewrite\Support\LocalDevelopmentImport(
                     $this->projectRoot, $this->repositoryRoot, $this->databasePath,
                     $this->staticHtmlRoot ?? \ForumRewrite\PresentationPathResolver::staticHtmlRoot($this->projectRoot, \ForumRewrite\SiteProfileRegistry::active()),
-                )
+                ),
+                $this->localImportRequests(),
             ))->handle($method);
             return;
         }
@@ -1589,14 +1590,30 @@ final class Application
 
     private function importController(): \ForumRewrite\Http\ImportController
     {
-        $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
-
         return new \ForumRewrite\Http\ImportController(
             $this->routeServices(),
             $this->repositoryRoot,
-            $queuePath,
-            fn (): string => (new \ForumRewrite\TaskQueue\DetachedTaskQueueLauncher($this->projectRoot, $queuePath))->launchForOperator(),
+            TaskQueueDatabaseConfig::path($this->projectRoot),
+            $this->importWorkerLauncher(),
         );
+    }
+
+    /** The local start page's import requests; the page applies its own local guard first. */
+    private function localImportRequests(): \ForumRewrite\Import\InstanceImportRequests
+    {
+        return new \ForumRewrite\Import\InstanceImportRequests(
+            $this->repositoryRoot,
+            TaskQueueDatabaseConfig::path($this->projectRoot),
+            $this->importWorkerLauncher(),
+        );
+    }
+
+    /** @return \Closure():string */
+    private function importWorkerLauncher(): \Closure
+    {
+        $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
+
+        return fn (): string => (new \ForumRewrite\TaskQueue\DetachedTaskQueueLauncher($this->projectRoot, $queuePath))->launchForOperator();
     }
 
     private function calendarPageController(): \ForumRewrite\Http\CalendarPageController
