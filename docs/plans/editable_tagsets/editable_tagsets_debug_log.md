@@ -48,3 +48,25 @@
 ### Uncertain assessments
 
 - The stage estimates come from the same rater who set the cycle total, after the same inspection, so they are not independent of it.
+
+## Step 4 - 2026-11-22T23:59Z UTC
+
+### Necessary/useful instructions
+
+- `step4_implementation_do.md`, Stage Boundary Protocol: one commit per stage kept six stages reviewable on their own, and each one went in with its summary entry. Retain.
+- `implementation_standards.md`, "Identify all existing UI/API surfaces": found `QdbModeration::useRepository` (the loader's root), `refreshApprovalSensitivePostReactions` (the state recompute) and `operator_grant.php` (operator UI before paint). Retain.
+- Host preference to fix a failing test that predates the change: turned up a real gap, `/api/docs-version` missing from `ApiRouteCatalog`, hidden by two hyphen-blind patterns. Retain.
+- `implementation_standards.md`, check the result in the named environments: the per-theme screenshots caught full-width buttons that no assertion would have failed. Retain.
+
+### Redundant/unnecessary instructions
+
+- `step4_implementation_do.md` with extended estimates: each stage carries an original and a retrospective line, plus a ledger line at entry and at closeout. For stages that landed on their estimate, "unchanged" would say the same. Clarify: allow one line when no value moved.
+
+### Inapplicable instructions
+
+- Known user or environment replay: Step 2 names none.
+- Navigation icon updates (AGENTS.md): no navigation destination was added or renamed.
+
+### Uncertain assessments
+
+- `step4_implementation_before.md` does not say whether merging `origin/main` into an older, already-pushed cycle branch before the planning commit is allowed. It was done as a separate merge commit (`b2becf5f`) so the work started from current code; Railspike may want to name this case.
