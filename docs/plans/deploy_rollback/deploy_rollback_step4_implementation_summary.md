@@ -93,3 +93,35 @@ Step 4 entry, 2026-11-22 UTC: the Step 3 projection of **0.65** is reaffirmed un
 - Estimate details (extended mode only): original scope as in Step 3 Stage 4; uncertainty medium; no revision.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+## Stage 5 - Docs and prod test
+
+**Original estimate: 0.05**
+
+**Retrospective: 0.05**
+
+- Changes:
+  - `docs/concepts/application_update.md`: deploy history and rollback, and the new boundary.
+  - `docs/runbooks/production_deploy.md`: a "Deploy history and rollback" section.
+  - `docs/reference/v3_cli.md`: `--history` and `--rollback=COMMIT`.
+- Verification:
+  - Passed: `./v3 test --smoke AppUpdateTest DeployPageTest` (536 run, 0 failed); `git diff --check`; local links in the three documents resolve.
+  - **Pending: the maintainer's prod replay.** On zenmemes.com from the iPhone: roll back one version, deploy forward, then `git status` over SSH still shows the `public/.htaccess` edit. Nothing in this cycle has run on production.
+  - Not run: the full suite.
+- Notes:
+  - Final diff review: 17 files. No dependency added, no new navigation destination, no schema change. `deploy()` and `rollback()` share their lock, local-edit handling, read-model check and logging rather than duplicating them.
+- Estimate details (extended mode only): original scope as in Step 3 Stage 5; uncertainty low; no revision.
+
+*— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+## Closeout
+
+**Cycle retrospective: 0.70**
+
+- All five stages are complete and committed, one commit each after the planning commit `a12fc0da`.
+- Completion Contract: entry, outcome, recovery, the no-JavaScript path and "no migration, no rebuild" are met in tests and a headless browser. The release condition (prod replay) is pending, so the cycle is technically complete with production acceptance pending.
+- Retrospective 0.70 against a projected 0.65: the stages matched their estimates; the extra is the Stage 1 double-entry defect found in Stage 2 and the history layout redone after the first screenshots.
+- Maintainer comfortable-fit judgment: pending.
+- Follow-ups, not done: none required. Possible later: show history times in the viewer's time zone (the page's other times are also UTC).
+
+*— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
