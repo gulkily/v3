@@ -9,20 +9,22 @@ require dirname(__DIR__) . '/autoload.php';
 use ForumRewrite\Deploy\AppUpdate;
 
 const DEPLOY_HELP = <<<'HELP'
-Usage: ./v3 deploy [--check|--status|--history] [--timeout=SECONDS]
+Usage: ./v3 deploy [--check|--status|--history|--rollback=COMMIT] [--timeout=SECONDS]
   (default)   Fetch origin/main and fast-forward this application checkout.
   --check     Fetch and report how far behind origin/main the checkout is.
   --status    Report local state and the latest attempt without contacting GitHub.
   --history   List the versions this checkout has run, newest first.
+  --rollback=COMMIT  Return to a version from --history. Deploy again to move forward.
 Keeps local edits to tracked files (stash, fast-forward, reapply). Refuses,
 leaving the checkout unchanged, when the update conflicts with a local edit,
 the branch is not main, history has diverged, or another deploy is running.
 Pull only: run docs publish or build-static yourself if the release needs them.
-Exit: 0 deployed, up to date or checked; 1 refused or failed; 2 usage error.
+Exit: 0 deployed, rolled back, up to date or checked; 1 refused or failed; 2 usage error.
 HELP;
 
 $mode = 'deploy';
 $timeout = 120;
+$rollbackTo = '';
 foreach (array_slice($argv, 1) as $arg) {
     if ($arg === '--help' || $arg === '-h') {
         echo DEPLOY_HELP . "\n";
@@ -33,6 +35,9 @@ foreach (array_slice($argv, 1) as $arg) {
         $mode = 'status';
     } elseif ($arg === '--history') {
         $mode = 'history';
+    } elseif (preg_match('/^--rollback=([0-9a-f]{7,64})$/', $arg, $m) === 1) {
+        $mode = 'rollback';
+        $rollbackTo = $m[1];
     } elseif (preg_match('/^--timeout=(\d+)$/', $arg, $m) === 1 && (int) $m[1] > 0) {
         $timeout = (int) $m[1];
     } else {
@@ -97,7 +102,10 @@ if ($mode === 'check') {
 }
 
 $user = function_exists('posix_getpwuid') && function_exists('posix_geteuid') ? (posix_getpwuid(posix_geteuid())['name'] ?? '') : '';
-$result = $update->deploy('cli' . ($user !== '' ? ':' . $user : ''), AppUpdate::MODE_CLI, $timeout);
+$actor = 'cli' . ($user !== '' ? ':' . $user : '');
+$result = $mode === 'rollback'
+    ? $update->rollback($rollbackTo, $actor, AppUpdate::MODE_CLI, $timeout)
+    : $update->deploy($actor, AppUpdate::MODE_CLI, $timeout);
 echo 'Outcome: ' . $result['outcome'] . "\n";
 if ($result['reason'] !== null) {
     echo 'Reason: ' . $result['reason'] . "\n";
@@ -105,4 +113,4 @@ if ($result['reason'] !== null) {
 echo 'Old-Commit: ' . ($result['old_commit'] ?? '-') . "\n";
 echo 'New-Commit: ' . ($result['new_commit'] ?? '-') . "\n";
 echo 'Message: ' . $result['message'] . "\n";
-exit(in_array($result['outcome'], ['deployed', 'up_to_date'], true) ? 0 : 1);
+exit(in_array($result['outcome'], ['deployed', 'rolled_back', 'up_to_date'], true) ? 0 : 1);

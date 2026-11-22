@@ -265,11 +265,38 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
     public function deploy(string $actor, string $mode, int $timeoutSeconds = 60): array
     {
         $startedAt = gmdate('Y-m-d\TH:i:s\Z');
-        $result = $this->runDeploy($timeoutSeconds);
+
+        return $this->record($this->runDeploy($timeoutSeconds), 'deployed', 'deploy', $actor, $mode, $startedAt);
+    }
+
+    /**
+     * Return the checkout to a commit it has run before (one listed by {@see self::history()} and
+     * behind HEAD). Never contacts the remote. Local edits are kept as in a deploy; a refusal
+     * leaves the checkout as it was. The next deploy fast-forwards to origin/main again.
+     *
+     * @return array{attempt_id: string, outcome: string, reason: ?string, message: string, old_commit: ?string, new_commit: ?string, mode: string, actor: string}
+     */
+    public function rollback(string $commit, string $actor, string $mode, int $timeoutSeconds = 60): array
+    {
+        $startedAt = gmdate('Y-m-d\TH:i:s\Z');
+
+        return $this->record($this->runRollback($commit, $timeoutSeconds), 'rolled_back', 'rollback', $actor, $mode, $startedAt);
+    }
+
+    /**
+     * Checks the read model with the code now in place, then logs the attempt and, when the
+     * commit changed, the history entry.
+     *
+     * @param array{outcome: string, reason: ?string, message: string, old_commit: ?string, new_commit: ?string} $result
+     * @return array{attempt_id: string, outcome: string, reason: ?string, message: string, old_commit: ?string, new_commit: ?string, mode: string, actor: string}
+     */
+    private function record(array $result, string $successOutcome, string $action, string $actor, string $mode, string $startedAt): array
+    {
         $readModel = null;
-        if ($result['outcome'] === 'deployed') {
-            // The update is in place; the old code cannot know the new read-model schema, so a
-            // short process of the new code checks it and queues a rebuild when it changed.
+        if ($result['outcome'] === $successOutcome) {
+            // The code on disk changed; the code that was running cannot know its read-model
+            // schema, so a short process of the code now in place checks it and queues a rebuild
+            // when it differs.
             $check = $this->readModelCheck !== null ? ($this->readModelCheck)() : $this->checkReadModelWithNewCode();
             $readModel = $check['status'];
             if ($check['message'] !== '') {
@@ -287,13 +314,34 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
             'actor' => $actor,
             'read_model' => $readModel,
         ];
+        // Seed the history before this attempt reaches the log, or the seed would count it twice.
+        $this->seedHistory();
         $finishedAt = gmdate('Y-m-d\TH:i:s\Z');
         $this->appendAttempt($attempt + ['started_at' => $startedAt, 'finished_at' => $finishedAt]);
-        if ($result['outcome'] === 'deployed') {
-            $this->appendHistory('deploy', $finishedAt, $mode, $actor, (string) $result['old_commit'], (string) $result['new_commit']);
+        if ($result['outcome'] === $successOutcome) {
+            $this->appendHistory($action, $finishedAt, $mode, $actor, (string) $result['old_commit'], (string) $result['new_commit']);
         }
 
         return $attempt;
+    }
+
+    /**
+     * Every commit the history names, as a deploy's old or new commit: the versions a rollback
+     * may return to.
+     *
+     * @return list<string>
+     */
+    public function deployedCommits(): array
+    {
+        $commits = [];
+        foreach ($this->history(PHP_INT_MAX) as $entry) {
+            $commits[$entry['new_commit']] = true;
+            if (preg_match('/^[0-9a-f]{40,64}$/', $entry['old_commit']) === 1) {
+                $commits[$entry['old_commit']] = true;
+            }
+        }
+
+        return array_map('strval', array_keys($commits));
     }
 
     /**
@@ -503,45 +551,125 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
             if ($this->git(['merge-base', '--is-ancestor', 'HEAD', $remote], 30)['code'] !== 0) {
                 return $refuse('diverged', 'The server has commits that are not on ' . self::REMOTE . '/' . self::BRANCH . '; resolve over SSH.', $old);
             }
-            // Local edits to tracked files (typically public/.htaccess) are set
-            // aside, the update applied, and the edits put back, as an operator
-            // would with `git stash`, `git pull`, `git stash pop`.
-            $stashed = false;
-            if ($changed !== []) {
-                $stash = $this->git([...self::STASH_IDENTITY, 'stash', 'push', '--quiet', '-m', 'deploy ' . gmdate('Y-m-d\TH:i:s\Z') . ': local changes kept'], 30);
-                if ($stash['code'] !== 0) {
-                    return $refuse('stash_failed', 'Could not set aside local changes: ' . $this->summarize($stash['err']), $old, 'failed');
+            $failure = $this->moveKeepingLocalChanges($old, $changed, function () use ($remote, $timeoutSeconds): ?array {
+                $merge = $this->git(['merge', '--ff-only', '--quiet', $remote], $timeoutSeconds);
+                if ($merge['code'] !== 0 || $this->gitValue(['rev-parse', '--verify', 'HEAD']) !== $remote) {
+                    return ['reason' => 'merge_failed', 'message' => 'The fast-forward did not complete: ' . $this->summarize($merge['err'])];
                 }
-                $stashed = true;
+
+                return null;
+            }, 'update', 'merge them over SSH (git stash, git pull, git stash pop)');
+            if ($failure !== null) {
+                return $failure;
             }
-            $merge = $this->git(['merge', '--ff-only', '--quiet', $remote], $timeoutSeconds);
-            $new = $this->gitValue(['rev-parse', '--verify', 'HEAD']);
-            if ($merge['code'] !== 0 || $new !== $remote) {
-                $restored = !$stashed || $this->restoreAt($old);
-                $message = 'The fast-forward did not complete: ' . $this->summarize($merge['err']);
-                if (!$restored) {
-                    $message .= ' Local changes are saved in `git stash`; run `git stash pop` over SSH.';
-                }
-                return ['outcome' => 'failed', 'reason' => 'merge_failed', 'message' => $message, 'old_commit' => $old, 'new_commit' => $new];
-            }
-            if ($stashed) {
-                $apply = $this->git(['stash', 'apply', '--quiet'], 30);
-                if ($apply['code'] !== 0 || $this->hasUnmergedPaths()) {
-                    // The update and the local edits touch the same lines: go
-                    // back to the previous commit with the edits intact.
-                    if (!$this->restoreAt($old)) {
-                        return ['outcome' => 'failed', 'reason' => 'stash_restore_failed', 'message' => 'The update conflicts with local changes to ' . implode(', ', $changed) . ', and they could not be put back automatically. They are saved in `git stash`; resolve over SSH.', 'old_commit' => $old, 'new_commit' => $this->gitValue(['rev-parse', '--verify', 'HEAD'])];
-                    }
-                    return $refuse('local_changes_conflict', 'The update changes the same lines as local edits to ' . implode(', ', $changed) . '. Nothing was changed; merge them over SSH (git stash, git pull, git stash pop).', $old);
-                }
-                $this->git(['stash', 'drop', '--quiet'], 30);
-            }
+            $new = (string) $this->gitValue(['rev-parse', '--verify', 'HEAD']);
             $kept = $changed === [] ? '' : ' Kept local changes to ' . implode(', ', $changed) . '.';
 
             return ['outcome' => 'deployed', 'reason' => null, 'message' => 'Updated to ' . substr($new, 0, 12) . '.' . $kept, 'old_commit' => $old, 'new_commit' => $new];
         } finally {
             $this->releaseLock($lock);
         }
+    }
+
+    /**
+     * @return array{outcome: string, reason: ?string, message: string, old_commit: ?string, new_commit: ?string}
+     */
+    private function runRollback(string $commit, int $timeoutSeconds): array
+    {
+        $refuse = static fn (string $reason, string $message, ?string $old = null, string $outcome = 'refused'): array
+            => ['outcome' => $outcome, 'reason' => $reason, 'message' => $message, 'old_commit' => $old, 'new_commit' => $old];
+
+        if (!$this->isCheckout()) {
+            return $refuse('not_a_checkout', 'The application directory is not a Git checkout.');
+        }
+        $lock = $this->acquireLock();
+        if ($lock === null) {
+            return $refuse('busy', 'Another deploy is running.', $this->gitValue(['rev-parse', '--verify', 'HEAD']));
+        }
+        try {
+            $old = $this->gitValue(['rev-parse', '--verify', 'HEAD']);
+            $branch = $this->gitValue(['symbolic-ref', '--quiet', '--short', 'HEAD']);
+            if ($branch !== self::BRANCH || $old === null) {
+                return $refuse('wrong_branch', 'The checkout is on ' . ($branch ?? 'a detached HEAD') . ', not ' . self::BRANCH . '.', $old);
+            }
+            $target = preg_match('/^[0-9a-f]{7,64}$/', $commit) === 1 ? $this->gitValue(['rev-parse', '--verify', '--quiet', $commit . '^{commit}']) : null;
+            if ($target === null || !in_array($target, $this->deployedCommits(), true)) {
+                return $refuse('not_deployed_here', 'That version was never deployed here; ./v3 deploy --history lists the ones that were.', $old);
+            }
+            if ($target === $old) {
+                return $refuse('already_running', 'That version is already running.', $old);
+            }
+            if ($this->git(['merge-base', '--is-ancestor', $target, $old], 30)['code'] !== 0) {
+                return $refuse('not_behind', 'That version is not behind the running one; deploy to move forward.', $old);
+            }
+            $changed = $this->trackedChangedFiles();
+            if ($changed === null) {
+                return $refuse('git_failed', 'Could not read the working tree status.', $old, 'failed');
+            }
+            $failure = $this->moveKeepingLocalChanges($old, $changed, function () use ($target, $timeoutSeconds): ?array {
+                $reset = $this->git(['reset', '--hard', '--quiet', $target], $timeoutSeconds);
+                if ($reset['code'] !== 0 || $this->gitValue(['rev-parse', '--verify', 'HEAD']) !== $target) {
+                    return ['reason' => 'reset_failed', 'message' => 'The rollback did not complete: ' . $this->summarize($reset['err'])];
+                }
+
+                return null;
+            }, 'older version', 'roll back over SSH (git stash, git reset --hard ' . substr($target, 0, 12) . ', git stash pop)');
+            if ($failure !== null) {
+                return $failure;
+            }
+            $kept = $changed === [] ? '' : ' Kept local changes to ' . implode(', ', $changed) . '.';
+
+            return ['outcome' => 'rolled_back', 'reason' => null, 'message' => 'Rolled back to ' . substr($target, 0, 12) . '.' . $kept, 'old_commit' => $old, 'new_commit' => $target];
+        } finally {
+            $this->releaseLock($lock);
+        }
+    }
+
+    /**
+     * Moves HEAD with $move while keeping local edits to tracked files (typically
+     * public/.htaccess): they are set aside, the move applied, and the edits put back, as an
+     * operator would with `git stash`, the move, `git stash pop`. When the edits do not apply
+     * at the new commit, the checkout returns to $old with the edits intact.
+     *
+     * @param list<string> $changed from {@see self::trackedChangedFiles()}
+     * @param \Closure(): ?array{reason: string, message: string} $move null on success
+     * @return array{outcome: string, reason: ?string, message: string, old_commit: ?string, new_commit: ?string}|null null on success
+     */
+    private function moveKeepingLocalChanges(string $old, array $changed, \Closure $move, string $what, string $overSsh): ?array
+    {
+        $stashed = false;
+        if ($changed !== []) {
+            $stash = $this->git([...self::STASH_IDENTITY, 'stash', 'push', '--quiet', '-m', 'deploy ' . gmdate('Y-m-d\TH:i:s\Z') . ': local changes kept'], 30);
+            if ($stash['code'] !== 0) {
+                return ['outcome' => 'failed', 'reason' => 'stash_failed', 'message' => 'Could not set aside local changes: ' . $this->summarize($stash['err']), 'old_commit' => $old, 'new_commit' => $old];
+            }
+            $stashed = true;
+        }
+        $failure = $move();
+        if ($failure !== null) {
+            $restored = !$stashed || $this->restoreAt($old);
+            $message = $failure['message'];
+            if (!$restored) {
+                $message .= ' Local changes are saved in `git stash`; run `git stash pop` over SSH.';
+            }
+
+            return ['outcome' => 'failed', 'reason' => $failure['reason'], 'message' => $message, 'old_commit' => $old, 'new_commit' => $this->gitValue(['rev-parse', '--verify', 'HEAD'])];
+        }
+        if ($stashed) {
+            $apply = $this->git(['stash', 'apply', '--quiet'], 30);
+            if ($apply['code'] !== 0 || $this->hasUnmergedPaths()) {
+                // The move and the local edits touch the same lines: go back to the previous
+                // commit with the edits intact.
+                if (!$this->restoreAt($old)) {
+                    return ['outcome' => 'failed', 'reason' => 'stash_restore_failed', 'message' => 'The ' . $what . ' conflicts with local changes to ' . implode(', ', $changed) . ', and they could not be put back automatically. They are saved in `git stash`; resolve over SSH.', 'old_commit' => $old, 'new_commit' => $this->gitValue(['rev-parse', '--verify', 'HEAD'])];
+                }
+
+                return ['outcome' => 'refused', 'reason' => 'local_changes_conflict', 'message' => 'The ' . $what . ' changes the same lines as local edits to ' . implode(', ', $changed) . '. Nothing was changed; ' . $overSsh . '.', 'old_commit' => $old, 'new_commit' => $old];
+            }
+            $this->git(['stash', 'drop', '--quiet'], 30);
+        }
+
+        return null;
     }
 
     /**

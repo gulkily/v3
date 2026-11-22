@@ -30,3 +30,24 @@ Step 4 entry, 2026-11-22 UTC: the Step 3 projection of **0.65** is reaffirmed un
 - Estimate details (extended mode only): original scope as in Step 3 Stage 1; uncertainty low; no revision.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
+
+## Stage 2 - Roll back over SSH
+
+**Original estimate: 0.20**
+
+**Retrospective: 0.20**
+
+- Changes:
+  - `AppUpdate::rollback()` resets `main` to an earlier deployed commit under the deploy lock, keeps local edits, runs the read-model check, and logs an attempt (`rolled_back`) and a history entry (`Action: rollback`). It never fetches.
+  - Refusals, each leaving the checkout as it was: `not_deployed_here`, `already_running`, `not_behind`, `wrong_branch`, `busy`, `local_changes_conflict`.
+  - `deploy()` and `rollback()` share `record()` for the read-model check and logging, and `moveKeepingLocalChanges()` for the set-aside and put-back of local edits. The deploy's messages and reasons are unchanged.
+  - `deployedCommits()` lists the allowed targets: every old or new commit in the history, so the version before the first recorded deploy is included.
+  - `./v3 deploy --rollback=COMMIT` (7 to 64 hex digits).
+- Verification:
+  - Passed: `./v3 test --smoke AppUpdateTest DeployPageTest`, with five new tests: rollback then deploy forward; a kept local edit; a conflicting local edit leaves `HEAD`, the edit and the stash list unchanged; every refusal; the CLI.
+  - The first High risk from Step 3 (a local edit that does not apply on the older commit) is covered by the conflicting-edit test.
+- Notes:
+  - Defect found and fixed from Stage 1: a first deploy on a checkout with no history file was recorded twice, because the seed read the attempt just logged. `record()` now seeds before logging; the rollback tests cover it.
+- Estimate details (extended mode only): original scope as in Step 3 Stage 2; uncertainty medium; no revision.
+
+*— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
