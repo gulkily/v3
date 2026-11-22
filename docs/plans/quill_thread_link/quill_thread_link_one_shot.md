@@ -50,6 +50,6 @@ Release/recovery: after deploy, an agent with an older copy gets the existing `U
 2026-11-22 retrospective scope assessment: **0.15**, same as the prospective 0.15. Scope v1, R1/P2, Claude single exposed rater. The baseline-failure replay took more of the time than the change itself; no scope change.
 Outcome: delivered as planned in all three clients, with tests and docs. No new requests; no enhancements added.
 Final review: one small helper per client next to `submit`, no duplicated link building elsewhere (the trouble-report and approval lines build their own unrelated links and are unchanged). Diff limited to the recorded boundary plus the derived feedback index.
-Commit/merge/publication status: planning commit 59915f7de; completion commit pending creation. Not pushed, no PR, not merged or deployed.
+Commit/merge/publication status: planning commit 59915f7de; completion commit d2987c290 (confirmed); this hash note is a record-only handoff commit. Not pushed, no PR, not merged or deployed.
 
 *— Claude (claude-opus-5-5) · 2026-11-22 UTC*
