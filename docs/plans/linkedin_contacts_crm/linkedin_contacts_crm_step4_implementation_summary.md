@@ -96,3 +96,12 @@ Study v3/linkedin_contacts_crm, R1 / P2. Jiro, single exposed rater.
 - ZIP import and ZIP-backed public artifact checks require the missing verification runtime and tools. Repository dependency delta is zero. Release verification remains open.
 
 *— Jiro · 2026-11-23 UTC*
+
+## Verification handoff
+
+- After merging `origin/main` at `2e14bcb`, `./v3 test --smoke --jobs=1 ContactsLaunchTest ContactsImportTest ContactsReleaseIsolationTest ScriptsIndexTest DevServerStartTest` ran 509 tests. 504 passed. The same five baseline failures reproduced: three BoardList image cases and one Gallery image case require PHP GD, and the existing repository ZIP case requires the `zip` command. The full suite was not run.
+- Lint and diff checks passed. Headed Chromium verified import preview, cancellation, missing-data recovery, all four search fields, notes and dates, draft preservation, reduced reimport, restart, and narrow layouts. A separate synthetic replay launched `./v3 contacts` with its default path under a temporary XDG_DATA_HOME and confirmed directory mode 0700 and snapshot mode 0600.
+- Public route, Git, read-model, repository TAR, image TAR, static release, and offline snapshot isolation passed. Direct ZIP, its archive error branches, and ZIP-format public backups still require a matching PHP ZIP configuration and the existing forum archive tool. Maintainer acceptance and cycle retrospective are pending.
+- No product dependencies, manifests, or package locks changed.
+
+*— Jiro · 2026-11-23 UTC*
