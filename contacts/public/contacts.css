@@ -34,6 +34,13 @@ h2 { font-size: 1.3rem; margin-bottom: .9rem; }
   min-width: 0;
 }
 input, button, textarea { font: inherit; max-width: 100%; }
+input[type="search"], input[type="date"], textarea {
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: .45rem;
+  padding: .48rem .65rem;
+}
 button {
   background: var(--accent);
   color: var(--surface);
@@ -63,4 +70,37 @@ table { width: 100%; border-collapse: collapse; text-align: left; }
 th, td { padding: .55rem .45rem; border-bottom: 1px solid var(--border); vertical-align: top; overflow-wrap: anywhere; }
 .actions { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: 1rem; }
 #status { border-inline-start: 3px solid var(--accent); padding: .4rem .75rem; margin: 0 0 1rem; }
+.book { display: grid; grid-template-columns: 1fr; gap: 1rem; align-items: start; }
+@media (min-width: 52rem) {
+  .book:has(#detail:not([hidden])) { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
+}
+.book .card { margin: 0 0 1rem; }
+#search-form, #edit-form { display: grid; gap: .4rem; }
+#edit-form :is(button, input[type="date"]) { justify-self: start; }
+#edit-form label:not(:first-child) { margin-top: .65rem; }
+#edit-form button { margin-top: .6rem; }
+textarea { resize: vertical; }
+#contact-count { color: var(--muted); margin: .65rem 0; }
+#contact-list { padding: 0; margin: 0; list-style: none; }
+#contact-list li { border-top: 1px solid var(--border); }
+.person {
+  width: 100%;
+  display: grid;
+  gap: .15rem;
+  text-align: left;
+  overflow-wrap: anywhere;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: .3rem;
+  padding: .65rem .5rem;
+}
+.person:hover, .person[aria-pressed="true"] { color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--surface)); }
+.person span { color: var(--muted); font-size: .9rem; }
+#more-contacts { margin-top: .8rem; }
+#contact-name { overflow-wrap: anywhere; }
+#contact-fields { margin: 0 0 1.15rem; }
+#contact-fields div { min-width: 0; }
+#contact-fields a { color: var(--accent); }
+#edit-status { margin: .4rem 0 0; }
 [hidden] { display: none !important; }

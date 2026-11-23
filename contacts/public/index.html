@@ -11,7 +11,7 @@
   <header class="shell"><h1>Contacts</h1></header>
   <main class="shell">
     <p id="status" role="status" hidden></p>
-    <section aria-labelledby="import-title" class="card" id="intake">
+    <section aria-labelledby="import-title" class="card" id="intake" hidden>
       <h2 id="import-title">Import LinkedIn connections</h2>
       <form id="import-form">
         <label id="drop-zone" for="file">Choose or drop a LinkedIn ZIP or Connections.csv</label>
@@ -34,6 +34,31 @@
         <button id="confirm-preview" type="button">Import contacts</button>
       </div>
     </section>
+    <div id="book" class="book" hidden>
+      <section class="card" aria-labelledby="book-title">
+        <h2 id="book-title">Address book</h2>
+        <form id="search-form" role="search">
+          <label for="search">Search contacts</label>
+          <input id="search" type="search" autocomplete="off">
+        </form>
+        <p id="contact-count" role="status"></p>
+        <ul id="contact-list"></ul>
+        <button id="more-contacts" type="button" class="secondary" hidden>Show more contacts</button>
+      </section>
+      <section class="card" id="detail" aria-labelledby="contact-name" hidden>
+        <h2 id="contact-name" tabindex="-1"></h2>
+        <dl id="contact-fields"></dl>
+        <form id="edit-form">
+          <label for="note">Note</label>
+          <textarea id="note" rows="5" maxlength="16384"></textarea>
+          <label for="date">Last contacted</label>
+          <input id="date" type="date">
+          <p id="edit-status" role="status" hidden></p>
+          <button type="submit">Save changes</button>
+        </form>
+      </section>
+    </div>
   </main>
+  <noscript><p class="shell">Enable JavaScript to open the local Contacts book.</p></noscript>
 </body>
 </html>

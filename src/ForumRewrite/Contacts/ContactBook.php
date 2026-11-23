@@ -105,6 +105,30 @@ final class ContactBook
         @unlink($this->previewPath($id));
     }
 
+    public function edit(string $id, string $revision, string $note, string $date): void
+    {
+        $note = str_replace(["\r\n", "\r"], "\n", $note);
+        if (strlen($note) > 16384 || !preg_match('//u', $note) || preg_match('/[\x00-\x08\x0B-\x1F\x7F]/', $note)) {
+            throw new RuntimeException('Enter a valid note of up to 16 KB.', 422);
+        }
+        if ($date !== '' && (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/D', $date, $parts)
+            || !checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1]))) {
+            throw new RuntimeException('Enter a valid last-contacted date.', 422);
+        }
+        $this->change(static function (array $current) use ($id, $revision, $note, $date): array {
+            if (!hash_equals($current['revision'], $revision)) {
+                throw new RuntimeException('The book changed. Reopen Contacts before saving your changes.', 409);
+            }
+            $contacts = $current['contacts'];
+            if (!isset($contacts[$id])) {
+                throw new RuntimeException('Could not find this contact.', 404);
+            }
+            $contacts[$id]['note'] = $note;
+            $contacts[$id]['last_contacted'] = $date;
+            return $contacts;
+        });
+    }
+
     public function clearPreviews(): void
     {
         $prefix = basename($this->previewPrefix);

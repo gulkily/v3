@@ -232,4 +232,38 @@ final class ContactsImportTest
             $server->stop();
         }
     }
+
+    public function testContactEditsSurviveReducedReimportAndRestart(): void
+    {
+        $workspace = new ImportTestWorkspace();
+        $directory = $workspace->root . '/contacts';
+        $note = "Résumé\n\n%%\n% text\n";
+        $server = new ContactsTestServer($directory);
+        try {
+            [, $preview] = $server->upload('Connections.csv', "First Name,Last Name,URL,Company\n"
+                . "River,Li,https://www.linkedin.com/in/example-river,Studio\n");
+            assertSame(200, $server->request('/api/confirm', json_encode(['id' => $preview['id']]))[0]);
+            $book = json_decode($server->request('/api/contacts')[1], true);
+            $edit = ['id' => $book['contacts'][0]['id'], 'revision' => $book['revision'] ?? 'missing', 'note' => $note];
+            assertSame(422, $server->request('/api/edit', json_encode($edit + ['last_contacted' => '2026-02-30']))[0]);
+            assertSame(200, $server->request('/api/edit', json_encode($edit + ['last_contacted' => '2026-11-01']))[0]);
+            assertSame(409, $server->request('/api/edit', json_encode($edit + ['last_contacted' => '2026-11-02']))[0]);
+
+            [, $updated] = $server->upload('Connections.csv', "First Name,Last Name,URL,Connected On\n"
+                . "River,Li,https://www.linkedin.com/in/example-river,05 Oct 2026\n");
+            assertSame(1, $updated['counts']['updated']);
+            assertSame(200, $server->request('/api/confirm', json_encode(['id' => $updated['id']]))[0]);
+        } finally {
+            $server->stop();
+        }
+        $server = new ContactsTestServer($directory);
+        try {
+            [$contact] = json_decode($server->request('/api/contacts')[1], true)['contacts'];
+            assertSame($note, $contact['note']);
+            assertSame('2026-11-01', $contact['last_contacted']);
+            assertSame('Studio', $contact['company']);
+        } finally {
+            $server->stop();
+        }
+    }
 }

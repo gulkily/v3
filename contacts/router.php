@@ -53,7 +53,8 @@ try {
     }
     $book = new ContactBook((string) getenv('V3_CONTACTS_DIRECTORY'), $secret);
     if ($method === 'GET' && $path === '/api/contacts') {
-        $result = ['contacts' => array_values($book->read()['contacts'])];
+        $result = $book->read();
+        $result['contacts'] = array_values($result['contacts']);
     } elseif ($method === 'POST' && $path === '/api/preview') {
         $result = $book->preview((new LinkedInConnectionsReader())->readUpload($_FILES['file'] ?? []));
     } elseif ($method === 'POST' && ($path === '/api/confirm' || $path === '/api/cancel')) {
@@ -68,13 +69,22 @@ try {
             $book->cancel($id);
             $result = ['cancelled' => true];
         }
+    } elseif ($method === 'POST' && $path === '/api/edit') {
+        $input = json_decode((string) file_get_contents('php://input', false, null, 0, 100000), true);
+        foreach (['id', 'revision', 'note', 'last_contacted'] as $field) {
+            if (!is_string($input[$field] ?? null)) {
+                throw new RuntimeException('Could not read the edited contact. Check the fields and try again.', 422);
+            }
+        }
+        $book->edit($input['id'], $input['revision'], $input['note'], $input['last_contacted']);
+        $result = ['saved' => true];
     } else {
         http_response_code(404);
         $result = ['error' => 'Contacts page not found.'];
     }
     echo json_encode($result, JSON_THROW_ON_ERROR);
 } catch (Throwable $error) {
-    $knownError = $error instanceof RuntimeException && in_array($error->getCode(), [409, 413, 422], true);
+    $knownError = $error instanceof RuntimeException && in_array($error->getCode(), [404, 409, 413, 422], true);
     http_response_code($knownError ? $error->getCode() : 500);
     echo json_encode(['error' => $knownError ? $error->getMessage() : 'Contacts could not complete that request. Check the private data directory and try again.']);
 }

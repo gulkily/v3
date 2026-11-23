@@ -74,3 +74,15 @@ Study v3/linkedin_contacts_crm, R1 / P2. Jiro, single exposed rater.
 - Direct ZIP acceptance and retrospective estimate are pending an extension-enabled verification lane. Stage 6 depends on the confirmed CSV path.
 
 *— Jiro · 2026-11-23 UTC*
+
+## Stage 6 - Find contacts and save edits
+
+**Original estimate: 0.10**
+
+**Retrospective stage-work assessment: 0.10**
+
+- Added local search by name, company, title, and email, contact details, and editable note and last-contacted date. Version checks protect edits across launches. Imported fields render as text.
+- `./v3 test ContactsImportTest ContactsLaunchTest` passed (13 tests). The new edit test first hit a missing route. The headed Chromium replay `node tests/browser/contacts.mjs` first timed out at the missing search UI, then passed end-to-end, including a keyboard action, narrow viewport, and no external browser requests.
+- Used the existing Playwright JS package and session Chrome because Python Playwright is absent. The browser scenarios remain as planned.
+
+*— Jiro · 2026-11-23 UTC*
