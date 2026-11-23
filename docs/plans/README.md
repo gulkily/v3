@@ -11,6 +11,7 @@ checklists, and proposals remain at the top level or in the collections below.
 ## Awaiting review before merge
 - [Publish local public keys](publish_local_public_keys/publish_local_public_keys_step4_implementation_summary.md) — reviewed public-key CLI publication verified locally; production acceptance pending.
 - [Publisher CLI conventions](publish_keys_cli_conventions/publish_keys_cli_conventions_one_shot.md) — hostname handling, visible source repository and help consistency follow-up.
+- [Direct key publication](publish_keys_direct/publish_keys_direct_one_shot.md) — publish by default, preview with --dry-run; remove mandatory review files and fingerprint copying.
 - [Recently released filters](recent_feature_flag_filters/recent_feature_flag_filters_one_shot.md) — keep the release list in sync with flag filters.
 - [Offline writing runbook](offline_runbook_compose/offline_runbook_compose_one_shot.md) — explain cached composers, drafts, and queued offline text.
 - [Optional thread author details](thread_author_details/thread_author_details_one_shot.md) — opt-in speakers in the text thread API.
