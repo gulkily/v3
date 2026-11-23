@@ -7,7 +7,7 @@ Extended estimates: enabled (no real alternatives or work units worth estimating
 
 **Cycle estimate: 0.10** (intake 0.15)
 
-Status: plan written; implementation not started. Next permitted action: planning commit, then redraw the favicon.
+Status: technically complete on `fix/favicon_light_theme`; pushed for review, not merged or deployed. Next action: maintainer review, merge, deployment and a look at a real browser tab.
 
 ## Request and authorization
 
@@ -52,15 +52,40 @@ None in the concept inventory.
 
 Starting revision and branch: `e32bef64ed367accdf10501d173dc534b7460541` on `main`; branch `fix/favicon_light_theme`.
 
-Planning commit: pending.
+Planning commit: `c1391b64e` (2026-11-23T06:24Z), containing only this record and its index link.
 
 ## Dated execution history
 
 - 2026-11-23T06:22Z: plan written after reading `FaviconRegistry`, the layouts' favicon links, the tests that name favicons, the app-icons record, and decoding `public/favicon.ico`.
+- 2026-11-23T06:24Z: planning commit `c1391b64e` confirmed. Drew the new icon with a scratch script outside the repo: each size drawn on its own pixel grid at 16x supersampling, slate `#1f2937` tile with corner radius about 22%, white `#f8fafc` Z with strokes on whole pixels, no glow. Saved as one ICO with 16, 32 and 48 px images. The script is not committed, since nothing rebuilds the file (same as the app icons).
+- 2026-11-23T06:30Z: added `PresentationSlotRegistryTest::testDefaultFaviconCarriesTabSizedImages`. It fails on the old file and passes on the new one.
+- 2026-11-23T06:32Z: item updated with the diagnosis and a `Done when:`; `./v3 feedback check` and `./v3 feedback index` run.
 
 ## Study history
 
 - Intake, 2026-11-23T06:15Z: **0.15** whole-cycle projection, scope v1, R1/P2, recorded before inspecting the implementation. Single Claude rater; exposed only to the item text.
 - Execution entry, 2026-11-23T06:22Z: revised to **0.10**. The fix is one asset and one test assertion; no code path changes.
+- Closeout, 2026-11-23T06:35Z: delivered scope v1. Retrospective **0.08**. Maintainer fit and acceptance pending.
+
+## Outcome
+
+Delivered: `public/favicon.ico` redrawn as a 16, 32 and 48 px icon, a rounded slate tile with a crisp white Z and no glow. Every page, docs build and static artifact keeps the same path, so nothing else changed. Not delivered (out of scope): favicons for QDB, chouse.club and the Rap Club; the home-screen PNGs, which keep their glow; a theme-aware or SVG favicon (options B and C), left as follow-ups if the tile still looks wrong in some theme.
+
+## Verification
+
+- `./v3 test --smoke PresentationSlotRegistryTest LocalAppSmokeTest::testFrontControllerDerivesManifestAndWorkerFromTheActiveProfile`: 492 of 492.
+- `./v3 test PresentationSlotRegistryTest IndependentDocsPublicationTest LegacyDocsMigrationTest` (the docs tests copy and hash the favicon): 14 of 14.
+- The new test fails against the old `favicon.ico` (checked by swapping the file back) and passes against the new one.
+- Render check: old and new icons composited at 16 and 32 px on white, Chrome's light grey tab strip, the site's cream (`#f4f1e8`) and a dark strip, then viewed. The new icon has no olive fringe and transparent corners on light backgrounds, and the Z still reads on dark.
+- `./v3 feedback check`: 0 problems; `./v3 feedback index` regenerated.
+- Not run: the full suite. Not checked: a real browser tab, and the reporter's device and browser (unknown), so the reported condition is not replayed.
+
+## Final review
+
+Diff checked: one binary asset, one test method, the item, the feedback index, this record, its debug log and ledger, and the plans index. No code paths, markup or other sites' assets changed. No duplicated components; the `sizes="32x32"` hint on the icon link stays correct, since the file still holds a 32 px image.
+
+## Commit, merge and publication status
+
+Planning commit `c1391b64e`; completion commit pending at the time of writing (its hash is reported in the PR). Not merged, not deployed.
 
 *— Claude · 2026-11-23 UTC · Model: Claude Opus 5.5*
