@@ -9,6 +9,7 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
+- [LinkedIn Contacts CRM](linkedin_contacts_crm/linkedin_contacts_crm_step3_development_plan.md) — a local companion imports a LinkedIn archive into a private address book.
 - [Zen gallery accessibility intake](zen_gallery_accessibility_intake/zen_gallery_accessibility_intake_one_shot.md) — record the generic names on two image-only links.
 - [Zen meme gallery](zen_meme_gallery/zen_meme_gallery_one_shot.md) — the homepage thumbnail row opens a gallery of the same collection.
 - [Quill prints the thread link](quill_thread_link/quill_thread_link_one_shot.md) — after a post, Quill prints `/threads/<thread>` (with `#<post>` for a reply) instead of `/posts/<post>`.
