@@ -110,16 +110,4 @@ final class LinkedInConnectionsReader
         throw new RuntimeException('Connections.csv must have First Name and Last Name columns with unique headers.', 422);
     }
 
-    public static function previewRow(int $number, string $status, array $contact = [], string $reason = ''): array
-    {
-        return [
-            'row' => $number,
-            'status' => $status,
-            'name' => trim(($contact['first_name'] ?? '') . ' ' . ($contact['last_name'] ?? '')),
-            'company' => $contact['company'] ?? '',
-            'position' => $contact['position'] ?? '',
-            'email' => $contact['email'] ?? '',
-            'reason' => $reason,
-        ];
-    }
 }

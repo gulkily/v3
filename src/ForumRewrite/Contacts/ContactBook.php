@@ -70,17 +70,7 @@ final class ContactBook
     public function preview(array $parsed): array
     {
         $current = $this->read();
-        $rows = $changes = [];
-        foreach ($parsed['contacts'] as $number => $contact) {
-            $id = bin2hex(random_bytes(16));
-            $changes[$id] = ['id' => $id] + $contact;
-            $rows[$number] = LinkedInConnectionsReader::previewRow($number, 'added', $contact);
-        }
-        foreach ($parsed['skipped'] as $number => $reason) {
-            $rows[$number] = LinkedInConnectionsReader::previewRow($number, 'skipped', reason: $reason);
-        }
-        ksort($rows);
-        $counts = ['added' => count($changes), 'updated' => 0, 'unchanged' => 0, 'skipped' => count($parsed['skipped'])];
+        ['rows' => $rows, 'counts' => $counts, 'changes' => $changes] = LinkedInImportPlan::build($current['contacts'], $parsed);
         $id = bin2hex(random_bytes(16));
         $this->clearPreviews();
         if ($changes !== []) {
@@ -88,7 +78,7 @@ final class ContactBook
                 'revision' => $current['revision'], 'changes' => $changes, 'counts' => $counts,
             ], JSON_THROW_ON_ERROR));
         }
-        return ['id' => $changes === [] ? null : $id, 'counts' => $counts, 'rows' => array_values($rows)];
+        return ['id' => $changes === [] ? null : $id, 'counts' => $counts, 'rows' => $rows];
     }
 
     public function confirm(string $id): array

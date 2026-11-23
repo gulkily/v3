@@ -52,3 +52,15 @@ Study v3/linkedin_contacts_crm, R1 / P2. Jiro, single exposed rater.
 - The failure test blocks a real filesystem write. Verification does not include cutting power mid-write.
 
 *— Jiro · 2026-11-23 UTC*
+
+## Stage 4 - Reimport safely
+
+**Original estimate: 0.10**
+
+**Retrospective stage-work assessment: 0.10**
+
+- Matched canonical LinkedIn profile URLs, preserved omitted fields and edits, and flagged uncertain and conflicting rows in the preview. Exact unlinked repeats produce no change.
+- `./v3 test ContactsImportTest` passed (7 tests). The new repeat and conflict tests failed before matching was added. Two launchers verified that a preview cannot write through a different session or over a changed book.
+- Scope and original estimate retained. Uncertain rows remain visible for review and are skipped.
+
+*— Jiro · 2026-11-23 UTC*
