@@ -12,7 +12,8 @@ use ForumRewrite\Support\ThemeDirective;
 use PDO;
 
 /**
- * A thread's own page theme, derived when read from its posts. The latest setting from
+ * A thread's own page theme, derived when read from its posts. A new HN port can
+ * start with a server-set Ochre default. The latest verified setting from
  * the thread's verified author or a current operator decides, whether it came from a
  * visible `theme:` line or a hidden `Theme:` header (copied into posts.theme), and
  * `none` clears it; when one post has both, the header counts first. A setting counts
@@ -27,7 +28,8 @@ final class ThreadTheme
         if ($threadId === '') {
             return null;
         }
-        $root = $pdo->prepare('SELECT author_identity_id, attribution_verified FROM posts WHERE post_id = :post_id');
+        $root = $pdo->prepare('SELECT author_identity_id, attribution_verified, theme, ported_from, retracted_at
+             FROM posts WHERE post_id = :post_id');
         $root->execute(['post_id' => $threadId]);
         $rootRow = $root->fetch(PDO::FETCH_ASSOC);
         $root->closeCursor();
@@ -46,7 +48,9 @@ final class ThreadTheme
         );
         $stmt->execute(['thread_id' => $threadId]);
         $permitted = self::permittedNames(FeatureFlagEvaluator::forApplication($repositoryRoot, DeploymentSettings::projectRoot()));
-        $theme = null;
+        // HN ports get their server-set default even though their source authors are unverified.
+        $theme = is_array($rootRow) && $rootRow['ported_from'] !== null && $rootRow['retracted_at'] === null
+            && $rootRow['theme'] === 'ochre' && in_array('ochre', $permitted, true) ? 'ochre' : null;
         $operators = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
             $value = null;
