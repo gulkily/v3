@@ -694,3 +694,4 @@ and repair its navigation and affected references. See the
 - [Favicon in light theme](favicon_light_theme/favicon_light_theme_one_shot.md) — one-shot: the ZenMemes tab icon redrawn so it looks clean on light tabs (PF-20261111-B02).
 - [Word 97 action fonts](word97_action_fonts/word97_action_fonts_one_shot.md) — one-shot: post-action toggles in Word 97 and the Outbox status line use the UI font (PF-20261104-B12, PF-20261104-B18).
 - [Midnight action fonts](midnight_action_fonts/midnight_action_fonts_one_shot.md) — one-shot: Midnight post actions get Word 97’s UI font, no underline and Like/Flag bevel (PF-20261111-F19).
+- [Zen hero fits the screen](zen_hero_fit/zen_hero_fit_one_shot.md) — one-shot: the featured Zen meme on the home page fits the viewport on wide screens, with thumbnails beside upright images.

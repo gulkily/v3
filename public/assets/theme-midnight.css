@@ -1,6 +1,8 @@
 /* Theme: midnight */
 :root[data-theme="midnight"],
 .theme-menu__option[data-theme-option="midnight"] {
+  /* Title bar, toolbar and status bar: room kept so the home page's Zen meme shows whole. */
+  --zen-chrome: 12.5rem;
   color-scheme: dark;
   --media-dim: 0.85;
   --page-bg: #063a3a;
