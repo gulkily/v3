@@ -13,7 +13,7 @@ use ForumRewrite\Canonical\GenericTextRecordParser;
 final class FeedbackItemCheck
 {
     private const REQUIRED_HEADERS = ['ID', 'Title', 'Kind', 'Workflow', 'Created'];
-    private const OPTIONAL_HEADERS = ['Evidence', 'Estimate', 'Aliases', 'Duplicate-Of', 'Superseded-By'];
+    private const OPTIONAL_HEADERS = ['Evidence', 'Estimate', 'Impact', 'Aliases', 'Duplicate-Of', 'Superseded-By'];
     private const SECTIONS = ['Request:', 'Sources:', 'Done when:', 'Notes:'];
     private const REQUIRED_SECTIONS = ['Request:', 'Sources:'];
 
@@ -96,8 +96,10 @@ final class FeedbackItemCheck
         if (isset($headers['Evidence']) && !in_array($headers['Evidence'], FeedbackItem::EVIDENCE, true)) {
             $this->problems[] = $name . ': Evidence must be one of ' . implode(', ', FeedbackItem::EVIDENCE);
         }
-        if (isset($headers['Estimate']) && $headers['Estimate'] !== 'none' && preg_match('/^\d+(\.\d+)?$/', $headers['Estimate']) !== 1) {
-            $this->problems[] = $name . ': Estimate must be a nonnegative decimal or none';
+        foreach (['Estimate', 'Impact'] as $header) {
+            if (isset($headers[$header]) && $headers[$header] !== 'none' && preg_match('/^\d+(\.\d+)?$/', $headers[$header]) !== 1) {
+                $this->problems[] = $name . ': ' . $header . ' must be a nonnegative decimal or none';
+            }
         }
         foreach (['duplicate' => 'Duplicate-Of', 'superseded' => 'Superseded-By'] as $state => $header) {
             if ($workflow === $state && ($headers[$header] ?? '') === '') {
@@ -133,7 +135,7 @@ final class FeedbackItemCheck
             $this->problems[] = $name . ': Sources: lists no source';
         }
 
-        return count($this->problems) === $before ? new FeedbackItem($path, $headers, $sources) : null;
+        return count($this->problems) === $before ? new FeedbackItem($path, $headers, $sources, $sections['Notes:'] ?? '') : null;
     }
 
     /**

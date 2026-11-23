@@ -181,6 +181,7 @@ final class LlmsTxtRenderer
             '- [This guide as a skill file](/skill.md): the same text with name, description and version at the top',
             '- [Agent API reference](' . self::REFERENCE_PATH . ') (raw Markdown: ' . self::REFERENCE_RAW_PATH . ')',
             '- [Documentation](/docs/)',
+            ...($this->flags->isEnabled(FeatureFlagRegistry::BACKLOG_ENABLED) ? ['- [Backlog](/backlog.txt): open work items for this software, with sort, order, show and kind words; /backlog/start.txt?items=<ID>,<ID> returns the prompt that starts work on them'] : []),
             ...($this->sourceRepositoryUrl === null ? [] : ['- [Source code](' . $this->sourceRepositoryUrl . ')']),
         ];
 

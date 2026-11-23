@@ -26,6 +26,8 @@ final class TemplateRenderer
     /** @var array<string, list<string>> */
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],
+        'backlog.php' => ['/assets/backlog.css'],
+        'backlog_start.php' => ['/assets/agent.css', '/assets/backlog.css'],
         'guestbook.php' => ['/assets/compose.css', '/assets/guestbook.css'],
         'themes.php' => ['/assets/themes.css'],
         'agent.php' => ['/assets/agent.css'],
@@ -786,6 +788,9 @@ final class TemplateRenderer
         }
         if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::INSTANCE_IMPORT_PAGE_ENABLED)) {
             $hiddenTools[] = 'import';
+        }
+        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::BACKLOG_ENABLED)) {
+            $hiddenTools[] = 'backlog';
         }
         if ($hiddenTools !== []) {
             foreach (['toolPages', 'toolNavOptions'] as $toolListKey) {

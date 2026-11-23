@@ -684,3 +684,4 @@ and repair its navigation and affected references. See the
 - [Deploy history and rollback](deploy_rollback/deploy_rollback_step1_solution_assessment.md) — staged: a record of deployed versions and a rollback to one of them.
 
 - [Port HN theme and preview](port_hn_preview/port_hn_preview_one_shot.md)
+- [Backlog view](backlog_view/backlog_view_step1_solution_assessment.md) — staged: a `/backlog` page under Tools lists open feedback items with five sorts and filters, and Start gives a short agent prompt for one item or several.

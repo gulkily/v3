@@ -1,0 +1,101 @@
+/* Tools → Backlog. Built from the board filter, card, chip and meta styles;
+   only the row layout lives here. */
+.backlog-controls {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.backlog-filter {
+  flex-wrap: wrap;
+}
+
+.backlog-order {
+  margin-left: 0.25rem;
+}
+
+.backlog-count {
+  margin: 0;
+}
+
+.backlog-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.backlog-row {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.backlog-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.backlog-row:last-child {
+  padding-bottom: 0;
+}
+
+.backlog-row__title {
+  overflow-wrap: anywhere;
+}
+
+.backlog-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.6rem;
+}
+
+.backlog-row__id {
+  font-family: var(--code-font, monospace);
+  font-size: 0.85em;
+}
+
+.backlog-row__numbers {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* A row with a checkbox: the box sits left of the title and the details. */
+.backlog-form .backlog-row {
+  grid-template-columns: auto 1fr;
+  column-gap: 0.6rem;
+}
+
+.backlog-row__pick {
+  grid-row: 1 / span 2;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0.15rem 0 0;
+}
+
+.backlog-start-bar {
+  position: sticky;
+  bottom: var(--app-tabbar-offset, 0px);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.backlog-start-bar > .meta {
+  white-space: nowrap;
+}
+
+.backlog-start-bar > button {
+  flex: none;
+  width: auto;
+  min-width: 7rem;
+}
+
+label.backlog-row__title {
+  font-weight: inherit;
+}

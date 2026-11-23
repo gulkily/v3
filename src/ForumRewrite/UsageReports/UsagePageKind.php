@@ -17,7 +17,7 @@ final class UsagePageKind
     /** Fixed path words from the router and Tools routes. Anything else is redacted. */
     public const WORDS = [
         'about', 'account', 'key', 'activity', 'agent', 'approvals', 'root', 'approve',
-        'backup', 'calendar', 'compose', 'reply', 'thread', 'docs', 'forte', 'users', 'user',
+        'backup', 'backlog', 'start', 'calendar', 'compose', 'reply', 'thread', 'docs', 'forte', 'users', 'user',
         'profiles', 'replies', 'gallery', 'guestbook', 'hints', 'inbox', 'instance', 'invites',
         'latest', 'lobby', 'messages', 'conversation', 'sent', 'offline', 'reader', 'pages',
         'posts', 'random', 'recent', 'records', 'releases', 'search', 'source', 'current', 'blob',

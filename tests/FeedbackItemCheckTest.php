@@ -139,7 +139,7 @@ final class FeedbackItemCheckTest
             $untriaged = strpos($index, '[PF-20261103-F01]');
             assertSame(true, $features < $inProgress && $inProgress < $untriaged && $untriaged < $bugs);
             assertSame(true, str_contains($index, 'Pipe \\| title'));
-            assertSame(true, str_contains($index, '| 0.15 | 2 |'));
+            assertSame(true, str_contains($index, '| 0.15 | — | 2 |'));
             assertSame(true, str_contains($index, 'duplicate → [PF-20261103-F01](items/PF-20261103-F01.txt)'));
             assertSame(false, str_contains($index, 'HISTORY.md'));
 

@@ -1,0 +1,20 @@
+ID: PF-20261123-F01
+Title: Backlog page: sort the open items and start work on one or several
+Kind: feature
+Workflow: blocked
+Created: 2026-11-23
+Evidence: locally-verified
+Estimate: 0.60
+
+Request:
+"I want to see a view of things to work on, sortable, and allowing me to start work right away on any one item or possibly multiple items." Refined by the maintainer: a human interface and an agent interface; start means a short copyable prompt that assumes the agent has the repository and points at files, and it also means a claim; several related items can be started together as one cycle; anyone can see the page; it lives under Tools for now; at least five sorts (time entered, time touched, estimated effort, estimated impact, and a combined most-salient order), each newest or oldest first; triage is a filter; parked plans are shown separately; a command line and an API as well as the page.
+
+Sources:
+- Session: Claude chat with the maintainer, 2026-11-23
+
+Done when:
+With the Backlog flag on at zenmemes.com, the maintainer opens Tools → Backlog on his phone, sorts and filters, ticks two items, presses Start, copies the prompt, and an agent given only that prompt opens a pull request covering both. An agent gets the same list and prompt from /backlog.txt, /backlog/start.txt and ./v3 feedback list and start.
+
+Notes:
+2026-11-23: staged cycle on feat/backlog_view (docs/plans/backlog_view/), the first of three tracked in docs/plans/backlog_checklist.md. This cycle: the page, five sorts, filters, the Impact header, Start with a short prompt, the text routes, the commands and docs/agents/backlog_to_pr.md. Not in this cycle: claims (next cycle backlog_claims) and the parked plans list (backlog_parked). Verified locally with page tests and a browser check in every permitted theme at 375 and 1280 px, scripts on and off. Not done: a real start by a fresh agent, and the maintainer's own start from his phone. Blocked on review, merge, a deploy with FORUM_BACKLOG_ENABLED on, and that start.
+2026-11-23: PR https://github.com/gulkily/v3/pull/377 opened.

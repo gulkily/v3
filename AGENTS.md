@@ -38,6 +38,8 @@ For recurring agent tasks such as triaging site feedback, follow the matching pr
 
 When someone pastes a ZenMemes thread (link, post ID or text) and asks you to build it, follow [thread to pull request](docs/agents/thread_to_pr.md). The paste authorizes a Railspike one-shot cycle carried through to an open PR and a reply in the thread. Use a staged cycle when the requester wants to review the approach or the approach needs the maintainer's choice; ask a non-technical requester only about unknowns that change what they will get. Dependency changes, production access and irreversible decisions still stop for approval.
 
+When a prompt names feedback item files under `docs/feedback/items/` and tells you to begin, follow [backlog to pull request](docs/agents/backlog_to_pr.md). `./v3 feedback list` shows the backlog and `./v3 feedback start <ID>...` prints that prompt.
+
 Before starting a fix or feature, search `docs/feedback/items/` for a matching item and name its ID in the plan. When a commit addresses an item, add a `Feedback: PF-...` trailer (one per item) and update the item file in the same commit: `Workflow` (`done` only with its completion checks met; `blocked` while deployment or production acceptance is pending), `Evidence`, and a dated line in `Notes:`. Triage runs catch items that were missed. Triage commits themselves carry no `Feedback:` trailers; their proposals file is the record.
 
 ## Navigation icons

@@ -983,3 +983,10 @@ Verification: Chromium; `private_message_redesign.mjs` in all 18 themes with 390
 
 - Clarified the flag's existing description so the calendar query finds Event support as well as Calendar feed. No new UI or renamed switch.
 - Verified exact query and clearing using the rendered canonical fixture and actual filter script. Added the browser regression; Chromium launch and visual checks remain pending in this executor. [Verification record](calendar_flag_search/calendar_flag_search_one_shot.md#delivery-and-verification).
+
+## Backlog page — 2026-11-23
+
+- [x] New pages `/backlog` and `/backlog/start` ([backlog view](./backlog_view/backlog_view_step4_implementation_summary.md)). Text on the list: the link labels (five sorts, five show words, four kinds), one count line ("288 of 346 open · version … · text"), each row's own values, and Start. No headings, no explanation of the sorts and no help text. The three link rows carry their names (Sort by, Show, Kind) for screen readers only.
+- [x] Status text appears only when there is something to say: "Not understood, so the default is shown: …", "Left out, no such item: …", "Left out, already closed: …", "Nothing to start." and, with scripts, "N selected" once an item is ticked.
+- [x] The start page reuses the Agent Prompts copy control and its messages; no new copy for copying.
+- Verified in `tests/BacklogPageTest.php` and `tests/browser/backlog.mjs` (every permitted theme, 375 and 1280 px, scripts on and off). Not checked on a real iPhone.
