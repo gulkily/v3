@@ -96,3 +96,28 @@
 - Stage 3 at 0.18 may exceed the "about one hour or 50 lines" guide; it was kept whole because a list without its Tools entry and flag is not reachable.
 - `ApiTextController.php` and `ApiRouteCatalog.php` are named from their file names, not from reading them.
 - The ≤1 page limit is exceeded.
+
+## 2026-11-23T07:10Z — Step 4
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md`, Planning Docs Commit Gate: the plans were moved and committed alone as `1235b66` before any code, so each later commit is one stage.
+- `implementation_standards.md`, inspect existing implementations: found the hidden-tools rule in `TemplateRenderer.php` after a first attempt filtered in two templates. The first attempt was dropped for the existing rule.
+- `implementation_standards.md`, unverified required checks stay pending: the real agent start and the maintainer's phone start are recorded as pending, not passed.
+- `AGENTS.md` (host), Navigation icons, with `NavIconSetsTest`: the three icon sets and the shared sizing rule were updated together.
+- Host rule on tests that fail on the base commit: `tests/browser/tools_launcher.mjs` failed on `origin/main` at the Zalgo theme and was fixed in Stage 3.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- Documentation-only stage checks; database change notes.
+
+### Uncertain assessments
+
+- A helper script in Stage 1 stopped on an assertion before it wrote the checklist ticks and the ledger line. They were written in Stage 2's commit, so the Stage 1 commit shows the checklist one step behind.
+- Step 3 named `ApiTextController.php` and `board_sort.php` without reading them. Both turned out not to fit. Reading the named files during Step 3 would have avoided two recorded deviations.
+- The plan's real-start check asks for a second agent session. Whether a planning approval covers starting one was unclear, so it was left pending.
+- The Step 3 after-phase file (`step3_development_plan_after.md`) was not read before the Step 3 handoff.
