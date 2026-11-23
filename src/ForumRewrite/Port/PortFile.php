@@ -17,6 +17,8 @@ use RuntimeException;
  *     Port-Format: hn-v1
  *     Thread-Title: My YC app: Dropbox
  *     Thread-Link: https://news.ycombinator.com/item?id=8863
+ *     Points: 111
+ *     Comment-Count: 25
  *     %%
  *     Item: 8863
  *     Author: dhouston
@@ -29,6 +31,7 @@ use RuntimeException;
  *     Parent: 8863
  *     ...
  *
+ * Points and Comment-Count are optional HN story statistics for the preview.
  * The first item is the root: the story, or the comment the user chose. Every
  * later item names a Parent that appears earlier in the file.
  */
@@ -43,6 +46,8 @@ final class PortFile
         public readonly string $threadTitle,
         public readonly string $threadLink,
         public readonly array $items,
+        public readonly ?int $points,
+        public readonly ?int $sourceCommentCount,
     ) {
     }
 
@@ -103,13 +108,25 @@ final class PortFile
             $items[] = new PortItem($id, $parent, $author, $createdAt, self::line($fields['Title'] ?? '', 'Title'), $link, trim($text));
         }
 
-        return new self($threadTitle, $threadLink, $items);
+        return new self(
+            $threadTitle,
+            $threadLink,
+            $items,
+            self::optionalCount($header['Points'] ?? ''),
+            self::optionalCount($header['Comment-Count'] ?? ''),
+        );
     }
 
     /** Writes the format back out; the bookmarklet's JavaScript writes the same text. */
     public function toText(): string
     {
         $out = "Port-Format: " . self::FORMAT . "\nThread-Title: {$this->threadTitle}\nThread-Link: {$this->threadLink}\n";
+        if ($this->points !== null) {
+            $out .= "Points: {$this->points}\n";
+        }
+        if ($this->sourceCommentCount !== null) {
+            $out .= "Comment-Count: {$this->sourceCommentCount}\n";
+        }
         foreach ($this->items as $item) {
             $out .= "%%\nItem: {$item->id}\n"
                 . ($item->parent !== null ? "Parent: {$item->parent}\n" : '')
@@ -174,6 +191,11 @@ final class PortFile
             $fields[substr($line, 0, $colon)] = substr($line, $colon + 2);
         }
         return [$fields, $parts[1] ?? ''];
+    }
+
+    private static function optionalCount(string $value): ?int
+    {
+        return preg_match('/^\d{1,9}$/D', $value) === 1 ? (int) $value : null;
     }
 
     private static function line(string $value, string $field): string

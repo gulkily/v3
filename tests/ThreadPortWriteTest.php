@@ -5,6 +5,7 @@ declare(strict_types=1);
 use ForumRewrite\Application;
 use ForumRewrite\Canonical\CanonicalRecordRepository;
 use ForumRewrite\Port\PortFile;
+use ForumRewrite\View\ThreadTheme;
 use ForumRewrite\Write\LocalWriteService;
 
 require __DIR__ . '/../autoload.php';
@@ -27,6 +28,7 @@ final class ThreadPortWriteTest
         $pdo = new PDO('sqlite:' . $root . '.sqlite3');
         $labels = (string) $pdo->query("SELECT thread_labels_json FROM threads WHERE root_post_id = " . $pdo->quote($result['thread_id']))->fetchColumn();
         threadPortWriteAssertContains('ported', $labels);
+        threadPortWriteAssertSame('ochre', ThreadTheme::forThread($pdo, $root, $result['thread_id']));
         $byline = (string) $pdo->query("SELECT author_label FROM posts WHERE ported_from = 'https://news.ycombinator.com/item?id=1001'")->fetchColumn();
         threadPortWriteAssertSame('user1 on Hacker News', $byline);
     }
@@ -55,6 +57,7 @@ final class ThreadPortWriteTest
         $incremental = $order();
         (new \ForumRewrite\ReadModel\ReadModelBuilder($root, $database, new CanonicalRecordRepository($root)))->rebuild();
         threadPortWriteAssertSame($incremental, $order());
+        threadPortWriteAssertSame('ochre', ThreadTheme::forThread(new PDO('sqlite:' . $database), $root, $result['thread_id']));
         $this->assertParents($root, $result['thread_id'], 300);
     }
 
@@ -104,6 +107,7 @@ final class ThreadPortWriteTest
             [$idFor(1002), 0], [$idFor(1004), 1], [$idFor(1005), 1],
         ];
         threadPortWriteAssertSame($expected, $order);
+        threadPortWriteAssertContains('data-page-theme="ochre"', $html);
         threadPortWriteAssertContains('data-reply-depth="2" style="margin-left:2rem"', $html);
     }
 

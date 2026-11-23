@@ -231,7 +231,7 @@ class LocalWriteService
                     $context = $item->title !== '' ? ($item->link !== '' ? $item->link : '') : $port->threadTitle . "\n" . $port->threadLink;
                     $body = $this->portedBody(trim($context . "\n\n" . $item->text));
                     $contents = "Post-ID: {$threadId}\nCreated-At: {$createdAt}\nBoard-Tags: general\n"
-                        . ($subject !== '' ? "Subject: {$subject}\n" : '') . $ported . "Body-Format: plain\n\n{$body}";
+                        . ($subject !== '' ? "Subject: {$subject}\n" : '') . $ported . "Theme: ochre\nBody-Format: plain\n\n{$body}";
                 } else {
                     $body = $this->portedBody($item->text);
                     $contents = "Post-ID: {$postId}\nCreated-At: {$createdAt}\nBoard-Tags: general\nThread-ID: {$threadId}\nParent-ID: {$postIds[(string) $item->parent]}\n"
