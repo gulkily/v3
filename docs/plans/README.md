@@ -10,6 +10,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
 - [Quill prints the thread link](quill_thread_link/quill_thread_link_one_shot.md) — after a post, Quill prints `/threads/<thread>` (with `#<post>` for a reply) instead of `/posts/<post>`.
+- [Close the post "…" menu on an outside click](post_menu_outside_close/post_menu_outside_close_one_shot.md) — a click elsewhere closes an open post "More actions" menu.
 - [Ochre Pending summary background](ochre_pending_dialog/ochre_pending_dialog_one_shot.md) — keep page text from showing through the summary.
 - [Quill in Perl and PHP](quill_ports/quill_ports_one_shot.md) — `quill.pl` and `quill.php` beside `quill.py`, same commands and state, each with its own update notice.
 - [Application version source](application_version_source/application_version_source_one_shot.md) — code revision for deploy notifications, with independent cached-page freshness.

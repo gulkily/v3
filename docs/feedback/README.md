@@ -35,6 +35,7 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261111-F02](items/PF-20261111-F02.txt) | The new post form is busy below Post | blocked | locally-verified | 0.20 | 4 |
 | [PF-20261111-F03](items/PF-20261111-F03.txt) | Gloss and Gloss Dark are the ZenMemes defaults | blocked | locally-verified | 0.10 | 1 |
 | [PF-20261111-F37](items/PF-20261111-F37.txt) | frm.py prints the thread link | blocked | locally-verified | — | 2 |
+| [PF-20261111-F32](items/PF-20261111-F32.txt) | Close the ... menu on outside click | blocked | locally-verified | — | 1 |
 | [PF-20261114-F01](items/PF-20261114-F01.txt) | Client-side preferences page | blocked | locally-verified | 0.15 | 2 |
 | [PF-20261114-F02](items/PF-20261114-F02.txt) | Gallery zoom | blocked | locally-verified | 0.12 | 1 |
 | [PF-20261114-F03](items/PF-20261114-F03.txt) | Deploy celebration | blocked | locally-verified | 0.10 | 1 |
@@ -204,7 +205,6 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261111-F29](items/PF-20261111-F29.txt) | Promote a much-liked reply to its own thread | untriaged | unknown | — | 3 |
 | [PF-20261111-F30](items/PF-20261111-F30.txt) | Transfer session to another browser | untriaged | unknown | — | 1 |
 | [PF-20261111-F31](items/PF-20261111-F31.txt) | Background audio playback | untriaged | unknown | — | 1 |
-| [PF-20261111-F32](items/PF-20261111-F32.txt) | Close the ... menu on outside click | untriaged | unknown | — | 1 |
 | [PF-20261111-F33](items/PF-20261111-F33.txt) | Expanded phone navbar looks like content | untriaged | unknown | — | 1 |
 | [PF-20261111-F34](items/PF-20261111-F34.txt) | Plain summary on the Offline page | untriaged | unknown | — | 1 |
 | [PF-20261111-F35](items/PF-20261111-F35.txt) | Archive and discard old media | untriaged | unknown | — | 1 |
