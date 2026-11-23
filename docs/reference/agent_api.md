@@ -780,7 +780,8 @@ Both routes are public `GET` routes and answer Not Found while the flag is off.
   default. Example: `/backlog.txt?sort=effort&kind=bug`.
 - `/backlog/start.txt?items=<ID>,<ID>&mode=<auto|one-shot|staged>` returns the
   short prompt that starts work on those items as one cycle; `mode` defaults to
-  `auto`, which leaves one-shot or staged to the agent. Unknown and closed IDs are left out and named in an `X-Left-Out`
+  `auto`, which leaves one-shot or staged to the agent. The prompt asks for work in a
+  clone and an open pull request, not patch files. Unknown and closed IDs are left out and named in an `X-Left-Out`
   header. With no open item left the answer is 404; with no ID or an unknown
   mode it is 400.
 

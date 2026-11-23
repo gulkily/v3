@@ -78,6 +78,8 @@ try {
   assert.match(prompt, /^Please work on these 2 v3 backlog items together as one Railspike cycle, one-shot or staged as AGENTS\.md says\./);
   assert.equal(await writer.page.locator('[aria-current="true"]', { hasText: 'Agent decides' }).count(), 1, 'the agent decides by default');
   assert.match(prompt, /- docs\/agents\/backlog_to_pr\.md\n- docs\/feedback\/items\/PF-20261101-F01\.txt\n- docs\/feedback\/items\/PF-20261101-B02\.txt\n/);
+  assert.match(prompt, /\n\nWork in a clone of the repository and open the pull request yourself\. Please don't give me patch files or pasted code\. If you can't clone or push, stop before writing code and tell me what to connect\.\n\nRead first:\n/);
+  assert.match(prompt, /\nBegin now\. If the items don't belong in one pull request, say so before you build\. /);
   await writer.page.getByRole('button', { name: 'Copy prompt' }).click();
   await writer.page.getByRole('button', { name: 'Copied' }).waitFor();
   assert.equal(await writer.page.evaluate(() => navigator.clipboard.readText()), prompt, 'the clipboard holds the prompt');

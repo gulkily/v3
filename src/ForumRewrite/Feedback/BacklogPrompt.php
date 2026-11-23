@@ -6,14 +6,18 @@ namespace ForumRewrite\Feedback;
 
 /**
  * The short prompt that starts an agent on one or several backlog items.
- * It names repository files to read and nothing else; the procedure it points
- * at is docs/agents/backlog_to_pr.md.
+ * It names repository files to read, asks for a clone and a pull request, and
+ * leaves the rest to the procedure, docs/agents/backlog_to_pr.md.
  */
 final class BacklogPrompt
 {
     /** The first mode is the default: the agent chooses one-shot or staged. */
     public const MODES = ['auto', 'one-shot', 'staged'];
     public const PROCEDURE = 'docs/agents/backlog_to_pr.md';
+    /** Agents in a chat often start with patch files; this asks for the clone and the pull request up front. */
+    public const ACCESS = "Work in a clone of the repository and open the pull request yourself. Please don't give me patch files or pasted code. If you can't clone or push, stop before writing code and tell me what to connect.";
+    /** Added when several items are picked. */
+    public const TOGETHER = "If the items don't belong in one pull request, say so before you build.";
 
     public static function mode(mixed $value): string
     {
@@ -85,16 +89,19 @@ final class BacklogPrompt
         if ($repositoryUrl !== null) {
             array_push($lines, 'Repository: ' . $repositoryUrl, '');
         }
+        // Above "Read first": reading the named files already needs the clone.
+        array_push($lines, self::ACCESS, '');
         $lines[] = 'Read first:';
         $lines[] = '- ' . self::PROCEDURE;
         foreach ($items as $item) {
             $lines[] = '- docs/feedback/items/' . $item->id() . '.txt';
         }
         $lines[] = '';
+        $together = $count === 1 ? '' : ' ' . self::TOGETHER;
         $lines[] = match ($mode) {
-            'staged' => 'Begin now with Step 1 and wait for my approval of each step. After Step 3, go all the way to an open pull request, or as close as you can get.',
-            'one-shot' => 'Begin now. Go all the way to an open pull request, or as close as you can get.',
-            default => 'Begin now. If you go staged, wait for my approval of each step. Go all the way to an open pull request, or as close as you can get.',
+            'staged' => 'Begin now with Step 1 and wait for my approval of each step.' . $together . ' After Step 3, go all the way to an open pull request, or as close as you can get.',
+            'one-shot' => 'Begin now.' . $together . ' Go all the way to an open pull request, or as close as you can get.',
+            default => 'Begin now.' . $together . ' If you go staged, wait for my approval of each step. Go all the way to an open pull request, or as close as you can get.',
         };
         return implode("\n", $lines) . "\n";
     }
