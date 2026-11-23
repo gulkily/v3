@@ -255,10 +255,13 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261030-B18](items/PF-20261030-B18.txt) | Content hash labeled as app version | blocked | locally-verified | — | — | 2 |
 | [PF-20261030-B25](items/PF-20261030-B25.txt) | Posting helper wrong uncertain-write message | blocked | locally-verified | — | — | 1 |
 | [PF-20261030-B26](items/PF-20261030-B26.txt) | llms.txt character rules mismatch | blocked | locally-verified | — | — | 1 |
+| [PF-20261104-B12](items/PF-20261104-B12.txt) | Word97 action fonts and underlines | blocked | locally-verified | — | — | 4 |
+| [PF-20261104-B18](items/PF-20261104-B18.txt) | Draft-empty message font | blocked | locally-verified | — | — | 1 |
 | [PF-20261104-B21](items/PF-20261104-B21.txt) | Empty space below textarea | blocked | locally-verified | — | — | 1 |
 | [PF-20261108-B01](items/PF-20261108-B01.txt) | Sent reply briefly shows without header and footer | blocked | locally-verified | — | — | 4 |
 | [PF-20261110-B01](items/PF-20261110-B01.txt) | Page titles are inconsistent across pages | blocked | locally-verified | — | — | 4 |
 | [PF-20261111-B02](items/PF-20261111-B02.txt) | Favicon odd in light theme | blocked | locally-verified | — | — | 1 |
+| [PF-20261111-B23](items/PF-20261111-B23.txt) | llms.txt ambiguous about Markdown default | blocked | locally-verified | — | — | 1 |
 | [PF-20261114-B01](items/PF-20261114-B01.txt) | Bubblegum: You menu buttons and wrapping tool labels | blocked | locally-verified | — | — | 1 |
 | [PF-20261115-B01](items/PF-20261115-B01.txt) | Bubblegum: open More tab label invisible on phones | blocked | locally-verified | — | — | 1 |
 | [PF-20261116-B01](items/PF-20261116-B01.txt) | Agent posts land as guest with run-together tags and nothing says so | blocked | locally-verified | — | — | 3 |
@@ -300,12 +303,10 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261104-B09](items/PF-20261104-B09.txt) | Word97 key-removal message unformatted | untriaged | unknown | — | — | 3 |
 | [PF-20261104-B10](items/PF-20261104-B10.txt) | Cannot collapse event section | untriaged | unknown | — | — | 3 |
 | [PF-20261104-B11](items/PF-20261104-B11.txt) | Composer keystrokes trigger profile requests | untriaged | unknown | — | — | 4 |
-| [PF-20261104-B12](items/PF-20261104-B12.txt) | Word97 action fonts and underlines | untriaged | unknown | — | — | 4 |
 | [PF-20261104-B14](items/PF-20261104-B14.txt) | Archive download unavailable while rebuilding | untriaged | unknown | — | — | 1 |
 | [PF-20261104-B15](items/PF-20261104-B15.txt) | Unexplained page screenshots | untriaged | unknown | — | — | 2 |
 | [PF-20261104-B16](items/PF-20261104-B16.txt) | Fastmod absent or provider error | untriaged | unknown | — | — | 2 |
 | [PF-20261104-B17](items/PF-20261104-B17.txt) | Text-browser layout reports | untriaged | unknown | — | — | 7 |
-| [PF-20261104-B18](items/PF-20261104-B18.txt) | Draft-empty message font | untriaged | unknown | — | — | 1 |
 | [PF-20261104-B19](items/PF-20261104-B19.txt) | Fast scoring dependency label confusing | untriaged | unknown | — | — | 2 |
 | [PF-20261104-B22](items/PF-20261104-B22.txt) | Confusing image-upload temporary state | untriaged | unknown | — | — | 2 |
 | [PF-20261104-B23](items/PF-20261104-B23.txt) | Sticker navigation wraps and selector clips | untriaged | unknown | — | — | 2 |
@@ -339,7 +340,6 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261111-B20](items/PF-20261111-B20.txt) | Account page expandos look broken | untriaged | unknown | — | — | 1 |
 | [PF-20261111-B21](items/PF-20261111-B21.txt) | Gloss SQLite viewer cells clipped | untriaged | unknown | — | — | 1 |
 | [PF-20261111-B22](items/PF-20261111-B22.txt) | frm.py cannot post Markdown | untriaged | unknown | — | — | 4 |
-| [PF-20261111-B23](items/PF-20261111-B23.txt) | llms.txt ambiguous about Markdown default | untriaged | unknown | — | — | 1 |
 | [PF-20261111-B24](items/PF-20261111-B24.txt) | frm.py keyring path too long on headless hosts | untriaged | unknown | — | — | 3 |
 | [PF-20261111-B25](items/PF-20261111-B25.txt) | Post menu missing on cached pages | untriaged | unknown | — | — | 1 |
 | [PF-20261111-B26](items/PF-20261111-B26.txt) | First visits are slow | untriaged | unknown | — | — | 2 |
