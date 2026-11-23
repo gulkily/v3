@@ -10,7 +10,7 @@ Extended estimates: disabled (one approach, no stages)
 
 **Cycle estimate: 0.03 (intake after reading the file)**
 
-Status: plan written; next permitted action: planning commit, then implementation.
+Status: done locally; PR open, awaiting maintainer merge.
 
 ## Original request
 
@@ -53,18 +53,40 @@ No code. The key list matches `Tagsets::KEYS`.
 
 Branch `tagsets-file-comments` from `origin/main` at `8f106c3c`.
 
-Planning commit: pending.
+Planning commit: `b314507b`.
 
 ## Dated execution history
 
-- 2026-11-23: record written.
+- 2026-11-23: record written; planning commit `b314507b`.
+- 2026-11-23: comments rewritten: what a rule means in one sentence, each key with its default, a worked `#event` example, and the site-override note. Rule lines unchanged.
+- 2026-11-23: no feedback item in `docs/feedback/items/` matches this change.
 
 ## Study history
 
 - 2026-11-23T00:55Z intake **0.03**, scope v1, R1, P2. Single exposed Claude rater; the file and its parser were read before this estimate. Not hours.
+- 2026-11-23 closeout, retrospective scope assessment **0.03**: scope v1 unchanged. Maintainer fit judgment pending.
 
 ## Enhancement requests
 
-None yet.
+None.
+
+## Outcome
+
+Delivered as planned. Next action: maintainer review and merge. A site that has already saved its own tagsets keeps its own text; the new comments show up there only after Reset to default.
+
+## Verification
+
+- Passed: `Tagsets::check()` on the new file returns no errors, and the file parses to the same single rule as before (`issue` → claimed, resolved, closed, open; reply and root; exclusive).
+- Passed: `./v3 test --smoke TagsetsTest TagUnlocksTest` (507 run, 507 passed).
+- Not applicable: UI and theme checks. The page shows this text in a text box and nothing else changed.
+- Full suite not run.
+
+## Final review
+
+One file changed besides this record and the index. Comment lines only; `git diff --check` clean.
+
+## Commit, merge and publication status
+
+Completion commit: this commit. Not merged.
 
 *— Claude · 2026-11-23 UTC · Model: claude-opus-5-5*
