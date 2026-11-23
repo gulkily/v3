@@ -1,0 +1,21 @@
+ID: PF-20261121-F03
+Title: Reverse instance import
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-21
+Evidence: unknown
+
+Request:
+Is there a reverse version of import-instance yet?
+
+Sources:
+- https://zenmemes.com/posts/thread-20261113040435-b6ef35e4
+
+Notes:
+No transport or production-write authorization implied; distinguish pushing content from PF-20261104-F24 cloning an individual post.
+2026-11-21: Accepted intake from docs/feedback/triage/2026-11-21_proposals.txt. Original reported environment and screenshots remain unverified; next action is scope and existing-implementation review before planning.
+2026-11-22: Approved public-key-only slice v3/publish_local_public_keys is in progress on feat/publish-local-public-keys. Stage 1 adds a read-only local CLI preview; publication, broader content transfer and production acceptance are not complete. Plans: docs/plans/publish_local_public_keys/publish_local_public_keys_step3_development_plan.md.
+2026-11-22: Stage 2 adds reviewed, explicitly selected public-key publication and safe partial reruns. Local fixture checks pass; real API acceptance and production remain pending. Broader reverse import is still open.
+2026-11-22: Stage 3 ordinary WSL CLI checks pass against the actual isolated API, including unapproved registration, no-write preview and duplicate-free rerun. Fault/recovery checks pass. Production and broader reverse import remain unverified/open.
+2026-11-22: Public-key-only slice is locally implemented with reviewed selection and documented retry. All four stages are complete locally; production acceptance, approvals and broader content transfer remain pending/out of scope. Summary: docs/plans/publish_local_public_keys/publish_local_public_keys_step4_implementation_summary.md. Broad Workflow/Evidence retained without claiming the original request complete.
+2026-11-23: Public-key-only slice and CLI follow-ups are in PR https://github.com/gulkily/v3/pull/387 . Maintainer reports running the production command without per-key output. Broader reverse import remains open; do not infer approval or encrypted-message access from registration. Epic: docs/plans/private_messaging_usability_master_checklist.md.

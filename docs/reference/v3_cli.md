@@ -633,6 +633,39 @@ Use `--verbose` for recent individual work rows. See
 [Fastmod](fast_post_scoring.md) for pricing configuration, retention, and the
 controlled operator workflow.
 
+## Publish local public keys
+
+```sh
+./v3 publish-keys zenmemes.com
+./v3 publish-keys zenmemes.com --dry-run
+```
+
+Publishes eligible missing public identities. `--dry-run` checks without
+registering. Optionally repeat `--key=FULL_FINGERPRINT` to limit either operation;
+without it, all local identities are checked. No review file or confirmation is
+required. Existing identities are skipped; retired keys and name conflicts are
+refused. An eligible key can publish even when another key is refused.
+
+The source defaults to `FORUM_REPOSITORY_ROOT`, then this checkout's
+`state/local_repository`. Check the printed `Repository` path. From a separate
+worktree, add `--repository-root=/path/to/local_repository` to use your usual
+local records. Destinations accept known names such as `zenmemes`, hostnames
+(HTTPS) and explicit HTTP(S) URLs. Use `http://` for an HTTP instance.
+`--timeout=SECONDS` bounds each request (1–120, default 10).
+
+`State: published` means read-back confirmed registration. Each missing key is
+attempted once per command; resolve a partial/unknown result and rerun the same
+command. Accepted keys are skipped. Source changes stop further writes; rerun
+to check the new source. Exit status 1 means a refused/unknown result or command
+failure; 0 means all results succeeded. Dry-run `State: missing` means eligible
+for registration, not already published.
+
+The old `--plan` and `--publish` options fail before requests; use `--dry-run`
+to preview. Registration sends only public keys and creates the API's normal
+bootstrap anchor. It grants no membership or message access. Private keys,
+approvals and message history stay local. See
+[public-key publication](../concepts/public_key_publication.md).
+
 ## Import content from a remote instance
 
 ```

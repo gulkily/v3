@@ -25,6 +25,7 @@ Usage:
   ./v3 rebuild [repository_root] [database_path]
   ./v3 rebuild diagnose [repository_root] [database_path]
   ./v3 rebuild recover --confirm [repository_root] [database_path]
+  ./v3 publish-keys <name|hostname|url> [--dry-run] [--key=FINGERPRINT ...] [--repository-root=PATH] [--timeout=SECONDS]
   ./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--with-approvals] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
   ./v3 import-instance --resume [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
   ./v3 import-instance --cancel [--repository-root=/path/repository] [--database-path=/path/index.sqlite3]
@@ -79,6 +80,11 @@ Import content from another instance:
   ./v3 import-instance https://forum.example --dry-run
   ./v3 import-instance https://forum.example
   Run ./v3 import-instance --help for name aliases, options, and recovery.
+
+Publish public keys to another instance:
+  ./v3 publish-keys zenmemes.com
+  ./v3 publish-keys zenmemes.com --dry-run
+  Run ./v3 publish-keys --help for source selection and recovery.
 EOF
   if [[ -n "${COMMAND}" ]]; then
     exit 0
@@ -253,6 +259,10 @@ case "${COMMAND}" in
         php "${ROOT}/scripts/rebuild_read_model.php" "$@"
         ;;
     esac
+    ;;
+  publish-keys)
+    shift
+    php "${ROOT}/scripts/publish_public_keys.php" "$@"
     ;;
   import-instance)
     shift
