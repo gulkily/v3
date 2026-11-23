@@ -25,11 +25,12 @@ Found on a first read at `93295c82`. Each cycle re-checks its own part before pl
 
 - [x] **0. `app_icons`** (one-shot) — 180, 192 and 512 px icons; the manifest lists them; iPhone's Add to Home Screen gets the Z instead of a screenshot. [PR #332](https://github.com/gulkily/v3/pull/332) merged 2026-11-18. [Record](./app_icons/app_icons_one_shot.md)
   - [ ] Real-phone check: add to home screen on the iPhone SE and see the icon.
-- [x] **1. `owa_start_url`** (one-shot; estimate 0.08) — the installed app opens the home page `/` (offline: the cached reader) and is named "ZenMemes"; the manifest `id` is unchanged so installs update in place. [PR #392](https://github.com/gulkily/v3/pull/392) open. [Record](./owa_start_url/owa_start_url_one_shot.md)
+- [x] **1. `owa_start_url`** (one-shot; estimate 0.08) — the installed app opens the home page `/` (offline: the cached reader) and is named "ZenMemes"; the manifest `id` is unchanged so installs update in place. [PR #392](https://github.com/gulkily/v3/pull/392) merged 2026-11-23. [Record](./owa_start_url/owa_start_url_one_shot.md)
   - The maintainer, 2026-11-23: on his home screen it showed "Zenmemes" and he wanted "ZenMemes".
-  - [ ] Merged and deployed.
+  - [x] Merged (2026-11-23).
+  - [ ] Deployed. On 2026-11-23 after the merge, zenmemes.com was still on `8bb02ba3` and served the old manifest.
   - [ ] Real-phone check: remove and re-add the app on the iPhone SE (iPhone reads the manifest only when adding), see "ZenMemes", open it online and in airplane mode.
-- [ ] **2. `push_subscribe`** (staged; estimate 0.70) — a member turns notifications on for this device and gets a test notification. The flag (off by default); a VAPID key pair made on first use and kept in private state; a "Notifications" switch in Preferences that asks for permission only when tapped; the subscription stored under username and key in a private store; turning it off removes it; "Send a test" sends one. Includes the sender itself, since the test needs it.
+- [ ] **2. `push_subscribe`** (staged; estimate 0.70; next) — a member turns notifications on for this device and gets a test notification. The flag (off by default); a VAPID key pair made on first use and kept in private state; a "Notifications" switch in Preferences that asks for permission only when tapped; the subscription stored under username and key in a private store; turning it off removes it; "Send a test" sends one. Includes the sender itself, since the test needs it.
   - Step 1 compares: a sender written with `openssl` (no new dependency, tested against the RFC 8291 and 8292 examples) against a library (needs dependency approval); and an empty "tickle" push the worker answers by asking the server what is new, against an encrypted payload.
   - Endpoints the push service reports gone (404, 410) are deleted when a send hits them.
   - The agent API gets the subscription routes in `docs/reference/agent_api.md`; agents do not receive push.

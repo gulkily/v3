@@ -7,7 +7,7 @@ Extended estimates: enabled (no alternatives or work units, so only the cycle es
 
 **Cycle estimate: 0.08**
 
-Status: technically complete on `fix/owa-start-url`; pushed for review, not merged or deployed. Next action: maintainer review, merge, deploy, and a real-phone check.
+Status: merged as [PR #392](https://github.com/gulkily/v3/pull/392) on 2026-11-23; not yet deployed. Next action: deploy, then the real-phone check (remove and re-add the app).
 
 ## Request and authorization
 
