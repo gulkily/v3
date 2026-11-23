@@ -990,3 +990,4 @@ Verification: Chromium; `private_message_redesign.mjs` in all 18 themes with 390
 - [x] Status text appears only when there is something to say: "Not understood, so the default is shown: …", "Left out, no such item: …", "Left out, already closed: …", "Nothing to start." and, with scripts, "N selected" once an item is ticked.
 - [x] The start page reuses the Agent Prompts copy control and its messages; no new copy for copying.
 - Verified in `tests/BacklogPageTest.php` and `tests/browser/backlog.mjs` (every permitted theme, 375 and 1280 px, scripts on and off). Not checked on a real iPhone.
+- [x] 2026-11-23 follow-up ([record](./backlog_start_followups/backlog_start_followups_one_shot.md)): one more mode link, "Agent decides", first and chosen by default, before One-shot and Staged cycle. No explanation of the modes on the page; the prompt carries it. The maintainer checked the first version on his iPhone.

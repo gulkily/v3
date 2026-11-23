@@ -143,6 +143,14 @@ final class FeedbackBacklogTest
             assertSame(true, is_file(dirname(__DIR__) . '/' . $file));
         }
 
+        assertSame(true, str_starts_with($prompt, 'Please work on '));
+
+        $auto = BacklogPrompt::build([$open[0]], 'auto', null);
+        assertSame($auto, BacklogPrompt::build([$open[0]], 'fast', null), 'An unknown mode means the agent decides.');
+        assertSame(true, str_starts_with($auto, 'Please work on this v3 backlog item as one Railspike cycle, one-shot or staged as AGENTS.md says.'));
+        assertSame(true, str_contains($auto, 'If you go staged, wait for my approval of each step.'));
+        assertSame('auto', BacklogPrompt::mode(null));
+
         $staged = BacklogPrompt::build([$open[0]], 'staged', null);
         assertSame(true, str_contains($staged, 'this v3 backlog item as one staged Railspike cycle'));
         assertSame(false, str_contains($staged, 'Repository:'));
@@ -188,7 +196,7 @@ final class FeedbackBacklogTest
             assertContainsLine('Left out, already closed: PF-20261103-F02', $start);
             assertContainsLine('- docs/feedback/items/PF-20261103-F01.txt', $start);
             assertContainsLine('- docs/agents/backlog_to_pr.md', $start);
-            assertContainsLine('Work on this v3 backlog item as one Railspike one-shot cycle.', $start);
+            assertContainsLine('Please work on this v3 backlog item as one Railspike cycle, one-shot or staged as AGENTS.md says.', $start);
 
             exec($v3 . 'start PF-20261103-F02' . $dir, $nothing, $exitCode);
             assertSame(1, $exitCode);

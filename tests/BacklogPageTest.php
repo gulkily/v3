@@ -92,15 +92,22 @@ final class BacklogPageTest
             assertStringContains('<button type="submit">Start</button>', $list);
 
             $one = $this->render($application, '/backlog/start?items=' . $a);
-            assertStringContains('Work on this v3 backlog item as one Railspike one-shot cycle.', $one);
+            assertStringContains('Please work on this v3 backlog item as one Railspike cycle, one-shot or staged as AGENTS.md says.', $one);
             assertStringContains('- docs/feedback/items/' . $a . '.txt', $one);
-            assertStringContains('aria-current="true">One-shot</a>', $one);
+            assertStringContains('aria-current="true">Agent decides</a>', $one, 'The agent decides by default.');
+            assertSame(true, strpos($one, '>Agent decides</a>') < strpos($one, '>One-shot</a>') && strpos($one, '>One-shot</a>') < strpos($one, '>Staged cycle</a>'), 'Agent decides, One-shot, Staged cycle, in that order.');
+            assertStringContains('href="/backlog/start?items=' . $a . '&amp;mode=one-shot"', $one);
             assertStringContains('href="/backlog/start?items=' . $a . '&amp;mode=staged"', $one);
+
+            $oneShot = $this->render($application, '/backlog/start?items=' . $a . '&mode=one-shot');
+            assertStringContains('Please work on this v3 backlog item as one Railspike one-shot cycle.', $oneShot, 'An explicit one-shot address still works.');
+            assertStringContains('aria-current="true">One-shot</a>', $oneShot);
+            assertStringContains('href="/backlog/start?items=' . $a . '"', $oneShot, 'Agent decides links to the address without a mode.');
             assertStringContains('href="/backlog/start.txt?items=' . $a . '"', $one);
             assertStringContains('class="copy-prompt"', $one, 'The shared prompt partial with Copy.');
 
             $two = $this->render($application, '/backlog/start?items=' . $a . ',' . $b . '&mode=staged');
-            assertStringContains('Work on these 2 v3 backlog items together as one staged Railspike cycle.', $two);
+            assertStringContains('Please work on these 2 v3 backlog items together as one staged Railspike cycle.', $two);
             assertStringContains('aria-current="true">Staged cycle</a>', $two);
             exec('cd ' . escapeshellarg(dirname(__DIR__)) . ' && ./v3 feedback start ' . $a . ' ' . $b . ' --mode=staged 2>/dev/null', $command);
             assertStringContains(htmlspecialchars(implode("\n", $command)), $two, 'The page and the command give the same prompt.');
@@ -108,7 +115,7 @@ final class BacklogPageTest
             $mixed = $this->render($application, '/backlog/start?items=' . $a . ',' . $closed[0]->id() . ',PF-00000000-F99');
             assertStringContains('Left out, already closed: ' . $closed[0]->id(), $mixed);
             assertStringContains('Left out, no such item: PF-00000000-F99', $mixed);
-            assertStringContains('Work on this v3 backlog item', $mixed);
+            assertStringContains('Please work on this v3 backlog item', $mixed);
             assertStringContains('href="/backlog/start.txt?items=' . $a . '"', $mixed, 'The text link names only what starts.');
 
             $none = $this->render($application, '/backlog/start?items=' . $closed[0]->id());
@@ -123,6 +130,8 @@ final class BacklogPageTest
         assertSame(null, BacklogPageController::startRedirect(['items' => 'PF-20261101-F01,PF-20261101-B02'], $tidy));
         assertSame($tidy, BacklogPageController::startRedirect(['items' => ['PF-20261101-F01', 'PF-20261101-B02']], '/backlog/start?items%5B%5D=PF-20261101-F01&items%5B%5D=PF-20261101-B02'));
         assertSame($tidy . '&mode=staged', BacklogPageController::startRedirect(['items' => 'PF-20261101-F01,PF-20261101-B02,PF-20261101-F01', 'mode' => 'staged'], '/x'));
+        assertSame($tidy . '&mode=one-shot', BacklogPageController::startRedirect(['items' => ['PF-20261101-F01', 'PF-20261101-B02'], 'mode' => 'one-shot'], '/x'), 'One-shot is kept: it is no longer the default.');
+        assertSame($tidy, BacklogPageController::startRedirect(['items' => 'PF-20261101-F01,PF-20261101-B02', 'mode' => 'auto'], '/x'), 'The default mode stays out of the address.');
         assertSame($tidy, BacklogPageController::startRedirect(['items' => 'PF-20261101-F01,PF-20261101-B02', 'mode' => 'fast'], '/x'), 'An unknown mode is dropped.');
         assertSame('/backlog', BacklogPageController::startRedirect([], '/backlog/start'), 'Nothing picked goes back to the list.');
         assertSame('/backlog', BacklogPageController::startRedirect(['items' => '<script>'], '/backlog/start?items=x'));
@@ -155,6 +164,11 @@ final class BacklogPageTest
             $command = (string) shell_exec($v3 . 'start ' . $a . ' ' . $b . ' --mode=staged 2>/dev/null');
             assertSame($command, $this->raw($application, '/backlog/start.txt?items=' . $a . ',' . $b . '&mode=staged'));
             assertSame($command, $this->raw($application, '/backlog/start.txt?items[]=' . $a . '&items[]=' . $b . '&mode=staged'));
+            foreach (['' => '', '&mode=auto' => '', '&mode=one-shot' => ' --mode=one-shot'] as $word => $option) {
+                $command = (string) shell_exec($v3 . 'start ' . $a . $option . ' 2>/dev/null');
+                assertTrue(str_starts_with($command, 'Please work on '));
+                assertSame($command, $this->raw($application, '/backlog/start.txt?items=' . $a . $word), 'Same prompt for: ' . ($word === '' ? 'no mode' : $word));
+            }
             assertStringContains('Name at least one item', $this->raw($application, '/backlog/start.txt'));
             assertStringContains('Name at least one item', $this->raw($application, '/backlog/start.txt?items=' . $a . '&mode=fast'));
             assertStringContains('Nothing to start: no open item among PF-00000000-F99.', $this->raw($application, '/backlog/start.txt?items=PF-00000000-F99'));
