@@ -14,42 +14,45 @@ try {
         if (in_array($arg, ['--help', '-h'], true)) {
             echo <<<'TEXT'
 Usage:
-  ./v3 publish-keys <name|hostname|url> [--plan=FILE]
-  ./v3 publish-keys <name|hostname|url> --publish=FILE --key=FINGERPRINT [--key=FINGERPRINT ...]
+  ./v3 publish-keys <name|hostname|url> [--dry-run] [--key=FINGERPRINT ...]
   Options: --repository-root=PATH --timeout=SECONDS
 
-Default: preview only. Hostnames use HTTPS; known names include zenmemes.
-Use an explicit http:// URL for an HTTP instance.
+Publishes eligible missing public keys. --dry-run checks without registering.
+--key optionally limits either operation to full fingerprints; repeat for more keys.
+Hostnames use HTTPS; known names include zenmemes. Use http:// for HTTP.
 Source: FORUM_REPOSITORY_ROOT, otherwise this checkout's state/local_repository.
---repository-root chooses another canonical source; Repository shows its resolved path.
+--repository-root chooses another source; Repository shows its resolved path.
 --timeout bounds each request (1–120 seconds; default 10).
---plan saves a new Key: value review file outside the canonical repository.
---publish uses that reviewed source and destination; select full fingerprints with --key.
-Existing identities are skipped, never updated. Names and retirements must agree.
-After a partial/uncertain result, resolve the reported issue and rerun the same selection.
-Each selected key is sent once, then verified by read-back. Private keys, approvals and message history stay local.
+Existing keys are skipped. Name conflicts and retired keys are refused.
+Rerun after a partial/unknown result; confirmed registrations are skipped.
+Private keys, approvals and message history stay local.
 
-Example: ./v3 publish-keys zenmemes.com --repository-root=/path/to/local_repository
+Example: ./v3 publish-keys zenmemes.com
+Preview: ./v3 publish-keys zenmemes.com --dry-run
 TEXT;
             echo "\n";
             exit(0);
         }
+        if (preg_match('/^--(?:plan|publish)(?:=|$)/D', $arg)) {
+            throw new RuntimeException('Review files are no longer used. Use --dry-run to preview, or omit it to publish.');
+        }
+        if ($arg === '--dry-run') {
+            if (isset($options['dry-run'])) throw new RuntimeException('Repeated option: dry-run');
+            $options['dry-run'] = true; continue;
+        }
         if (str_starts_with($arg, '--key=') && strlen($arg) > 6) { $keys[] = substr($arg, 6); continue; }
-        if (preg_match('/^--(repository-root|timeout|plan|publish)=(.+)$/D', $arg, $match)) {
+        if (preg_match('/^--(repository-root|timeout)=(.+)$/D', $arg, $match)) {
             if (isset($options[$match[1]])) throw new RuntimeException('Repeated option: ' . $match[1]);
             $options[$match[1]] = $match[2];
         } elseif (!str_starts_with($arg, '-') && $destination === null) $destination = $arg;
         else throw new RuntimeException('Unknown or repeated argument. Run ./v3 publish-keys --help.');
     }
     if ($destination === null) throw new RuntimeException('Name an explicit destination. Run ./v3 publish-keys --help.');
-    if ((isset($options['plan']) && isset($options['publish'])) || ($keys !== [] && !isset($options['publish']))) throw new RuntimeException('Use --key only with --publish; --plan and --publish are separate operations.');
     if (isset($options['timeout']) && !preg_match('/^[1-9][0-9]{0,2}$/D', $options['timeout'])) throw new RuntimeException('Invalid timeout.');
     $client = new PublicKeyPublishDestination($destination, (int) ($options['timeout'] ?? 10));
     $publisher = new PublicKeyPublisher($options['repository-root'] ?? (DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: dirname(__DIR__) . '/state/local_repository'));
-    echo 'Repository: ' . $publisher->root . "\nDestination: " . $client->url . "\nMode: " . (isset($options['publish']) ? 'publish' : 'preview') . "\n";
-    $rows = isset($options['publish']) ? $publisher->publish($options['publish'], $keys, $client) : $publisher->preview($client);
-    if (isset($options['plan'])) $publisher->writePlan($options['plan'], $client, $rows);
-    if (isset($options['plan'])) echo 'Plan: ' . $options['plan'] . "\n";
+    echo 'Repository: ' . $publisher->root . "\nDestination: " . $client->url . "\nMode: " . (isset($options['dry-run']) ? 'preview' : 'publish') . "\n";
+    $rows = isset($options['dry-run']) ? $publisher->preview($client, $keys) : $publisher->publish($client, $keys);
     $failed = false;
     foreach ($rows as $row) {
         echo "\nFingerprint: {$row['fingerprint']}\nName: {$row['name']}\nState: {$row['state']}\n";

@@ -24,8 +24,7 @@ Usage:
   ./v3 rebuild [repository_root] [database_path]
   ./v3 rebuild diagnose [repository_root] [database_path]
   ./v3 rebuild recover --confirm [repository_root] [database_path]
-  ./v3 publish-keys <name|hostname|url> [--plan=FILE] [--repository-root=PATH] [--timeout=SECONDS]
-  ./v3 publish-keys <name|hostname|url> --publish=FILE --key=FINGERPRINT [--key=FINGERPRINT ...] [--repository-root=PATH] [--timeout=SECONDS]
+  ./v3 publish-keys <name|hostname|url> [--dry-run] [--key=FINGERPRINT ...] [--repository-root=PATH] [--timeout=SECONDS]
   ./v3 import-instance <name|hostname|url> [--sources=/private/instances.json] [--dry-run] [--verbose] [--with-approvals] [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
   ./v3 import-instance --resume [--repository-root=/path/repository] [--database-path=/path/index.sqlite3] [--static-html-root=/path/static_html]
   ./v3 import-instance --cancel [--repository-root=/path/repository] [--database-path=/path/index.sqlite3]
@@ -81,9 +80,10 @@ Import content from another instance:
   ./v3 import-instance https://forum.example
   Run ./v3 import-instance --help for name aliases, options, and recovery.
 
-Preview public-key publication:
-  ./v3 publish-keys zenmemes.com --repository-root=/path/to/local_repository
-  Run ./v3 publish-keys --help to save a review plan and publish selected keys.
+Publish public keys to another instance:
+  ./v3 publish-keys zenmemes.com
+  ./v3 publish-keys zenmemes.com --dry-run
+  Run ./v3 publish-keys --help for source selection and recovery.
 EOF
   if [[ -n "${COMMAND}" ]]; then
     exit 0

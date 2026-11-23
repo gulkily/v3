@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace ForumRewrite\Support;
 
 use ForumRewrite\Canonical\IdentityBootstrapRecordParser;
-use ForumRewrite\Canonical\GenericTextRecordParser;
 use ForumRewrite\ReadModel\ProfileNames;
 use ForumRewrite\Security\KeyRetirement;
 use ForumRewrite\Security\OpenPgpKeyInspector;
@@ -23,8 +22,8 @@ final class PublicKeyPublisher
         $this->root = $real;
     }
 
-    /** Read every candidate before making any destination request. */
-    public function collect(): array
+    /** Inspect all candidates initially; revalidate one identity before its write. */
+    public function collect(?string $fingerprint = null): array
     {
         foreach (['public-keys', 'identity', 'profile-names', 'key-retirements', 'key-retirement-acceptances'] as $family) {
             $dir = $this->root . '/records/' . $family;
@@ -39,6 +38,7 @@ final class PublicKeyPublisher
             $record = (new IdentityBootstrapRecordParser())->parse($bytes);
             if (basename($path) !== $record->postId . '.txt') throw new RuntimeException('Identity path does not match its record.');
             $fp = $record->signerFingerprint;
+            if ($fingerprint !== null && $fp !== $fingerprint) continue;
             $key = $this->read($this->root . '/records/public-keys/openpgp-' . $fp . '.asc');
             if (trim($key) !== trim($record->armoredPublicKey)) throw new RuntimeException('Identity and public-key bytes disagree; repair the source before publishing.');
             $inspection = (new OpenPgpKeyInspector())->inspectPublicOnly($key);
@@ -58,9 +58,9 @@ final class PublicKeyPublisher
         return $rows;
     }
 
-    public function preview(PublicKeyPublishDestination $destination): array
+    public function preview(PublicKeyPublishDestination $destination, array $fingerprints = []): array
     {
-        $rows = $this->collect();
+        $rows = $this->select($this->collect(), $fingerprints);
         foreach ($rows as &$row) {
             if ($row['state'] !== 'ready') continue;
             $row = $this->destinationState($row, $destination);
@@ -68,61 +68,29 @@ final class PublicKeyPublisher
         return $rows;
     }
 
-    public function writePlan(string $path, PublicKeyPublishDestination $destination, array $rows): void
+    public function publish(PublicKeyPublishDestination $destination, array $fingerprints = []): array
     {
-        $parent = realpath(dirname($path));
-        if ($parent === false || $parent === $this->root || str_starts_with($parent, $this->root . '/')) {
-            throw new RuntimeException('Save the plan outside the canonical repository, in an existing directory.');
-        }
-        $text = "Version: 1\nDestination: {$destination->url}\nRepository: {$this->root}\n\n";
-        $blocks = [];
-        foreach ($rows as $row) {
-            $blocks[] = "Fingerprint: {$row['fingerprint']}\nName: {$row['name']}\nRegistration-Name: {$row['registration_name']}\nSource-SHA256: {$row['source_hash']}\nState: {$row['state']}";
-        }
-        if ($blocks !== []) $text .= implode("\n\n", $blocks) . "\n";
-        if (strlen($text) > 2097152) throw new RuntimeException('Too many identities for a bounded plan. Choose a smaller source repository.');
-        $handle = @fopen($parent . '/' . basename($path), 'xb');
-        if ($handle === false) throw new RuntimeException('Cannot create plan. Choose a new filename; existing files are never overwritten.');
-        try {
-            if (fwrite($handle, $text) !== strlen($text) || !fflush($handle)) throw new RuntimeException('Cannot save plan; create a new preview.');
-        } catch (\Throwable $error) { fclose($handle); unlink($parent . '/' . basename($path)); throw $error; }
-        fclose($handle);
-    }
-
-    public function publish(string $path, array $fingerprints, PublicKeyPublishDestination $destination): array
-    {
-        $plan = $this->readPlan($path, $destination);
-        $selected = [];
-        foreach ($fingerprints as $fp) {
-            $fp = strtoupper($fp);
-            if (!preg_match('/^(?:[A-F0-9]{40}|[A-F0-9]{64})$/D', $fp) || !isset($plan[$fp])) {
-                throw new RuntimeException('Select full fingerprints from this plan; create a new preview for additional identities.');
-            }
-            if (!in_array($plan[$fp]['State'], ['missing', 'existing'], true)) {
-                throw new RuntimeException('Selection was refused or unknown at preview. Resolve it and create a new plan.');
-            }
-            $selected[$fp] = $plan[$fp];
-        }
-        if ($selected === []) throw new RuntimeException('Choose at least one --key=FINGERPRINT from the reviewed plan.');
-        $inventory = $this->collect();
-        // Validate the entire selection before any write, not just the first key.
-        foreach ($selected as $fp => $entry) $this->checkEntry($inventory[$fp] ?? null, $entry);
+        // Inspect the complete source and validate explicit selection before any request.
+        $inventory = $this->select($this->collect(), $fingerprints);
         $results = [];
-        foreach ($selected as $fp => $entry) {
-            $row = $inventory[$fp];
+        foreach ($inventory as $fp => $entry) {
+            $row = $entry;
+            if ($row['state'] !== 'ready') { $results[$fp] = $row; continue; }
             $row = $this->destinationState($row, $destination);
             if ($row['state'] === 'missing') {
                 try {
-                    $current = $this->collect();
+                    $current = $this->collect($fp);
                     $this->checkEntry($current[$fp] ?? null, $entry);
                 } catch (RuntimeException) {
-                    $row['state'] = 'refused'; $row['detail'] = 'Source changed during publication. Create a new preview.';
+                    $row['state'] = 'refused'; $row['detail'] = 'Source changed during publication. Rerun the command.';
                     $results[$fp] = $row;
                     // Do not write the rest of a selection whose source is changing.
-                    foreach (array_diff_key($selected, $results) as $pending => $_) {
+                    foreach (array_diff_key($inventory, $results) as $pending => $_) {
                         $results[$pending] = $inventory[$pending] + ['destination_name' => ''];
-                        $results[$pending]['state'] = 'unknown';
-                        $results[$pending]['detail'] = 'Publication stopped after a source change. Create a new preview.';
+                        if ($results[$pending]['state'] === 'ready') {
+                            $results[$pending]['state'] = 'unknown';
+                            $results[$pending]['detail'] = 'Publication stopped after a source change. Rerun the command.';
+                        }
                     }
                     return $results;
                 }
@@ -132,7 +100,7 @@ final class PublicKeyPublisher
                     $row['state'] = 'published'; $row['detail'] = 'Confirmed by destination read-back';
                 } elseif ($row['state'] === 'missing') {
                     $row['state'] = $attempt['refused'] ? 'refused' : 'unknown';
-                    $row['detail'] = $attempt['detail'] . ' Not confirmed; rerun the same selection after resolving the destination issue.';
+                    $row['detail'] = $attempt['detail'] . ' Not confirmed; rerun the command after resolving the destination issue.';
                 }
             }
             $results[$fp] = $row;
@@ -140,36 +108,25 @@ final class PublicKeyPublisher
         return $results;
     }
 
-    private function checkEntry(?array $row, array $entry): void
+    private function select(array $inventory, array $fingerprints): array
     {
-        if ($row === null || $row['state'] !== 'ready' || !hash_equals($entry['Source-SHA256'], $row['source_hash'])
-            || $entry['Name'] !== $row['name'] || $entry['Registration-Name'] !== $row['registration_name']) {
-            throw new RuntimeException('Selected source identity changed or is ineligible. Create a new preview before publishing.');
+        if ($fingerprints === []) return $inventory;
+        $selected = [];
+        foreach ($fingerprints as $fp) {
+            $fp = strtoupper($fp);
+            if (!preg_match('/^(?:[A-F0-9]{40}|[A-F0-9]{64})$/D', $fp) || !isset($inventory[$fp])) {
+                throw new RuntimeException('Choose a full fingerprint from the local repository; use --dry-run to list identities.');
+            }
+            $selected[$fp] = $inventory[$fp];
         }
+        return $selected;
     }
 
-    private function readPlan(string $path, PublicKeyPublishDestination $destination): array
+    private function checkEntry(?array $row, array $entry): void
     {
-        if (!is_file($path) || filesize($path) > 2097152) throw new RuntimeException('Choose an existing bounded publication plan.');
-        $text = file_get_contents($path, false, null, 0, 2097153);
-        if ($text === false || strlen($text) > 2097152) throw new RuntimeException('Cannot read plan; create a new preview.');
-        try {
-            $record = (new GenericTextRecordParser())->parse($text);
-            if (array_keys($record->headers) !== ['Version', 'Destination', 'Repository'] || $record->headers['Version'] !== '1'
-                || $record->headers['Destination'] !== $destination->url || $record->headers['Repository'] !== $this->root) {
-                throw new RuntimeException();
-            }
-            $entries = [];
-            foreach (trim($record->body) === '' ? [] : explode("\n\n", trim($record->body)) as $block) {
-                $h = (new GenericTextRecordParser())->parse($block . "\n\n")->headers;
-                if (array_keys($h) !== ['Fingerprint', 'Name', 'Registration-Name', 'Source-SHA256', 'State']
-                    || !preg_match('/^(?:[A-F0-9]{40}|[A-F0-9]{64})$/D', $h['Fingerprint'])
-                    || !preg_match('/^[a-f0-9]{64}$/D', $h['Source-SHA256']) || isset($entries[$h['Fingerprint']])) throw new RuntimeException();
-                $entries[$h['Fingerprint']] = $h;
-            }
-            return $entries;
-        } catch (RuntimeException) {
-            throw new RuntimeException('Plan is invalid or names another source/destination. Create a new preview.');
+        if ($row === null || $row['state'] !== 'ready' || !hash_equals($entry['source_hash'], $row['source_hash'])
+            || $entry['name'] !== $row['name'] || $entry['registration_name'] !== $row['registration_name']) {
+            throw new RuntimeException('Source changed during publication. Rerun the command.');
         }
     }
 

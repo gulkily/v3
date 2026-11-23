@@ -9,7 +9,7 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
-- [Publish local public keys](publish_local_public_keys/publish_local_public_keys_step4_implementation_summary.md) — reviewed public-key CLI publication verified locally; production acceptance pending.
+- [Publish local public keys](publish_local_public_keys/publish_local_public_keys_step4_implementation_summary.md) — original publisher verified locally; saved-plan flow superseded by the direct-publication follow-up.
 - [Publisher CLI conventions](publish_keys_cli_conventions/publish_keys_cli_conventions_one_shot.md) — hostname handling, visible source repository and help consistency follow-up.
 - [Direct key publication](publish_keys_direct/publish_keys_direct_one_shot.md) — publish by default, preview with --dry-run; remove mandatory review files and fingerprint copying.
 - [Recently released filters](recent_feature_flag_filters/recent_feature_flag_filters_one_shot.md) — keep the release list in sync with flag filters.
