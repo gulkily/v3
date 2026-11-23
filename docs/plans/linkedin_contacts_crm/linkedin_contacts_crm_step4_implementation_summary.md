@@ -64,3 +64,13 @@ Study v3/linkedin_contacts_crm, R1 / P2. Jiro, single exposed rater.
 - Scope and original estimate retained. Uncertain rows remain visible for review and are skipped.
 
 *— Jiro · 2026-11-23 UTC*
+
+## Stage 5 - Open a ZIP or recover with CSV
+
+**Original estimate: 0.09**
+
+- Streams one unambiguous regular `Connections.csv` into an owner-only temporary stream. The reader bounds archive size, entry count, and inflated CSV bytes.
+- `./v3 test ContactsImportTest` passed (8 tests) on PHP 8.2.36 without ZIP. The new test first failed on the missing extraction guidance and now replays the message, direct CSV retry, and saved outcome.
+- Direct ZIP acceptance and retrospective estimate are pending an extension-enabled verification lane. Stage 6 depends on the confirmed CSV path.
+
+*— Jiro · 2026-11-23 UTC*

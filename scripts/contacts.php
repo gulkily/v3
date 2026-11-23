@@ -65,7 +65,8 @@ if ($control !== null) {
 foreach (array_unique([$port, 0]) as $candidate) {
     $server = proc_open([
         PHP_BINARY, '-d', 'display_errors=0', '-d', 'log_errors=0',
-        '-d', 'upload_tmp_dir=' . $directory, '-d', 'upload_max_filesize=64M', '-d', 'post_max_size=65M',
+        '-d', 'upload_tmp_dir=' . $directory, '-d', 'sys_temp_dir=' . $directory,
+        '-d', 'upload_max_filesize=64M', '-d', 'post_max_size=65M',
         '-S', '127.0.0.1:' . $candidate, '-t', $project . '/contacts/public', $project . '/contacts/router.php',
     ], [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['pipe', 'w']], $pipes, $project, $environment);
     if (!is_resource($server)) {
