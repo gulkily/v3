@@ -26,7 +26,7 @@ final class SiteProfileRegistry
                 'defaultTheme' => 'auto',
                 // What Auto/System shows for a light or dark device setting.
                 'autoThemes' => ['light' => 'gloss', 'dark' => 'glossdark'],
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'spearmint', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'vaporgeist', 'gloss', 'glossdark', 'engagify', 'ochre'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'spearmint', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'vaporgeist', 'gloss', 'glossdark', 'engagify', 'ochre', 'underground'],
                 'browserNamespace' => 'zenmemes',
                 'editorialContentKey' => 'zenmemes',
                 'enabledExperienceKeys' => ['forum'],
@@ -67,13 +67,13 @@ final class SiteProfileRegistry
             'mitrapclub' => [
                 'name' => 'mitrapclub',
                 'displayName' => 'MIT Rap Club',
-                'defaultTheme' => 'mitrapclub',
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'vaporgeist', 'mitrapclub'],
+                'defaultTheme' => 'underground',
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'vaporgeist', 'mitrapclub', 'underground'],
                 'browserNamespace' => 'mitrapclub',
                 'editorialContentKey' => 'mitrapclub',
                 'enabledExperienceKeys' => ['forum'],
                 'composerPrompt' => 'Drop a verse, a cypher clip, or an announcement...',
-                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'default', 'editorial' => 'mitrapclub', 'brandedStylesheet' => 'mitrapclub', 'toolsNav' => 'hidden', 'favicon' => 'mitrapclub'],
+                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'default', 'editorial' => 'mitrapclub', 'brandedStylesheet' => 'underground', 'toolsNav' => 'hidden', 'favicon' => 'mitrapclub'],
             ],
         ];
 
