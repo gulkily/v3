@@ -10,7 +10,7 @@ Extended estimates: disabled
 
 **Cycle estimate: 0.30 (intake)**
 
-Status: planned; next permitted action: implement on `feat/rapclub-underground-theme`.
+Status: implemented and verified locally; PR pending; next permitted action: maintainer review.
 
 ## Original request
 
@@ -51,14 +51,32 @@ Concepts touched: [page theme](../../concepts/page_theme.md), unchanged.
 
 Starting revisions and branch: `origin/main` `2e14bcb96`; branch `feat/rapclub-underground-theme`.
 
-Planning commit: pending.
+Planning commit: `acc006dfd` (record, debug log and index only).
 
 ## Dated execution history
 
-- 2026-11-23: record written.
+- 2026-11-23: record written; planning commit `acc006dfd`.
+- 2026-11-23: `theme-underground.css` written; registry entry after `mitrapclub`; `underground` and `mitrapclub` made each other's counterparts, so the menu shows them as one light/dark row.
+- 2026-11-23, discovery: the `mitrapclub` default comes from the `brandedStylesheet` slot, not `defaultTheme` (`TemplateRenderer::defaultThemeName`). Added `underground` to that slot's choices and set the profile's slot to it; `defaultTheme` changed too so the two agree. Within the recorded outcome.
+- 2026-11-23: first render had solid blob cores and a smudge showing through a card; tuned blob gradients, raised card opacity to 0.95, loosened wordmark spacing. On 380px the moon covered the wordmark; added a narrow-screen layout (small moon in the top-right corner).
+- 2026-11-23: halftone grey smudges print blue, not grey: one filtered layer can only threshold the blue channel the same way for every blob. Accepted (two-tone reads close to the flyer); true grey needs a second layer.
+- 2026-11-23: tests updated for the zenmemes allow-list (`LocalAppSmokeTest`) and the new menu pair (`ThemeRegistryTest`).
+
+## Verification
+
+- `./v3 test --smoke ThemeRegistryTest SiteProfileRegistryTest PresentationSlotRegistryTest ThemeCatalogPageTest PreferencesPageTest ThreadThemeTest LocalAppSmokeTest NavIconSetsTest`: 518 run, 518 passed. Full suite not run.
+- Local server, `FORUM_SITE_ID=mitrapclub`, system Chrome: `/threads/` at 1280px and 380px, a thread page at 1280px; `data-default-theme="underground"`.
+- Contrast (WCAG): blue on card 6.82, blue on page 5.96, body ink on card 12.21, graphite meta on card 7.08, button text on blue 7.63.
+- Limitation: this box has no rounded fonts, so screenshots show the fallback sans. iPhone/Mac get SF Pro Rounded through `ui-rounded`; Windows/Android without Nunito or Arial Rounded get the system sans.
+- Recovery: set the `mitrapclub` slot and `defaultTheme` back to `mitrapclub`; the stylesheet is additive.
+
+## Outcome
+
+Delivered: Underground theme, default on `mitrapclub`, selectable on `zenmemes` (e.g. `theme: underground` on a `#rapclub` thread). Not done (outside this cycle): hosting the club site, board hero / next-event callout, self-hosted display font, club favicon art, real Facebook URL, enabling media-embed flags on the instance.
 
 ## Study history
 
 - 2026-11-23 UTC, intake: **0.30**. Claude, single exposed rater.
+- 2026-11-23 UTC, closeout: scope unchanged (slot wiring was a discovery inside the outcome); assessment **0.30**. Maintainer judgment pending; measured time unknown.
 
 Attribution: Claude · 2026-11-23 UTC · Model: claude-opus-5-5
