@@ -320,7 +320,7 @@
       tagsLink.href = "/tags/";
       tagsLink.textContent = "Back to Tags";
       var boardLink = document.createElement("a");
-      boardLink.href = "/";
+      boardLink.href = "/threads/";
       boardLink.textContent = "Back to Board";
       navigation.appendChild(tagsLink);
       navigation.appendChild(document.createTextNode(" | "));
