@@ -8,6 +8,7 @@ if [[ -z "${COMMAND}" || "${COMMAND}" == "help" || "${COMMAND}" == "--help" || "
   cat <<'EOF'
 Usage:
   ./v3 start [--listen-all|port|host:port] [--verbose|--quiet] [--no-worker] [--log-file=/path/dev.log]
+  ./v3 contacts [--data-dir=/private/path] [--port=PORT]
   ./v3 check-dependencies [--install|--help] (alias: dependency-check)
   ./v3 test [--smoke] [--all] [--jobs=N] [Class[::method] ...]
   ./v3 fulltest [--jobs=N] (full suite on every core)
@@ -115,6 +116,11 @@ case "${COMMAND}" in
     shift
     exec php "${ROOT}/scripts/restore_images.php" "$@"
     ;;
+  contacts)
+    shift
+    source "${ROOT}/scripts/local_server_start.sh"
+    local_server_start "${ROOT}/scripts/contacts.php" "$@"
+    ;;
   start)
     shift
     source "${ROOT}/scripts/local_server_dependencies.sh"
@@ -160,7 +166,7 @@ case "${COMMAND}" in
       printf '%s\n' 'Dependencies recovered; continuing the original startup request.'
     fi
     source "${ROOT}/scripts/local_server_start.sh"
-    local_server_start "--address=${ADDRESS}" ${DEV_SERVER_ARGS[@]+"${DEV_SERVER_ARGS[@]}"}
+    local_server_start "${ROOT}/scripts/dev_server.php" "--address=${ADDRESS}" ${DEV_SERVER_ARGS[@]+"${DEV_SERVER_ARGS[@]}"}
     ;;
   check-dependencies|dependency-check)
     shift

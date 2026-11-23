@@ -1,4 +1,5 @@
 <?php
+// Run with ./v3 start; all scripts: scripts/README.md.
 
 declare(strict_types=1);
 

@@ -20,6 +20,8 @@ Run by: a `./v3` command, another script or class, or "you" (run it by hand).
 | `build_static_artifacts.php` | `./v3 build-static` | Build static HTML pages |
 | `refresh_static_shared_artifacts.php` | `./v3 build-static --shared-only` | Refresh only the shared static artifacts |
 | `checkouts.php` | `./v3 checkouts` | Manage several checkouts on one host |
+| `contacts.php` | `./v3 contacts` | Launch the private loopback Contacts app |
+| `dev_server.php` | `./v3 start` | Run the forum's PHP server with a readable request log |
 | `delete_record.php` | `./v3 delete-record` | Remove one record quickly ([progress output](../docs/concepts/operator_command_progress.md)) |
 | `delete_thread.php` | `./v3 delete-thread` | Remove a thread root and all its replies in one commit, with their images |
 | `deploy.php` | `./v3 deploy` | Pull and deploy an update ([application update](../docs/concepts/application_update.md)) |
@@ -56,7 +58,6 @@ Run by: a `./v3` command, another script or class, or "you" (run it by hand).
 | `lib/record_files.php` | `archive_thread`, `delete_record`, `thread_attributes`, `import_repository_archive`, `audit_post_signatures` | Shared record-file helpers |
 | `check_local_server_dependencies.php` | `local_server_dependencies.sh`, `local_server_dependency_install.sh` | PHP side of the dependency check |
 | `php_setup_guidance.sh` | `local_server_dependencies.sh` | Prints PHP install guidance when PHP is missing or too old |
-| `dev_server.php` | `local_server_start.sh`, `public/router.php` | PHP built-in server with a readable request log |
 | `high_traffic_render.php` | `Host/HighTrafficCache` | Worker that renders one cached page in a separate process |
 | `tour_render.php` | `Tour/TourSnapshots` | Worker that renders one tour snapshot in a separate process |
 | `terminal_operator_ui_lib.sh` | `terminal_operator_ui.sh` | Shared helpers for the terminal menu |

@@ -2,6 +2,8 @@
 # Run with ./v3 start; all scripts: scripts/README.md.
 # Bash owns signals; a control pipe lets PHP clean up even without PCNTL.
 local_server_start() {
+  local server_script="$1"
+  shift
   local server_pid control_fd read_fd write_fd output_fd result=0 stopping=0 control_ready=0
   stop_local_server() {
     stopping=1
@@ -18,7 +20,7 @@ local_server_start() {
     # Keep PHP alive long enough to receive the control message without PCNTL.
     trap '' INT TERM
     export V3_DEV_CONTROL=1
-    exec php "${ROOT}/scripts/dev_server.php" "$@" >&"${output_fd}"
+    exec php "${server_script}" "$@" >&"${output_fd}"
   }
   server_pid=$!
   read_fd="${V3_SERVER[0]}" write_fd="${V3_SERVER[1]}"
