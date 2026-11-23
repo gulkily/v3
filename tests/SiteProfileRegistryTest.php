@@ -186,6 +186,32 @@ final class SiteProfileRegistryTest
             'Site profile browser namespace is invalid or duplicated: invalid!',
         );
     }
+
+    public function testInstalledAppOpensTheHomePageUnderTheSiteName(): void
+    {
+        $expectedNames = ['zenmemes' => 'ZenMemes', 'chouse' => 'Chouse', 'qdb' => 'QDB', 'mitrapclub' => 'MIT Rap Club'];
+        foreach (SiteProfileRegistry::all() as $profileId => $profile) {
+            $manifest = json_decode(\ForumRewrite\Host\BrowserRuntimeAssetRenderer::manifest($profile), true, 512, JSON_THROW_ON_ERROR);
+
+            assertSame('/', $manifest['start_url']);
+            assertSame('/', $manifest['scope']);
+            // Unchanged since the first installs, so they update instead of duplicating.
+            assertSame('/offline/?site=' . $profile['browserNamespace'], $manifest['id']);
+            assertSame($expectedNames[$profileId], $manifest['name']);
+            assertSame($expectedNames[$profileId], $manifest['short_name']);
+        }
+    }
+
+    public function testEmptyAppNameIsRejected(): void
+    {
+        $profiles = SiteProfileRegistry::all();
+        $profiles['zenmemes']['appName'] = ' ';
+
+        assertThrowsRuntime(
+            static fn (): mixed => SiteProfileRegistry::validate($profiles),
+            'Site profile zenmemes has an empty appName.',
+        );
+    }
 }
 
 if (!function_exists('assertSame')) {

@@ -14,7 +14,7 @@ final class SiteProfileRegistry
     private static ?array $profilesForTesting = null;
 
     /**
-     * @return array<string, array{name: string, displayName: string, defaultTheme: string, permittedThemes: list<string>, browserNamespace: string, editorialContentKey: string, enabledExperienceKeys: list<string>, composerPrompt: string, calendarTimeZone?: string}>
+     * @return array<string, array{name: string, displayName: string, defaultTheme: string, permittedThemes: list<string>, browserNamespace: string, editorialContentKey: string, enabledExperienceKeys: list<string>, composerPrompt: string, appName?: string, calendarTimeZone?: string}>
      */
     public static function all(): array
     {
@@ -22,6 +22,8 @@ final class SiteProfileRegistry
             'zenmemes' => [
                 'name' => 'zenmemes',
                 'displayName' => 'zenmemes',
+                // The installed app's name on a home screen (BrowserRuntimeProfile); defaults to displayName.
+                'appName' => 'ZenMemes',
                 'calendarTimeZone' => 'America/New_York',
                 'defaultTheme' => 'auto',
                 // What Auto/System shows for a light or dark device setting.
@@ -56,6 +58,7 @@ final class SiteProfileRegistry
             'qdb' => [
                 'name' => 'qdb',
                 'displayName' => 'qdb',
+                'appName' => 'QDB',
                 'defaultTheme' => 'qdb',
                 'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'vaporgeist', 'qdb'],
                 'browserNamespace' => 'qdb',
@@ -96,7 +99,7 @@ final class SiteProfileRegistry
     }
 
     /**
-     * @return array{name: string, displayName: string, defaultTheme: string, permittedThemes: list<string>, browserNamespace: string, editorialContentKey: string, enabledExperienceKeys: list<string>, composerPrompt: string, calendarTimeZone?: string}
+     * @return array{name: string, displayName: string, defaultTheme: string, permittedThemes: list<string>, browserNamespace: string, editorialContentKey: string, enabledExperienceKeys: list<string>, composerPrompt: string, appName?: string, calendarTimeZone?: string}
      */
     public static function active(): array
     {
@@ -193,6 +196,10 @@ final class SiteProfileRegistry
                 if (!isset($profile[$field]) || !is_string($profile[$field]) || $profile[$field] === '') {
                     throw new \RuntimeException("Site profile {$siteId} requires a non-empty {$field}.");
                 }
+            }
+
+            if (array_key_exists('appName', $profile) && (!is_string($profile['appName']) || trim($profile['appName']) === '')) {
+                throw new \RuntimeException("Site profile {$siteId} has an empty appName.");
             }
 
             foreach (['permittedThemes', 'enabledExperienceKeys'] as $field) {
