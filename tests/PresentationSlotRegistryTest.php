@@ -59,4 +59,20 @@ final class PresentationSlotRegistryTest
         unset($unselected['presentationSlots']['favicon']);
         assertSame('/favicon.ico', FaviconRegistry::resolve($unselected));
     }
+
+    public function testDefaultFaviconCarriesTabSizedImages(): void
+    {
+        // Browsers draw tab icons at 16 px; a lone 32 px image downscales into a muddy edge.
+        $ico = (string) file_get_contents(__DIR__ . '/../public/favicon.ico');
+        $header = unpack('vreserved/vtype/vcount', substr($ico, 0, 6));
+        assertSame(1, $header['type']);
+        $sizes = [];
+        for ($i = 0; $i < $header['count']; $i++) {
+            $width = ord($ico[6 + 16 * $i]);
+            $sizes[] = $width === 0 ? 256 : $width;
+        }
+        sort($sizes);
+        assertSame(true, in_array(16, $sizes, true), 'favicon has a 16 px image');
+        assertSame(true, in_array(32, $sizes, true), 'favicon has a 32 px image');
+    }
 }

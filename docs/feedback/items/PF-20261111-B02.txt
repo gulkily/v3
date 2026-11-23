@@ -1,9 +1,9 @@
 ID: PF-20261111-B02
 Title: Favicon odd in light theme
 Kind: bug
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-11
-Evidence: unknown
+Evidence: locally-verified
 
 Request:
 The favicon looks odd in light theme.
@@ -11,5 +11,9 @@ The favicon looks odd in light theme.
 Sources:
 - https://zenmemes.com/posts/thread-20261104200237-80b737bc
 
+Done when:
+The ZenMemes tab icon looks clean on a light tab strip and light site themes (no muddy fringe, no hard dark block) and still reads on dark ones.
+
 Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-23: triaged as real and still open (the thread has no detail beyond the title). Cause: favicon.ico was one 32 px hard-cornered slate square with a gold glow; at 16 px tab size the glow turns olive and the corners read as a dark block. Redrawn as a 16/32/48 px icon, rounded tile, white Z, no glow. One-shot on fix/favicon_light_theme (record docs/plans/favicon_light_theme/favicon_light_theme_one_shot.md); render-checked on light and dark backgrounds; awaiting review, deployment and a look in a real browser tab.

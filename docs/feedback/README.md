@@ -258,6 +258,7 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261104-B21](items/PF-20261104-B21.txt) | Empty space below textarea | blocked | locally-verified | — | — | 1 |
 | [PF-20261108-B01](items/PF-20261108-B01.txt) | Sent reply briefly shows without header and footer | blocked | locally-verified | — | — | 4 |
 | [PF-20261110-B01](items/PF-20261110-B01.txt) | Page titles are inconsistent across pages | blocked | locally-verified | — | — | 4 |
+| [PF-20261111-B02](items/PF-20261111-B02.txt) | Favicon odd in light theme | blocked | locally-verified | — | — | 1 |
 | [PF-20261114-B01](items/PF-20261114-B01.txt) | Bubblegum: You menu buttons and wrapping tool labels | blocked | locally-verified | — | — | 1 |
 | [PF-20261115-B01](items/PF-20261115-B01.txt) | Bubblegum: open More tab label invisible on phones | blocked | locally-verified | — | — | 1 |
 | [PF-20261116-B01](items/PF-20261116-B01.txt) | Agent posts land as guest with run-together tags and nothing says so | blocked | locally-verified | — | — | 3 |
@@ -318,7 +319,6 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261104-B31](items/PF-20261104-B31.txt) | Deduplicate like attribution by user | untriaged | unknown | — | — | 3 |
 | [PF-20261104-B32](items/PF-20261104-B32.txt) | Expanded desktop reply stays offscreen | untriaged | unknown | — | — | 1 |
 | [PF-20261111-B01](items/PF-20261111-B01.txt) | Compose menu cut off near viewport top | untriaged | unknown | — | — | 1 |
-| [PF-20261111-B02](items/PF-20261111-B02.txt) | Favicon odd in light theme | untriaged | unknown | — | — | 1 |
 | [PF-20261111-B03](items/PF-20261111-B03.txt) | Chicago theme pages styled inconsistently | untriaged | unknown | — | — | 6 |
 | [PF-20261111-B04](items/PF-20261111-B04.txt) | Search page blank until results arrive | untriaged | unknown | — | — | 1 |
 | [PF-20261111-B05](items/PF-20261111-B05.txt) | New like attribution not linked until reload | untriaged | unknown | — | — | 1 |
