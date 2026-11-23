@@ -9,6 +9,10 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
+- [Publish local public keys](publish_local_public_keys/publish_local_public_keys_step4_implementation_summary.md) — original publisher verified locally; saved-plan flow superseded by the direct-publication follow-up.
+- [Publisher CLI conventions](publish_keys_cli_conventions/publish_keys_cli_conventions_one_shot.md) — hostname handling, visible source repository and help consistency follow-up.
+- [Direct key publication](publish_keys_direct/publish_keys_direct_one_shot.md) — publish by default, preview with --dry-run; remove mandatory review files and fingerprint copying.
+- [Publisher PR handoff](publisher_pr_handoff/publisher_pr_handoff_one_shot.md) — epic checklist, main integration and public-key publisher PR.
 - [Post format defaults](post_format_default_docs/post_format_default_docs_one_shot.md) — clarify prepared, unsigned and direct-signed posting defaults.
 - [Zen gallery accessibility intake](zen_gallery_accessibility_intake/zen_gallery_accessibility_intake_one_shot.md) — record the generic names on two image-only links.
 - [Zen meme gallery](zen_meme_gallery/zen_meme_gallery_one_shot.md) — the homepage thumbnail row opens a gallery of the same collection.
@@ -90,6 +94,8 @@ checklists, and proposals remain at the top level or in the collections below.
 [Classic forum checklist](classic_forum_checklist.md) — a configuration where anyone reads and posting needs a registered account, for demos; four cycles: member write gate, registration auto-approve, config presets, demo instance.
 
 [Pledges checklist](pledges_checklist.md) — pledge campaigns in eight cycles, with the [spec](pledges_spec.md). Cycle 1: [pledge campaigns](pledge_campaigns/pledge_campaigns_step3_development_plan.md) — a thread with a `goal:` line shows a totals block, and replies with a `pledge:` line add to it.
+
+[Notifications checklist](notifications_checklist.md) — notifications for the installed app (owa): MVP of five cycles (`owa_start_url`, `push_subscribe`, `push_ios_guide`, `push_on_events`, `push_tap_routing`) after the built `app_icons`, then post-MVP candidates. Written in the [notifications checklist one-shot](notifications_checklist/notifications_checklist_one_shot.md).
 
 [Installed app start page](owa_start_url/owa_start_url_one_shot.md) — the installed app opens the home page (offline: the cached reader) and is named "ZenMemes"; cycle 1 of the notifications checklist.
 
@@ -696,3 +702,4 @@ and repair its navigation and affected references. See the
 - [Favicon in light theme](favicon_light_theme/favicon_light_theme_one_shot.md) — one-shot: the ZenMemes tab icon redrawn so it looks clean on light tabs (PF-20261111-B02).
 - [Word 97 action fonts](word97_action_fonts/word97_action_fonts_one_shot.md) — one-shot: post-action toggles in Word 97 and the Outbox status line use the UI font (PF-20261104-B12, PF-20261104-B18).
 - [Midnight action fonts](midnight_action_fonts/midnight_action_fonts_one_shot.md) — one-shot: Midnight post actions get Word 97’s UI font, no underline and Like/Flag bevel (PF-20261111-F19).
+- [Zen hero fits the screen](zen_hero_fit/zen_hero_fit_one_shot.md) — one-shot: the featured Zen meme on the home page fits the viewport on wide screens, with thumbnails beside upright images.

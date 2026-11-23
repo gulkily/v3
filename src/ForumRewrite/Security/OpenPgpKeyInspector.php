@@ -13,6 +13,24 @@ final class OpenPgpKeyInspector
      */
     public function inspect(string $armoredPublicKey): array
     {
+        return $this->inspectKey($armoredPublicKey, false);
+    }
+
+    /** Inspect outbound public material without accepting secret packets or extra blocks. */
+    public function inspectPublicOnly(string $armoredPublicKey): array
+    {
+        $text = trim($armoredPublicKey);
+        if (strlen($text) > 1048576
+            || !str_starts_with($text, "-----BEGIN PGP PUBLIC KEY BLOCK-----\n")
+            || !str_ends_with($text, '-----END PGP PUBLIC KEY BLOCK-----')
+            || substr_count($text, '-----BEGIN ') !== 1 || substr_count($text, '-----END ') !== 1) {
+            throw new RuntimeException('Expected one public key block, without private material or extra content.');
+        }
+        return $this->inspectKey($armoredPublicKey, true);
+    }
+
+    private function inspectKey(string $armoredPublicKey, bool $publicOnly): array
+    {
         $tempDir = sys_get_temp_dir() . '/forum-rewrite-gpg-' . bin2hex(random_bytes(6));
         mkdir($tempDir, 0700, true);
         $keyPath = $tempDir . '/key.asc';
@@ -25,6 +43,14 @@ final class OpenPgpKeyInspector
         );
         exec($command, $output, $exitCode);
         $this->cleanup($tempDir);
+
+        if ($publicOnly) {
+            $types = array_map(static fn ($line) => explode(':', $line, 2)[0], $output);
+            if (in_array('sec', $types, true) || in_array('ssb', $types, true)
+                || count(array_filter($types, static fn ($type) => $type === 'pub')) !== 1) {
+                throw new RuntimeException('Only one public key is allowed; secret-key packets cannot be published.');
+            }
+        }
 
         if ($exitCode !== 0) {
             $details = $this->compactGpgOutput($output);
