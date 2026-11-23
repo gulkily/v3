@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
+use ForumRewrite\Feedback\BacklogClaims;
 use ForumRewrite\Feedback\BacklogPrompt;
 use ForumRewrite\Feedback\BacklogText;
 use ForumRewrite\Feedback\FeedbackBacklog;
 use ForumRewrite\Feedback\FeedbackItem;
 use ForumRewrite\Feedback\FeedbackItemCheck;
 use ForumRewrite\ReadModel\ReadModelMetadata;
+use ForumRewrite\ReadModel\ThreadRepository;
+use ForumRewrite\SiteProfileRegistry;
 use ForumRewrite\Support\SourceRepository;
 
 /**
@@ -31,7 +34,8 @@ final class BacklogPageController
         $words = FeedbackBacklog::words($query);
         $all = $this->items();
         $open = FeedbackBacklog::select($all, 'open', 'all');
-        $items = FeedbackBacklog::sort(FeedbackBacklog::select($all, $words['show'], $words['kind']), $words['sort'], $words['order']);
+        $claims = $this->claims($all);
+        $items = FeedbackBacklog::sort($this->withoutClaimed(FeedbackBacklog::select($all, $words['show'], $words['kind']), $words, $claims), $words['sort'], $words['order']);
         $repository = SourceRepository::fromProjectRoot($this->projectRoot);
         $fileBase = $repository !== null && str_starts_with($repository, 'https://github.com/') ? $repository . '/blob/main/docs/feedback/items/' : null;
 
@@ -45,12 +49,20 @@ final class BacklogPageController
                 'impact' => $item->number('Impact') !== null ? $item->header('Impact') : null,
                 'touched' => $item->touched(),
                 'href' => $fileBase !== null ? $fileBase . rawurlencode($item->id()) . '.txt' : null,
+                'claim_lines' => BacklogClaims::lines($claims[$item->id()] ?? null),
             ], $items),
             'backlogOpenCount' => count($open),
             'backlogUnknownWords' => $words['unknown'],
             'backlogVersion' => substr(ReadModelMetadata::repositoryHead($this->projectRoot), 0, 12),
             'backlogSortOptions' => $this->sortOptions($words),
-            'backlogShowOptions' => $this->options('show', self::SHOW_LABELS, $words),
+            'backlogShowOptions' => [
+                ...$this->options('show', self::SHOW_LABELS, $words),
+                // One more word on the Show row, only where claims exist: a switch, so the active link turns it off.
+                ...($claims === null ? [] : [[
+                    'key' => 'claimed', 'label' => 'Hide claimed', 'is_active' => $words['claimed'] === 'hide',
+                    'href' => self::href($words, ['claimed' => $words['claimed'] === 'hide' ? 'show' : 'hide']),
+                ]]),
+            ],
             'backlogKindOptions' => $this->options('kind', self::KIND_LABELS, $words),
             'backlogTextHref' => self::href($words, [], '/backlog.txt'),
         ], 'Backlog', 'tools');
@@ -114,8 +126,10 @@ final class BacklogPageController
     public function listText(array $query): string
     {
         $words = FeedbackBacklog::words($query);
-        $items = FeedbackBacklog::sort(FeedbackBacklog::select($this->items(), $words['show'], $words['kind']), $words['sort'], $words['order']);
-        return BacklogText::render($items, $words, ReadModelMetadata::repositoryHead($this->projectRoot));
+        $all = $this->items();
+        $claims = $this->claims($all);
+        $items = FeedbackBacklog::sort($this->withoutClaimed(FeedbackBacklog::select($all, $words['show'], $words['kind']), $words, $claims), $words['sort'], $words['order']);
+        return BacklogText::render($items, $words, ReadModelMetadata::repositoryHead($this->projectRoot), $claims);
     }
 
     /**
@@ -139,6 +153,50 @@ final class BacklogPageController
             return ['status' => 404, 'text' => "Nothing to start: no open item among " . implode(', ', $ids) . ".\nThe list is at /backlog.txt.\n", 'headers' => $headers];
         }
         return ['status' => 200, 'text' => BacklogPrompt::build($picked['items'], $mode, SourceRepository::fromProjectRoot($this->projectRoot)), 'headers' => $headers];
+    }
+
+    /**
+     * Who holds what, read from the site's claims thread now. Null when the site
+     * names no claims thread: the backlog then shows and prints nothing about
+     * claims. A named thread that does not exist yet gives no claims.
+     *
+     * @param list<FeedbackItem> $items
+     * @return array<string, array<string, mixed>>|null
+     */
+    public function claims(array $items): ?array
+    {
+        $threadId = SiteProfileRegistry::backlogClaimsThread();
+        if ($threadId === null) {
+            return null;
+        }
+        $pdo = $this->routeServices->pdo();
+        $thread = ThreadRepository::byId($pdo, $threadId);
+        if ($thread === null || ($thread['retracted_at'] ?? null) !== null) {
+            return [];
+        }
+        $repositoryRoot = $this->routeServices->repositoryRoot();
+
+        return BacklogClaims::fromPosts(
+            ThreadRepository::replyPostsByThreadId($pdo, $threadId),
+            $items,
+            time(),
+            static fn (string $identityId): bool => \ForumRewrite\Security\ApprovalPolicy::isActiveOperator($repositoryRoot, $identityId),
+        );
+    }
+
+    /**
+     * @param list<FeedbackItem> $items
+     * @param array<string, mixed> $words
+     * @param array<string, array<string, mixed>>|null $claims
+     * @return list<FeedbackItem>
+     */
+    private function withoutClaimed(array $items, array $words, ?array $claims): array
+    {
+        if ($claims === null || $words['claimed'] !== 'hide') {
+            return $items;
+        }
+
+        return array_values(array_filter($items, static fn (FeedbackItem $item): bool => !BacklogClaims::isHeld($claims[$item->id()] ?? null)));
     }
 
     /** @return list<FeedbackItem> */

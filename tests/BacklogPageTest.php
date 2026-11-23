@@ -5,9 +5,14 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
+use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Feedback\BacklogClaims;
 use ForumRewrite\Feedback\FeedbackBacklog;
 use ForumRewrite\Http\BacklogPageController;
+use ForumRewrite\SiteProfileRegistry;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
+use ForumRewrite\Write\LocalWriteService;
 
 /**
  * Tools → Backlog reads the checkout's own docs/feedback/items, so these tests
@@ -196,6 +201,125 @@ final class BacklogPageTest
     }
 
     /** @param callable(Application): void $test */
+    public function testWithNoClaimsThreadNothingAboutClaimsIsShownOrPrinted(): void
+    {
+        $this->withSite(true, function (Application $application): void {
+            $html = $this->render($application, '/backlog?claimed=hide');
+            assertStringNotContains('Hide claimed', $html);
+            assertStringNotContains('backlog-claim', $html);
+            assertStringNotContains('Not understood', $html, 'The word is known everywhere; it just hides nothing here.');
+            $text = $this->raw($application, '/backlog.txt');
+            assertSame(0, preg_match(self::CLAIM_KEYS, $text), 'No claim line of any kind.');
+            assertSame($text, $this->raw($application, '/backlog.txt?claimed=hide'));
+        });
+    }
+
+    public function testRowsShowWhoHoldsAnItemAndHideClaimedLeavesHeldRowsOut(): void
+    {
+        $this->withClaims(function (callable $application, LocalWriteService $service, string $thread, array $ids): void {
+            [$held, $guest, $free] = $ids;
+            // A claim posted through the write service is on the next request: nothing is rebuilt or deployed.
+            $started = hrtime(true);
+            $claim = $this->reply($service, $thread, "claim: {$held}\n\nBranch fix/example.", self::MEMBER);
+            $html = $this->render($application(), '/backlog');
+            assertTrue((hrtime(true) - $started) / 1e9 < 10, 'Post, then read, within one request each.');
+            $this->reply($service, $thread, "claim: {$guest}", null);
+            $html = $this->render($application(), '/backlog');
+
+            $row = fn (string $page, string $id): string => (string) (preg_match('/<li class="backlog-row"[^>]*>\s*<input[^>]*value="' . preg_quote($id, '/') . '".*?<\/li>/s', $page, $m) === 1 ? $m[0] : '');
+            assertSame(1, preg_match('/data-role="backlog-claim">Claimed by [^<·]+<\/span>/', $row($html, $held)), $row($html, $held));
+            assertStringContains('data-role="backlog-claim">Claimed by a guest · not counted</span>', $row($html, $guest));
+            assertStringNotContains('backlog-claim', $row($html, $free));
+            assertStringContains('<a class="nav-link" href="/backlog?claimed=hide">Hide claimed</a>', $html);
+
+            $hidden = $this->render($application(), '/backlog?claimed=hide&kind=bug');
+            assertSame('', $row($this->render($application(), '/backlog?claimed=hide'), $held), 'A counted claim hides the row.');
+            assertTrue($row($this->render($application(), '/backlog?claimed=hide'), $guest) !== '', 'A guest claim does not.');
+            assertStringContains('<a class="nav-link is-active" href="/backlog?kind=bug" aria-current="true">Hide claimed</a>', $hidden, 'The active word turns itself off and keeps the others.');
+            assertStringContains('href="/backlog?sort=effort&amp;kind=bug&amp;claimed=hide"', $hidden, 'Sort links keep the word.');
+
+            // Released by its holder, the row is free again.
+            $this->reply($service, $thread, 'release', self::MEMBER, $claim);
+            assertStringNotContains('backlog-claim', $row($this->render($application(), '/backlog'), $held));
+        });
+    }
+
+    public function testTextListCarriesClaimLines(): void
+    {
+        $this->withClaims(function (callable $application, LocalWriteService $service, string $thread, array $ids): void {
+            [$held, $guest, $free] = $ids;
+            $claim = $this->reply($service, $thread, "claim: {$held}, {$guest}", self::MEMBER);
+            $this->reply($service, $thread, "claim: {$guest}", null);
+            $text = $this->raw($application(), '/backlog.txt');
+
+            assertStringContains("Start-Command: ./v3 feedback start <ID>...\nClaimed: show\nClaims-Address: /backlog/claims.txt?items=<ID>,<ID>\n\n", $text);
+            $block = fn (string $all, string $id): string => (string) (preg_match('/^ID: ' . preg_quote($id, '/') . '\n.*?(?=\n\n|\z)/ms', $all, $m) === 1 ? $m[0] : '');
+            assertSame(1, preg_match('/\nFile: [^\n]+\nClaim-State: held\nClaimed-By: [^\n]+\nClaimed-Since: [0-9T:Z-]+\nClaim-Post: ' . preg_quote($claim, '/') . '$/', $block($text, $held)), $block($text, $held));
+            assertStringContains("\nGuest-Claims: 1", $block($text, $guest));
+            assertSame(0, preg_match(self::CLAIM_KEYS, $block($text, $free)));
+
+            $hidden = $this->raw($application(), '/backlog.txt?claimed=hide');
+            assertStringContains("\nClaimed: hide\n", $hidden);
+            assertSame('', $block($hidden, $held));
+            assertTrue($block($hidden, $free) !== '');
+        });
+    }
+
+    public function testANamedThreadThatDoesNotExistShowsNoClaimsAndNoError(): void
+    {
+        $this->withClaims(function (callable $application): void {
+            $html = $this->render($application(), '/backlog');
+            assertStringContains('Hide claimed', $html);
+            assertStringNotContains('backlog-claim', $html);
+            assertStringContains("\nClaimed: show\n", $this->raw($application(), '/backlog.txt'));
+        }, 'thread-that-was-never-posted');
+    }
+
+    /** Any Key: value line the text routes print about claims. */
+    private const CLAIM_KEYS = '/^(Claim|Claimed|Claims|Also-Claimed|Guest-Claims)[A-Za-z-]*: /m';
+
+    /** The fixture's committed root-approved operator. */
+    private const MEMBER = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+
+    /**
+     * A site whose profile names a claims thread. The test gets a maker of fresh
+     * applications (each request reads the posts anew), the write service, the
+     * thread's ID and three real items that can start.
+     *
+     * @param callable(callable(): Application, LocalWriteService, string, list<string>): void $test
+     */
+    private function withClaims(callable $test, ?string $missingThread = null): void
+    {
+        $this->withSite(true, function (Application $first, string $repositoryRoot) use ($test, $missingThread): void {
+            $database = dirname($repositoryRoot) . '/read-model.sqlite3';
+            $this->render($first, '/');
+            $service = new LocalWriteService($repositoryRoot, $database, dirname($repositoryRoot) . '/public', new CanonicalRecordRepository($repositoryRoot), featureFlags: FeatureFlagEvaluator::forRepository($repositoryRoot));
+            $thread = $missingThread ?? (string) $service->createThread(['board_tags' => 'general', 'subject' => 'Backlog claims', 'body' => 'Claims on backlog items.', 'author_identity_id' => self::MEMBER])['thread_id'];
+            $profiles = SiteProfileRegistry::all();
+            foreach ($profiles as $siteId => $profile) {
+                $profiles[$siteId]['backlogClaimsThread'] = $thread;
+            }
+            SiteProfileRegistry::setProfilesForTesting($profiles);
+            try {
+                $startable = FeedbackBacklog::select(BacklogPageController::load(dirname(__DIR__)), 'can-start', 'all');
+                $ids = array_map(static fn ($item): string => $item->id(), array_slice($startable, 0, 3));
+                $test(static fn (): Application => new Application(dirname(__DIR__), $repositoryRoot, $database), $service, $thread, $ids);
+            } finally {
+                SiteProfileRegistry::setProfilesForTesting(null);
+            }
+        });
+    }
+
+    private function reply(LocalWriteService $service, string $thread, string $body, ?string $author, ?string $parent = null): string
+    {
+        $input = ['thread_id' => $thread, 'parent_id' => $parent ?? $thread, 'body' => $body];
+        if ($author !== null) {
+            $input['author_identity_id'] = $author;
+        }
+
+        return (string) $service->createReply($input)['post_id'];
+    }
+
     private function withSite(bool $enabled, callable $test): void
     {
         $oldFlag = getenv(FeatureFlagRegistry::BACKLOG_ENABLED);
@@ -207,7 +331,8 @@ final class BacklogPageTest
             foreach (['git init', 'git config user.name "Forum Rewrite"', 'git config user.email "forum-rewrite@example.invalid"', 'git add .', 'git commit -m "Test repository"'] as $command) {
                 $this->runCommand($repositoryRoot, $command);
             }
-            $test(new Application(dirname(__DIR__), $repositoryRoot, dirname($repositoryRoot) . '/read-model.sqlite3'));
+            mkdir(dirname($repositoryRoot) . '/public', 0777, true);
+            $test(new Application(dirname(__DIR__), $repositoryRoot, dirname($repositoryRoot) . '/read-model.sqlite3'), $repositoryRoot);
         } finally {
             putenv($oldFlag === false ? FeatureFlagRegistry::BACKLOG_ENABLED : FeatureFlagRegistry::BACKLOG_ENABLED . '=' . $oldFlag);
             exec('rm -rf ' . escapeshellarg(dirname($repositoryRoot)));

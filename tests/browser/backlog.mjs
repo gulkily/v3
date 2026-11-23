@@ -41,6 +41,28 @@ const socket = createServer().listen(0, '127.0.0.1'); await once(socket, 'listen
 const base = `http://127.0.0.1:${port}`;
 const server = spawn('php', ['-d', `session.save_path=${root}/sessions`, '-S', `127.0.0.1:${port}`, join(project, 'tests/Support/signed_reaction_browser_router.php')], { env });
 let serverLog = ''; server.stderr.on('data', d => { serverLog += d; });
+// A second server over the same site whose profile names a claims thread (the fixture's root-001).
+// The first server names none, so everything above the claims section runs as it did before claims.
+const claimsSocket = createServer().listen(0, '127.0.0.1'); await once(claimsSocket, 'listening'); const claimsPort = claimsSocket.address().port; await new Promise(r => claimsSocket.close(r));
+const claimsBase = `http://127.0.0.1:${claimsPort}`;
+const claimsServer = spawn('php', ['-d', `session.save_path=${root}/sessions`, '-S', `127.0.0.1:${claimsPort}`, join(project, 'tests/Support/backlog_claims_browser_router.php')], { env });
+claimsServer.stderr.on('data', d => { serverLog += d; });
+const seedIdentity = JSON.parse(seeded.stdout).identity;
+// Runs PHP against the test site: write a post, approve a key.
+const site = (code, ...args) => {
+  const done = spawnSync('php', ['-r', `require '${project}/autoload.php'; $root = '${root}';
+    $repository = new \\ForumRewrite\\Canonical\\CanonicalRecordRepository($root . '/repository');
+    $writer = new \\ForumRewrite\\Write\\LocalWriteService($root . '/repository', $root . '/read.sqlite3', $root . '/static', $repository);
+    $db = new PDO('sqlite:' . $root . '/read.sqlite3'); ${code}`, ...args], { encoding: 'utf8', env });
+  assert.equal(done.status, 0, done.stderr + done.stdout);
+  return done.stdout;
+};
+const approve = identity => site(`file_put_contents($root . '/repository/records/approval-seeds/' . str_replace(':', '-', $argv[1]) . '.txt',
+  "Approved-Identity-ID: {$argv[1]}\nSeed-Reason: browser check approves this key\n\nApproved so its claims count.\n");
+  $db->prepare('UPDATE profiles SET is_approved = 1 WHERE identity_id = ?')->execute([$argv[1]]);`, identity);
+const post = (body, author = '', parent = 'root-001') => site(`$input = ['thread_id' => 'root-001', 'parent_id' => $argv[2], 'body' => $argv[1]];
+  if ($argv[3] !== '') $input['author_identity_id'] = $argv[3];
+  echo $writer->createReply($input)['post_id'];`, body, parent, author);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/google/chrome/chrome', headless: true, args: ['--no-sandbox'] });
 const open = async (javaScriptEnabled, width = 375, theme = null) => {
   const context = await browser.newContext({ serviceWorkers: 'block', javaScriptEnabled, viewport: { width, height: 720 }, permissions: ['clipboard-read', 'clipboard-write'] });
@@ -139,12 +161,42 @@ try {
   assert.equal((await fetch(base + '/backlog/start.txt?items=PF-20261101-F05')).status, 404);
   assert.equal((await fetch(base + '/backlog/start.txt')).status, 400);
 
+  // Claims. The first server names no claims thread: nothing about claims anywhere.
+  assert.doesNotMatch(listText, /^Claim/m);
+  const before = await open(false);
+  await before.page.goto(base + '/backlog');
+  assert.equal(await before.page.getByRole('link', { name: 'Hide claimed' }).count(), 0);
+  assert.equal(await before.page.locator('[data-role="backlog-claim"]').count(), 0);
+  await before.context.close();
+  // The second server reads claims from root-001: one counted claim on two items, a guest claim on a third.
+  for (let i = 0; i < 60; i++) { try { await fetch(claimsBase + '/api/version'); break; } catch { await new Promise(r => setTimeout(r, 100)); } }
+  approve(seedIdentity);
+  const seedClaim = post('claim: PF-20261101-F01, PF-20261101-F03\n\nBranch fix/a-long-branch-name-for-the-wrapping-check.', seedIdentity);
+  post('claim: PF-20261101-B02');
+  const holders = await open(false);
+  await holders.page.goto(claimsBase + '/backlog');
+  const claimOf = id => holders.page.locator('.backlog-row', { has: holders.page.locator(`input[value="${id}"]`) }).locator('[data-role="backlog-claim"]');
+  assert.match(await claimOf('PF-20261101-F01').textContent(), /^Claimed by \S+$/);
+  assert.equal(await claimOf('PF-20261101-B02').textContent(), 'Claimed by a guest · not counted');
+  await holders.page.getByRole('link', { name: 'Hide claimed' }).click();
+  await holders.page.waitForURL(claimsBase + '/backlog?claimed=hide');
+  assert.deepEqual(await holders.page.locator('.backlog-row__id').allTextContents(), ['PF-20261101-B02'], 'counted claims hide their rows; a guest claim does not');
+  await holders.page.getByRole('link', { name: 'Hide claimed' }).click();
+  await holders.page.waitForURL(claimsBase + '/backlog');
+  assert.equal(await holders.page.locator('.backlog-row').count(), 3);
+  await holders.context.close();
+  const claimedText = await (await fetch(claimsBase + '/backlog.txt')).text();
+  assert.match(claimedText, /ID: PF-20261101-F01\n[^]*?File: docs\/feedback\/items\/PF-20261101-F01\.txt\nClaim-State: held\nClaimed-By: \S+\nClaimed-Since: \S+\nClaim-Post: \S+\n/);
+  assert.match(claimedText, /ID: PF-20261101-B02\n[^]*?Claim-State: none\nGuest-Claims: 1\n/);
+
   // Every permitted theme, phone and desktop, scripts on and off: nothing pushes the page sideways.
+  // The matrix runs on the claims server, so every list has holder lines.
   let cases = 0;
   for (const theme of themes) for (const width of [375, 1280]) for (const scripts of [true, false]) {
     const viewer = await open(scripts, width, scripts ? theme : null);
     for (const path of ['/backlog?show=open', tidy]) {
-      await viewer.page.goto(base + path);
+      await viewer.page.goto(claimsBase + path);
+      if (path !== tidy) assert.equal(await viewer.page.locator('[data-role="backlog-claim"]').count(), 3, 'holder lines are on the list');
       if (scripts) assert.equal(await viewer.page.locator('html').getAttribute('data-theme'), theme, `${theme}: theme applied`);
       assert.equal(await fitsWidth(viewer.page), true, `${theme} ${width}px scripts ${scripts} ${path}: fits`);
       if (path !== tidy) {
@@ -160,11 +212,12 @@ try {
     assert.deepEqual(viewer.errors, [], `${theme} ${width}px: no page errors`);
     await viewer.context.close();
   }
-  console.log(`PASS backlog: tick two, Start, Copy, One-shot and Staged with JavaScript (Agent decides by default); plain form to the tidy address without; sort, order and filter links; closed and unknown items left out; /backlog.txt and /backlog/start.txt; ${cases} theme/width/script cases of the list and the start page without sideways overflow`);
+  console.log(`PASS backlog: tick two, Start, Copy, One-shot and Staged with JavaScript (Agent decides by default); plain form to the tidy address without; sort, order and filter links; closed and unknown items left out; /backlog.txt and /backlog/start.txt; holder lines, Hide claimed and claim lines in the text list on a site with a claims thread, none on a site without; ${cases} theme/width/script cases of the list and the start page without sideways overflow`);
 } catch (error) {
   console.error(serverLog.split('\n').filter(line => /error|warning|fatal/i.test(line)).slice(-10).join('\n'));
   throw error;
 } finally {
   await browser.close();
   server.kill();
+  claimsServer.kill();
 }

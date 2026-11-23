@@ -46,6 +46,9 @@ $backlogLinks = static function (array $options) use ($e): string {
 <?php endif; ?>
           <span class="backlog-row__numbers">effort <?= $e($item['effort'] ?? '—') ?> · impact <?= $e($item['impact'] ?? '—') ?></span>
         </span>
+<?php if ($item['claim_lines'] !== []): ?>
+        <span class="backlog-row__claim meta" data-role="backlog-claim"><?= $e(implode(' · ', $item['claim_lines'])) ?></span>
+<?php endif; ?>
       </li>
 <?php endforeach; ?>
     </ul>
