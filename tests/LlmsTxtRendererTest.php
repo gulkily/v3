@@ -20,6 +20,10 @@ final class LlmsTxtRendererTest
         $text = $this->render([]);
         assertStringContains('## Post format', $text);
         assertStringContains('body_format=plain', $text);
+        assertStringContains('prepare_thread, prepare_reply, create_thread and create_reply default to Markdown', $text);
+        assertStringContains('QDB quote routes (prepare_quote and create_quote) default to plain text', $text);
+        assertStringContains('A client-signed record sent to create_signed_post is plain text if it has no Body-Format header', $text);
+        assertStringContains('Quill has no format option', $text);
         assertStringContains('/docs/reference/markdown_syntax.md', $text);
     }
 
