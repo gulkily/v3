@@ -55,6 +55,7 @@ final class ToolsPageSupport
             ['key' => 'activity', 'label' => 'Activity', 'href' => '/activity/', 'group' => 'reading', 'tone' => 'activity', 'standalone' => true],
             ['key' => 'forte', 'label' => 'Forte', 'href' => '/forte', 'group' => 'reading', 'tone' => 'forte', 'standalone' => true],
             ['key' => 'docs', 'label' => 'Platform Docs', 'href' => '/docs/', 'group' => 'reading', 'tone' => 'docs', 'standalone' => true],
+            ['key' => 'backlog', 'label' => 'Backlog', 'href' => '/backlog', 'group' => 'reading', 'tone' => 'backlog', 'standalone' => true],
             ['key' => 'user-access', 'label' => 'User Access', 'href' => '/tools/user-access/', 'group' => 'community', 'tone' => 'access', 'standalone' => false],
             ['key' => 'visitor-statistics', 'label' => 'Visitor Statistics', 'href' => '/tools/visitor-statistics/', 'group' => 'community', 'tone' => 'statistics', 'standalone' => false],
             ['key' => 'tag-unlocks', 'label' => 'Tag Unlocks', 'href' => '/tools/tag-unlocks/', 'group' => 'community', 'tone' => 'unlocks', 'standalone' => false],

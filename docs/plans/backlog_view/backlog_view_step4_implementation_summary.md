@@ -60,3 +60,34 @@ Stage estimates below are copied from the approved Step 3 plan; copying is not a
 - Estimate details: original scope unchanged; uncertainty was low; no revisions.
 
 *— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
+
+## Stage 3 - The page
+
+**Original estimate: 0.18**
+
+**Retrospective stage work: 0.20**
+
+- Changes:
+  - Flag `FORUM_BACKLOG_ENABLED` in `FeatureFlagRegistry.php`: site-mutable, off by default, in the Experience group, `releasedOn` 2026-11-23.
+  - New `src/ForumRewrite/Http/BacklogPageController.php`, `templates/pages/backlog.php` and `public/assets/backlog.css`; route `/backlog` in `Application.php`, answering Not Found while the flag is off.
+  - The page: three rows of links (sort, show, kind), a count line with the version and a link to the text form, and one row per item with title, workflow chip, kind, ID, effort and impact. The ID links to the file on GitHub when the configured repository is there.
+  - A sort link starts newest first; the active sort's link flips its order and shows an arrow. Words at their default stay out of the address.
+  - Tools entry "Backlog" under Reading, as a full-page tool. It joins the existing hidden-tools rule in `TemplateRenderer.php`, so it shows only while the flag is on.
+  - Icons for `/backlog` in all three icon sets and the shared sizing rule in `public/assets/theme-nav-icons.css`.
+  - `UsageNames.php` and `UsagePageKind.php` name the page. `docs/concepts/tools_launcher.md` updated.
+  - New `tests/BacklogPageTest.php`. Updated `ToolsRegistryTest`, `FeatureFlagEvaluatorTest`, `LocalAppSmokeTest` and `tests/browser/tools_launcher.mjs` for the new tool and flag.
+- Verification:
+  - `./v3 test --smoke BacklogPageTest FeedbackBacklogTest FeedbackItemCheckTest NavIconSetsTest FeatureFlagsBehaviorTest FeatureFlagEvaluatorTest`: 520 run; two failures, both from this stage's new flag and tool not yet being in the tests' expected lists. After adding them: `php tests/run.php FeatureFlagEvaluatorTest FeatureFlagsBehaviorTest FeatureFlagChangePageTest BackupFeatureFlagTest LocalAppSmokeTest::testApplicationRendersCoreRoutes BacklogPageTest NavIconSetsTest`: 46 run, 46 passed. `php tests/run.php ToolsRegistryTest UsageNamesTest UsagePageKindTest UsageJourneysTest ...`: 22 run, 22 passed.
+  - `BacklogPageTest` covers: flag off (page and Tools entry gone); a signed-out visitor; row count and order equal to the shared sorter; every sort and filter link's address; readable words only; the fallback notice with escaped input; a checkout with no items folder.
+  - `node tests/browser/tools_launcher.mjs`: passed, 44 theme and width cases, icons present.
+  - By eye, with the real 288 rows at 375 px in Gloss, Word97 and Bubblegum and at 1280 px in Gloss: no sideways overflow; rows and chips read well; the Backlog icon shows in the launcher.
+  - Full suite not run.
+- Notes:
+  - Baseline failure found and fixed: `tests/browser/tools_launcher.mjs` failed on `origin/main` at the Zalgo theme, which is in `permittedThemes` but sits behind a flag the check never set. The check now sets the Zalgo and Vaporgeist flags.
+  - Paging decided: none. All rows are on one page, because a selection has to span the list, and 288 rows came to a small page.
+  - Deviation: the plan named `board_sort.php` for the sort links. The page uses the `board-filter` link row instead, as in the mockup; a dropdown would hide the direction arrow.
+  - The three link rows take five lines on a 375 px phone before the list starts. Worth a look on the real device.
+  - `/backlog/start` and `/backlog.txt` are named in the usage lists and linked from the count line; they arrive in Stages 4 and 5.
+- Estimate details: original scope unchanged; uncertainty was medium (row density); the extra came from test lists that enumerate tools and flags.
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
