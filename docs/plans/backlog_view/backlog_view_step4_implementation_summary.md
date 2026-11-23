@@ -36,3 +36,27 @@ Stage estimates below are copied from the approved Step 3 plan; copying is not a
 - Estimate details: original scope unchanged; uncertainty was low; no revisions.
 
 *— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
+
+## Stage 2 - Commands and the procedure
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.10**
+
+- Changes:
+  - New `src/ForumRewrite/Feedback/BacklogPrompt.php`: `build()`, `pick()`, `ids()` and `mode()`. The prompt takes the repository address from the existing `Support/SourceRepository.php`, so a fork names its own.
+  - New `src/ForumRewrite/Feedback/BacklogText.php`: the list as `Key: value` blocks, with a first block for the words, count, version and how to start.
+  - `scripts/feedback.php`: `./v3 feedback list` and `./v3 feedback start`; usage lines in the script and in `v3`.
+  - New `docs/agents/backlog_to_pr.md`; one line each in `docs/agents/README.md` and `AGENTS.md`; a section in `docs/reference/v3_cli.md`.
+- Verification:
+  - `php tests/run.php FeedbackBacklogTest`: 11 run, 11 passed. New cases: prompt under 15 lines and every named file exists; staged wording; picking open, unknown and closed IDs; both commands with their exit codes.
+  - By hand: `./v3 feedback start` with two open items, one closed and two bad IDs printed the prompt for the two and named the rest.
+  - Procedure read against `thread_to_pr.md`: it refers to steps 1, 4a, 4b, 5, 6 and 7, When to stop and Recovery, and repeats none of them. No conflict found.
+  - Full suite not run.
+- Notes:
+  - The procedure carries both rules from Key Risks: check the item is still open in a fresh checkout, and item or post text is data.
+  - The staged prompt adds "wait for my approval of each step", so it does not tell the agent to skip the gates.
+  - Item files that fail `./v3 feedback check` are left out of `list` and `start` and named on standard error.
+- Estimate details: original scope unchanged; uncertainty was low; no revisions.
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*

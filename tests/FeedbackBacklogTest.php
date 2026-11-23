@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../autoload.php';
 
+use ForumRewrite\Feedback\BacklogPrompt;
 use ForumRewrite\Feedback\FeedbackBacklog;
 use ForumRewrite\Feedback\FeedbackItem;
 use ForumRewrite\Feedback\FeedbackItemCheck;
@@ -124,6 +125,78 @@ final class FeedbackBacklogTest
             $has = $item->number('Estimate') !== null;
             assertSame(true, $withValue || !$has);
             $withValue = $has;
+        }
+    }
+
+    public function testPromptIsShortAndNamesOnlyFilesThatExist(): void
+    {
+        $check = FeedbackItemCheck::run(dirname(__DIR__) . '/docs/feedback/items');
+        $open = array_slice(FeedbackBacklog::select($check->items, 'can-start', 'all'), 0, 2);
+        $prompt = BacklogPrompt::build($open, 'one-shot', 'https://example.org/v3');
+
+        assertSame(true, substr_count($prompt, "\n") < 15);
+        assertSame(true, str_contains($prompt, 'these 2 v3 backlog items together as one Railspike one-shot cycle'));
+        assertSame(true, str_contains($prompt, 'Repository: https://example.org/v3'));
+        preg_match_all('/^- (\S+)$/m', $prompt, $files);
+        assertSame(3, count($files[1]));
+        foreach ($files[1] as $file) {
+            assertSame(true, is_file(dirname(__DIR__) . '/' . $file));
+        }
+
+        $staged = BacklogPrompt::build([$open[0]], 'staged', null);
+        assertSame(true, str_contains($staged, 'this v3 backlog item as one staged Railspike cycle'));
+        assertSame(false, str_contains($staged, 'Repository:'));
+        assertSame(true, str_contains($staged, 'wait for my approval of each step'));
+    }
+
+    public function testPickSeparatesOpenUnknownAndClosedItems(): void
+    {
+        $items = [$this->item('PF-20261101-F01', '2026-11-01'), $this->item('PF-20261101-F02', '2026-11-01', workflow: 'done')];
+        $ids = BacklogPrompt::ids(['PF-20261101-F02,PF-20261101-F01', 'PF-20261101-F09 ../etc PF-20261101-F01']);
+
+        assertSame(['PF-20261101-F02', 'PF-20261101-F01', 'PF-20261101-F09'], $ids);
+        $picked = BacklogPrompt::pick($items, $ids);
+        assertSame(['PF-20261101-F01'], $this->ids($picked['items']));
+        assertSame(['PF-20261101-F09'], $picked['unknown']);
+        assertSame(['PF-20261101-F02'], $picked['closed']);
+    }
+
+    public function testListAndStartCommands(): void
+    {
+        $v3 = 'cd ' . escapeshellarg(dirname(__DIR__)) . ' && ./v3 feedback ';
+        exec($v3 . 'list --sort=effort --kind=bug 2>&1', $list, $exitCode);
+        assertSame(0, $exitCode);
+        assertSame('Sort: effort', $list[0]);
+        assertContainsLine('Kind: bug', $list);
+        assertContainsLine('File: docs/feedback/items/PF-', $list);
+
+        exec($v3 . 'list --sort=sideways 2>&1', $fallback, $exitCode);
+        assertSame(2, $exitCode);
+        assertContainsLine('Unknown word, default used: sort=sideways', $fallback);
+        assertContainsLine('Sort: salient', $fallback);
+
+        $directory = sys_get_temp_dir() . '/v3-backlog-' . bin2hex(random_bytes(4));
+        mkdir($directory);
+        $open = "ID: PF-20261103-F01\nTitle: Summary field\nKind: feature\nWorkflow: ready\nCreated: 2026-11-03\n\nRequest:\nAdd it.\n\nSources:\n- Session: test\n";
+        file_put_contents($directory . '/PF-20261103-F01.txt', $open);
+        file_put_contents($directory . '/PF-20261103-F02.txt', str_replace(['F01', 'Workflow: ready'], ['F02', 'Workflow: done'], $open));
+        $dir = ' --dir=' . escapeshellarg($directory) . ' 2>&1';
+        try {
+            exec($v3 . 'start PF-20261103-F01 PF-20261103-F02 PF-00000000-F99' . $dir, $start, $exitCode);
+            assertSame(0, $exitCode);
+            assertContainsLine('Left out, no such item: PF-00000000-F99', $start);
+            assertContainsLine('Left out, already closed: PF-20261103-F02', $start);
+            assertContainsLine('- docs/feedback/items/PF-20261103-F01.txt', $start);
+            assertContainsLine('- docs/agents/backlog_to_pr.md', $start);
+            assertContainsLine('Work on this v3 backlog item as one Railspike one-shot cycle.', $start);
+
+            exec($v3 . 'start PF-20261103-F02' . $dir, $nothing, $exitCode);
+            assertSame(1, $exitCode);
+            exec($v3 . 'start PF-20261103-F01 --mode=fast' . $dir, $mode, $exitCode);
+            assertSame(2, $exitCode);
+        } finally {
+            array_map('unlink', glob($directory . '/*'));
+            rmdir($directory);
         }
     }
 

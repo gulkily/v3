@@ -1,6 +1,6 @@
 # Backlog checklist
 
-Tracks the three backlog cycles. Update it when a step is approved, a PR opens or merges, or the maintainer accepts a cycle. Plans: [backlog_view Step 1](./backlog_view/backlog_view_step1_solution_assessment.md), [Step 2](./backlog_view/backlog_view_step2_feature_description.md), [Step 3](./backlog_view/backlog_view_step3_development_plan.md). Mockup: https://claude.ai/artifact/3TP5kpHR5jL27mSZjCqmmn
+Tracks the three backlog cycles. Update it when a step is approved, a PR opens or merges, or the maintainer accepts a cycle. Plans: [backlog_view Step 1](./backlog_view/backlog_view_step1_solution_assessment.md), [Step 2](./backlog_view/backlog_view_step2_feature_description.md), [Step 3](./backlog_view/backlog_view_step3_development_plan.md), [Step 4](./backlog_view/backlog_view_step4_implementation_summary.md). Mockup: https://claude.ai/artifact/3TP5kpHR5jL27mSZjCqmmn
 
 Goal: one page of things to work on, sortable, where the maintainer or an agent starts one item or several, without duplicate work.
 
@@ -10,12 +10,12 @@ The page, the sorts, the filters, Start with a short prompt, and the agent inter
 
 - [x] Step 1 approved (Option E), 2026-11-23
 - [x] Step 2 approved, 2026-11-23
-- [ ] Step 3 approved; plans moved to `docs/plans/backlog_view/` and committed
-- [ ] `Impact` header in the item spec, check and index
-- [ ] Shared sorter: entered, touched, effort, impact, salient, each in both directions
-- [ ] Salient run over the real items before any markup
-- [ ] `./v3 feedback list` and `./v3 feedback start`
-- [ ] `docs/agents/backlog_to_pr.md`
+- [x] Step 3 approved; plans moved to `docs/plans/backlog_view/` and committed, 2026-11-23
+- [x] `Impact` header in the item spec, check and index
+- [x] Shared sorter: entered, touched, effort, impact, salient, each in both directions
+- [x] Salient run over the real items before any markup
+- [x] `./v3 feedback list` and `./v3 feedback start`
+- [x] `docs/agents/backlog_to_pr.md`
 - [ ] `/backlog` page with sorts and filters, behind a feature flag
 - [ ] `/backlog/start` page with mode choice, prompt and Copy
 - [ ] `/backlog.txt` and `/backlog/start.txt`
