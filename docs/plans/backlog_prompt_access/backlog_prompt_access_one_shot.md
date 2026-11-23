@@ -91,7 +91,7 @@ Verification:
 
 Final review: the diff touches `BacklogPrompt.php`, the two PHP tests and the browser check, `backlog_to_pr.md`, `v3_cli.md`, `agent_api.md`, the concept entry, the UI copy checklist, the backlog checklist, F01 and the feedback index, the ledger, the debug log and this record. No new component, no dependency, no schema or flag change. Deploy now is enough.
 
-Commit/merge/publication status: completion commit pending at the time of writing; PR to follow.
+Commit/merge/publication status: completion commit `d7114735b` on `fix/backlog_prompt_access`; PR https://github.com/gulkily/v3/pull/381 opened 2026-11-23; not merged.
 
 Debug: [debug log](./backlog_prompt_access_debug_log.md).
 

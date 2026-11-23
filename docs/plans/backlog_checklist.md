@@ -38,7 +38,7 @@ The page, the sorts, the filters, Start with a short prompt, and the agent inter
   - [x] The prompt asks for a clone and a pull request, not patch files, and to stop and say what to connect
   - [x] A prompt for several items asks the agent to say so first when they do not belong in one pull request
   - [x] `backlog_to_pr.md`: access first (§1), grouping check (§4)
-  - [ ] PR opened
+  - [x] PR opened: https://github.com/gulkily/v3/pull/381 (2026-11-23)
   - [ ] Merged and deployed
   - [ ] Asked, not answered: the same access line in the thread to pull request prompt
 - Seen live, no change asked: the five lines of link rows at 375 px, Salient not putting ready items first, Effort and Impact sorting one way. Also seen, 2026-11-23: `/backlog/start.txt` is served with a two-day `Cache-Control: max-age`, so a browser can show a prompt from before a deploy.
