@@ -224,6 +224,25 @@ final class TagUnlocksTest
         });
     }
 
+    public function testSiteRecordSetsTheButtonsAndTheWriteCheck(): void
+    {
+        $this->withWriter(function (LocalWriteService $writer, string $root, string $database): void {
+            file_put_contents($root . '/records/instance/tagsets.txt', "Parent: meta\nUnlocks: done\nExclusive: yes\n");
+            \ForumRewrite\Support\Tagsets::forget();
+            $app = new Application(dirname(__DIR__), $root, $database, dirname($database, 2) . '/public');
+            $reply = $this->card($this->render($app, '/threads/root-001'), 'reply-001');
+            assertStringContains('data-tag="done"', $reply);
+            assertStringNotContains('data-tag="claimed"', $reply);
+            assertSame('done', $writer->applyPostTag(['post_id' => 'reply-001', 'tag' => 'done', 'author_identity_id' => self::APPROVED])['tag']);
+
+            // A record that fails the check falls back to the shipped rules.
+            file_put_contents($root . '/records/instance/tagsets.txt', "Parent: meta\nUnlocks: flag\n");
+            \ForumRewrite\Support\Tagsets::forget();
+            $app = new Application(dirname(__DIR__), $root, $database, dirname($database, 2) . '/public');
+            assertStringContains('>Claim</button>', $this->card($this->render($app, '/threads/root-001'), 'reply-001'));
+        });
+    }
+
     public function testToolsPageListsTagsetsAndMarkedPosts(): void
     {
         $this->withWriter(function (LocalWriteService $writer, string $root, string $database): void {

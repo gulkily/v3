@@ -185,7 +185,7 @@ PHP;
         file_put_contents($base . '/seed/.gitignore', "state/\n");
         $this->run($git($base . '/seed', 'remote', 'add', 'origin', $base . '/remote.git'));
         $commits = [];
-        foreach (['initial', 'Add <second> thing', 'third'] as $i => $subject) {
+        foreach (['initial', 'Add <second> thing', 'c3', 'c4', 'c5', 'c6', 'c7', 'Merge pull request #12 from ada/short-name'] as $i => $subject) {
             file_put_contents($base . '/seed/file' . $i . '.txt', $subject . "\n");
             $this->run($git($base . '/seed', 'add', '.'));
             $this->run($git($base . '/seed', 'commit', '-q', '-m', $subject));
@@ -233,14 +233,21 @@ $need = static function (string $page, array $needles, string $what): void {
 $count = static fn (string $page, string $needle): int => substr_count($page, $needle);
 
 $page = $controller->render();
-$need($page, ['<h2>History</h2>', 'Add &lt;second&gt; thing', '· running', 'before the first recorded deploy',
+$need($page, ['<h2>History</h2>', 'Add &lt;second&gt; thing', '· <strong>running</strong>', 'before the first recorded deploy',
+    '</code></a> #12 short-name</span>', 'title="Merge pull request #12 from ada/short-name"', '<summary>3 earlier</summary>',
     'href="https://github.com/example/app/commit/' . $second . '"', 'name="commit" value="' . $second . '"', 'name="commit" value="' . $first . '"',
     'value="rollback_preview"'], 'History');
-if ($count($page, 'value="rollback_preview"') !== 2) throw new RuntimeException('The running version must not offer Roll back.');
+if ($count($page, 'value="rollback_preview"') !== 7) throw new RuntimeException('The running version must not offer Roll back.');
+if (preg_match('/<span class="meta">\d{4}-\d{2}-\d{2} \d{2}:\d{2} · /', $page) !== 1 || preg_match('/<span class="meta">[^<]*\dT\d/', $page) === 1) {
+    throw new RuntimeException('History times should read as a short date and time.');
+}
+if (strpos($page, '<summary>3 earlier</summary>') < strpos($page, 'c4</span>') || strpos($page, '<summary>3 earlier</summary>') > strpos($page, 'c3</span>')) {
+    throw new RuntimeException('The five newest versions show; older ones sit under the disclosure.');
+}
 if (str_contains($page, 'class="deploy-rollback"')) throw new RuntimeException('No confirmation before it is asked for.');
 
 $confirm = $post(['action' => 'rollback_preview', 'commit' => $second]);
-$need($confirm, ['class="deploy-rollback"', 'Roll back to', 'Undoes 1 commit', 'third', 'value="rollback"', 'name="commit" value="' . $second . '"', '>Cancel</a>'], 'Confirmation');
+$need($confirm, ['class="deploy-rollback"', 'Roll back to', 'Undoes 6 commits', 'short-name', 'value="rollback"', 'name="commit" value="' . $second . '"', '>Cancel</a>'], 'Confirmation');
 if ($head() !== $third) throw new RuntimeException('A preview must not move the checkout.');
 $need($post(['action' => 'rollback_preview', 'commit' => $third]), ['That version is already running.'], 'Refused preview');
 
@@ -271,7 +278,7 @@ if (!str_contains($readOnly, '<h2>History</h2>') || str_contains($readOnly, 'rol
     throw new RuntimeException('A reader sees the history without Roll back.');
 }
 PHP;
-        $this->runScript($script, [$base, ...$commits]);
+        $this->runScript($script, [$base, $commits[0], $commits[1], $commits[7]]);
     }
 
     public function testActionsRequireSameOriginOperatorSession(): void

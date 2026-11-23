@@ -10,6 +10,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
 - [Quill prints the thread link](quill_thread_link/quill_thread_link_one_shot.md) — after a post, Quill prints `/threads/<thread>` (with `#<post>` for a reply) instead of `/posts/<post>`.
+- [Ochre Pending summary background](ochre_pending_dialog/ochre_pending_dialog_one_shot.md) — keep page text from showing through the summary.
 - [Quill in Perl and PHP](quill_ports/quill_ports_one_shot.md) — `quill.pl` and `quill.php` beside `quill.py`, same commands and state, each with its own update notice.
 - [Application version source](application_version_source/application_version_source_one_shot.md) — code revision for deploy notifications, with independent cached-page freshness.
 - [Recently released filters](recent_feature_flag_filters/recent_feature_flag_filters_one_shot.md) — keep the release list in sync with flag filters.
@@ -87,6 +88,10 @@ checklists, and proposals remain at the top level or in the collections below.
 [Pledges checklist](pledges_checklist.md) — pledge campaigns in eight cycles, with the [spec](pledges_spec.md). Cycle 1: [pledge campaigns](pledge_campaigns/pledge_campaigns_step3_development_plan.md) — a thread with a `goal:` line shows a totals block, and replies with a `pledge:` line add to it.
 
 [Guestbook](guestbook/guestbook_step3_development_plan.md) — a `/guestbook/` page shows the guestbook thread's top-level replies as a paper book with numbered pages and a "Sign the book" form; the thread stays available as an ordinary thread.
+
+[Tagsets file comments](tagsets_file_comments/tagsets_file_comments_one_shot.md) — one-shot: plainer comments in `resources/tagsets.txt`.
+
+[Editable tagsets](editable_tagsets/editable_tagsets_step3_development_plan.md) — operators edit and add tagsets on the Tag Unlocks page; a signed site record replaces `resources/tagsets.txt`.
 
 [Tag unlocks](tag_unlocks/tag_unlocks_step3_development_plan.md) — a thread's tag unlocks extra tags on its replies; first use: Resolved and Closed on replies in `#meta` threads, which fold to one line.
 
@@ -671,4 +676,7 @@ and repair its navigation and affected references. See the
 - [Read-model insert columns](read_model_insert_columns/read_model_insert_columns_one_shot.md) — one-shot: the four read-model schema inserts name their columns.
 
 - [Local import progress](local_import_progress/local_import_progress_step1_solution_assessment.md) — staged: the local start page queues its import and shows the Tools → Import steps, timer and time left.
+
+- [Local import status](local_import_status/local_import_status_step1_solution_assessment.md) — staged: after an import, the local start page card reports the source, age and result of the last import and offers one re-import action.
+- [Compact deploy history](deploy_history_compact/deploy_history_compact_one_shot.md) — one-shot: one compact row per version on Tools → Deploy.
 - [Deploy history and rollback](deploy_rollback/deploy_rollback_step1_solution_assessment.md) — staged: a record of deployed versions and a rollback to one of them.

@@ -646,24 +646,57 @@ form.feature-flag-control,
   margin: 0.3rem 0 0;
 }
 
-/* Deploy history, below the actions: one version per item, its Roll back button on a line of its own. */
+/* Deploy history, below the actions: one compact row per version, with its Roll back
+   button at the row's right edge. The subject stays on one line. */
 .deploy-history {
   margin: 0;
   padding-left: 0;
   list-style: none;
 }
 
-.deploy-history li + li {
-  margin-top: 0.6rem;
+.deploy-history li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.38rem 0;
 }
 
+.deploy-history li + li,
+.deploy-history-more,
+.deploy-history-more[open] > .deploy-history {
+  border-top: 1px solid color-mix(in srgb, var(--line) 68%, transparent 32%);
+}
+
+.deploy-history__text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.deploy-history__subject,
 .deploy-history .meta {
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deploy-history form {
+  flex: 0 0 auto;
+  margin: 0;
 }
 
 .deploy-history button {
   width: auto;
-  margin-top: 0.3rem;
+  min-height: 2rem;
+  margin-top: 0;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+.deploy-history-more summary {
+  padding: 0.38rem 0;
+  cursor: pointer;
 }
 
 /* The confirmation a Roll back button leads to, above the facts it is about. */

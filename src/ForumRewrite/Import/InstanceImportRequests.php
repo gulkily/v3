@@ -130,8 +130,13 @@ final class InstanceImportRequests
             return [$worker, ...$pending];
         }
         $worker['label'] = 'Task worker started';
-        // Between the claim and the import's first line, keep the list as it was while queued.
+        // Between the claim and the import's first line, keep the list as it was while queued,
+        // with its first step current: the command starts on it at once, and a list with no
+        // current step reads as stalled.
         $steps = $state['view']['steps'] ?? [];
+        if ($steps === [] && $pending !== []) {
+            $pending[0]['status'] = 'current';
+        }
 
         return [$worker, ...($steps === [] ? $pending : $steps)];
     }
@@ -270,7 +275,7 @@ final class InstanceImportRequests
      * InstanceImportStatus picks the newest run by name, which is ambiguous for runs started in
      * the same second, and the output always belongs to the request it came from.
      *
-     * @return array{outcome: ?string, images: ?string, counts: array<string, int>, failure: ?string}
+     * @return array{outcome: ?string, images: ?string, counts: array<string, int>, failure: ?string, seconds: ?float, run_id: ?string}
      */
     public static function resultFromLog(string $log): array
     {
@@ -286,6 +291,9 @@ final class InstanceImportRequests
             'images' => preg_match('/^Images: (\S+)$/m', $log, $match) === 1 ? $match[1] : null,
             'counts' => $counts,
             'failure' => preg_match('/^Import failed: (.+)$/m', $log, $match) === 1 ? $match[1] : null,
+            'seconds' => preg_match('/^Elapsed time: ([0-9.]+) seconds$/m', $log, $match) === 1 ? (float) $match[1] : null,
+            // The saved report this output belongs to, as LastImportSummary names runs.
+            'run_id' => preg_match('#^Review: .*/([^/]+)/report\.json$#m', $log, $match) === 1 ? $match[1] : null,
         ];
     }
 

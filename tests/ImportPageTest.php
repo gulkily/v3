@@ -234,7 +234,7 @@ try {
     $started = hrtime(true);
     $page = (new ImportController($routeServices, $base . '/repo', $queuePath))->render();
     $seconds = (hrtime(true) - $started) / 1e9;
-    foreach (['<strong>needs review</strong>', 'from https://forum.example', 'imported 1 · conflict 10000', 'images partial', '<th scope="row">Review</th>',
+    foreach (['<strong>needs review</strong>', 'from https://forum.example', 'imported 1 · conflict 10,000', 'images partial', '<th scope="row">Review</th>',
         '<li>invalid: Missing dependency <span class="meta">(193)</span></li>', '<li>unsupported: Unsupported record family or path <span class="meta">(31)</span></li>',
         '<li>conflict: local &lt;b&gt;differs&lt;/b&gt; <span class="meta">(3)</span></li>', 'excluded: private record',
         '<details class="import-advanced">', '<summary>Advanced</summary>', '10100 more in <code>' . $run . '/report.json</code>'] as $needle) {
