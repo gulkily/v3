@@ -1,0 +1,18 @@
+ID: PF-20261123-B01
+Title: Distinguish image-only links in the Zen meme gallery
+Kind: bug
+Workflow: untriaged
+Created: 2026-11-23
+Evidence: unknown
+
+Request:
+Give image-only cards in the Zen meme gallery distinguishable accessible link names. A quiet pond and Moon over the courtyard both display correctly, but each link is named "Image" when the post has no title or image description. Someone navigating by link name cannot tell which thread each link opens.
+
+Sources:
+- Session: Live Zen gallery browser review with the maintainer, 2026-11-23 UTC
+
+Done when:
+A browser accessibility check can distinguish image-only gallery links with missing titles and descriptions. Author-written image descriptions remain available and each card still opens its own thread.
+
+Notes:
+2026-11-23: Reproduced on https://zenmemes.com/gallery/?view=zen in Chromium. The two affected links open https://zenmemes.com/threads/thread-20261123052936-02f46e9a (A quiet pond) and https://zenmemes.com/threads/thread-20261123052953-b1fdd4cb (Moon over the courtyard). Both have the same accessible name, "Image". This record captures the observed issue. Delivery evidence for a fix is pending.
