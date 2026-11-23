@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use ForumRewrite\Contacts\LinkedInConnectionsReader;
+use ForumRewrite\Contacts\ContactBook;
 
 require dirname(__DIR__) . '/autoload.php';
 
@@ -46,32 +47,34 @@ if ($method !== 'GET' && ($_SERVER['HTTP_ORIGIN'] ?? '') !== 'http://' . $host) 
     echo '{"error":"Open Contacts from its local address and retry."}';
     return;
 }
-if ($method === 'GET' && $path === '/api/contacts') {
-    echo '{"contacts":[]}';
-    return;
-}
-if ($method === 'POST' && $path === '/api/preview') {
-    try {
-        if ((int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 65 * 1024 * 1024) {
-            throw new RuntimeException('This file is too large. Extract Connections.csv and try it directly.', 413);
-        }
-        $parsed = (new LinkedInConnectionsReader())->readUpload($_FILES['file'] ?? []);
-        $rows = [];
-        foreach ($parsed['contacts'] as $number => $contact) {
-            $rows[$number] = LinkedInConnectionsReader::previewRow($number, 'added', $contact);
-        }
-        foreach ($parsed['skipped'] as $number => $reason) {
-            $rows[$number] = LinkedInConnectionsReader::previewRow($number, 'skipped', reason: $reason);
-        }
-        ksort($rows);
-        echo json_encode([
-            'counts' => ['added' => count($parsed['contacts']), 'updated' => 0, 'unchanged' => 0, 'skipped' => count($parsed['skipped'])],
-            'rows' => array_values($rows),
-        ], JSON_THROW_ON_ERROR);
-    } catch (RuntimeException $error) {
-        http_response_code(in_array($error->getCode(), [413, 422], true) ? $error->getCode() : 500);
-        echo json_encode(['error' => $error->getCode() === 0 ? 'Could not read the file. Try again.' : $error->getMessage()]);
+try {
+    if ((int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 65 * 1024 * 1024) {
+        throw new RuntimeException('This file is too large. Extract Connections.csv and try it directly.', 413);
     }
-    return;
+    $book = new ContactBook((string) getenv('V3_CONTACTS_DIRECTORY'), $secret);
+    if ($method === 'GET' && $path === '/api/contacts') {
+        $result = ['contacts' => array_values($book->read()['contacts'])];
+    } elseif ($method === 'POST' && $path === '/api/preview') {
+        $result = $book->preview((new LinkedInConnectionsReader())->readUpload($_FILES['file'] ?? []));
+    } elseif ($method === 'POST' && ($path === '/api/confirm' || $path === '/api/cancel')) {
+        $input = json_decode((string) file_get_contents('php://input', false, null, 0, 1024), true);
+        $id = $input['id'] ?? null;
+        if (!is_string($id)) {
+            throw new RuntimeException('Preview the file again before importing.', 409);
+        }
+        if ($path === '/api/confirm') {
+            $result = ['counts' => $book->confirm($id)];
+        } else {
+            $book->cancel($id);
+            $result = ['cancelled' => true];
+        }
+    } else {
+        http_response_code(404);
+        $result = ['error' => 'Contacts page not found.'];
+    }
+    echo json_encode($result, JSON_THROW_ON_ERROR);
+} catch (Throwable $error) {
+    $knownError = $error instanceof RuntimeException && in_array($error->getCode(), [409, 413, 422], true);
+    http_response_code($knownError ? $error->getCode() : 500);
+    echo json_encode(['error' => $knownError ? $error->getMessage() : 'Contacts could not complete that request. Check the private data directory and try again.']);
 }
-http_response_code(404);

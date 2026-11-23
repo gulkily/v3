@@ -13,9 +13,12 @@ const status = document.querySelector('#status');
 const preview = document.querySelector('#preview');
 const previewRows = document.querySelector('#preview-rows');
 const morePreview = document.querySelector('#more-preview');
+const cancelPreview = document.querySelector('#cancel-preview');
+const confirmPreview = document.querySelector('#confirm-preview');
 const resultNames = {added: 'Add', updated: 'Update', unchanged: 'Unchanged', skipped: 'Skip'};
 let reviewRows = [];
 let rowsShown = 0;
+let previewId = null;
 
 function message(text) {
     status.textContent = text;
@@ -24,6 +27,9 @@ function message(text) {
 
 async function request(path, body) {
     const headers = {Authorization: 'Bearer ' + credential};
+    if (typeof body === 'string') {
+        headers['Content-Type'] = 'application/json';
+    }
     const response = await fetch('/api/' + path, {
         method: body === undefined ? 'GET' : 'POST',
         headers,
@@ -64,6 +70,8 @@ function showPreview(result) {
         counts.append(group);
     }
     reviewRows = result.rows;
+    previewId = result.id;
+    confirmPreview.hidden = !previewId;
     rowsShown = 0;
     previewRows.replaceChildren();
     appendRows();
@@ -86,13 +94,38 @@ form.addEventListener('submit', async event => {
         submit.disabled = false;
     }
 });
-morePreview.addEventListener('click', appendRows);
-document.querySelector('#cancel-preview').addEventListener('click', () => {
+function closePreview() {
     preview.hidden = true;
     previewRows.replaceChildren();
     reviewRows = [];
+    previewId = null;
     form.reset();
     input.focus();
+}
+
+morePreview.addEventListener('click', appendRows);
+cancelPreview.addEventListener('click', async () => {
+    if (previewId) {
+        try {
+            await request('cancel', JSON.stringify({id: previewId}));
+        } catch (error) {
+            message(error.message);
+        }
+    }
+    closePreview();
+});
+
+confirmPreview.addEventListener('click', async () => {
+    confirmPreview.disabled = cancelPreview.disabled = true;
+    try {
+        const {counts} = await request('confirm', JSON.stringify({id: previewId}));
+        closePreview();
+        message(`Imported ${counts.added} new contacts and updated ${counts.updated}.`);
+    } catch (error) {
+        message(error.message);
+    } finally {
+        confirmPreview.disabled = cancelPreview.disabled = false;
+    }
 });
 
 dropZone.addEventListener('dragover', event => {

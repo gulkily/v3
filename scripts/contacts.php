@@ -4,6 +4,7 @@
 declare(strict_types=1);
 
 use ForumRewrite\Contacts\PrivateDirectory;
+use ForumRewrite\Contacts\ContactBook;
 
 require dirname(__DIR__) . '/autoload.php';
 
@@ -43,6 +44,15 @@ try {
 }
 
 $secret = bin2hex(random_bytes(32));
+$book = new ContactBook($directory, $secret);
+try {
+    $book->read();
+    $book->clearExpiredPreviews();
+} catch (RuntimeException) {
+    fwrite(STDERR, "Could not open the Contacts book. Check its permissions or restore a valid private backup.\n");
+    exit(1);
+}
+$nextCleanup = time() + 60;
 $environment = getenv();
 unset($environment['PHP_CLI_SERVER_WORKERS']);
 $environment['V3_CONTACTS_SECRET'] = $secret;
@@ -68,6 +78,10 @@ foreach (array_unique([$port, 0]) as $candidate) {
     $deadline = microtime(true) + 3;
     try {
         while (proc_get_status($server)['running']) {
+            if (time() >= $nextCleanup) {
+                $book->clearExpiredPreviews();
+                $nextCleanup = time() + 60;
+            }
             if ($control !== null && (fread($control, 1024) !== '' || feof($control))) {
                 $stopping = true;
                 break;
@@ -94,6 +108,7 @@ foreach (array_unique([$port, 0]) as $candidate) {
         }
         fclose($pipes[2]);
         proc_close($server);
+        $book->clearPreviews();
     }
     if ($stopping) {
         exit(0);
