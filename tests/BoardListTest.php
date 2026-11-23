@@ -441,7 +441,8 @@ final class BoardListTest
             $full = '/images/' . \ForumRewrite\Images\ImageReference::filename($reference);
             $board = $this->markup($this->render($application, '/'));
             // A compressed copy at the original's width, fetched first, over a tiny inline stand-in; never the stored original.
-            assertSame(1, preg_match('#<a class="zen-strip__card zen-strip__card--image zen-strip__card--standin" href="/threads/zen-image"><img style="background-image:url\\((data:image/webp;base64,[A-Za-z0-9+/=]+)\\)" src="' . preg_quote($wide, '#') . '" srcset="' . preg_quote($tile . ' 480w, ' . $wide . ' 900w', '#') . '" sizes="\\(min-width: 48rem\\) 45rem, 100vw" alt="A calm pond" width="900" height="600" fetchpriority="high" decoding="async"></a>#', $board, $standin));
+            // Its shape sizes the card to fit the screen; a wide picture is not marked upright.
+            assertSame(1, preg_match('#<a class="zen-strip__card zen-strip__card--image zen-strip__card--standin" style="--zen-ratio:1.5" href="/threads/zen-image"><img style="background-image:url\\((data:image/webp;base64,[A-Za-z0-9+/=]+)\\)" src="' . preg_quote($wide, '#') . '" srcset="' . preg_quote($tile . ' 480w, ' . $wide . ' 900w', '#') . '" sizes="\\(min-width: 48rem\\) 45rem, 100vw" alt="A calm pond" width="900" height="600" fetchpriority="high" decoding="async"></a>#', $board, $standin));
             assertTrue(strlen($standin[1]) < 1024, 'stand-in is ' . strlen($standin[1]) . ' bytes');
             $dot = getimagesizefromstring(base64_decode(substr($standin[1], strlen('data:image/webp;base64,'))));
             assertSame([16, 11], [$dot[0], $dot[1]]);
