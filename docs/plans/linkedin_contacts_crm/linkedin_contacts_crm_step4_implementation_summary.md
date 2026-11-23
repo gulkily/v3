@@ -28,3 +28,15 @@ Study v3/linkedin_contacts_crm, R1 / P2. Jiro, single exposed rater.
 - Scope and original estimate retained. Current baseline PHP and archive prerequisites are described in the plan.
 
 *— Jiro · 2026-11-23 UTC*
+
+## Stage 2 - Preview a connections CSV
+
+**Original estimate: 0.10**
+
+**Retrospective stage-work assessment: 0.10**
+
+- Added a native picker and drop target, row outcomes, and a bounded CSV reader for legacy and reduced exports.
+- `./v3 test ContactsImportTest ContactsLaunchTest` passed (6 tests). The new HTTP cases first failed on the missing preview route, then passed for valid exports, oversize and invalid inputs, and a denied origin followed by successful retry. PHP and JS syntax checks passed.
+- Scope and original estimate retained. Fixtures approximate the reported reduced export.
+
+*— Jiro · 2026-11-23 UTC*

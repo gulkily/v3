@@ -60,6 +60,17 @@ final class ContactsTestServer
         return [(int) $status, (string) $response, $http_response_header];
     }
 
+    public function upload(string $filename, string $content, array $headers = []): array
+    {
+        $boundary = 'v3-fixture-' . bin2hex(random_bytes(8));
+        $body = "--{$boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{$filename}\"\r\n"
+            . "Content-Type: application/octet-stream\r\n\r\n{$content}\r\n--{$boundary}--\r\n";
+        [$status, $response] = $this->request('/api/preview', $body, $headers + [
+            'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
+        ]);
+        return [$status, $response === '' ? [] : json_decode($response, true, flags: JSON_THROW_ON_ERROR)];
+    }
+
     public function stop(): void
     {
         if (!is_resource($this->process)) {
