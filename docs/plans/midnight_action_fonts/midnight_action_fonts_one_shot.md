@@ -60,6 +60,6 @@ Delivered. Midnight's post actions read like Word 97's in dark: Tahoma, no under
 
 The diff touches `theme-midnight.css`, `PostActionThemeTest.php`, the item, this record, the plans index, the ledger and the debug log. No new component, no markup, dependency or schema change. Deploy now is enough.
 
-Commit/merge/publication status: completion commit pending at time of writing; branch `fix/midnight_action_fonts`; not merged or deployed.
+Commit/merge/publication status: completion commit `a69a36322` on `fix/midnight_action_fonts`; PR #383 open; not merged or deployed.
 
 Attribution: Claude · 2026-11-23 UTC · Model: claude-opus-5-5
