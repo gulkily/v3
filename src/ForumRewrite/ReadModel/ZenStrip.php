@@ -24,7 +24,7 @@ final class ZenStrip
      * @param list<string> $tags lower-case tags, all required
      * @return list<array{root_post_id:string, root_post_created_at:string, subject:string, body_preview:string, score_total:int}>
      */
-    public static function load(PDO $pdo, array $tags, int $limit = self::LIMIT): array
+    public static function load(PDO $pdo, array $tags, int $limit = self::LIMIT, int $offset = 0): array
     {
         $tags = array_values(array_unique(array_map(static fn (string $tag): string => strtolower($tag), $tags)));
         if ($tags === [] || $limit < 1) {
@@ -49,7 +49,7 @@ final class ZenStrip
         $statement = $pdo->prepare('SELECT threads.root_post_id, threads.root_post_created_at, threads.subject, threads.body_preview, threads.score_total'
             . ThreadKeysetPage::listedRootsSql()
             . ' AND ' . implode(' AND ', $conditions)
-            . ' ORDER BY threads.score_total DESC, threads.root_post_created_at DESC, threads.root_post_id DESC LIMIT ' . $limit);
+            . ' ORDER BY threads.score_total DESC, threads.root_post_created_at DESC, threads.root_post_id DESC LIMIT ' . $limit . ' OFFSET ' . $offset);
         $statement->execute($params);
 
         return array_map(static fn (array $row): array => [

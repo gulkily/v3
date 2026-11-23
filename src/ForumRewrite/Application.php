@@ -934,16 +934,30 @@ final class Application
         }
 
         if ($path === '/gallery/' || $path === '/gallery') {
-            if (!$this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_GALLERY_ENABLED)) {
+            $flags = $this->featureFlags();
+            $galleryEnabled = $flags->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_GALLERY_ENABLED);
+            $controller = new \ForumRewrite\Http\RecentPageController($this->routeServices());
+            if (($query['view'] ?? null) === 'zen') {
+                $tags = SiteProfileRegistry::zenStripTags();
+                if ($tags === [] || !$flags->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::ZEN_STRIP_ENABLED)) {
+                    $this->routeServices()->notFound();
+                } elseif (!$galleryEnabled) {
+                    $this->sendRedirect('/tags/' . implode('+', $tags), 'Opening the Zen meme threads.', 302, activeSection: 'board');
+                } else {
+                    $this->sendHtml($controller->zenGallery($tags, $query['page'] ?? null), 200);
+                }
+                return;
+            }
+            if (!$galleryEnabled) {
                 $this->routeServices()->notFound();
                 return;
             }
-            $location = (new \ForumRewrite\Http\RecentPageController($this->routeServices()))->withLocation('gallery', $query['with'] ?? null);
+            $location = $controller->withLocation('gallery', $query['with'] ?? null);
             if ($location !== null) {
                 $this->sendRedirect($location, 'Opening that post in Gallery.', 303, activeSection: 'gallery');
                 return;
             }
-            $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->gallery($query['page'] ?? null), 200);
+            $this->sendHtml($controller->gallery($query['page'] ?? null), 200);
             return;
         }
 

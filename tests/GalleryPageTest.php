@@ -73,6 +73,69 @@ final class GalleryPageTest
         });
     }
 
+    public function testHomeThumbnailsOpenThePaginatedZenGallery(): void
+    {
+        $this->withImages(function (string $repositoryRoot, string $databasePath): void {
+            $wide = $this->storeImage($repositoryRoot, 900, 600, 'A calm pond');
+            $image = ImageReference::line($wide);
+            $this->writePost($repositoryRoot, 'zen-meme-cover', "Subject: Pond\n\n" . $image, '2026-07-02T00:00:00Z', 'zen meme');
+            for ($i = 1; $i <= 49; $i++) {
+                $id = sprintf('zen-meme-%02d', $i);
+                $this->writePost($repositoryRoot, $id, "Subject: Text meme $i\n\nWords.", '2026-07-01T00:00:00Z', 'zen meme');
+            }
+            $this->writePost($repositoryRoot, 'zen-meme-untitled', "\nA text meme without a subject.", '2026-07-01T00:00:00Z', 'zen meme');
+            $this->writePost($repositoryRoot, 'guest-zen-meme', "Subject: Guest tags\n\n" . $image, '2026-07-02T00:01:00Z', 'zen meme');
+            $this->writePost($repositoryRoot, 'unrelated-image', "Subject: Unrelated image\n\n" . $image, '2026-07-02T00:02:00Z');
+            $this->commit($repositoryRoot);
+
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $this->render($application, '/');
+            // Model an approved member's signed tags without changing the production approval rules.
+            $pdo = new PDO('sqlite:' . $databasePath);
+            $pdo->exec("INSERT INTO profiles (identity_id,profile_slug,username,username_token,fallback_label,signer_fingerprint,bootstrap_post_id,bootstrap_thread_id,public_key,is_approved,was_approved) VALUES ('id-zen','zen','zen','zen','zen','fp','b','b','k',1,1)");
+            $pdo->exec("UPDATE posts SET author_identity_id = 'id-zen', attribution_counted = 1 WHERE post_id LIKE 'zen-meme-%'");
+            $pdo = null;
+
+            $home = $this->markup($this->render($application, '/'));
+            assertSame(1, preg_match('/href="([^"]+)" aria-label="All Zen memes"/', $home, $link));
+            assertSame('/gallery/?view=zen', $link[1]);
+            $gallery = $this->markup($this->render($application, $link[1]));
+            assertSame(1, preg_match('#<a\b[^>]*href="/threads/zen-meme-cover"[^>]*>\s*(<img\b[^>]*alt="A calm pond"[^>]*>)#', $gallery, $pond));
+            assertStringContains('srcset=', $pond[1]);
+            assertStringContains('width="900" height="600" loading="lazy"', $pond[1]);
+            assertStringContains('href="/threads/zen-meme-49"', $gallery);
+            assertStringContains('Text meme 49', $gallery);
+            assertStringContains('A text meme without a subject.', $gallery);
+            assertStringNotContains('href="/threads/guest-zen-meme"', $gallery);
+            assertStringNotContains('href="/threads/unrelated-image"', $gallery);
+            assertStringNotContains('href="/threads/zen-meme-01"', $gallery);
+            $with = $this->markup($this->render($application, $link[1] . '&with=unrelated-image'));
+            assertStringContains('href="/threads/zen-meme-cover"', $with);
+            assertStringNotContains('href="/threads/unrelated-image"', $with);
+
+            assertSame(1, preg_match('/rel="next" href="([^"]+)"/', $gallery, $next));
+            $second = $this->markup($this->render($application, html_entity_decode($next[1])));
+            assertStringContains('href="/threads/zen-meme-01"', $second);
+            assertStringContains('Text meme 1', $second);
+            assertStringNotContains('href="/threads/zen-meme-cover"', $second);
+            assertStringNotContains('rel="next"', $second);
+            assertSame(1, preg_match('/rel="prev" href="([^"]+)"/', $second, $previous));
+            assertSame($link[1], $previous[1]);
+
+            $ordinary = $this->markup($this->render($application, '/gallery/'));
+            assertStringContains('href="/threads/unrelated-image"', $ordinary);
+            assertStringContains('href="/threads/guest-zen-meme"', $ordinary);
+            assertStringNotContains('href="/threads/zen-meme-49"', $ordinary);
+
+            putenv(FeatureFlagRegistry::IMAGE_GALLERY_ENABLED . '=false');
+            $disabled = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $home = $this->markup($this->render($disabled, '/'));
+            assertStringContains('href="/tags/zen+meme" aria-label="All Zen memes"', $home);
+            assertStringContains('href="/tags/zen+meme"', $this->render($disabled, $link[1]));
+            assertSame(302, http_response_code());
+        });
+    }
+
     public function testPreviewRouteResizesCachesAndFollowsTheOriginal(): void
     {
         $this->withImages(function (string $repositoryRoot, string $databasePath): void {
@@ -142,9 +205,9 @@ final class GalleryPageTest
         return $reference;
     }
 
-    private function writePost(string $repositoryRoot, string $postId, string $rest, string $createdAt): void
+    private function writePost(string $repositoryRoot, string $postId, string $rest, string $createdAt, string $tags = 'general'): void
     {
-        file_put_contents($repositoryRoot . '/records/posts/' . $postId . '.txt', "Post-ID: {$postId}\nCreated-At: {$createdAt}\nBoard-Tags: general\n{$rest}\n");
+        file_put_contents($repositoryRoot . '/records/posts/' . $postId . '.txt', "Post-ID: {$postId}\nCreated-At: {$createdAt}\nBoard-Tags: {$tags}\n{$rest}\n");
     }
 
     private function commit(string $repositoryRoot): void

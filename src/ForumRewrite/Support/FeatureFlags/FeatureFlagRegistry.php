@@ -512,7 +512,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::ZEN_STRIP_ENABLED,
                 'Zen strip',
-                "Open the home page with Zen memes: threads an approved member tagged with every tag the site profile names (on zenmemes.com, #zen and #meme). The top-liked one shows large, and a row of tiny thumbnails under it opens their tag page. Sites whose profile names no tags show none.",
+                "Open the home page with Zen memes: threads an approved member tagged with every tag the site profile names (on zenmemes.com, #zen and #meme). The top-liked one shows large, and a row of tiny thumbnails under it opens the Zen meme gallery (their tag page if Gallery is off). Sites whose profile names no tags show none.",
                 true,
                 self::ZEN_STRIP_ENABLED,
                 siteMutable: true,

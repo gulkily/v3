@@ -8,7 +8,7 @@ Effort study: railspike-effort P2, R1, scope v1. Extended estimates: enabled.
 
 **Cycle estimate: 0.30**
 
-Status: planned. Next action: commit the plan, then run the new regression test before implementation.
+Status: implemented and verified locally. Production acceptance follows review and rollout.
 
 Goal: Open a gallery of Zen memes from the thumbnails on the homepage.
 
@@ -22,7 +22,7 @@ Dependency inventory: Zero new or updated dependencies.
 
 ## Testing plan
 
-- Exercise the homepage through Application::handle in tests/BoardListTest.php. Follow the thumbnail row's link, confirm its destination shows a responsive image and linked text entries, and check that an unsigned tag and an unrelated image do not enter the collection.
+- Exercise the homepage through Application::handle in tests/GalleryPageTest.php. Follow the thumbnail row's link, confirm its destination shows a responsive image and linked text entries, and check that an unsigned tag and an unrelated image do not enter the collection.
 - Follow the Next and Previous links to verify that the last eligible memes can be reached after the first page and the view stays filtered. Turn Gallery off and confirm the homepage still links to the ordinary combined tag listing.
 - Run the smoke set with BoardListTest, GalleryPageTest, and ZenStripTest. Verify the homepage flow and ordinary Gallery on a local phone and desktop viewport, including a light and dark theme, real image loading, and overflow.
 
@@ -37,8 +37,24 @@ NOTE: I will write *all* tests before I add any implementation behavior.
 - Concepts touched: [Zen strip](../../concepts/zen_strip.md), [Post presentation](../../concepts/post_presentation.md), [Collection selection](../../concepts/collection_selection.md). Update the entries alongside implementation.
 
 Starting revision: 8a5aa406818c1a6c0cd0a04f776b42b25aff1845. Branch: zen-meme-gallery.
-Planning commit: pending.
+Planning commit: 5fbd75f951176acb8ae758d6d2de5b38ca79730e.
 
 Study history: 2026-11-23 UTC. Intake and execution entry 0.30, R1, P2, v1. The initial recommendation and targeted source inspection preceded the first R1 rating. The display and tag-selection paths already exist; the work is in connecting them with bounded pagination and running both views through verification.
+
+*— Jiro · 2026-11-23 UTC*
+
+## Outcome and verification
+
+- Before implementation, the homepage click-through regression followed the old tag link and found no gallery image. The new view passes this regression. Tests also cover pagination, unsigned-tag exclusion, untitled text, the normal Gallery, and recovery when Gallery is disabled.
+- Passed `./v3 test --smoke BoardListTest GalleryPageTest ZenStripTest FeatureFlagsBehaviorTest` sequentially, 501 tests. The full suite was not run. An initial two-worker run hit unrelated read-model metadata failures and a missing local zip executable. Relevant metadata tests passed in isolation on the starting revision and in the sequential run. The archive test passed with the fixture runtime's zip tools present.
+- Passed PHP syntax checks on changed PHP and `git diff --check`. Independent review found no blocking issues.
+- Headed Chromium, 390 px Gloss light and 1366 px Midnight dark, with a local fixture. Clicked the home thumbnail row, loaded two uncropped responsive images, opened a text-only thread by keyboard, and checked for horizontal overflow. Verified recovery from an out-of-range page and checked ordinary Gallery zoom.
+- Production acceptance is pending. On hosts serving generated HTML, refresh the published homepage after rollout. The deploy command updates the checkout only. Use the instance's usual static build, or `./v3 build-static --shared-only` when its published release supports a shared-only refresh, then follow the homepage thumbnails.
+
+Final review: Reused the existing listing rules, display sources, gallery page, and page navigation. The change uses the existing schema and introduces no dependency changes.
+
+Study closeout: Retrospective scope assessment 0.30 (R1, P2). Measured effort unavailable. Maintainer fit judgment pending.
+
+Commit status: planning commit confirmed above. This record accompanies the implementation commit. Deployment and merge are pending.
 
 *— Jiro · 2026-11-23 UTC*

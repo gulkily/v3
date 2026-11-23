@@ -182,7 +182,7 @@ final class BoardPageController
 
     /**
      * The Zen memes for the top of the home page: the site profile's strip threads,
-     * top-scored first, with their first image, and the address of their tag page.
+     * top-scored first, with their first image and a link to the collection.
      * Null anywhere but the first page of `/` with no view or sort chosen (the
      * caller decides that), with the flag off, or when the site names no strip tags.
      *
@@ -212,7 +212,10 @@ final class BoardPageController
             }
         }
 
-        return ['threads' => $threads, 'allHref' => '/tags/' . implode('+', $tags)];
+        $allHref = $this->routeServices->featureFlags()->isEnabled(FeatureFlagRegistry::IMAGE_GALLERY_ENABLED)
+            ? '/gallery/?view=zen'
+            : '/tags/' . implode('+', $tags);
+        return ['threads' => $threads, 'allHref' => $allHref];
     }
 
     /**
