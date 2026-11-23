@@ -1,9 +1,9 @@
 ID: PF-20261104-B12
 Title: Word97 action fonts and underlines
 Kind: bug
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-04
-Evidence: unknown
+Evidence: locally-verified
 
 Request:
 Like and Flag in Word97 should be sans-serif and not underlined; agent follow-up includes Reply and other post actions.
@@ -14,6 +14,10 @@ Sources:
 - https://zenmemes.com/posts/reply-20261103054351-e9adc574
 - https://zenmemes.com/posts/reply-20261103055503-c3989580
 
+Done when:
+In Word 97, every control in a post's action row (Reply, Like, Flag, Agent, state tags, the More and "…" toggles, Post analysis, Retract) uses the sans-serif UI font with no underline.
+
 Notes:
 Agent reports PR #8 and headless computed-style checks. Merge/deployment/phone acceptance not established here.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-23: triaged as real and partly open. PR #8 (merged 2026-11-03) already covered Reply and every .thread-reaction-button; the More, "…", Post analysis and retraction Details toggles added since were still serif. Added them to the same Word 97 rule. One-shot word97_action_fonts on fix/word97_action_fonts (record docs/plans/word97_action_fonts/word97_action_fonts_one_shot.md); computed-style checked in headless Chrome; awaiting review, deployment and a look on the phone. Not covered: Midnight, which shares Word 97's serif body font, still has serif underlined post actions (not named by this item).

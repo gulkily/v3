@@ -7,7 +7,7 @@ Extended estimates: enabled (no real alternatives or work units worth estimating
 
 **Cycle estimate: 0.10**
 
-Status: plan written; next permitted action: implementation on `fix/word97_action_fonts`.
+Status: technically complete on `fix/word97_action_fonts`; pushed for review, not merged or deployed. Next action: maintainer review, merge, deployment and a look on the phone in Word 97.
 
 ## Request and authorization
 
@@ -33,20 +33,38 @@ Verification and recovery plan: `./v3 test --smoke` plus any test touching these
 
 Starting revisions and branch: `fix/word97_action_fonts` from `origin/main` `cdc8abf46`.
 
-Planning commit: pending.
+Planning commit: `8d6a1ba1a` (plan and index link only, before any implementation edit).
 
 ## Study history
 
 - 2026-11-23 UTC, intake and execution entry: **0.10**, after reading both items, the Word 97 stylesheet and the post card templates (inspection preceded the estimate; no pristine intake). Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified.
 
+- 2026-11-23 UTC, closeout: retrospective scope assessment **0.10**. Delivered as planned. Claude, single exposed rater. Maintainer judgment pending; measured time unknown.
+
 ## Dated execution history
+
+- 2026-11-23: baseline in headless Chrome (local instance, `/threads/root-001`, Word 97): Reply, Like, Flag already Tahoma with no underline (PR #8 holds); More, "…", Post analysis and Details in Times New Roman. Outbox status in Times New Roman (Word 97, Midnight) and Georgia (Light). Confirms the plan's reading.
+- 2026-11-23: `theme-word97.css`: the four summaries joined the existing post-action rule; comment updated.
+- 2026-11-23: `site.css`: `[data-role="outbox-status"]` takes `var(--ui-font)`, placed with the other Outbox rules.
+- 2026-11-23: `PostActionThemeTest` gained two assertions (Word 97 toggles, Outbox status rule).
+- 2026-11-23: both item files updated (`Workflow: blocked` pending deployment, `Done when:` written, dated note).
+- Discovery, not acted on: Midnight (Word 97's dark sibling, same Times body and Tahoma UI fonts) still shows Reply, Like and Flag in Times New Roman with an underline. Not named by either item; listed as a follow-up in the PR.
 
 ## Outcome
 
+Delivered. In Word 97 every post-action control now computes to the UI font with no underline; the Outbox status line uses the UI font in every theme. Midnight's post actions are a follow-up, not done.
+
 ## Verification
+
+- `./v3 test --smoke PostActionThemeTest Word97ThemeCoverageTest`: 492 run, 492 passed (includes the two new tests). The full suite was not run.
+- Headless Chrome (system Chrome through Playwright) on a local instance, computed styles. Controls that need a signed-in viewer or a finished analysis (More, "…", Post analysis, Details) were injected into the action row with the templates' own markup. Word 97: all seven controls Tahoma, no underline. Outbox status: Tahoma (Word 97, Midnight), Trebuchet MS (Light), Inter (Gloss), unchanged in Chicago, Bubblegum and Console.
+- Screenshots of the Word 97 thread card and Outbox page looked right.
+- Not verified: the reporter's phone; production; the real signed-in "…" menu (markup injected instead).
 
 ## Final review
 
-Commit/merge/publication status: planning commit pending.
+The diff touches `theme-word97.css`, `site.css`, `PostActionThemeTest.php`, the two item files, this record, the plans index, the ledger and the debug log. No new component, no markup or behaviour change, no dependency or schema change. Deploy now is enough.
+
+Commit/merge/publication status: completion commit pending at time of writing; branch `fix/word97_action_fonts`; not merged or deployed.
 
 Attribution: Claude · 2026-11-23 UTC · Model: claude-opus-5-5
