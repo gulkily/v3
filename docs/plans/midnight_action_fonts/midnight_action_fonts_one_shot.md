@@ -7,7 +7,7 @@ Extended estimates: enabled (no real alternatives or work units worth estimating
 
 **Cycle estimate: 0.10**
 
-Status: plan written; next permitted action: implementation on `fix/midnight_action_fonts`.
+Status: technically complete on `fix/midnight_action_fonts`; pushed for review, not merged or deployed. Next action: maintainer review, merge, deployment and a look on the phone in Midnight.
 
 ## Request and authorization
 
@@ -32,12 +32,34 @@ Verification and recovery plan: `./v3 test --smoke PostActionThemeTest Word97The
 
 Starting revisions and branch: `fix/midnight_action_fonts` from `origin/main` `9ae843cf6`.
 
-Planning commit: pending.
+Planning commit: `a4a251c87` (plan and index link only, before any implementation edit).
 
 ## Study history
 
 - 2026-11-23 UTC, intake and execution entry: **0.10**, after the baseline screenshot and reading Midnight's button rules. Claude, single exposed rater (wrote the parent cycle). Scope v1. Reference R1, hashes not re-verified.
+- 2026-11-23 UTC, closeout: retrospective scope assessment **0.10**. Delivered as planned. Maintainer judgment pending; measured time unknown.
 
 ## Dated execution history
 
 - 2026-11-23: baseline (headless Chrome, `/threads/root-001`, Midnight): Reply, Like, Flag in Times New Roman with underline, Like/Flag with no side padding and a black border; More, "…", Post analysis, Details in Times New Roman.
+- 2026-11-23: `theme-midnight.css`: added the Word 97 post-action typography rule and the action-row Like/Flag bevel rule (`padding: 0 0.6em`; border `#6a6a6a`/`#000000`, inner `#4a4a4a`/`#1a1a1a`; inverted on `:active`), right after the generic button rules.
+- 2026-11-23: `PostActionThemeTest`: Midnight added to the typography and toggle tests (first renamed `testRetroThemePostActionsUseUiTypography`, since it now covers three themes); new `testMidnightLikeAndFlagBevelMatchesWord97`.
+- 2026-11-23: PF-20261111-F19 updated (`blocked` pending deployment). PF-20261030-B05 left alone (symptom unknown).
+
+## Outcome
+
+Delivered. Midnight's post actions read like Word 97's in dark: Tahoma, no underline, Like and Flag padded with a border-drawn bevel.
+
+## Verification
+
+- `./v3 test --smoke PostActionThemeTest Word97ThemeCoverageTest`: 493 run, 493 passed. The full suite was not run.
+- Headless Chrome on a local instance, `/threads/root-001`, Midnight: Reply, Like, Flag, "…", Post analysis, Details all Tahoma with no underline; Like/Flag 9.6px side padding, top border `#6a6a6a`. Before/after screenshots compared with Word 97's; layout matches. Signed-in and analysis controls were injected with the templates' markup.
+- Not verified: the phone, production, the pressed (`:active`) look.
+
+## Final review
+
+The diff touches `theme-midnight.css`, `PostActionThemeTest.php`, the item, this record, the plans index, the ledger and the debug log. No new component, no markup, dependency or schema change. Deploy now is enough.
+
+Commit/merge/publication status: completion commit pending at time of writing; branch `fix/midnight_action_fonts`; not merged or deployed.
+
+Attribution: Claude · 2026-11-23 UTC · Model: claude-opus-5-5
