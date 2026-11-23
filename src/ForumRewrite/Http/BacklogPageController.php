@@ -26,6 +26,18 @@ final class BacklogPageController
     private const SHOW_LABELS = ['can-start' => 'Can start', 'untriaged' => 'Untriaged', 'ready' => 'Ready', 'waiting' => 'Waiting on you', 'open' => 'All open'];
     private const KIND_LABELS = ['all' => 'All kinds', 'bug' => 'Bugs', 'feature' => 'Features', 'other' => 'Other'];
 
+    /** What a page needs to sign and send a claim or a release: the signing set the guestbook uses, then the claim script. */
+    private const CLAIM_SCRIPTS = [
+        '/assets/openpgp_loader.js',
+        '/assets/browser_signing.js',
+        '/assets/outbox_store.js',
+        '/assets/outbox_storage.js',
+        '/assets/outbox_compose.js',
+        '/assets/outbox_sender.js',
+        '/assets/private_site_auth.js',
+        '/assets/backlog_claim.js',
+    ];
+
     public function __construct(private readonly RouteServices $routeServices, private readonly string $projectRoot) {}
 
     /** @param array<string, mixed> $query */
@@ -65,6 +77,7 @@ final class BacklogPageController
             ],
             'backlogKindOptions' => $this->options('kind', self::KIND_LABELS, $words),
             'backlogTextHref' => self::href($words, [], '/backlog.txt'),
+            'backlogClaimsThread' => $claims === null ? null : SiteProfileRegistry::backlogClaimsThread(),
         ], 'Backlog', 'tools');
     }
 
@@ -91,20 +104,33 @@ final class BacklogPageController
         return $path . '?items=' . implode(',', $ids) . ($mode === BacklogPrompt::MODES[0] ? '' : '&mode=' . $mode);
     }
 
-    /** @param array<string, mixed> $query a tidy start request: at least one ID-shaped word */
-    public function start(array $query): string
+    /**
+     * @param array<string, mixed> $query a tidy start request: at least one ID-shaped word
+     * @param array<string, mixed>|null $viewer the viewer the thread page would recognise (session, else identity hint);
+     *     it only decides whether a Claim form is drawn, since the claim itself is a signed post
+     */
+    public function start(array $query, ?array $viewer = null): string
     {
         $ids = BacklogPrompt::ids($query['items'] ?? null);
         $mode = BacklogPrompt::mode($query['mode'] ?? null);
-        $picked = BacklogPrompt::pick($this->items(), $ids);
+        $all = $this->items();
+        $picked = BacklogPrompt::pick($all, $ids);
         $openIds = array_map(static fn (FeedbackItem $item): string => $item->id(), $picked['items']);
+        $claims = $this->claims($all);
         $modes = [];
         foreach (['auto' => 'Agent decides', 'one-shot' => 'One-shot', 'staged' => 'Staged cycle'] as $key => $label) {
             $modes[] = ['key' => $key, 'label' => $label, 'href' => self::startHref($ids, $key), 'is_active' => $mode === $key];
         }
 
         return $this->routeServices->renderPageTemplate('backlog_start.php', [
-            'backlogStartItems' => array_map(static fn (FeedbackItem $item): array => ['id' => $item->id(), 'title' => $item->header('Title')], $picked['items']),
+            'backlogStartItems' => array_map(static fn (FeedbackItem $item): array => [
+                'id' => $item->id(),
+                'title' => $item->header('Title'),
+                'claim' => $claims[$item->id()] ?? null,
+            ], $picked['items']),
+            // Null on a site with no claims thread: the page then says nothing about claims.
+            'backlogClaimsThread' => $claims === null ? null : SiteProfileRegistry::backlogClaimsThread(),
+            'backlogViewerId' => (string) ($viewer['identity_id'] ?? ''),
             'backlogStartUnknown' => $picked['unknown'],
             'backlogStartClosed' => $picked['closed'],
             'backlogStartModes' => $modes,
@@ -114,7 +140,7 @@ final class BacklogPageController
                 'text' => BacklogPrompt::build($picked['items'], $mode, SourceRepository::fromProjectRoot($this->projectRoot)),
             ],
             'backlogStartTextHref' => $openIds === [] ? null : self::startHref($openIds, $mode, '/backlog/start.txt'),
-        ], 'Start', 'tools');
+        ], 'Start', 'tools', $claims === null ? [] : self::CLAIM_SCRIPTS);
     }
 
     /**

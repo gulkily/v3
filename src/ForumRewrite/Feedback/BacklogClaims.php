@@ -144,19 +144,41 @@ final class BacklogClaims
     }
 
     /**
-     * The words a row shows for one item, in order.
+     * True when this identity has a claim of its own on the item, counted or
+     * waiting: nothing more for it to claim there.
+     *
+     * @param array<string, mixed>|null $entry
+     */
+    public static function hasClaimBy(?array $entry, string $identity): bool
+    {
+        if ($entry === null || $identity === '') {
+            return false;
+        }
+        foreach ([...($entry['holder'] !== null ? [$entry['holder']] : []), ...$entry['also'], ...$entry['waiting']] as $claim) {
+            if ($claim['identity'] === $identity) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The words a row shows for one item, in order. The start page also says
+     * since when the holder has had it.
      *
      * @param array<string, mixed>|null $entry
      * @return list<string>
      */
-    public static function lines(?array $entry): array
+    public static function lines(?array $entry, bool $withDate = false): array
     {
         if ($entry === null) {
             return [];
         }
         $lines = [];
         if ($entry['holder'] !== null) {
-            $lines[] = 'Claimed by ' . $entry['holder']['name'] . ($entry['holder']['stale'] ? ' · stale' : '');
+            $since = $withDate ? strtotime($entry['holder']['since']) : false;
+            $lines[] = 'Claimed by ' . $entry['holder']['name'] . ($since === false ? '' : ' since ' . gmdate('M j', $since)) . ($entry['holder']['stale'] ? ' · stale' : '');
         }
         foreach ($entry['also'] as $claim) {
             $lines[] = 'Also claimed by ' . $claim['name'] . ($claim['stale'] ? ' · stale' : '');

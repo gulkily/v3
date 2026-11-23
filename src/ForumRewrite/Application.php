@@ -995,7 +995,7 @@ final class Application
                 $this->sendRedirect($tidy, $tidy === '/backlog' ? 'Pick at least one item to start.' : 'Opening the start page.', 303, [], 'tools');
                 return;
             }
-            $this->sendHtml((new \ForumRewrite\Http\BacklogPageController($this->routeServices(), $this->projectRoot))->start($query), 200);
+            $this->sendHtml((new \ForumRewrite\Http\BacklogPageController($this->routeServices(), $this->projectRoot))->start($query, $this->resolveViewerProfileFromIdentityHint()), 200);
             return;
         }
 

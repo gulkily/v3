@@ -80,6 +80,10 @@ $backlogLinks = static function (array $options) use ($e): string {
       var ids = picked();
       if (ids.length === 0) return;
       event.preventDefault();
+<?php if ($backlogClaimsThread !== null): ?>
+      // Tell the start page it was reached by pressing Start, so it claims these items.
+      try { sessionStorage.setItem('backlog-claim-intent', ids.join(',')); } catch (error) {}
+<?php endif; ?>
       location.href = form.getAttribute('action') + '?items=' + ids.join(',');
     });
     show();

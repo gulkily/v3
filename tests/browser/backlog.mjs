@@ -189,6 +189,89 @@ try {
   assert.match(claimedText, /ID: PF-20261101-F01\n[^]*?File: docs\/feedback\/items\/PF-20261101-F01\.txt\nClaim-State: held\nClaimed-By: \S+\nClaimed-Since: \S+\nClaim-Post: \S+\n/);
   assert.match(claimedText, /ID: PF-20261101-B02\n[^]*?Claim-State: none\nGuest-Claims: 1\n/);
 
+  // Start claims. A member first: posting once gives this browser a key the server recognises; then it is approved.
+  const claimPosts = () => Number(site(`echo $db->query("SELECT COUNT(*) FROM posts WHERE body LIKE 'claim:%' AND retracted_at IS NULL")->fetchColumn();`));
+  const member = await open(true);
+  await member.page.goto(claimsBase + '/compose/thread');
+  const compose = member.page.locator('[data-compose-kind="thread"]');
+  await compose.getByRole('textbox', { name: 'Title' }).fill('Hello from the member');
+  await compose.getByRole('textbox', { name: 'Body' }).fill('A first post, so this browser has a key.');
+  await compose.getByRole('button', { name: 'Post', exact: true }).click();
+  await member.page.waitForURL(/\/threads\//, { timeout: 30000 });
+  approve(site(`$find = $db->prepare('SELECT author_identity_id FROM posts WHERE body LIKE ? ORDER BY created_at DESC LIMIT 1');
+    $find->execute(['A first post, so this browser%']); echo $find->fetchColumn();`).trim());
+  // Tick the free item and one the seed key holds, press Start: the prompt is there at once, and the claim follows.
+  let posts = claimPosts();
+  await member.page.goto(claimsBase + '/backlog');
+  await tick(member.page, 'A bug', { exact: true });
+  await tick(member.page, 'A feature with a long title');
+  await member.page.getByRole('button', { name: 'Start' }).click();
+  await member.page.waitForURL(claimsBase + '/backlog/start?items=PF-20261101-F01,PF-20261101-B02');
+  assert.match(await member.page.locator('[data-copy-prompt-source]').textContent(), /^Please work on these 2 v3 backlog items together/, 'the prompt does not wait for the claim');
+  const startClaim = id => member.page.locator(`[data-role="backlog-claim"][data-claim-id="${id}"]`);
+  await member.page.locator('[data-claim-id="PF-20261101-B02"]', { hasText: /^Claimed by \S+ since \w+ \d+ · / }).waitFor({ timeout: 60000 });
+  assert.match(await startClaim('PF-20261101-B02').textContent(), /^Claimed by \S+ since \w+ \d+ · Claimed by a guest · not counted$/, 'the member holds it; the guest claim is still listed');
+  assert.match(await startClaim('PF-20261101-F01').textContent(), /^Claimed by seed since \w+ \d+ · Also claimed by \S+$/, 'held by someone else: Start says who and still claims');
+  assert.equal(await member.page.locator('[data-role="backlog-claim-form"]').count(), 0, 'nothing left to claim');
+  assert.equal(claimPosts(), posts + 1, 'one claim post for both items');
+  assert.match(await member.page.locator('[data-copy-prompt-source]').textContent(), /^Please work on these 2 v3 backlog items together/, 'the prompt is still on the page');
+  // A reload claims nothing more, and neither does opening a start address without pressing Start.
+  await member.page.reload();
+  await member.page.goto(claimsBase + '/backlog/start?items=PF-20261101-F03');
+  await member.page.waitForTimeout(1500);
+  assert.equal(claimPosts(), posts + 1, 'a reload or a pasted address posts no claim');
+  assert.match(await startClaim('PF-20261101-F03').textContent(), /^Claimed by seed since/);
+  // There the member has no claim yet, so Claim is offered. A failed post says so and keeps the button; a second press claims.
+  const claim = member.page.locator('[data-role="backlog-claim-form"]');
+  assert.equal(await claim.getByRole('button', { name: 'Claim' }).isVisible(), true);
+  await member.page.route('**/api/prepare_reply', route => route.abort(), { times: 1 });
+  await claim.getByRole('button', { name: 'Claim' }).click();
+  await claim.locator('[data-role="backlog-claim-feedback"]', { hasText: /^Not claimed\./ }).waitFor({ timeout: 30000 });
+  assert.equal(await claim.getByRole('button', { name: 'Claim' }).isEnabled(), true);
+  assert.equal(claimPosts(), posts + 1);
+  await claim.getByRole('button', { name: 'Claim' }).click();
+  await member.page.locator('[data-claim-id="PF-20261101-F03"]', { hasText: /Also claimed by/ }).waitFor({ timeout: 60000 });
+  assert.equal(claimPosts(), posts + 2);
+  assert.deepEqual(member.errors, []);
+  // Start pressed while the post cannot be sent: the prompt is there, the page says Not claimed, and Claim is left to press.
+  site(`$db->exec("UPDATE posts SET retracted_at = '2026-11-23T00:00:00Z' WHERE body LIKE 'claim: PF-20261101-F03%' AND author_label != 'seed'");`);
+  posts = claimPosts();
+  await member.page.goto(claimsBase + '/backlog');
+  await tick(member.page, 'Averyveryverylong');
+  await member.page.route('**/api/prepare_reply', route => route.abort(), { times: 1 });
+  await member.page.getByRole('button', { name: 'Start' }).click();
+  await member.page.waitForURL(claimsBase + '/backlog/start?items=PF-20261101-F03');
+  assert.match(await member.page.locator('[data-copy-prompt-source]').textContent(), /^Please work on this v3 backlog item/);
+  await member.page.locator('[data-role="backlog-claim-feedback"]', { hasText: /^Not claimed\./ }).waitFor({ timeout: 30000 });
+  assert.equal(claimPosts(), posts);
+  const memberCookies = await member.context.cookies();
+  await member.context.close();
+  // No key: a visitor who never posted gets the prompt, "Not claimed", and no button; nothing is posted.
+  const visitor = await open(true);
+  await visitor.page.goto(claimsBase + '/backlog?show=open');
+  await tick(visitor.page, 'A bug', { exact: true });
+  await visitor.page.getByRole('button', { name: 'Start' }).click();
+  await visitor.page.waitForURL(claimsBase + '/backlog/start?items=PF-20261101-B02');
+  assert.match(await visitor.page.locator('[data-copy-prompt-source]').textContent(), /^Please work on this v3 backlog item/);
+  assert.equal(await visitor.page.locator('[data-role="backlog-claim-form"]').count(), 0);
+  await visitor.page.waitForTimeout(1500);
+  assert.equal(claimPosts(), posts, 'a visitor leaves no claim by pressing Start');
+  assert.deepEqual(visitor.errors, []);
+  await visitor.context.close();
+  // Scripts off, even for the recognised member: the prompt, who holds what, and no Claim button to press.
+  // This needs a browser started with scripting off: the test browser's per-page switch stops scripts
+  // but still reports scripting as on to CSS, and the form is hidden by a (scripting: none) rule.
+  const noScriptBrowser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/google/chrome/chrome', headless: true, args: ['--no-sandbox', '--blink-settings=scriptEnabled=false'] });
+  const scriptless = { context: await noScriptBrowser.newContext({ serviceWorkers: 'block', viewport: { width: 375, height: 720 } }) };
+  scriptless.page = await scriptless.context.newPage();
+  await scriptless.context.addCookies(memberCookies);
+  await scriptless.page.goto(claimsBase + '/backlog/start?items=PF-20261101-F03');
+  assert.match(await scriptless.page.locator('[data-copy-prompt-source]').textContent(), /^Please work on this v3 backlog item/);
+  assert.match(await scriptless.page.locator('[data-claim-id="PF-20261101-F03"]').textContent(), /^Claimed by seed since/);
+  assert.equal(await scriptless.page.locator('[data-role="backlog-claim-form"]').count(), 1, 'the server drew the form for the member');
+  assert.equal(await scriptless.page.locator('[data-role="backlog-claim-form"]').isVisible(), false, 'without scripts it is not shown, so no unsigned claim is posted');
+  await noScriptBrowser.close();
+
   // Every permitted theme, phone and desktop, scripts on and off: nothing pushes the page sideways.
   // The matrix runs on the claims server, so every list has holder lines.
   let cases = 0;
@@ -212,7 +295,7 @@ try {
     assert.deepEqual(viewer.errors, [], `${theme} ${width}px: no page errors`);
     await viewer.context.close();
   }
-  console.log(`PASS backlog: tick two, Start, Copy, One-shot and Staged with JavaScript (Agent decides by default); plain form to the tidy address without; sort, order and filter links; closed and unknown items left out; /backlog.txt and /backlog/start.txt; holder lines, Hide claimed and claim lines in the text list on a site with a claims thread, none on a site without; ${cases} theme/width/script cases of the list and the start page without sideways overflow`);
+  console.log(`PASS backlog: tick two, Start, Copy, One-shot and Staged with JavaScript (Agent decides by default); plain form to the tidy address without; sort, order and filter links; closed and unknown items left out; /backlog.txt and /backlog/start.txt; holder lines, Hide claimed and claim lines in the text list on a site with a claims thread, none on a site without; Start claims in the background with the prompt already shown, once, never on a reload or a pasted address; a failed claim says so and Claim retries; no claim without a key or without scripts; ${cases} theme/width/script cases of the list and the start page without sideways overflow`);
 } catch (error) {
   console.error(serverLog.split('\n').filter(line => /error|warning|fatal/i.test(line)).slice(-10).join('\n'));
   throw error;

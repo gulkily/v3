@@ -62,3 +62,29 @@ Decisions in force (Step 3 approved with every default): the claims thread may r
 - Estimate details: original scope as Step 3 Stage 2; uncertainty low; no revisions.
 
 *— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
+
+## Stage 3 - Start claims
+
+**Original estimate: 0.10**
+
+**Retrospective stage-work assessment: 0.12**
+
+- Changes:
+  - `templates/pages/backlog_start.php`: on a site with a claims thread each picked item says who holds it, with the date ("Claimed by ilyag since Nov 23"), or "Not claimed". A viewer the server recognises gets a Claim form for the picked items they have no claim on: a reply to the claims thread whose body is the claim line.
+  - New `public/assets/backlog_claim.js`: signs and sends the form through the same prepare and finalize calls as `pledge_withdraw.js`. Pressing Start on the list leaves a one-time note in the tab; the start page, finding it, sends the form without a tap. After a claim it swaps in the server's fresh copy of the item list, so the prompt stays where it is. On failure the form says "Not claimed." with the reason and the button stays.
+  - `templates/pages/backlog.php`: the Start handler leaves that note, only on a site with a claims thread.
+  - `BacklogPageController::start()` takes the viewer the thread page would recognise (session, else identity hint), passed from `Application`; it loads the signing scripts only where a thread is named. `BacklogClaims::hasClaimBy()` and dates in `lines()`.
+  - `public/assets/backlog.css`: the form, hidden when scripting is off.
+- Verification:
+  - `./v3 test --smoke BacklogPageTest BacklogClaimsTest FeedbackBacklogTest`: passed. Full suite not run.
+  - `node tests/browser/backlog.mjs`: passed. New cases, all on a real signed post: Start by an approved member claims two items with one post while the prompt is already on screen; an item someone else holds shows the holder and the member as "Also claimed by"; a reload and a pasted start address post nothing; a blocked request shows "Not claimed." and a second press of Claim works; Start with the request blocked leaves the prompt and "Not claimed."; a visitor who never posted gets no form and posts nothing; with scripting off the recognised member's form is in the page and not shown.
+  - No thread named: the six routes compared with the planning commit by `cmp`: identical except the page's `app-version` meta.
+- Notes:
+  - Known user's condition (Safari dropped the key): replayed as "a visitor who never posted" and as "the request fails". In both the prompt is usable and the page says the items are not claimed. Not replayed on a real iPhone.
+  - Reuse: the pledge buttons' posting path. A second small script, not an extension of `pledge_withdraw.js`, because that one reloads the page and reads pledge forms.
+  - The scripts-off case needed a browser started with scripting off; the test browser's per-page switch still reports scripting as on to CSS. The form is hidden by a `(scripting: none)` rule, as other script-only controls on the site are. A browser too old for that rule would show the button with scripts off, and pressing it would post a claim with no name, which is kept and not counted.
+  - Who is recognised: the same test the pledge buttons use, including the identity hint. It only decides whether the form is drawn; the claim is a signed post either way. A recognised viewer whose key is not approved can claim, and the row then reads "waiting for approval", as Step 1 decided.
+  - Seen in the check: a browser key with no chosen name is labelled "guest" by the site, so its claim reads "Claimed by guest", close to the wording for a claim with no name ("Claimed by a guest · not counted"). Not changed here.
+- Estimate details: original scope as Step 3 Stage 3; uncertainty was signing on a page that had none; no revisions. The retrospective is higher for the viewer lookup and the scripts-off case.
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*

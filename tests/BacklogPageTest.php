@@ -206,7 +206,7 @@ final class BacklogPageTest
         $this->withSite(true, function (Application $application): void {
             $html = $this->render($application, '/backlog?claimed=hide');
             assertStringNotContains('Hide claimed', $html);
-            assertStringNotContains('backlog-claim', $html);
+            assertStringNotContains('data-role="backlog-claim"', $html);
             assertStringNotContains('Not understood', $html, 'The word is known everywhere; it just hides nothing here.');
             $text = $this->raw($application, '/backlog.txt');
             assertSame(0, preg_match(self::CLAIM_KEYS, $text), 'No claim line of any kind.');
@@ -229,7 +229,7 @@ final class BacklogPageTest
             $row = fn (string $page, string $id): string => (string) (preg_match('/<li class="backlog-row"[^>]*>\s*<input[^>]*value="' . preg_quote($id, '/') . '".*?<\/li>/s', $page, $m) === 1 ? $m[0] : '');
             assertSame(1, preg_match('/data-role="backlog-claim">Claimed by [^<·]+<\/span>/', $row($html, $held)), $row($html, $held));
             assertStringContains('data-role="backlog-claim">Claimed by a guest · not counted</span>', $row($html, $guest));
-            assertStringNotContains('backlog-claim', $row($html, $free));
+            assertStringNotContains('data-role="backlog-claim"', $row($html, $free));
             assertStringContains('<a class="nav-link" href="/backlog?claimed=hide">Hide claimed</a>', $html);
 
             $hidden = $this->render($application(), '/backlog?claimed=hide&kind=bug');
@@ -240,7 +240,7 @@ final class BacklogPageTest
 
             // Released by its holder, the row is free again.
             $this->reply($service, $thread, 'release', self::MEMBER, $claim);
-            assertStringNotContains('backlog-claim', $row($this->render($application(), '/backlog'), $held));
+            assertStringNotContains('data-role="backlog-claim"', $row($this->render($application(), '/backlog'), $held));
         });
     }
 
@@ -265,15 +265,74 @@ final class BacklogPageTest
         });
     }
 
+    public function testStartPageShowsHoldersAndOffersClaimToARecognisedViewer(): void
+    {
+        $this->withClaims(function (callable $application, LocalWriteService $service, string $thread, array $ids): void {
+            [$mine, $theirs, $free] = $ids;
+            $second = (string) $service->linkIdentity(['public_key' => (string) file_get_contents(__DIR__ . '/fixtures/openpgp_signature/reaction-public-key.asc')])['identity_id'];
+            (new PDO('sqlite:' . $this->database))->prepare('UPDATE profiles SET is_approved = 1 WHERE identity_id = ?')->execute([$second]);
+            $this->reply($service, $thread, "claim: {$mine}", self::MEMBER);
+            $this->reply($service, $thread, "claim: {$theirs}", $second);
+            $path = "/backlog/start?items={$mine},{$theirs},{$free}";
+            $oldCookies = $_COOKIE;
+            try {
+                // Nobody recognised: holders and "Not claimed" for everyone, no form.
+                $_COOKIE = [];
+                $anyone = $this->render($application(), $path);
+                assertSame(1, preg_match('/data-claim-id="' . preg_quote($mine, '/') . '">Claimed by [^<·]+ since [A-Z][a-z]{2} \d{1,2}<\/span>/', $anyone), 'The holder and the date.');
+                assertStringContains('data-claim-id="' . $free . '">Not claimed</span>', $anyone);
+                assertStringNotContains('data-role="backlog-claim-form"', $anyone);
+                assertStringContains('/assets/backlog_claim.', $anyone);
+                assertStringContains('data-copy-prompt-source', $anyone, 'The prompt is there whatever the claims say.');
+
+                // The member holds one item already; the form claims the other two, the held one included (Start warns, never refuses).
+                $_COOKIE = ['identity_hint' => self::MEMBER];
+                $member = $this->render($application(), $path);
+                assertStringContains('<form class="backlog-claim-form requires-script" method="post" action="/compose/reply" data-role="backlog-claim-form" data-claim-ids="' . $theirs . ',' . $free . '">', $member);
+                assertStringContains('<input type="hidden" name="thread_id" value="' . $thread . '">', $member);
+                assertStringContains('<input type="hidden" name="parent_id" value="' . $thread . '">', $member);
+                assertStringContains('<input type="hidden" name="body" value="claim: ' . $theirs . ', ' . $free . '">', $member);
+
+                // Once they have a claim on every picked item there is nothing left to claim: a reload offers no form.
+                $this->reply($service, $thread, "claim: {$theirs}, {$free}", self::MEMBER);
+                $after = $this->render($application(), $path);
+                assertStringNotContains('data-role="backlog-claim-form"', $after);
+                assertSame(1, preg_match('/data-claim-id="' . preg_quote($theirs, '/') . '">Claimed by [^<·]+ since [^<·]+ · Also claimed by [^<·]+<\/span>/', $after), 'The earlier claim holds; the later one is listed.');
+            } finally {
+                $_COOKIE = $oldCookies;
+            }
+        });
+    }
+
+    public function testStartPageWithNoClaimsThreadSaysNothingAboutClaims(): void
+    {
+        $this->withSite(true, function (Application $application): void {
+            $oldCookies = $_COOKIE;
+            try {
+                $_COOKIE = ['identity_hint' => self::MEMBER];
+                $id = FeedbackBacklog::select(BacklogPageController::load(dirname(__DIR__)), 'can-start', 'all')[0]->id();
+                $html = $this->render($application, '/backlog/start?items=' . $id);
+                foreach (['Not claimed', 'data-role="backlog-claim', 'backlog_claim.', 'backlog-start-items'] as $absent) {
+                    assertStringNotContains($absent, $html);
+                }
+                assertStringNotContains('backlog-claim-intent', $this->render($application, '/backlog'));
+            } finally {
+                $_COOKIE = $oldCookies;
+            }
+        });
+    }
+
     public function testANamedThreadThatDoesNotExistShowsNoClaimsAndNoError(): void
     {
         $this->withClaims(function (callable $application): void {
             $html = $this->render($application(), '/backlog');
             assertStringContains('Hide claimed', $html);
-            assertStringNotContains('backlog-claim', $html);
+            assertStringNotContains('data-role="backlog-claim"', $html);
             assertStringContains("\nClaimed: show\n", $this->raw($application(), '/backlog.txt'));
         }, 'thread-that-was-never-posted');
     }
+
+    private string $database = '';
 
     /** Any Key: value line the text routes print about claims. */
     private const CLAIM_KEYS = '/^(Claim|Claimed|Claims|Also-Claimed|Guest-Claims)[A-Za-z-]*: /m';
@@ -292,6 +351,7 @@ final class BacklogPageTest
     {
         $this->withSite(true, function (Application $first, string $repositoryRoot) use ($test, $missingThread): void {
             $database = dirname($repositoryRoot) . '/read-model.sqlite3';
+            $this->database = $database;
             $this->render($first, '/');
             $service = new LocalWriteService($repositoryRoot, $database, dirname($repositoryRoot) . '/public', new CanonicalRecordRepository($repositoryRoot), featureFlags: FeatureFlagEvaluator::forRepository($repositoryRoot));
             $thread = $missingThread ?? (string) $service->createThread(['board_tags' => 'general', 'subject' => 'Backlog claims', 'body' => 'Claims on backlog items.', 'author_identity_id' => self::MEMBER])['thread_id'];
