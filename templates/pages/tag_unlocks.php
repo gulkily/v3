@@ -1,5 +1,6 @@
 <?php
-// /tools/tag-unlocks/: read only. What resources/tagsets.txt unlocks, and every marked post.
+// /tools/tag-unlocks/: what the tagsets in force unlock, and every marked post. Active operators
+// (recognised in the browser before paint, as in partials/operator_grant.php) can edit the text.
 $targetWords = ['reply' => 'replies', 'root' => 'the opening post'];
 $stateHeadings = ['claimed' => 'Claimed', 'resolved' => 'Resolved', 'closed' => 'Closed'];
 $stateEmpty = ['claimed' => 'Nobody has claimed anything.', 'resolved' => 'Nothing resolved yet.', 'closed' => 'Nothing closed yet.'];
@@ -17,7 +18,45 @@ $formatWhen = static function (?string $at): string {
 <section class="stack">
   <article class="card tag-unlocks-page">
     <h1>Tag Unlocks</h1>
-    <p class="meta">Read only. A thread tag can unlock extra tags on that thread's posts. The list lives in <code>resources/tagsets.txt</code> in the code; edit that file to change it.</p>
+    <p class="meta">A thread tag can unlock extra tags on that thread's posts. <?= $tagsetsSource === 'site' ? 'These rules were set on this site.' : 'These are the shipped rules (<code>resources/tagsets.txt</code>).' ?></p>
+<?php if ($tagsetsError !== null): ?>
+    <p class="tag-unlocks-error" role="alert">The site rules are not in use because of an error. <?= $e($tagsetsError) ?></p>
+<?php endif; ?>
+<?php if ($tagsetEditors !== []): ?>
+    <style>[data-tagsets-editor] { display: none; } html[data-tagsets-editor-eligible] [data-tagsets-editor] { display: block; }</style>
+    <script>
+      (function () {
+        var editors = <?= json_encode($tagsetEditors, JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
+        function update() {
+          var eligible = false;
+          try {
+            var fingerprint = (localStorage.getItem('forum_pki_fingerprint') || '').trim().toLowerCase();
+            eligible = editors.indexOf(fingerprint) !== -1 && !!localStorage.getItem('forum_pki_private_key');
+          } catch (error) {}
+          document.documentElement.toggleAttribute('data-tagsets-editor-eligible', eligible);
+        }
+        update();
+        window.addEventListener('forum:identity-changed', update);
+        window.addEventListener('storage', update);
+      })();
+    </script>
+    <details class="tag-unlocks-editor" data-tagsets-editor>
+      <summary>Edit</summary>
+      <form data-tagsets-form>
+        <textarea name="text" rows="12" spellcheck="false" autocapitalize="off" aria-label="Tagsets" data-tagsets-text><?= $e($tagsetsText) ?></textarea>
+        <template data-tagsets-shipped><?= $e($shippedTagsetsText) ?></template>
+        <div class="tag-unlocks-editor-actions">
+          <button type="button" data-tagsets-preview>Preview</button>
+          <button type="submit" data-tagsets-save disabled>Save</button>
+<?php if ($tagsetsSource === 'site'): ?>
+          <button type="button" class="link-button" data-tagsets-reset>Reset to default</button>
+<?php endif; ?>
+        </div>
+        <p class="meta" data-tagsets-status role="status" hidden></p>
+        <div class="tag-unlocks-preview" data-tagsets-result hidden></div>
+      </form>
+    </details>
+<?php endif; ?>
 <?php if (!$tagUnlocksOn): ?>
     <p class="meta">Tag unlocks are turned off on this site (<code>FORUM_TAG_UNLOCKS_ENABLED</code>), so no buttons are shown.</p>
 <?php endif; ?>

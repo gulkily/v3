@@ -6,6 +6,7 @@ import { chromium } from 'playwright-core';
 // member approves from it, signing scripts load on first use, and every chip
 // for that key leaves the page. Run: node tests/browser/pending_chip_approval.mjs
 const css = fs.readFileSync('public/assets/site.css', 'utf8');
+const ochreCss = fs.readFileSync('public/assets/theme-ochre.css', 'utf8');
 const summaryScript = fs.readFileSync('public/assets/pending_user_summary.js', 'utf8');
 const signingScript = fs.readFileSync('public/assets/browser_signing.js', 'utf8');
 const chip = (slug, name) => `<a class="pending-chip" href="/profiles/${slug}" data-pending-profile="${slug}" data-pending-username="${name}"><span class="chip chip--pending">Pending</span></a>`;
@@ -15,7 +16,8 @@ const campaign_html = () => `<!doctype html><meta charset="utf-8"><html data-mem
 <div class="pledge-totals" data-pledge-totals><p class="pledge-totals__sum"><strong>20</strong> of 100 coffees pledged</p></div>
 <article class="card post-card pledge-row" data-post-id="p1"><p class="meta" data-post-byline id="one">Oct 6 ${chip('mouse', 'mouse')}</p></article>
 </body></html>`;
-const page_html = (member) => `<!doctype html><meta charset="utf-8"><html${member ? ' data-member="approved"' : ''}><head><style>${css}</style>
+const page_html = (member) => `<!doctype html><meta charset="utf-8"><html data-theme="ochre"${member ? ' data-member="approved"' : ''}><head><style>${css}
+${ochreCss}</style>
 <script>window.__forumAssetPaths = { openpgpLoader: '/assets/openpgp_loader.js', browserSigning: '/assets/browser_signing.js' };</script>
 <script src="/assets/pending_user_summary.js" defer></script></head><body>
 <p class="meta thread-row__meta" id="one"><a href="/profiles/mouse">mouse</a> · Oct 6 ${chip('mouse', 'mouse')}</p>
@@ -68,6 +70,7 @@ try {
       await page.locator('#one .pending-chip').click();
       const dialog = page.locator('dialog.pending-user-dialog');
       await dialog.waitFor({ state: 'visible' });
+      assert.equal(await dialog.evaluate(element => getComputedStyle(element).backgroundColor), 'rgb(246, 246, 239)', 'Ochre Pending summary covers the page behind it');
       await page.waitForFunction(() => document.querySelector('[data-role="counts"]').textContent === '1 thread · 3 posts');
       assert.equal(await dialog.locator('h2').textContent(), 'mouse');
       assert.equal(await dialog.getByRole('link', { name: 'Profile' }).getAttribute('href'), '/profiles/mouse');

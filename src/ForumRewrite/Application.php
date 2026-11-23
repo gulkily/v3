@@ -117,6 +117,7 @@ final class Application
     ) {
         SignatureCheckCache::useBeside($databasePath);
         \ForumRewrite\Qdb\QdbModeration::useRepository($repositoryRoot);
+        \ForumRewrite\Support\Tagsets::useRepository($repositoryRoot);
     }
 
     /**
@@ -201,6 +202,7 @@ final class Application
             (new \ForumRewrite\Http\LocalDevelopmentPageController($this->routeServices(),
                 new \ForumRewrite\Support\LocalDevelopmentImport($this->repositoryRoot),
                 $this->localImportRequests(),
+                new \ForumRewrite\Import\LastImportSummary($this->repositoryRoot),
             ))->handle($method);
             return;
         }
@@ -557,6 +559,16 @@ final class Application
 
         if ($path === '/api/prepare_high_traffic' || $path === '/api/finalize_high_traffic') {
             $this->toolsPageController()->highTrafficApi($method,$query,$path === '/api/finalize_high_traffic');
+            return;
+        }
+
+        if ($path === '/api/preview_tagsets') {
+            $this->toolsPageController()->previewTagsetsApi($method, $query);
+            return;
+        }
+
+        if ($path === '/api/prepare_tagsets_change' || $path === '/api/finalize_tagsets_change') {
+            $this->toolsPageController()->tagsetsChangeApi($method, $query, $path === '/api/finalize_tagsets_change');
             return;
         }
 
@@ -2650,6 +2662,7 @@ final class Application
             '/api/prepare_profile_name', '/api/finalize_profile_name',
             '/api/prepare_key_retirement', '/api/finalize_key_retirement', '/api/key_retirement_status',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
+            '/api/preview_tagsets', '/api/prepare_tagsets_change', '/api/finalize_tagsets_change',
             '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/read_event_phrase', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/prepare_attribution_cutoff', '/api/finalize_attribution_cutoff', '/api/prepare_operator_grant', '/api/finalize_operator_grant', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt', '/skill.md',
             '/latest', '/top', '/leetness', '/queue', '/add', '/random', '/search',

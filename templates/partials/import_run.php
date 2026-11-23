@@ -7,7 +7,7 @@
 // import_control.js redraws these elements; keep its wording in step with this file.
 ?>
 <?php if ($part === 'counts'): ?>
-<span class="meta"><?php $first = true; foreach ($counts as $category => $count): if ((int) $count === 0) continue; ?><?= $first ? '' : ' · ' ?><?= $e($category === 'import' ? 'imported' : $category) ?> <?= $e((string) $count) ?><?php $first = false; endforeach; ?><?php if ($first): ?>nothing new<?php endif; ?></span>
+<span class="meta"><?php $first = true; foreach ($counts as $category => $count): if ((int) $count === 0) continue; ?><?= $first ? '' : ' · ' ?><?= $e($category === 'import' ? 'imported' : $category) ?> <?= $e(number_format((int) $count)) ?><?php $first = false; endforeach; ?><?php if ($first): ?>nothing new<?php endif; ?></span>
 <?php elseif ($part === 'run'): ?>
 <?php
 $formatCount = static function (array $step): string {

@@ -163,20 +163,35 @@ $summary = implode(' · ', $parts);
 <?php endif; ?>
 <?php if ($versions !== [] && $s['is_checkout']): ?>
     <h2>History</h2>
+<?php
+// One compact row per version. Merge subjects drop their repeated opening; the full subject stays in the title.
+$versionRow = static function (array $v) use ($e, $commitCode, $canDeploy): string {
+    $subject = preg_replace('/^Merge pull request (#\d+) from [^\/\s]+\/(\S+)/', '$1 $2', $v['subject']) ?? $v['subject'];
+    $at = preg_match('/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/', $v['deployed_at'], $m) === 1 ? $m[1] . ' ' . $m[2] : $v['deployed_at'];
+    $when = $v['action'] === 'earlier' ? 'before the first recorded deploy' : ($v['action'] === 'rollback' ? 'rolled back ' : '') . $at;
+    $row = '      <li><div class="deploy-history__text"><span class="deploy-history__subject" title="' . $e($v['subject']) . '">' . $commitCode($v['commit']) . ' ' . $e($subject) . '</span>'
+        . '<span class="meta">' . $e($when) . ($v['running'] ? ' · <strong>running</strong>' : '') . '</span></div>';
+    if ($v['can_roll_back'] && $canDeploy) {
+        $row .= '<form method="post" action="/tools/deploy/"><input type="hidden" name="commit" value="' . $e($v['commit']) . '">'
+            . '<button type="submit" name="action" value="rollback_preview" class="deploy-actions__secondary">Roll back</button></form>';
+    }
+
+    return $row . "</li>\n";
+};
+$recent = array_slice($versions, 0, 5);
+$earlier = array_slice($versions, 5);
+?>
     <ol class="deploy-history">
-<?php foreach ($versions as $v): ?>
-      <li>
-        <?= $commitCode($v['commit']) ?> <?= $e($v['subject']) ?>
-        <span class="meta"><?= $e($v['action'] === 'earlier' ? 'before the first recorded deploy' : ($v['action'] === 'rollback' ? 'rolled back ' : 'deployed ') . $v['deployed_at']) ?><?= $v['running'] ? ' · running' : '' ?></span>
-<?php if ($v['can_roll_back'] && $canDeploy): ?>
-        <form method="post" action="/tools/deploy/">
-          <input type="hidden" name="commit" value="<?= $e($v['commit']) ?>">
-          <button type="submit" name="action" value="rollback_preview" class="deploy-actions__secondary">Roll back</button>
-        </form>
-<?php endif; ?>
-      </li>
-<?php endforeach; ?>
+<?= implode('', array_map($versionRow, $recent)) ?>
     </ol>
+<?php if ($earlier !== []): ?>
+    <details class="deploy-history-more">
+      <summary><?= $e((string) count($earlier)) ?> earlier</summary>
+      <ol class="deploy-history">
+<?= implode('', array_map($versionRow, $earlier)) ?>
+      </ol>
+    </details>
+<?php endif; ?>
 <?php endif; ?>
   </article>
 <?= $indent($partial('partials/tools_nav_card.php'), 2) ?>

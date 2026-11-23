@@ -1,0 +1,18 @@
+ID: PF-20261122-B04
+Title: Recent text shows through the Pending author summary in Ochre
+Kind: bug
+Workflow: blocked
+Created: 2026-11-22
+Evidence: unknown
+
+Request:
+Make the Pending author summary legible in Ochre where it overlays Recent.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261123021720-e6acc86f
+
+Done when:
+Open a Pending author chip in Recent in Ochre and confirm the summary covers the text behind it on phone and desktop.
+
+Notes:
+2026-11-22: Scoped CSS fix on fix/ochre-pending-dialog. Awaiting browser verification, review and deployment.

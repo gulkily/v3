@@ -1,12 +1,28 @@
 Schema: tagsets-v1
 
-# A tagset lets a tag on a thread unlock more tags on its replies.
-# Each block names one parent tag:
-#   Parent:    the thread tag that unlocks the set (an authored label or a Fastmod tag)
-#   Target:    where the unlocked tags apply: reply, root (the thread's opening post), or both
-#   Unlocks:   comma-separated tags offered as buttons
-#   Exclusive: yes when the tags are one state (the latest counted mark wins)
-# Lines starting with # are comments. Blocks are separated by blank lines.
+# Tagsets add extra buttons to posts in tagged threads.
+#
+# Each block below is one rule: "in a thread tagged #Parent, show the
+# Unlocks tags as buttons on its posts". Tapping a button tags that post.
+#
+#   Parent:    the thread's tag. "Parent: issue" means threads tagged #issue.
+#   Target:    which posts get the buttons. reply = the replies,
+#              root = the thread's opening post, "reply, root" = both.
+#              Leave it out to mean reply.
+#   Unlocks:   the tags to offer as buttons, separated by commas.
+#   Exclusive: yes if the tags are states that replace each other, so a
+#              post is in only one at a time (the newest mark from an
+#              approved member counts). Leave it out, or write no, if the
+#              tags are independent.
+#
+# Example: offer Attend and Interested on replies in #event threads.
+#
+#   Parent: event
+#   Unlocks: attend, interested
+#
+# Put a blank line between rules. Lines starting with # are notes.
+# Operators can change these rules on the site (Tools > Tag Unlocks);
+# the site's copy then replaces this file.
 
 Parent: issue
 Target: reply, root

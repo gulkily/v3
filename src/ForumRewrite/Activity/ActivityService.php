@@ -1112,6 +1112,7 @@ final class ActivityService
             str_starts_with($path, 'records/post-retraction-acceptances/') => 'post retraction acceptance',
             str_starts_with($path, 'records/post-removals/') => 'post removal acceptance',
             str_starts_with($path, 'records/feature-flag-changes/') => 'feature flag change record',
+            str_starts_with($path, 'records/tagsets-changes/') => 'tagsets change record',
             str_starts_with($path, 'records/operator-grants/') => 'operator grant record',
             str_starts_with($path, 'records/history-rewrites/') => 'history rewrite record',
             str_starts_with($path, 'records/profile-names/') => 'profile name record',
@@ -1120,6 +1121,7 @@ final class ActivityService
             str_starts_with($path, 'records/public-keys/') => 'public key',
             $path === 'records/instance/public.txt' => 'instance record',
             $path === 'records/instance/feature-flags.txt' => 'feature flags record',
+            $path === 'records/instance/tagsets.txt' => 'site tagsets record',
             SourcePathValidator::isValidCanonicalRecordPath($path) => 'canonical record',
             default => 'other committed file',
         };

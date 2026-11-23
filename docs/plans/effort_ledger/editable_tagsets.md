@@ -1,0 +1,11 @@
+# Cycle v3/editable_tagsets
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| `v3/editable_tagsets` | Step 4 technically complete; PR open, production replay pending | v1 / R1 / P2 | 0.60 (Step 3, reaffirmed at Step 4 entry); retrospective 0.65 | [Step 1](../editable_tagsets/editable_tagsets_step1_solution_assessment.md#study-checkpoint), [Step 2](../editable_tagsets/editable_tagsets_step2_feature_description.md#study-checkpoint), [Step 3](../editable_tagsets/editable_tagsets_step3_development_plan.md#study-checkpoint), [Step 4](../editable_tagsets/editable_tagsets_step4_implementation_summary.md#closeout) | follow-up to `v3/tag_unlocks`; maintainer fit judgment pending |
+
+2026-11-18: v3/editable_tagsets Step 1 handoff (standing P2 enrollment; follow-up to v3/tag_unlocks): recommended Option A (signed site record edited as text on the Tag Unlocks page, with preview and affected-threads warning). Projected total **0.50**; options 0.50/0.70/0.75, non-additive. Pristine intake missing; single exposed Claude rater.
+2026-11-22: v3/editable_tagsets Step 2 handoff: Option A approved; three open questions taken at Claude's suggested answers (operators only, warn only, site record replaces shipped file). Projected total **0.50**, reaffirmed. Single exposed Claude rater. Split-off `v3/state_button_verbs` is a separate cycle, not counted here.
+2026-11-22: v3/editable_tagsets Step 3 handoff: six stages (stage work 0.10, 0.15, 0.10, 0.08, 0.15, 0.06; non-additive). Projected total revised **0.50 → 0.60** after planning found a new record kind across path validators, a site-aware loader for eight call sites, and a state recompute. Single exposed Claude rater.
+2026-11-22: v3/editable_tagsets Step 4 entry: 0.60 reaffirmed after planning commit `0e021424`.
+2026-11-22: v3/editable_tagsets Step 4 closeout: six stages committed (`b2fc90d0` to the Stage 6 commit). Stage retrospectives 0.10, 0.15, 0.10, 0.10, 0.15, 0.08 (non-additive). Cycle retrospective scope assessment **0.65**; corrections were an existing route-pattern test failure and a record spec. Single exposed Claude rater. Maintainer fit judgment pending; no accepted-count change.
