@@ -88,3 +88,28 @@ Decisions in force (Step 3 approved with every default): the claims thread may r
 - Estimate details: original scope as Step 3 Stage 3; uncertainty was signing on a page that had none; no revisions. The retrospective is higher for the viewer lookup and the scripts-off case.
 
 *— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
+
+## Stage 4 - Release
+
+**Original estimate: 0.05**
+
+**Retrospective stage-work assessment: 0.06**
+
+- Changes:
+  - `BacklogClaims::releasable()`: the claim post a viewer may release on an item: their own first; for an operator, otherwise the holder's, then any other claim.
+  - New `templates/partials/backlog_release.php`: one form per releasable row, a reply to the claim post whose body is `release: <ID>`, so a claim on several items keeps the others.
+  - `templates/pages/backlog.php` and `backlog_start.php`: a Release button on the holder line, for the holder and for operators. On the list the rows sit inside the Start form, where a form cannot nest, so the forms are drawn after the list and each button names its form.
+  - `backlog_claim.js` sends Release the same way as Claim, then swaps in the fresh row; the start page swaps its whole claims area, so Claim comes back after a release there.
+  - `BacklogPageController::list()` takes the recognised viewer, as `start()` does.
+- Verification:
+  - `./v3 test --smoke BacklogPageTest BacklogClaimsTest FeedbackBacklogTest`: passed. Full suite not run.
+  - `BacklogPageTest::testReleaseIsOfferedToTheHolderAndToAnOperator`: no Release for nobody or a stranger; the holder's form answers the claim post and names one ID; forms are not nested in the Start form; an operator gets Release on rows it does not hold; releasing one item leaves the other held.
+  - `node tests/browser/backlog.mjs`: passed. Release from the row with a real signed post: a blocked request shows "Not released." and the button stays; a second press frees the item; the other item of the same claim stays; ticks on other rows survive; the row with Release fits 375 px.
+  - No thread named: the six routes are still identical to the planning commit except the `app-version` meta.
+- Notes:
+  - Reuse: the pledge buttons' viewer test and posting path; Stage 3's script.
+  - The browser check approves keys with an approval seed, which also makes them operators, so its member can still release a guest claim after releasing their own. The page test covers a holder who is not an operator.
+  - Pressing Release twice: the second release is a second reply that changes nothing; the button is gone after the first one lands.
+- Estimate details: original scope as Step 3 Stage 4; uncertainty low; no revisions.
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*

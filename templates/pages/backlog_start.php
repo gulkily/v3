@@ -28,18 +28,24 @@ if ($backlogClaimsThread !== null && $backlogViewerId !== '') {
   </article>
 <?php else: ?>
   <article class="card backlog-card">
-    <ul class="backlog-list"<?= $backlogClaimsThread !== null ? ' data-role="backlog-start-items"' : '' ?>>
+<?= $backlogClaimsThread !== null ? '    <div data-role="backlog-start-claims">' . "\n" : '' ?>
+    <ul class="backlog-list">
 <?php foreach ($backlogStartItems as $item): ?>
       <li class="backlog-row">
         <span class="backlog-row__title"><?= $e($item['title']) ?></span>
         <span class="backlog-row__meta meta"><span class="backlog-row__id"><?= $e($item['id']) ?></span></span>
 <?php if ($backlogClaimsThread !== null): ?>
 <?php $claimLines = \ForumRewrite\Feedback\BacklogClaims::lines($item['claim'], true); ?>
-        <span class="backlog-row__claim meta" data-role="backlog-claim" data-claim-id="<?= $e($item['id']) ?>"><?= $e($claimLines === [] ? 'Not claimed' : implode(' · ', $claimLines)) ?></span>
+        <span class="backlog-row__claim meta"><span data-role="backlog-claim" data-claim-id="<?= $e($item['id']) ?>"><?= $e($claimLines === [] ? 'Not claimed' : implode(' · ', $claimLines)) ?></span><?php if ($item['release_post'] !== null): ?> <button type="submit" class="backlog-release requires-script" form="release-<?= $e($item['id']) ?>">Release</button><span data-role="backlog-claim-feedback" data-feedback-for="release-<?= $e($item['id']) ?>" role="status" aria-live="polite" hidden></span><?php endif; ?></span>
 <?php endif; ?>
       </li>
 <?php endforeach; ?>
     </ul>
+<?= $backlogClaimsThread === null ? '' : $partial('partials/backlog_release.php', [
+    'backlogClaimsThread' => $backlogClaimsThread,
+    'releases' => array_values(array_filter(array_map(static fn (array $item): ?array => $item['release_post'] === null ? null : [$item['id'], $item['release_post']], $backlogStartItems))),
+    'refresh' => static fn (string $id): string => '[data-role="backlog-start-claims"]',
+]) ?>
 <?php if ($claimIds !== []): ?>
     <form class="backlog-claim-form requires-script" method="post" action="/compose/reply" data-role="backlog-claim-form" data-claim-ids="<?= $e(implode(',', $claimIds)) ?>">
       <input type="hidden" name="thread_id" value="<?= $e($backlogClaimsThread) ?>">
@@ -50,6 +56,7 @@ if ($backlogClaimsThread !== null && $backlogViewerId !== '') {
       <span class="meta" data-role="backlog-claim-feedback" role="status" aria-live="polite" hidden></span>
     </form>
 <?php endif; ?>
+<?= $backlogClaimsThread !== null ? "    </div>\n" : '' ?>
   </article>
   <nav class="board-filter backlog-filter" aria-label="How">
 <?php foreach ($backlogStartModes as $option): ?>

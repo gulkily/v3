@@ -12,7 +12,9 @@
   var INTENT = "backlog-claim-intent";
 
   function feedback(form, message) {
-    var node = form.querySelector('[data-role="backlog-claim-feedback"]');
+    // A Release form is drawn apart from its row; its button and message name it by ID.
+    var node = form.querySelector('[data-role="backlog-claim-feedback"]')
+      || (form.id ? document.querySelector('[data-feedback-for="' + form.id + '"]') : null);
     if (!node) return;
     node.textContent = message;
     node.hidden = message === "";
@@ -70,13 +72,14 @@
   }
 
   function submit(form) {
-    var button = form.querySelector('button[type="submit"]');
+    var button = form.querySelector('button[type="submit"]')
+      || (form.id ? document.querySelector('button[form="' + form.id + '"]') : null);
     if (button && button.disabled) return Promise.resolve();
     if (button) button.disabled = true;
     feedback(form, "");
     return send(form).then(function (result) {
       if (result && result.ok) {
-        var parts = form.getAttribute("data-refresh") || '[data-role="backlog-start-items"], [data-role="backlog-claim-form"]';
+        var parts = form.getAttribute("data-refresh") || '[data-role="backlog-start-claims"]';
         return refresh(parts).catch(function () { window.location.reload(); });
       }
       if (button) button.disabled = false;

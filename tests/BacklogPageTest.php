@@ -304,6 +304,51 @@ final class BacklogPageTest
         });
     }
 
+    public function testReleaseIsOfferedToTheHolderAndToAnOperator(): void
+    {
+        $this->withClaims(function (callable $application, LocalWriteService $service, string $thread, array $ids): void {
+            [$mine, $theirs, $free] = $ids;
+            $second = (string) $service->linkIdentity(['public_key' => (string) file_get_contents(__DIR__ . '/fixtures/openpgp_signature/reaction-public-key.asc')])['identity_id'];
+            (new PDO('sqlite:' . $this->database))->prepare('UPDATE profiles SET is_approved = 1 WHERE identity_id = ?')->execute([$second]);
+            $theirClaim = $this->reply($service, $thread, "claim: {$theirs}, {$free}", $second);
+            $form = static fn (string $id, string $post): string => '<form id="release-' . $id . '" method="post" action="/compose/reply" data-role="backlog-release-form"';
+            $button = static fn (string $id): string => '<button type="submit" class="backlog-release requires-script" form="release-' . $id . '">Release</button>';
+            $oldCookies = $_COOKIE;
+            try {
+                // Nobody recognised, or a stranger: no Release anywhere.
+                foreach ([[], ['identity_hint' => 'openpgp:' . str_repeat('b', 40)]] as $cookies) {
+                    $_COOKIE = $cookies;
+                    assertStringNotContains('backlog-release', $this->render($application(), '/backlog'));
+                }
+
+                // The holder: Release on their own rows, naming one item, so a two-item claim keeps the other.
+                $_COOKIE = ['identity_hint' => $second];
+                $holder = $this->render($application(), '/backlog');
+                assertStringContains($button($theirs), $holder);
+                assertStringContains($button($free), $holder);
+                assertSame(2, substr_count($holder, 'data-role="backlog-release-form"'));
+                assertSame(1, preg_match('/<form id="release-' . preg_quote($theirs, '/') . '"[^>]*>\s*<input type="hidden" name="thread_id" value="' . preg_quote($thread, '/') . '">\s*<input type="hidden" name="parent_id" value="' . preg_quote($theirClaim, '/') . '">\s*<input type="hidden" name="board_tags" value="general">\s*<input type="hidden" name="body" value="release: ' . preg_quote($theirs, '/') . '">/', $holder), 'A reply to the claim that releases this item only.');
+                assertSame(0, preg_match('/<form class="backlog-form".*<form id="release-.*<\/form>\s*<div class="backlog-start-bar"/s', $holder), 'Release forms are not nested in the Start form.');
+                assertStringContains($button($theirs), $this->render($application(), '/backlog/start?items=' . $theirs), 'Also beside their claim on the start page.');
+
+                // The fixture's key is an operator: Release on rows it does not hold.
+                $_COOKIE = ['identity_hint' => self::MEMBER];
+                $operator = $this->render($application(), '/backlog');
+                assertStringContains($button($theirs), $operator);
+                assertStringNotContains($button($mine), $operator, 'Nothing to release on an unclaimed row.');
+
+                // Releasing one item leaves the other held.
+                $this->reply($service, $thread, 'release: ' . $theirs, $second, $theirClaim);
+                $_COOKIE = ['identity_hint' => $second];
+                $after = $this->render($application(), '/backlog');
+                assertStringNotContains($button($theirs), $after);
+                assertStringContains($button($free), $after);
+            } finally {
+                $_COOKIE = $oldCookies;
+            }
+        });
+    }
+
     public function testStartPageWithNoClaimsThreadSaysNothingAboutClaims(): void
     {
         $this->withSite(true, function (Application $application): void {
@@ -312,7 +357,7 @@ final class BacklogPageTest
                 $_COOKIE = ['identity_hint' => self::MEMBER];
                 $id = FeedbackBacklog::select(BacklogPageController::load(dirname(__DIR__)), 'can-start', 'all')[0]->id();
                 $html = $this->render($application, '/backlog/start?items=' . $id);
-                foreach (['Not claimed', 'data-role="backlog-claim', 'backlog_claim.', 'backlog-start-items'] as $absent) {
+                foreach (['Not claimed', 'data-role="backlog-claim', 'backlog_claim.', 'backlog-start-claims', 'Release'] as $absent) {
                     assertStringNotContains($absent, $html);
                 }
                 assertStringNotContains('backlog-claim-intent', $this->render($application, '/backlog'));

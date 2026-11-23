@@ -72,6 +72,8 @@ const open = async (javaScriptEnabled, width = 375, theme = null) => {
   if (theme) await page.addInitScript(theme => { localStorage.setItem('zenmemes-theme', theme); }, theme);
   return { context, page, errors };
 };
+// Presses a control after centring it: the pinned Start bar covers one scrolled only to the edge.
+const press = async locator => { await locator.evaluate(node => node.scrollIntoView({ block: 'center' })); await locator.click(); };
 const fitsWidth = page => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 const tidy = '/backlog/start?items=PF-20261101-F01,PF-20261101-B02';
 // The Start bar is pinned to the bottom of the view, so bring a row to the middle before ticking it.
@@ -233,10 +235,30 @@ try {
   await member.page.locator('[data-claim-id="PF-20261101-F03"]', { hasText: /Also claimed by/ }).waitFor({ timeout: 60000 });
   assert.equal(claimPosts(), posts + 2);
   assert.deepEqual(member.errors, []);
+  // Release from the row: the member frees the bug, keeps the feature, and ticks made before survive.
+  await member.page.goto(claimsBase + '/backlog');
+  const rowOf = id => member.page.locator(`[data-backlog-row="${id}"]`);
+  await tick(member.page, 'A feature with a long title');
+  assert.match(await rowOf('PF-20261101-B02').locator('[data-role="backlog-claim"]').textContent(), /^Claimed by \S+ · Claimed by a guest/);
+  await member.page.route('**/api/prepare_reply', route => route.abort(), { times: 1 });
+  await press(rowOf('PF-20261101-B02').getByRole('button', { name: 'Release' }));
+  await rowOf('PF-20261101-B02').locator('[data-role="backlog-claim-feedback"]', { hasText: /^Not released\./ }).waitFor({ timeout: 30000 });
+  await press(rowOf('PF-20261101-B02').getByRole('button', { name: 'Release' }));
+  await rowOf('PF-20261101-B02').locator('[data-role="backlog-claim"]', { hasText: /^Claimed by a guest · not counted$/ }).waitFor({ timeout: 60000 });
+  // The check approves keys with an approval seed, which also makes them operators, so this member may still clear the guest claim.
+  assert.equal(await rowOf('PF-20261101-B02').getByRole('button', { name: 'Release' }).count(), 1, 'an operator can release a guest claim');
+  assert.match(await rowOf('PF-20261101-F01').locator('[data-role="backlog-claim"]').textContent(), /Also claimed by/, 'the other item of the same claim is kept');
+  assert.equal(await rowOf('PF-20261101-F01').getByRole('button', { name: 'Release' }).count(), 1);
+  assert.equal(await member.page.getByLabel('A feature with a long title').isChecked(), true, 'a release does not untick other rows');
+  assert.equal(await fitsWidth(member.page), true, 'a row with Release fits 375 px');
+  if (shots) await member.page.screenshot({ path: join(shots, 'backlog-release-375.png') });
+  assert.deepEqual(member.errors, []);
   // Start pressed while the post cannot be sent: the prompt is there, the page says Not claimed, and Claim is left to press.
   site(`$db->exec("UPDATE posts SET retracted_at = '2026-11-23T00:00:00Z' WHERE body LIKE 'claim: PF-20261101-F03%' AND author_label != 'seed'");`);
   posts = claimPosts();
   await member.page.goto(claimsBase + '/backlog');
+  // The browser restores the tick made before the release when the same address is opened again.
+  await member.page.getByLabel('A feature with a long title').evaluate(node => { node.checked = false; });
   await tick(member.page, 'Averyveryverylong');
   await member.page.route('**/api/prepare_reply', route => route.abort(), { times: 1 });
   await member.page.getByRole('button', { name: 'Start' }).click();
@@ -295,7 +317,7 @@ try {
     assert.deepEqual(viewer.errors, [], `${theme} ${width}px: no page errors`);
     await viewer.context.close();
   }
-  console.log(`PASS backlog: tick two, Start, Copy, One-shot and Staged with JavaScript (Agent decides by default); plain form to the tidy address without; sort, order and filter links; closed and unknown items left out; /backlog.txt and /backlog/start.txt; holder lines, Hide claimed and claim lines in the text list on a site with a claims thread, none on a site without; Start claims in the background with the prompt already shown, once, never on a reload or a pasted address; a failed claim says so and Claim retries; no claim without a key or without scripts; ${cases} theme/width/script cases of the list and the start page without sideways overflow`);
+  console.log(`PASS backlog: tick two, Start, Copy, One-shot and Staged with JavaScript (Agent decides by default); plain form to the tidy address without; sort, order and filter links; closed and unknown items left out; /backlog.txt and /backlog/start.txt; holder lines, Hide claimed and claim lines in the text list on a site with a claims thread, none on a site without; Start claims in the background with the prompt already shown, once, never on a reload or a pasted address; a failed claim says so and Claim retries; no claim without a key or without scripts; Release frees one item of a claim from its row; ${cases} theme/width/script cases of the list and the start page without sideways overflow`);
 } catch (error) {
   console.error(serverLog.split('\n').filter(line => /error|warning|fatal/i.test(line)).slice(-10).join('\n'));
   throw error;

@@ -164,6 +164,30 @@ final class BacklogClaims
     }
 
     /**
+     * The claim post a viewer may release on this item, or null: their own claim
+     * first; for an operator, otherwise the holder's, then any other claim.
+     *
+     * @param array<string, mixed>|null $entry
+     */
+    public static function releasable(?array $entry, string $identity, bool $isOperator): ?string
+    {
+        if ($entry === null || $identity === '') {
+            return null;
+        }
+        $claims = [...($entry['holder'] !== null ? [$entry['holder']] : []), ...$entry['also'], ...$entry['waiting']];
+        foreach ($claims as $claim) {
+            if ($claim['identity'] === $identity) {
+                return $claim['post_id'];
+            }
+        }
+        if (!$isOperator) {
+            return null;
+        }
+
+        return $claims[0]['post_id'] ?? $entry['guests'][0]['post_id'] ?? null;
+    }
+
+    /**
      * The words a row shows for one item, in order. The start page also says
      * since when the holder has had it.
      *

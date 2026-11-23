@@ -40,8 +40,11 @@ final class BacklogPageController
 
     public function __construct(private readonly RouteServices $routeServices, private readonly string $projectRoot) {}
 
-    /** @param array<string, mixed> $query */
-    public function list(array $query): string
+    /**
+     * @param array<string, mixed> $query
+     * @param array<string, mixed>|null $viewer as for start(): it only decides where Release is drawn
+     */
+    public function list(array $query, ?array $viewer = null): string
     {
         $words = FeedbackBacklog::words($query);
         $all = $this->items();
@@ -50,6 +53,7 @@ final class BacklogPageController
         $items = FeedbackBacklog::sort($this->withoutClaimed(FeedbackBacklog::select($all, $words['show'], $words['kind']), $words, $claims), $words['sort'], $words['order']);
         $repository = SourceRepository::fromProjectRoot($this->projectRoot);
         $fileBase = $repository !== null && str_starts_with($repository, 'https://github.com/') ? $repository . '/blob/main/docs/feedback/items/' : null;
+        [$viewerId, $viewerIsOperator] = $this->viewer($viewer, $claims);
 
         return $this->routeServices->renderPageTemplate('backlog.php', [
             'backlogItems' => array_map(static fn (FeedbackItem $item): array => [
@@ -62,6 +66,7 @@ final class BacklogPageController
                 'touched' => $item->touched(),
                 'href' => $fileBase !== null ? $fileBase . rawurlencode($item->id()) . '.txt' : null,
                 'claim_lines' => BacklogClaims::lines($claims[$item->id()] ?? null),
+                'release_post' => BacklogClaims::releasable($claims[$item->id()] ?? null, $viewerId, $viewerIsOperator),
             ], $items),
             'backlogOpenCount' => count($open),
             'backlogUnknownWords' => $words['unknown'],
@@ -78,7 +83,7 @@ final class BacklogPageController
             'backlogKindOptions' => $this->options('kind', self::KIND_LABELS, $words),
             'backlogTextHref' => self::href($words, [], '/backlog.txt'),
             'backlogClaimsThread' => $claims === null ? null : SiteProfileRegistry::backlogClaimsThread(),
-        ], 'Backlog', 'tools');
+        ], 'Backlog', 'tools', $claims === null ? [] : self::CLAIM_SCRIPTS);
     }
 
     /**
@@ -117,6 +122,7 @@ final class BacklogPageController
         $picked = BacklogPrompt::pick($all, $ids);
         $openIds = array_map(static fn (FeedbackItem $item): string => $item->id(), $picked['items']);
         $claims = $this->claims($all);
+        [$viewerId, $viewerIsOperator] = $this->viewer($viewer, $claims);
         $modes = [];
         foreach (['auto' => 'Agent decides', 'one-shot' => 'One-shot', 'staged' => 'Staged cycle'] as $key => $label) {
             $modes[] = ['key' => $key, 'label' => $label, 'href' => self::startHref($ids, $key), 'is_active' => $mode === $key];
@@ -127,10 +133,11 @@ final class BacklogPageController
                 'id' => $item->id(),
                 'title' => $item->header('Title'),
                 'claim' => $claims[$item->id()] ?? null,
+                'release_post' => BacklogClaims::releasable($claims[$item->id()] ?? null, $viewerId, $viewerIsOperator),
             ], $picked['items']),
             // Null on a site with no claims thread: the page then says nothing about claims.
             'backlogClaimsThread' => $claims === null ? null : SiteProfileRegistry::backlogClaimsThread(),
-            'backlogViewerId' => (string) ($viewer['identity_id'] ?? ''),
+            'backlogViewerId' => $viewerId,
             'backlogStartUnknown' => $picked['unknown'],
             'backlogStartClosed' => $picked['closed'],
             'backlogStartModes' => $modes,
@@ -208,6 +215,21 @@ final class BacklogPageController
             time(),
             static fn (string $identityId): bool => \ForumRewrite\Security\ApprovalPolicy::isActiveOperator($repositoryRoot, $identityId),
         );
+    }
+
+    /**
+     * The viewer's identity and whether they are an operator, for drawing Claim
+     * and Release. Nobody on a site with no claims thread.
+     *
+     * @param array<string, mixed>|null $viewer
+     * @param array<string, array<string, mixed>>|null $claims
+     * @return array{0: string, 1: bool}
+     */
+    private function viewer(?array $viewer, ?array $claims): array
+    {
+        $identity = $claims === null ? '' : (string) ($viewer['identity_id'] ?? '');
+
+        return [$identity, $identity !== '' && \ForumRewrite\Security\ApprovalPolicy::isActiveOperator($this->routeServices->repositoryRoot(), $identity)];
     }
 
     /**

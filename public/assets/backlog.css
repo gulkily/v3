@@ -88,6 +88,13 @@
   margin: 0;
 }
 
+.backlog-release {
+  width: auto;
+  margin: 0 0 0 0.35rem;
+  padding: 0.1rem 0.6rem;
+  font-size: inherit;
+}
+
 /* Who holds the item: a third line under the details, beside the checkbox column. */
 .backlog-row__claim {
   overflow-wrap: anywhere;

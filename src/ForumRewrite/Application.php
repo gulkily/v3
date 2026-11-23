@@ -966,7 +966,7 @@ final class Application
                 $this->routeServices()->notFound();
                 return;
             }
-            $this->sendHtml((new \ForumRewrite\Http\BacklogPageController($this->routeServices(), $this->projectRoot))->list($query), 200);
+            $this->sendHtml((new \ForumRewrite\Http\BacklogPageController($this->routeServices(), $this->projectRoot))->list($query, $this->resolveViewerProfileFromIdentityHint()), 200);
             return;
         }
 
