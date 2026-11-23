@@ -562,7 +562,7 @@ final class TemplateRenderer
         $items = $isQdbNavigation
             ? QdbPresentation::navigation()
             : [
-                ['href' => '/', 'label' => 'Board', 'section' => 'board'],
+                ['href' => '/threads/', 'label' => 'Board', 'section' => 'board'],
                 ['href' => '/recent/', 'label' => 'Recent', 'section' => 'recent'],
                 ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
                 ['href' => '/users/', 'label' => 'Users', 'section' => 'profiles'],

@@ -882,7 +882,7 @@ PHP;
             $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-clear-identity-' . bin2hex(random_bytes(6)) . '.sqlite3';
             $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
 
-            assertStringContains('class="nav-link is-active" href="/">Board</a>', $this->render($application, '/'));
+            assertStringContains('class="nav-link is-active" href="/threads/">Board</a>', $this->render($application, '/'));
 
             $response = $this->renderMethod($application, 'POST', '/api/clear_identity');
             $boardAfterClear = $this->render($application, '/');
@@ -912,7 +912,7 @@ PHP;
                 'class="nav-link" href="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954">Profile</a>',
                 $lobbyAfterClear,
             );
-            assertStringNotContains('href="/">Board</a>', $lobbyAfterClear);
+            assertStringNotContains('href="/threads/">Board</a>', $lobbyAfterClear);
         } finally {
             $_COOKIE = $previousCookie;
             TestViewerSession::reset();
@@ -970,7 +970,7 @@ PHP;
             assertStringContains('<h1>Lobby</h1>', $lobby);
             assertStringContains('class="nav-link is-active" href="/lobby/"', $lobby);
             assertStringContains('class="nav-link" href="/account/key/"', $lobby);
-            assertStringNotContains('href="/">Board</a>', $lobby);
+            assertStringNotContains('href="/threads/">Board</a>', $lobby);
             assertStringNotContains('href="/about/">About</a>', $lobby);
             assertStringNotContains('href="/users/">Users</a>', $lobby);
             assertStringNotContains('href="/tools/">Tools</a>', $lobby);
@@ -979,7 +979,7 @@ PHP;
             assertStringContains('data-role="profile-link-wrap" hidden', $account);
             assertStringContains('class="nav-link" href="/lobby/"', $account);
             assertStringContains('class="nav-link is-active" href="/account/key/"', $account);
-            assertStringNotContains('href="/">Board</a>', $account);
+            assertStringNotContains('href="/threads/">Board</a>', $account);
             $threadResume = $this->render($application, '/threads/root-001');
             assertStringContains('<h1 class="requires-script">Reconnecting</h1>', $threadResume);
             assertStringContains('data-auth-return-to="/threads/root-001"', $threadResume);
@@ -1088,7 +1088,7 @@ PHP;
                 $lobby,
             );
             assertStringContains('class="nav-link" href="/account/key/"', $lobby);
-            assertStringNotContains('href="/">Board</a>', $lobby);
+            assertStringNotContains('href="/threads/">Board</a>', $lobby);
             assertStringNotContains('href="/about/">About</a>', $lobby);
             assertStringNotContains('href="/users/">Users</a>', $lobby);
             assertStringNotContains('href="/tools/">Tools</a>', $lobby);
@@ -2054,7 +2054,7 @@ PHP;
         assertStringContains('Board', $threadsIndexNoSlash);
         assertSame($board, $threadsIndex);
         assertSame($board, $threadsIndexNoSlash);
-        assertStringContains('href="/">Board</a>', $board);
+        assertStringContains('href="/threads/">Board</a>', $board);
         assertStringContains('href="/about/">About</a>', $board);
         assertStringNotContains('New Post', $board);
         assertStringContains('New post', $board);
@@ -4024,7 +4024,7 @@ PHP;
         assertStringContains('/assets/thread-list.', $reader);
         assertStringContains('/assets/tags.', $reader);
         assertFingerprintedAsset($reader, 'content-interactions.css');
-        assertStringContains('class="nav-link is-active" href="/"', $reader);
+        assertStringContains('class="nav-link is-active" href="/threads/"', $reader);
         assertStringNotContains('class="nav-link is-active" href="/offline/"', $reader);
         assertStringContains('rel="manifest" href="/manifest.webmanifest"', $reader);
         assertStringContains('/assets/pwa_registration.', $reader);
