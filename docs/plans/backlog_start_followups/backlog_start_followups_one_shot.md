@@ -76,7 +76,7 @@ Verification:
 
 Final review: the diff touches `backlog.css`, `BacklogPrompt.php`, `BacklogText.php`, `BacklogPageController.php`, `scripts/feedback.php`, the two PHP tests and the browser check, `backlog_to_pr.md`, `v3_cli.md`, `agent_api.md`, the concept entry, the UI copy checklist, the backlog checklist, F01 and the feedback index, the ledger and this record. No new component, no dependency change, no schema change. Deploy now is enough.
 
-Commit/merge/publication status: completion commit on `fix/backlog_start_followups`; PR to be opened; not merged.
+Commit/merge/publication status: completion commit `cc92fa33b` on `fix/backlog_start_followups`; PR https://github.com/gulkily/v3/pull/379 opened 2026-11-23; not merged.
 
 Debug: [debug log](./backlog_start_followups_debug_log.md).
 

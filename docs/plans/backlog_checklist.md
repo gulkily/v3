@@ -31,7 +31,8 @@ The page, the sorts, the filters, Start with a short prompt, and the agent inter
   - [x] Start bar opaque in Arena and the other see-through themes
   - [x] Three modes: Agent decides (first, default), One-shot, Staged cycle
   - [x] The prompt says please
-  - [ ] PR opened, merged, deployed
+  - [x] PR opened: https://github.com/gulkily/v3/pull/379 (2026-11-23)
+  - [ ] Merged and deployed
 - Seen live, no change asked: the five lines of link rows at 375 px, Salient not putting ready items first, Effort and Impact sorting one way.
 
 ## Cycle 2 — `backlog_claims` (staged; rough estimate 0.40)
