@@ -633,18 +633,36 @@ controlled operator workflow.
 ## Publish local public keys
 
 ```sh
-./v3 publish-keys https://forum.example --plan=/tmp/key-review.txt
-./v3 publish-keys https://forum.example --publish=/tmp/key-review.txt --key=FULL_FINGERPRINT
+./v3 publish-keys <name|hostname|url> [--plan=FILE] [--repository-root=PATH] [--timeout=SECONDS]
+./v3 publish-keys <name|hostname|url> --publish=FILE --key=FINGERPRINT [--key=FINGERPRINT ...] [--repository-root=PATH] [--timeout=SECONDS]
 ```
 
-Review the first command's names, fingerprints and states, then replace
+For example, preview your usual local repository from a separate worktree:
+
+```sh
+./v3 publish-keys zenmemes.com --repository-root=/path/to/local_repository
+```
+
+Save a new review plan, then publish a selected fingerprint:
+
+```sh
+./v3 publish-keys zenmemes.com --repository-root=/path/to/local_repository --plan=/tmp/key-review.txt
+./v3 publish-keys zenmemes.com --repository-root=/path/to/local_repository --publish=/tmp/key-review.txt --key=FULL_FINGERPRINT
+```
+
+Review the saved preview's names, fingerprints and states, then replace
 `FULL_FINGERPRINT` with a selected fingerprint. Repeat `--key` for additional
 selections. Without `--plan` or `--publish`, the command only previews.
 
-The source defaults to `FORUM_REPOSITORY_ROOT`, then `state/local_repository`.
+The source defaults to `FORUM_REPOSITORY_ROOT`, then this checkout's
+`state/local_repository`. Output starts with its resolved `Repository` path;
+another worktree can have different records.
 Use `--repository-root=/path/repository` to choose another source and
 `--timeout=SECONDS` (1–120, default 10) to bound each request. The destination
-must be an explicit HTTP(S) URL, without credentials, query or fragment.
+accepts a known instance name such as `zenmemes`, a hostname such as
+`zenmemes.com` (HTTPS), or an explicit HTTP(S) URL. Use `http://` for an HTTP
+instance. Credentials, queries, fragments and whitespace are rejected. Names
+and hostnames are normalized before saving or checking a review plan.
 
 Plans use `Key: value`, contain public metadata and source hashes, and must be
 new files outside the canonical repository. Publication binds the reviewed

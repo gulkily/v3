@@ -5,13 +5,13 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.20**
 
-Status: planned; next permitted action: planning commit, then bounded implementation.
+Status: bounded implementation locally verified; awaiting maintainer review/deployment acceptance.
 
 Original request: "please make a post about this on zenmemes and then make the fixes and also add the one missing guideline we had". User reported hostname rejection and misleading source/output/help after reviewing the original publisher.
 Authorization: 2026-11-22 America/New_York / 2026-11-23 UTC session request authorizes the public post, local fixes and guideline update. No merge, deployment or key publication. No pasted external request invokes the thread-to-PR procedure; push/PR and further public replies are outside this bounded task.
 Parent: [original publisher](../publish_local_public_keys/publish_local_public_keys_step4_implementation_summary.md). Separate follow-up cycle, not a rewrite of its completed records or another observation of that scope.
 Starting revision and branch: 245d1d072; fix/publish-keys-cli-conventions in /home/wsl/v3-publish-local-public-keys. New branch from the unmerged publisher, retaining its six commits; origin/main fetched at 8f106c3ce does not contain the publisher. No new worktree. Original ~/v3 remains unchanged.
-Planning commit: pending.
+Planning commit: 515a8bcc5 (plan and index only, confirmed before implementation).
 
 ## Outcome, approach and risks
 
@@ -40,9 +40,31 @@ Concepts touched: update [public-key publication](../../concepts/public_key_publ
 
 2026-11-23T01:05:19Z: Authorized lesson posted through the latest served Quill using the existing local identity. Post: https://zenmemes.com/threads/thread-20261123010519-0ef90ca45c2f3939b60720450f26ef65 . The writing-audit skill was read and applied to the draft; no extra trouble-report post. Quill Status accepted and subsequent check Status found. Posting precedes fixes as requested. This publication is not deployment or key-publication acceptance.
 
-Outcome: pending implementation.
+Outcome: lesson posted and checked; hostname parity, source visibility, help/errors and missing guideline implemented and locally verified.
 Maintainer comfortable-fit judgment and acceptance date: pending.
 Measured active work: unknown.
-Commit/merge/publication: new local branch, planning commit pending; public lesson accepted; no push/PR/merge/deploy.
+Commit/merge/publication: planning 515a8bcc5; implementation reference pending in the completion commit that contains this update. Public lesson accepted; no push/PR/merge/deploy.
+
+Attribution: Codex, 2026-11-23 UTC.
+
+2026-11-23: No clarification changed the missing-guideline interpretation after a reasonable reply interval; explicit hostname support documented. CONTRIBUTING now also makes precedent comparison, repository visibility and reported-environment verification concrete. New code delegates normalization to InstanceSourceResolver, prints Repository before profile checks, improves help and wraps unsafe destination errors without echoing credentials. Existing publication/hash/retry logic is unchanged. Four meaningful CLI tests cover parity with import inputs, invalid targets, help and two distinct selected sources.
+
+2026-11-23: Focused command ./v3 test PublishKeysCommandTest PublicKeyPublisherTest PublicKeyPublishHttpTest InstanceSourceResolverTest ScriptsIndexTest: 23/23 passed. Syntax, bash syntax and diff checks passed. Manual ordinary CLI replay in the actual user checkout against an isolated HTTP destination displayed Repository /home/wsl/v3-publish-local-public-keys/state/local_repository and two identities (exit 1 for the expected name refusal); explicit fixture source displayed its separate path and one identity (exit 0). Zero preview POSTs. No silent switch to ~/v3. The hostname normalization was compared without contacting production; no live key-publication acceptance claim.
+
+## Closeout verification
+
+**Retrospective cycle scope assessment: 0.20**
+
+2026-11-23: Same v1/R1/P2, exposed Codex rater and independent whole-cycle assessment; projection 0.20 retained. Missing intake remains missing. Measured work unknown; no extra stage observations. Maintainer comfortable-fit judgment/acceptance date pending.
+
+Passed: focused 23/23; smoke plus PublishKeysCommandTest/PublicKeyPublisherTest/PublicKeyPublishHttpTest/InstanceSourceResolverTest/ScriptsIndexTest 509 run, 505 passed, four failures. All new and selected tests passed. Failed baseline cases retained: AgentPostingApiTest::testSignedControlDiagnosticsBeforeGenericParserFailure, AgentPostingApiTest::testRulesErrorsAndLegacyCompatibility, SingleRequestHttpTest::testUnicodeRoundTripAndSymbolRejection, SignedPostBundleValidatorTest::testStrictSubsetAndExactBytes. Same Unicode/PCRE failures reproduced on untouched 8b00a78be in the parent cycle; no fix attempted outside scope. Full suite not run by host policy.
+
+Passed: actual checkout/default-source and explicit-source replay against isolated HTTP, zero preview POSTs; Quill post read-back; PHP syntax for changed PHP, bash -n v3, feature links, concept paths and git diff --check. Feedback check 357 items, zero problems, 36 existing source-review notices; index regenerated. No new dependencies/schema. Runtime authorization and publication checks remain in the unchanged publisher; actual registration/retry and restricted-instance tests pass.
+
+Inapplicable: browser/theme/nav and migration verification, because no such surfaces/contracts changed. Production key publication/deployment are outside this task's authority, not established by fixture tests. The reported bare production hostname is verified through normalization parity and ordinary local HTTP entry; it was not rerun against the live instance during fix verification. Original ~/v3 is unchanged; the selected worktree's two-record default is now visible, not silently redirected.
+
+Final diff review: changes remain within the recorded CLI, tests, guideline/docs and feedback/record scope. Shared resolver reused; no new URL parser, payload, API or publisher behavior duplicated. Canonical human-readable output remains Key: value. Public post contains the observed lesson and announced fixes, not secret keys, local private records or claims of production deployment.
+
+Unaided next action: in /home/wsl/v3-publish-local-public-keys run ./v3 publish-keys --help, then choose a destination and inspect Repository before reviewing key states. To use the usual local source, pass --repository-root=/home/wsl/v3/state/local_repository explicitly. Default is preview; publish still requires a reviewed plan and full selected fingerprints. Follow-ups: maintainer review/deployment and original broader reverse import remain separate; no GUI or new automation format added.
 
 Attribution: Codex, 2026-11-23 UTC.

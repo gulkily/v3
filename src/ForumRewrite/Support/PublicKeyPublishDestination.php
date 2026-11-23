@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Support;
 
-use ForumRewrite\Import\InstanceArchiveDownloader;
+use ForumRewrite\Import\InstanceSourceResolver;
 use ForumRewrite\Security\OpenPgpKeyInspector;
 use RuntimeException;
 
@@ -14,11 +14,14 @@ final class PublicKeyPublishDestination
 
     public function __construct(string $url, private readonly int $timeout = 10)
     {
-        $parts = InstanceArchiveDownloader::validateUrl($url);
-        if (isset($parts['query']) || $timeout < 1 || $timeout > 120) {
-            throw new RuntimeException('Use an HTTP(S) destination without a query, and a timeout from 1 to 120 seconds.');
+        if ($timeout < 1 || $timeout > 120) {
+            throw new RuntimeException('Use a timeout from 1 to 120 seconds.');
         }
-        $this->url = rtrim($url, '/');
+        try {
+            $this->url = (new InstanceSourceResolver())->resolve($url);
+        } catch (RuntimeException) {
+            throw new RuntimeException('Destination must be a known instance name, hostname or HTTP(S) URL without credentials, a query, fragment or whitespace. Run ./v3 publish-keys --help.');
+        }
     }
 
     public function profile(string $fingerprint): array

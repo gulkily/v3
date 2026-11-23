@@ -1,0 +1,19 @@
+ID: PF-20261122-B04
+Title: Publisher CLI conventions and source visibility
+Kind: bug
+Workflow: blocked
+Created: 2026-11-22
+Evidence: locally-verified
+
+Request:
+Make publish-keys follow comparable command conventions: accept a hostname such as zenmemes.com, explain destination syntax, show which canonical repository is read and correct the misleading source error. Document the missing hostname guideline and verify real usage instead of only implementation-specific examples.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261123010519-0ef90ca45c2f3939b60720450f26ef65
+
+Done when:
+Known names, hostnames and URLs resolve consistently with import-instance; invalid destinations fail safely; help and output identify accepted arguments and selected repository; existing reviewed publication/recovery remains verified. Documentation records the convention and local checks. Maintainer acceptance remains separate.
+
+Notes:
+2026-11-22: Session request authorized the lesson post and local fixes. Work on fix/publish-keys-cli-conventions in the existing publisher checkout; no new worktree. Plan: docs/plans/publish_keys_cli_conventions/publish_keys_cli_conventions_one_shot.md. Broader reverse import PF-20261121-F03 is separate. Production key publication, merge and deployment are not authorized.
+2026-11-22: Locally verified on fix/publish-keys-cli-conventions: 23/23 focused checks pass; smoke 509 run, 505 passed, four known baseline Unicode failures. Actual checkout/source replay against isolated HTTP confirmed visible paths and zero preview POSTs. Guideline, help and concept updated; blocked only for maintainer review/deployment/acceptance. No live key publication attempted.

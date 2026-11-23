@@ -12,7 +12,26 @@ try {
     $options = []; $destination = null; $keys = [];
     foreach (array_slice($argv, 1) as $arg) {
         if (in_array($arg, ['--help', '-h'], true)) {
-            echo "Usage:\n  ./v3 publish-keys DESTINATION [--plan=FILE] [--repository-root=PATH] [--timeout=SECONDS]\n  ./v3 publish-keys DESTINATION --publish=FILE --key=FINGERPRINT [--key=FINGERPRINT ...]\n\nDefault: preview only. --plan saves a new Key: value review file outside the canonical repository.\n--publish uses that reviewed source and destination; select full fingerprints with --key.\nExisting identities are skipped, never updated. Names and retirements must agree.\nAfter a partial/uncertain result, resolve the reported issue and rerun the same selection.\nEach selected key is sent once, then verified by read-back. Private keys, approvals and message history stay local.\n";
+            echo <<<'TEXT'
+Usage:
+  ./v3 publish-keys <name|hostname|url> [--plan=FILE]
+  ./v3 publish-keys <name|hostname|url> --publish=FILE --key=FINGERPRINT [--key=FINGERPRINT ...]
+  Options: --repository-root=PATH --timeout=SECONDS
+
+Default: preview only. Hostnames use HTTPS; known names include zenmemes.
+Use an explicit http:// URL for an HTTP instance.
+Source: FORUM_REPOSITORY_ROOT, otherwise this checkout's state/local_repository.
+--repository-root chooses another canonical source; Repository shows its resolved path.
+--timeout bounds each request (1–120 seconds; default 10).
+--plan saves a new Key: value review file outside the canonical repository.
+--publish uses that reviewed source and destination; select full fingerprints with --key.
+Existing identities are skipped, never updated. Names and retirements must agree.
+After a partial/uncertain result, resolve the reported issue and rerun the same selection.
+Each selected key is sent once, then verified by read-back. Private keys, approvals and message history stay local.
+
+Example: ./v3 publish-keys zenmemes.com --repository-root=/path/to/local_repository
+TEXT;
+            echo "\n";
             exit(0);
         }
         if (str_starts_with($arg, '--key=') && strlen($arg) > 6) { $keys[] = substr($arg, 6); continue; }
@@ -27,9 +46,9 @@ try {
     if (isset($options['timeout']) && !preg_match('/^[1-9][0-9]{0,2}$/D', $options['timeout'])) throw new RuntimeException('Invalid timeout.');
     $client = new PublicKeyPublishDestination($destination, (int) ($options['timeout'] ?? 10));
     $publisher = new PublicKeyPublisher($options['repository-root'] ?? (DeploymentSettings::value('FORUM_REPOSITORY_ROOT') ?: dirname(__DIR__) . '/state/local_repository'));
+    echo 'Repository: ' . $publisher->root . "\nDestination: " . $client->url . "\nMode: " . (isset($options['publish']) ? 'publish' : 'preview') . "\n";
     $rows = isset($options['publish']) ? $publisher->publish($options['publish'], $keys, $client) : $publisher->preview($client);
     if (isset($options['plan'])) $publisher->writePlan($options['plan'], $client, $rows);
-    echo 'Destination: ' . $client->url . "\nMode: " . (isset($options['publish']) ? 'publish' : 'preview') . "\n";
     if (isset($options['plan'])) echo 'Plan: ' . $options['plan'] . "\n";
     $failed = false;
     foreach ($rows as $row) {

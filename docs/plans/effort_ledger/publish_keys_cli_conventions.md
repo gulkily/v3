@@ -1,0 +1,9 @@
+# Cycle v3/publish_keys_cli_conventions
+
+| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
+| --- | --- | --- | --- | --- | --- |
+| v3/publish_keys_cli_conventions | Locally verified; acceptance pending | v1 / R1 / P2 | 0.20 | [One-shot record](../publish_keys_cli_conventions/publish_keys_cli_conventions_one_shot.md) | v3/publish_local_public_keys; maintainer acceptance pending |
+
+2026-11-23T01:05:27Z: Intake unavailable because detailed inspection preceded this record; not reconstructed. Execution entry 0.20 for the authorized post, shared destination resolver, visible source, help/error corrections and Operator CLI guideline. Prior source review and parent-cycle scores disclosed; Codex single exposed rater, frozen R1 hashes verified. Starting revision 245d1d072; new fix/publish-keys-cli-conventions branch in the existing worktree. Projection is whole-cycle, not measured labor; no fabricated work units. Plan-only commit 515a8bcc5 precedes implementation. Public lesson accepted and checked separately from product acceptance.
+
+2026-11-23: Closeout retrospective 0.20, projection retained separately; scope v1/R1/P2 unchanged. Focused 23/23 and all selected smoke consumers pass; smoke 505/509 with four parent-confirmed baseline Unicode failures. Actual reported checkout/source replay passed against isolated HTTP, public post accepted/read back; live key publication excluded. Syntax/help/links/diff/feedback checks pass; full suite not run. Missing intake, measured active work unknown and maintainer fit/acceptance pending remain explicit. Completion revision is the commit introducing this line (reference pending); plan 515a8bcc5 and full evidence in the canonical record. No extra observation for the parent or worktree copy.

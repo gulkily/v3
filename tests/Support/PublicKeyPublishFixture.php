@@ -74,9 +74,9 @@ final class PublicKeyPublishFixture
         return 'Profile-Slug: openpgp-' . strtolower($this->fingerprint) . "\nIdentity-ID: openpgp:" . strtolower($this->fingerprint) . "\nUsername: $name\nApproved: no\nRetired: $retired\n";
     }
 
-    public function command(array $arguments = [], ?string $destination = null): array
+    public function command(array $arguments = [], ?string $destination = null, ?string $repositoryRoot = null): array
     {
-        $process = proc_open(array_merge(['bash', dirname(__DIR__, 2) . '/v3', 'publish-keys', $destination ?? $this->url, '--repository-root=' . $this->root], $arguments),
+        $process = proc_open(array_merge(['bash', dirname(__DIR__, 2) . '/v3', 'publish-keys', $destination ?? $this->url, '--repository-root=' . ($repositoryRoot ?? $this->root)], $arguments),
             [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, dirname(__DIR__, 2));
         $out = stream_get_contents($pipes[1]); $err = stream_get_contents($pipes[2]); fclose($pipes[1]); fclose($pipes[2]);
         return [proc_close($process), $out, $err];
