@@ -699,6 +699,7 @@ and repair its navigation and affected references. See the
 - [Backlog view](backlog_view/backlog_view_step1_solution_assessment.md) — staged: a `/backlog` page under Tools lists open feedback items with five sorts and filters, and Start gives a short agent prompt for one item or several.
 - [Backlog start follow-ups](backlog_start_followups/backlog_start_followups_one_shot.md) — one-shot: an opaque Start bar in see-through themes, an Agent decides mode as the default, and "Please" in the prompt.
 - [Backlog prompt access](backlog_prompt_access/backlog_prompt_access_one_shot.md) — one-shot: the backlog prompt asks for a clone and a pull request instead of patch files, and for a word before building items that do not belong together.
+- [Backlog claims](backlog_claims/backlog_claims_step3_development_plan.md) — staged: Start claims the picked items with a `claim:` line in a signed reply in one thread, rows show who holds them, agents claim and release.
 - [Favicon in light theme](favicon_light_theme/favicon_light_theme_one_shot.md) — one-shot: the ZenMemes tab icon redrawn so it looks clean on light tabs (PF-20261111-B02).
 - [Word 97 action fonts](word97_action_fonts/word97_action_fonts_one_shot.md) — one-shot: post-action toggles in Word 97 and the Outbox status line use the UI font (PF-20261104-B12, PF-20261104-B18).
 - [Midnight action fonts](midnight_action_fonts/midnight_action_fonts_one_shot.md) — one-shot: Midnight post actions get Word 97’s UI font, no underline and Like/Flag bevel (PF-20261111-F19).
