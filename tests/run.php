@@ -55,6 +55,7 @@ $testFiles = [
     __DIR__ . '/ScoreVisibilityTest.php',
     __DIR__ . '/BacklogPageTest.php',
     __DIR__ . '/FeedbackBacklogTest.php',
+    __DIR__ . '/BacklogClaimsTest.php',
     __DIR__ . '/FeedbackItemCheckTest.php',
     __DIR__ . '/FastmodScoreTransferTest.php',
     __DIR__ . '/FastmodDerivedTagsTest.php',
