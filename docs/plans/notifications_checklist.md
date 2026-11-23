@@ -25,7 +25,10 @@ Found on a first read at `93295c82`. Each cycle re-checks its own part before pl
 
 - [x] **0. `app_icons`** (one-shot) — 180, 192 and 512 px icons; the manifest lists them; iPhone's Add to Home Screen gets the Z instead of a screenshot. [PR #332](https://github.com/gulkily/v3/pull/332) merged 2026-11-18. [Record](./app_icons/app_icons_one_shot.md)
   - [ ] Real-phone check: add to home screen on the iPhone SE and see the icon.
-- [ ] **1. `owa_start_url`** (one-shot; estimate 0.08) — where the installed app opens, and its name. Today it opens `/offline/` as "Zenmemes Offline Reading". Needs the maintainer's answer to question 1 before it starts. Whatever it opens must still work with no network.
+- [x] **1. `owa_start_url`** (one-shot; estimate 0.08) — the installed app opens the home page `/` (offline: the cached reader) and is named "ZenMemes"; the manifest `id` is unchanged so installs update in place. [PR #392](https://github.com/gulkily/v3/pull/392) open. [Record](./owa_start_url/owa_start_url_one_shot.md)
+  - The maintainer, 2026-11-23: on his home screen it showed "Zenmemes" and he wanted "ZenMemes".
+  - [ ] Merged and deployed.
+  - [ ] Real-phone check: remove and re-add the app on the iPhone SE (iPhone reads the manifest only when adding), see "ZenMemes", open it online and in airplane mode.
 - [ ] **2. `push_subscribe`** (staged; estimate 0.70) — a member turns notifications on for this device and gets a test notification. The flag (off by default); a VAPID key pair made on first use and kept in private state; a "Notifications" switch in Preferences that asks for permission only when tapped; the subscription stored under username and key in a private store; turning it off removes it; "Send a test" sends one. Includes the sender itself, since the test needs it.
   - Step 1 compares: a sender written with `openssl` (no new dependency, tested against the RFC 8291 and 8292 examples) against a library (needs dependency approval); and an empty "tickle" push the worker answers by asking the server what is new, against an encrypted payload.
   - Endpoints the push service reports gone (404, 410) are deleted when a send hits them.
@@ -48,7 +51,7 @@ Not planned until the MVP is in use. Each is a candidate, not a commitment.
 
 ## Open questions
 
-1. Where should the installed app open: Unread, the board, or `/offline/` as now? And should it be named "ZenMemes" rather than "Zenmemes Offline Reading"? (cycle 1)
+1. ~~Where should the installed app open, and under what name?~~ Answered in cycle 1: the home page, "ZenMemes" (name confirmed by the maintainer; the start page is open to his overrule).
 2. Which events notify by default? The outline's lean: DMs and replies on, new posts off. (cycles 4 and 7)
 3. Is an email fallback worth it for members who never install the app?
 4. zenmemes.com first, or a small private instance for the vending operators?
