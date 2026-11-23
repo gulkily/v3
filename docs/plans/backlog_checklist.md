@@ -20,8 +20,9 @@ The page, the sorts, the filters, Start with a short prompt, and the agent inter
 - [x] `/backlog/start` page with mode choice, prompt and Copy
 - [x] `/backlog.txt` and `/backlog/start.txt`
 - [x] Tools entry with an icon in every icon set
-- [ ] Works with scripts off; no sideways overflow at 375 and 1280 px in every theme
-- [ ] Feedback item allocated; concept entries written
+- [x] Works with scripts off; no sideways overflow at 375 and 1280 px in every theme
+- [x] Feedback item allocated; concept entries written
+- [ ] One real start by a fresh agent on a thin item (not run; ask for it)
 - [ ] PR opened
 - [ ] Merged and deployed with the flag on
 - [ ] Maintainer accepts: one real start from his phone ends in a PR

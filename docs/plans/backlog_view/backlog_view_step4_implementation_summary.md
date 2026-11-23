@@ -137,3 +137,41 @@ Stage estimates below are copied from the approved Step 3 plan; copying is not a
 - Estimate details: original scope unchanged; uncertainty was low; no revisions.
 
 *— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
+
+## Stage 6 - Proof and records
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.07** (the real start was not run; see below)
+
+- Changes:
+  - New concept entry `docs/concepts/backlog_view.md`. The feedback items and Tools launcher entries were revised in Stages 1 and 3.
+  - New feedback item `PF-20261123-F01` for this work, `Workflow: blocked`, `Evidence: locally-verified`; `docs/feedback/README.md` regenerated.
+  - `docs/plans/ui_copy_audit_checklist.md`: an entry for the two pages.
+  - The [backlog checklist](../backlog_checklist.md) and the effort ledger updated.
+- Verification:
+  - Passed: `./v3 test --smoke BacklogPageTest FeedbackBacklogTest FeedbackItemCheckTest NavIconSetsTest FeatureFlagsBehaviorTest FeatureFlagEvaluatorTest ToolsRegistryTest UsageNamesTest UsagePageKindTest LlmsTxtRendererTest`: 544 run, 544 passed.
+  - Passed: `node tests/browser/backlog.mjs` (Stages 4 and 5): the whole flow with and without scripts, the text routes, and 168 theme, width and script cases without sideways overflow.
+  - Passed: `node tests/browser/tools_launcher.mjs`: 44 theme and width cases with the new tool.
+  - Passed: `./v3 feedback check` (358 items, 0 problems) and `./v3 feedback index`; `git diff --check`; a read of the whole diff against the plan.
+  - **Pending: one real start by a fresh agent on a thin item.** Not run. It would have a second agent build an unrelated item and open its own pull request, which is more than a check and was left for the maintainer to ask for. Until it is run, the thin-item risk is unmeasured.
+  - **Pending: the maintainer's own start from his iPhone SE after deploy.** This is the release check.
+  - Not checked: a real iPhone (Safari and the offline web app), including Copy there. Headless Chrome at 375 px stood in.
+  - Inapplicable: database migration and read-model checks; nothing is stored and no schema changed.
+  - Full suite not run.
+- Notes:
+  - Completion Contract status: entry, list, sort, filter, selection, Start, prompt, recovery cases and the agent interface are built and verified locally. Deployment needs the maintainer to turn on `FORUM_BACKLOG_ENABLED` at zenmemes.com. Release is pending the two starts above.
+  - Baseline failure fixed during the cycle: `tests/browser/tools_launcher.mjs` (Stage 3).
+- Estimate details: original scope reduced by the unrun real start; uncertainty was medium and remains for the thin-item question.
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
+
+## Cycle closeout
+
+**Retrospective scope assessment: 0.62** against a projection of 0.60. Stage retrospectives: 0.08, 0.10, 0.20, 0.12, 0.05, 0.07 (not summed). The page stage ran over because several tests enumerate every tool and flag; the proof stage ran under because the real start was left pending. Maintainer comfortable-fit judgment: pending. Measured time: unknown.
+
+Deviations from the Step 3 plan, each noted in its stage: the link rows in place of `board_sort.php` (Stage 3); no paging (Stage 3); the redirect to the tidy start address (Stage 4); the text routes in `Application.php`, not `ApiTextController.php` (Stage 5); the real start not run (Stage 6). The Salient order does not put ready items first when an untriaged item has a small estimate (Stage 1).
+
+Enhancement requests carried forward, not approved: claims (`backlog_claims`), the parked plans list (`backlog_parked`), filling in `Estimate` and `Impact` across items.
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
