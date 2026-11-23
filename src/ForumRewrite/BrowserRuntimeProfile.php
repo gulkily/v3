@@ -23,6 +23,8 @@ final class BrowserRuntimeProfile
         }
 
         $offlineCachePrefix = $namespace . '-offline-reader-';
+        // The installed app's name: the profile's appName, or the display name capitalized.
+        $appName = is_string($profile['appName'] ?? null) && $profile['appName'] !== '' ? $profile['appName'] : ucfirst($displayName);
 
         return [
             'namespace' => $namespace,
@@ -38,8 +40,8 @@ final class BrowserRuntimeProfile
             'offlineCachePrefix' => $offlineCachePrefix,
             'offlineCacheName' => $offlineCachePrefix . 'v' . self::OFFLINE_CACHE_VERSION,
             'offlineDiagnosticKey' => $namespace . '-offline-registration-error',
-            'manifestName' => ucfirst($displayName) . ' Offline Reading',
-            'manifestShortName' => ucfirst($displayName),
+            'manifestName' => $appName,
+            'manifestShortName' => $appName,
         ];
     }
 }

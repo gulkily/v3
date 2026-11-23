@@ -16,10 +16,13 @@ final class BrowserRuntimeAssetRenderer
         $runtime = BrowserRuntimeProfile::fromProfile($profile);
 
         return json_encode([
+            // The id names the installed app; it keeps its first value so existing installs
+            // update in place instead of becoming a second app.
             'id' => '/offline/?site=' . $runtime['namespace'],
             'name' => $runtime['manifestName'],
             'short_name' => $runtime['manifestShortName'],
-            'start_url' => '/offline/',
+            // The installed app opens the home page; offline, the worker answers it with the reader.
+            'start_url' => '/',
             'scope' => '/',
             'display' => 'standalone',
             'background_color' => '#f4f1e8',

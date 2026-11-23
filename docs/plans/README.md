@@ -91,6 +91,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Pledges checklist](pledges_checklist.md) — pledge campaigns in eight cycles, with the [spec](pledges_spec.md). Cycle 1: [pledge campaigns](pledge_campaigns/pledge_campaigns_step3_development_plan.md) — a thread with a `goal:` line shows a totals block, and replies with a `pledge:` line add to it.
 
+[Installed app start page](owa_start_url/owa_start_url_one_shot.md) — the installed app opens the home page (offline: the cached reader) and is named "ZenMemes"; cycle 1 of the notifications checklist.
+
 [Guestbook](guestbook/guestbook_step3_development_plan.md) — a `/guestbook/` page shows the guestbook thread's top-level replies as a paper book with numbered pages and a "Sign the book" form; the thread stays available as an ordinary thread.
 
 [Tagsets file comments](tagsets_file_comments/tagsets_file_comments_one_shot.md) — one-shot: plainer comments in `resources/tagsets.txt`.
