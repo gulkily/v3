@@ -17,6 +17,27 @@ final class PostActionThemeTest
         }
     }
 
+    public function testWord97PostActionTogglesUseUiTypography(): void
+    {
+        $css = $this->themeCss('word97');
+        $scope = ':root[data-theme="word97"]';
+
+        foreach ([
+            ' .post-more-summary',
+            ' .post-more-actions > summary',
+            ' .post-analysis > summary',
+            ' .retraction-details > summary',
+        ] as $selector) {
+            assertStringContains($scope . $selector, $css);
+        }
+    }
+
+    public function testOutboxStatusUsesUiFontInEveryTheme(): void
+    {
+        $css = file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
+        assertStringContains("[data-role=\"outbox-status\"] {\n  font-family: var(--ui-font);\n}", (string) $css);
+    }
+
     public function testChicagoLikeAndFlagBevelStaysScopedAndPressable(): void
     {
         $css = $this->themeCss('chicago');

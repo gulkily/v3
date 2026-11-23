@@ -486,11 +486,16 @@
     inset 1px 1px 0 0 #808080;
 }
 
-/* Post actions (Reply, Like, Flag, Agent, Retract) default to inherited body
-   text with an underline; in Word 97 they are UI controls, so they take the
+/* Post actions (Reply, Like, Flag, Agent, Retract, and the More, "…", Post
+   analysis and retraction Details toggles) default to inherited body text,
+   some with an underline; in Word 97 they are UI controls, so they take the
    UI font and no underline. */
 :root[data-theme="word97"] .post-card-actions > a[href^="/compose/reply"],
-:root[data-theme="word97"] .thread-reaction-button {
+:root[data-theme="word97"] .thread-reaction-button,
+:root[data-theme="word97"] .post-more-summary,
+:root[data-theme="word97"] .post-more-actions > summary,
+:root[data-theme="word97"] .post-analysis > summary,
+:root[data-theme="word97"] .retraction-details > summary {
   font-family: var(--ui-font);
   text-decoration: none;
 }

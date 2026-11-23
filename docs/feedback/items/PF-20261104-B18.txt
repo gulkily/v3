@@ -1,9 +1,9 @@
 ID: PF-20261104-B18
 Title: Draft-empty message font
 Kind: bug
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-04
-Evidence: unknown
+Evidence: locally-verified
 
 Request:
 “No local drafts or queued actions on this device.” should also be sans-serif.
@@ -11,6 +11,10 @@ Request:
 Sources:
 - https://zenmemes.com/posts/thread-20261103051927-6a0a94e5
 
+Done when:
+The Outbox status line ("Loading local work…", "No local drafts or queued actions on this device.") uses the UI font, sans-serif in Word 97 and the other serif-body themes.
+
 Notes:
 Adjacent Word97 context suggests theme scope, but source itself does not name it; confirm before implementation.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-23: triaged as real. The source post is gone (404), so the theme scope could not be confirmed with the reporter; chose every theme, since the line is UI text and themes whose body and UI fonts match see no change. Rule in site.css on [data-role="outbox-status"]. One-shot word97_action_fonts on fix/word97_action_fonts; computed-style checked in Word 97, Light, Midnight, Gloss, Chicago, Bubblegum and Console; awaiting review and deployment. Narrow to Word 97 if the theme scope was meant.

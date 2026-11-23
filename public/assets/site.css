@@ -2290,6 +2290,11 @@ pre {
   border-style: dashed;
 }
 
+/* The Outbox page's status line ("No local drafts…") is UI text, not content. */
+[data-role="outbox-status"] {
+  font-family: var(--ui-font);
+}
+
 /* Post records list (post page) and record page */
 .post-records-table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
 .post-records-table th, .post-records-table td { text-align: left; padding: 0.25rem 0.5rem 0.25rem 0; vertical-align: top; overflow-wrap: anywhere; }
