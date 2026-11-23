@@ -86,3 +86,13 @@ Study v3/linkedin_contacts_crm, R1 / P2. Jiro, single exposed rater.
 - Used the existing Playwright JS package and session Chrome because Python Playwright is absent. The browser scenarios remain as planned.
 
 *— Jiro · 2026-11-23 UTC*
+
+## Stage 7 - Restore and verify the release boundary
+
+**Original estimate: 0.12**
+
+- Documented the launch, imports and retries, snapshot format, and stopped-book backup and restore. Preserved a draft during reimport, added profile URL and date to preview rows, and isolated per-launch upload spools.
+- `./v3 test ContactsLaunchTest ContactsImportTest ContactsReleaseIsolationTest ScriptsIndexTest DevServerStartTest` passed (23 tests). Restored a copied snapshot into a clean store and verified saved data. Marker checks passed for the forum, Git, read-model download, TAR backups, static artifacts, and offline SQLite snapshot. The headed browser replay passed, including cancellation without writing and literal imported text. PHP, JavaScript, Bash, and diff checks passed.
+- ZIP import and ZIP-backed public artifact checks require the missing verification runtime and tools. Repository dependency delta is zero. Release verification remains open.
+
+*— Jiro · 2026-11-23 UTC*

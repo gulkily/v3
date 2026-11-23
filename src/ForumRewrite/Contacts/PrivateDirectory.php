@@ -11,6 +11,9 @@ final class PrivateDirectory
 {
     public static function prepare(string $path, string $checkout): string
     {
+        if (str_contains($path, "\0") || in_array('..', explode('/', $path), true)) {
+            throw new RuntimeException('Contacts data directory must use a direct path without parent segments.');
+        }
         $path = self::absolute($path);
         if ($path === '/') {
             throw new RuntimeException('Contacts data directory must be dedicated to Contacts.');
@@ -44,6 +47,56 @@ final class PrivateDirectory
         return $path;
     }
 
+    public static function uploadSpool(string $directory): array
+    {
+        foreach (@scandir($directory) ?: [] as $name) {
+            if (!preg_match('/^uploads-[a-f0-9]{32}$/D', $name)) {
+                continue;
+            }
+            $spool = $directory . '/' . $name;
+            $lockPath = $spool . '/.lease';
+            if (is_link($spool) || is_link($lockPath) || !is_file($lockPath)) {
+                continue;
+            }
+            $lock = @fopen($lockPath, 'rb');
+            if ($lock !== false) {
+                if (flock($lock, LOCK_EX | LOCK_NB)) {
+                    self::removeSpool($spool);
+                }
+                fclose($lock);
+            }
+        }
+
+        $id = bin2hex(random_bytes(16));
+        $pending = $directory . '/.upload-' . $id;
+        $spool = $directory . '/uploads-' . $id;
+        if (!@mkdir($pending, 0700)) {
+            throw new RuntimeException('Could not prepare private Contacts uploads.');
+        }
+        $lock = @fopen($pending . '/.lease', 'x+b');
+        if ($lock === false || !flock($lock, LOCK_EX) || !@rename($pending, $spool)) {
+            if (is_resource($lock)) {
+                fclose($lock);
+            }
+            self::removeSpool($pending);
+            throw new RuntimeException('Could not prepare private Contacts uploads.');
+        }
+        return [$spool, $lock];
+    }
+
+    public static function removeSpool(string $spool): void
+    {
+        if (is_link($spool)) {
+            return;
+        }
+        foreach (@scandir($spool) ?: [] as $file) {
+            if ($file !== '.' && $file !== '..') {
+                @unlink($spool . '/' . $file);
+            }
+        }
+        @rmdir($spool);
+    }
+
     private static function absolute(string $path): string
     {
         $parts = [];
@@ -62,7 +115,9 @@ final class PrivateDirectory
 
     private static function resolve(string $path): string
     {
-        $path = self::absolute($path);
+        if (!str_starts_with($path, '/')) {
+            $path = getcwd() . '/' . $path;
+        }
         $suffix = '';
         while (($resolved = realpath($path)) === false) {
             $suffix = '/' . basename($path) . $suffix;

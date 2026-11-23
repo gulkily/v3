@@ -52,6 +52,16 @@ try {
     fwrite(STDERR, "Could not open the Contacts book. Check its permissions or restore a valid private backup.\n");
     exit(1);
 }
+try {
+    [$spool, $uploadLease] = PrivateDirectory::uploadSpool($directory);
+} catch (RuntimeException $error) {
+    fwrite(STDERR, $error->getMessage() . "\n");
+    exit(1);
+}
+register_shutdown_function(static function () use ($spool, $uploadLease): void {
+    PrivateDirectory::removeSpool($spool);
+    fclose($uploadLease);
+});
 $nextCleanup = time() + 60;
 $environment = getenv();
 unset($environment['PHP_CLI_SERVER_WORKERS']);
@@ -65,10 +75,10 @@ if ($control !== null) {
 foreach (array_unique([$port, 0]) as $candidate) {
     $server = proc_open([
         PHP_BINARY, '-d', 'display_errors=0', '-d', 'log_errors=0',
-        '-d', 'upload_tmp_dir=' . $directory, '-d', 'sys_temp_dir=' . $directory,
+        '-d', 'upload_tmp_dir=' . $spool, '-d', 'sys_temp_dir=' . $spool,
         '-d', 'upload_max_filesize=64M', '-d', 'post_max_size=65M',
         '-S', '127.0.0.1:' . $candidate, '-t', $project . '/contacts/public', $project . '/contacts/router.php',
-    ], [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['pipe', 'w']], $pipes, $project, $environment);
+    ], [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['pipe', 'w'], 3 => $uploadLease], $pipes, $project, $environment);
     if (!is_resource($server)) {
         break;
     }

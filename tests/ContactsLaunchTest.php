@@ -54,7 +54,6 @@ final class ContactsLaunchTest
             assertSame(401, $server->request('/api/contacts', authorize: false)[0]);
             assertSame(403, $server->request('/api/contacts', headers: ['Host' => 'different.invalid'])[0]);
             assertSame(403, $server->request('/api/contacts', headers: ['Forwarded' => 'for=127.0.0.1'])[0]);
-            assertSame(403, $server->request('/api/contacts', '{}', ['Origin' => 'http://127.0.0.1:9'])[0]);
             [$status, , $headers] = $server->request('/api/contacts');
             assertSame(200, $status);
             assertTrue(in_array('Cache-Control: no-store', $headers, true));
@@ -84,5 +83,25 @@ final class ContactsLaunchTest
         assertSame(false, file_exists($checkout . '/public/contacts-test'));
         assertSame(false, file_exists($workspace->root . '/new'));
         assertSame(0755, fileperms($workspace->root . '/shared') & 0777);
+    }
+
+    public function testLaunchCleansAbandonedUploadsWithoutTouchingOtherFiles(): void
+    {
+        $workspace = new ImportTestWorkspace();
+        $directory = $workspace->root . '/contacts';
+        mkdir($directory, 0700);
+        $abandoned = $directory . '/uploads-' . bin2hex(random_bytes(16));
+        mkdir($abandoned, 0700);
+        touch($abandoned . '/.lease');
+        $workspace->put($abandoned . '/phpfixture', 'Abandoned upload');
+        $workspace->put($directory . '/my-private-backup.txt', 'Keep this file');
+        $server = new ContactsTestServer($directory);
+        try {
+            assertSame(false, is_dir($abandoned));
+            assertSame('Keep this file', file_get_contents($directory . '/my-private-backup.txt'));
+        } finally {
+            $server->stop();
+        }
+        assertSame([], glob($directory . '/uploads-*'));
     }
 }

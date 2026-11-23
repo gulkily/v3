@@ -212,16 +212,16 @@ final class ContactsImportTest
             assertSame(200, $server->request('/api/confirm', json_encode(['id' => $preview['id']]))[0]);
             assertSame(['River'], array_column(json_decode($server->request('/api/contacts')[1], true)['contacts'], 'first_name'));
 
-            $ambiguous = new PharData($workspace->root . '/ambiguous.zip');
-            $ambiguous->addFromString('Connections.csv', $csv);
-            $ambiguous->addFromString('duplicate/Connections.csv', $csv);
-            unset($ambiguous);
-            [$status, $error] = $server->upload('LinkedIn.zip', file_get_contents($workspace->root . '/ambiguous.zip'));
-            assertSame(422, $status);
-            assertStringContains('Extract Connections.csv', $error['error']);
-            assertSame(['River'], array_column(json_decode($server->request('/api/contacts')[1], true)['contacts'], 'first_name'));
-
             if (class_exists(ZipArchive::class)) {
+                $ambiguous = new PharData($workspace->root . '/ambiguous.zip');
+                $ambiguous->addFromString('Connections.csv', $csv);
+                $ambiguous->addFromString('duplicate/Connections.csv', $csv);
+                unset($ambiguous);
+                [$status, $error] = $server->upload('LinkedIn.zip', file_get_contents($workspace->root . '/ambiguous.zip'));
+                assertSame(422, $status);
+                assertStringContains('Extract Connections.csv', $error['error']);
+                assertSame(['River'], array_column(json_decode($server->request('/api/contacts')[1], true)['contacts'], 'first_name'));
+
                 $oversize = new PharData($workspace->root . '/oversize.zip');
                 $oversize->addFromString('Connections.csv', str_repeat('x', 16 * 1024 * 1024 + 1));
                 $oversize['Connections.csv']->compress(Phar::GZ);

@@ -121,6 +121,8 @@ final class LinkedInImportPlan
             'company' => $contact['company'] ?? '',
             'position' => $contact['position'] ?? '',
             'email' => $contact['email'] ?? '',
+            'url' => $contact['url'] ?? '',
+            'connected_on' => $contact['connected_on'] ?? '',
             'reason' => $reason,
         ];
     }

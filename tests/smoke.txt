@@ -16,6 +16,7 @@ ReadModelThreadLabelsTest
 # Routing and pages
 WebServerRoutingTest
 LocalDevelopmentImportTest::testOnlyLocalDevelopmentRequestsReceiveImportControls
+ContactsImportTest::testConfirmPersistsAcrossRestartAndCancelDoesNotWrite
 ApiRouteCatalogTest
 AuthNavigationTest
 AppNavigationPlacementTest

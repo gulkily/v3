@@ -33,6 +33,7 @@ let results = [];
 let contactsShown = 0;
 let selectedId = null;
 let revision = null;
+let editRevision = null;
 
 function message(text) {
     status.textContent = text;
@@ -99,8 +100,9 @@ function showResults() {
     appendContacts();
 }
 
-function showContact(contact, focus = false) {
+function showContact(contact, focus = false, draft = null) {
     selectedId = contact.id;
+    editRevision = draft?.revision ?? revision;
     const heading = document.querySelector('#contact-name');
     heading.textContent = nameOf(contact);
     const fields = document.querySelector('#contact-fields');
@@ -126,8 +128,8 @@ function showContact(contact, focus = false) {
         parts.append(term, definition);
         fields.append(parts);
     }
-    editForm.querySelector('#note').value = contact.note || '';
-    editForm.querySelector('#date').value = contact.last_contacted || '';
+    editForm.querySelector('#note').value = draft?.note ?? (contact.note || '');
+    editForm.querySelector('#date').value = draft?.date ?? (contact.last_contacted || '');
     editStatus.hidden = true;
     detail.hidden = false;
     for (const button of listing.querySelectorAll('button')) {
@@ -138,14 +140,26 @@ function showContact(contact, focus = false) {
     }
 }
 
-async function loadBook() {
+async function loadBook(savedId = null) {
     const result = await request('contacts');
+    const previous = contacts.find(contact => contact.id === selectedId);
+    const previousRevision = revision;
+    const note = editForm.querySelector('#note').value;
+    const date = editForm.querySelector('#date').value;
+    const dirty = previous && selectedId !== savedId
+        && (note !== (previous.note || '') || date !== (previous.last_contacted || ''));
     revision = result.revision;
     contacts = result.contacts.sort((a, b) => contactOrder.compare(nameOf(a), nameOf(b)));
     showResults();
     const selected = contacts.find(contact => contact.id === selectedId);
     if (selected) {
-        showContact(selected);
+        const conflict = dirty && (editRevision !== previousRevision || (selected.note || '') !== (previous.note || '')
+            || (selected.last_contacted || '') !== (previous.last_contacted || ''));
+        showContact(selected, false, dirty ? {note, date, revision: conflict ? editRevision : revision} : null);
+        if (conflict) {
+            editStatus.textContent = 'This contact changed in another window. Reopen Contacts before saving your draft.';
+            editStatus.hidden = false;
+        }
     }
     document.querySelector('#intake').hidden = false;
     document.querySelector('#book').hidden = false;
@@ -154,7 +168,7 @@ async function loadBook() {
 function appendRows() {
     for (const row of reviewRows.slice(rowsShown, rowsShown + 100)) {
         const line = previewRows.insertRow();
-        const details = [row.company, row.position, row.email].filter(Boolean).join(' · ');
+        const details = [row.company, row.position, row.email, row.url, row.connected_on].filter(Boolean).join(' · ');
         const result = resultNames[row.status] + (row.reason ? ' · ' + row.reason : '');
         for (const value of [row.row, row.name, details, result]) {
             line.insertCell().textContent = value;
@@ -262,28 +276,31 @@ moreContacts.addEventListener('click', appendContacts);
 listing.addEventListener('click', event => {
     const button = event.target.closest('button[data-id]');
     const contact = contacts.find(item => item.id === button?.dataset.id);
-    if (contact) {
+    if (contact && contact.id !== selectedId && !editForm.querySelector('button').disabled) {
         showContact(contact, true);
     }
 });
 editForm.addEventListener('submit', async event => {
     event.preventDefault();
     const save = editForm.querySelector('button');
-    save.disabled = true;
+    const note = editForm.querySelector('#note');
+    const date = editForm.querySelector('#date');
+    const savedId = selectedId;
+    save.disabled = note.disabled = date.disabled = true;
     try {
         await request('edit', JSON.stringify({
-            id: selectedId,
-            revision,
-            note: editForm.querySelector('#note').value,
-            last_contacted: editForm.querySelector('#date').value,
+            id: savedId,
+            revision: editRevision,
+            note: note.value,
+            last_contacted: date.value,
         }));
-        await loadBook();
+        await loadBook(savedId);
         editStatus.textContent = 'Changes saved.';
     } catch (error) {
         editStatus.textContent = error.message;
     } finally {
         editStatus.hidden = false;
-        save.disabled = false;
+        save.disabled = note.disabled = date.disabled = false;
     }
 });
 

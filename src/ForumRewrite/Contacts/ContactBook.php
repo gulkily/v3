@@ -142,7 +142,7 @@ final class ContactBook
     public function clearExpiredPreviews(): void
     {
         foreach (@scandir($this->directory) ?: [] as $name) {
-            if (!preg_match('/^preview-[a-f0-9]{64}-[a-f0-9]{32}\.json$/D', $name)) {
+            if (!preg_match('/^(?:preview-[a-f0-9]{64}-[a-f0-9]{32}\.json|\.contacts-[a-zA-Z0-9]{6})$/D', $name)) {
                 continue;
             }
             $file = $this->directory . '/' . $name;

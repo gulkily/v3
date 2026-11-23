@@ -127,6 +127,25 @@ Options are validated before recovery. Stop the launcher with Ctrl+C or SIGTERM.
 - `--verbose` / `--quiet` — show all requests / server errors only
 - `--log-file=...` — append plain request logs to the chosen file
 
+## Start local Contacts
+
+```bash
+./v3 contacts [--data-dir=/private/path] [--port=PORT]
+```
+
+Starts a private address book on `127.0.0.1`. Open the full URL printed by the
+launcher in a browser on the same computer. Stop it with Ctrl+C or SIGTERM.
+
+- `--data-dir` selects a dedicated owner-only directory outside the checkout
+  and forum data. The default is `$XDG_DATA_HOME/v3/contacts` or
+  `$HOME/.local/share/v3/contacts`.
+- `--port` requests a loopback port. If it cannot bind there, the launcher
+  tries an available port. The printed URL uses the bound port.
+
+Import a LinkedIn ZIP with PHP's ZIP extension or choose `Connections.csv`
+directly. See [Local Contacts](../runbooks/local_contacts.md) for import,
+recovery, backup, and restore.
+
 ## Check local-server prerequisites
 
 ```

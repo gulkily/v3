@@ -64,8 +64,9 @@ try {
     page = await context.newPage();
     page.setDefaultTimeout(5000);
     const externalRequests = [];
+    let appOrigin = new URL(server.url).origin;
     page.on('request', request => {
-        if (!request.url().startsWith('http://127.0.0.1:')) {
+        if (new URL(request.url()).origin !== appOrigin) {
             externalRequests.push(request.url());
         }
     });
@@ -73,9 +74,16 @@ try {
     assert.equal(new URL(page.url()).hash, '');
     await choose(page, 'Unknown,Columns\nExample,Text\n');
     await page.getByRole('status').getByText(/must have First Name and Last Name/).waitFor();
-    await choose(page, 'First Name,Last Name,URL,Email Address,Company,Position\n'
-        + 'River,Li,https://www.linkedin.com/in/example-river,river@example.invalid,Example Studio,Designer\n'
-        + 'Amélie,Ng,https://www.linkedin.com/in/example-amelie,,Independent,Researcher\n');
+    const connections = 'First Name,Last Name,URL,Email Address,Company,Position\n'
+        + 'River,Li,https://www.linkedin.com/in/example-river,river@example.invalid,<b>Example Studio</b>,Designer\n'
+        + 'Amélie,Ng,https://www.linkedin.com/in/example-amelie,,Independent,Researcher\n';
+    await choose(page, connections);
+    await page.getByRole('heading', {name: 'Review import'}).waitFor();
+    await page.getByText('Import connections to start your address book.').waitFor();
+    await page.getByRole('button', {name: 'Cancel', exact: true}).click();
+    await page.getByRole('heading', {name: 'Review import'}).waitFor({state: 'hidden'});
+    await page.getByText('Import connections to start your address book.').waitFor();
+    await choose(page, connections);
     await page.getByRole('heading', {name: 'Review import'}).waitFor();
     await page.getByRole('button', {name: 'Import contacts', exact: true}).click();
 
@@ -86,18 +94,25 @@ try {
         assert.equal(await page.getByRole('button', {name: /Amélie Ng/}).count(), 0);
     }
     await page.getByRole('button', {name: /River Li/}).press('Enter');
+    await page.getByText('<b>Example Studio</b>', {exact: true}).waitFor();
+    assert.equal(await page.locator('#contact-fields b').count(), 0);
     await page.getByRole('textbox', {name: 'Note', exact: true}).fill('Met at a design meetup.\n%%\nFollow up next month.');
     await page.getByLabel('Last contacted').fill('2026-11-15');
     await page.getByRole('button', {name: 'Save changes'}).click();
     await page.getByText('Changes saved.', {exact: true}).waitFor();
 
+    await page.getByRole('textbox', {name: 'Note', exact: true}).fill('A draft to keep while importing.');
     await choose(page, 'First Name,Last Name,URL,Connected On\n'
         + 'River,Li,https://www.linkedin.com/in/example-river,15 Nov 2026\n');
     await page.getByRole('heading', {name: 'Review import'}).waitFor();
+    await page.locator('#preview-rows').getByText(/15 Nov 2026/).waitFor();
     await page.getByRole('button', {name: 'Import contacts', exact: true}).click();
     await page.getByRole('heading', {name: 'Review import'}).waitFor({state: 'hidden'});
+    await page.locator('#contact-fields').getByText('15 Nov 2026', {exact: true}).waitFor();
+    assert.equal(await page.getByRole('textbox', {name: 'Note', exact: true}).inputValue(), 'A draft to keep while importing.');
     await stop(server);
     server = await start();
+    appOrigin = new URL(server.url).origin;
     await page.goto(server.url);
     await page.getByRole('button', {name: /River Li/}).click();
     assert.equal(await page.getByRole('textbox', {name: 'Note', exact: true}).inputValue(), 'Met at a design meetup.\n%%\nFollow up next month.');
