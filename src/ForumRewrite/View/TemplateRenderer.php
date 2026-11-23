@@ -27,6 +27,7 @@ final class TemplateRenderer
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],
         'backlog.php' => ['/assets/backlog.css'],
+        'backlog_start.php' => ['/assets/agent.css', '/assets/backlog.css'],
         'guestbook.php' => ['/assets/compose.css', '/assets/guestbook.css'],
         'themes.php' => ['/assets/themes.css'],
         'agent.php' => ['/assets/agent.css'],

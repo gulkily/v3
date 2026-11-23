@@ -78,6 +78,66 @@ final class BacklogPageTest
         });
     }
 
+    public function testStartPageShowsThePromptForThePickedItems(): void
+    {
+        $this->withSite(true, function (Application $application): void {
+            $items = BacklogPageController::load(dirname(__DIR__));
+            $open = FeedbackBacklog::select($items, 'can-start', 'all');
+            $closed = array_values(array_filter($items, static fn ($item): bool => $item->isClosed()));
+            [$a, $b] = [$open[0]->id(), $open[1]->id()];
+
+            $list = $this->render($application, '/backlog');
+            assertStringContains('<form class="backlog-form" method="get" action="/backlog/start"', $list);
+            assertStringContains('type="checkbox" name="items[]" value="' . $a . '"', $list);
+            assertStringContains('<button type="submit">Start</button>', $list);
+
+            $one = $this->render($application, '/backlog/start?items=' . $a);
+            assertStringContains('Work on this v3 backlog item as one Railspike one-shot cycle.', $one);
+            assertStringContains('- docs/feedback/items/' . $a . '.txt', $one);
+            assertStringContains('aria-current="true">One-shot</a>', $one);
+            assertStringContains('href="/backlog/start?items=' . $a . '&amp;mode=staged"', $one);
+            assertStringContains('href="/backlog/start.txt?items=' . $a . '"', $one);
+            assertStringContains('class="copy-prompt"', $one, 'The shared prompt partial with Copy.');
+
+            $two = $this->render($application, '/backlog/start?items=' . $a . ',' . $b . '&mode=staged');
+            assertStringContains('Work on these 2 v3 backlog items together as one staged Railspike cycle.', $two);
+            assertStringContains('aria-current="true">Staged cycle</a>', $two);
+            exec('cd ' . escapeshellarg(dirname(__DIR__)) . ' && ./v3 feedback start ' . $a . ' ' . $b . ' --mode=staged 2>/dev/null', $command);
+            assertStringContains(htmlspecialchars(implode("\n", $command)), $two, 'The page and the command give the same prompt.');
+
+            $mixed = $this->render($application, '/backlog/start?items=' . $a . ',' . $closed[0]->id() . ',PF-00000000-F99');
+            assertStringContains('Left out, already closed: ' . $closed[0]->id(), $mixed);
+            assertStringContains('Left out, no such item: PF-00000000-F99', $mixed);
+            assertStringContains('Work on this v3 backlog item', $mixed);
+            assertStringContains('href="/backlog/start.txt?items=' . $a . '"', $mixed, 'The text link names only what starts.');
+
+            $none = $this->render($application, '/backlog/start?items=' . $closed[0]->id());
+            assertStringContains('Nothing to start.', $none);
+            assertStringNotContains('class="copy-prompt', $none);
+        });
+    }
+
+    public function testStartRequestsAreRedirectedToTheTidyAddress(): void
+    {
+        $tidy = '/backlog/start?items=PF-20261101-F01,PF-20261101-B02';
+        assertSame(null, BacklogPageController::startRedirect(['items' => 'PF-20261101-F01,PF-20261101-B02'], $tidy));
+        assertSame($tidy, BacklogPageController::startRedirect(['items' => ['PF-20261101-F01', 'PF-20261101-B02']], '/backlog/start?items%5B%5D=PF-20261101-F01&items%5B%5D=PF-20261101-B02'));
+        assertSame($tidy . '&mode=staged', BacklogPageController::startRedirect(['items' => 'PF-20261101-F01,PF-20261101-B02,PF-20261101-F01', 'mode' => 'staged'], '/x'));
+        assertSame($tidy, BacklogPageController::startRedirect(['items' => 'PF-20261101-F01,PF-20261101-B02', 'mode' => 'fast'], '/x'), 'An unknown mode is dropped.');
+        assertSame('/backlog', BacklogPageController::startRedirect([], '/backlog/start'), 'Nothing picked goes back to the list.');
+        assertSame('/backlog', BacklogPageController::startRedirect(['items' => '<script>'], '/backlog/start?items=x'));
+
+        $this->withSite(true, function (Application $application): void {
+            $page = $this->render($application, '/backlog/start?items%5B%5D=PF-20261101-F01');
+            assertStringContains('/backlog/start?items=PF-20261101-F01', $page, 'The redirect page names the tidy address.');
+            assertStringNotContains('class="copy-prompt', $page);
+            assertStringContains('Pick at least one item to start.', $this->render($application, '/backlog/start'));
+        });
+        $this->withSite(false, function (Application $application): void {
+            assertStringContains('Not Found', $this->render($application, '/backlog/start?items=PF-20261101-F01'));
+        });
+    }
+
     public function testCheckoutWithoutItemsGivesAnEmptyList(): void
     {
         $root = sys_get_temp_dir() . '/v3-backlog-empty-' . bin2hex(random_bytes(4));

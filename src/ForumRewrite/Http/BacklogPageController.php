@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ForumRewrite\Http;
 
+use ForumRewrite\Feedback\BacklogPrompt;
 use ForumRewrite\Feedback\FeedbackBacklog;
 use ForumRewrite\Feedback\FeedbackItem;
 use ForumRewrite\Feedback\FeedbackItemCheck;
@@ -52,6 +53,55 @@ final class BacklogPageController
             'backlogKindOptions' => $this->options('kind', self::KIND_LABELS, $words),
             'backlogTextHref' => self::href($words, [], '/backlog.txt'),
         ], 'Backlog', 'tools');
+    }
+
+    /**
+     * The tidy address for a start request, when the request is not already in
+     * that form. A plain form sends items[]=A&items[]=B; the page lives at
+     * ?items=A,B, with the mode named only when it is not one-shot.
+     *
+     * @param array<string, mixed> $query
+     */
+    public static function startRedirect(array $query, string $requestUri, string $path = '/backlog/start'): ?string
+    {
+        $ids = BacklogPrompt::ids($query['items'] ?? null);
+        if ($ids === []) {
+            return '/backlog';
+        }
+        $tidy = self::startHref($ids, BacklogPrompt::mode($query['mode'] ?? null), $path);
+        return $requestUri === $tidy ? null : $tidy;
+    }
+
+    /** @param list<string> $ids */
+    public static function startHref(array $ids, string $mode, string $path = '/backlog/start'): string
+    {
+        return $path . '?items=' . implode(',', $ids) . ($mode === BacklogPrompt::MODES[0] ? '' : '&mode=' . $mode);
+    }
+
+    /** @param array<string, mixed> $query a tidy start request: at least one ID-shaped word */
+    public function start(array $query): string
+    {
+        $ids = BacklogPrompt::ids($query['items'] ?? null);
+        $mode = BacklogPrompt::mode($query['mode'] ?? null);
+        $picked = BacklogPrompt::pick($this->items(), $ids);
+        $openIds = array_map(static fn (FeedbackItem $item): string => $item->id(), $picked['items']);
+        $modes = [];
+        foreach (['one-shot' => 'One-shot', 'staged' => 'Staged cycle'] as $key => $label) {
+            $modes[] = ['key' => $key, 'label' => $label, 'href' => self::startHref($ids, $key), 'is_active' => $mode === $key];
+        }
+
+        return $this->routeServices->renderPageTemplate('backlog_start.php', [
+            'backlogStartItems' => array_map(static fn (FeedbackItem $item): array => ['id' => $item->id(), 'title' => $item->header('Title')], $picked['items']),
+            'backlogStartUnknown' => $picked['unknown'],
+            'backlogStartClosed' => $picked['closed'],
+            'backlogStartModes' => $modes,
+            'backlogStartPrompt' => $picked['items'] === [] ? null : [
+                'id' => 'backlog-start',
+                'label' => 'Prompt',
+                'text' => BacklogPrompt::build($picked['items'], $mode, SourceRepository::fromProjectRoot($this->projectRoot)),
+            ],
+            'backlogStartTextHref' => $openIds === [] ? null : self::startHref($openIds, $mode, '/backlog/start.txt'),
+        ], 'Start', 'tools');
     }
 
     /** @return list<FeedbackItem> */

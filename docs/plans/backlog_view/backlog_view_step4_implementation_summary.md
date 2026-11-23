@@ -91,3 +91,28 @@ Stage estimates below are copied from the approved Step 3 plan; copying is not a
 - Estimate details: original scope unchanged; uncertainty was medium (row density); the extra came from test lists that enumerate tools and flags.
 
 *— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
+
+## Stage 4 - Start
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.12**
+
+- Changes:
+  - `templates/pages/backlog.php`: each row has a checkbox whose label is the title, inside one form that goes to `/backlog/start`. A bar pinned above the phone tab bar holds Start and, with scripts, the selected count.
+  - New `templates/pages/backlog_start.php` and route `/backlog/start`: the picked items, One-shot and Staged cycle as links, and the prompt through the existing `agent_prompt.php` and `agent_prompt_script.php` with Copy. Unknown and closed IDs are named and left out; with none left it says so.
+  - `BacklogPageController`: `start()`, `startHref()` and `startRedirect()`.
+  - New `tests/browser/backlog.mjs`.
+- Verification:
+  - `php tests/run.php BacklogPageTest FeedbackBacklogTest UsageNamesTest UsagePageKindTest`: all passed. New cases: the form and checkboxes; start with one item, with two in staged mode, with a closed and an unknown one, with none open; the page's prompt equals `./v3 feedback start` output; the redirect rule; flag off.
+  - `node tests/browser/backlog.mjs`: passed. With scripts: Tools → Backlog, tick two, "2 selected", Start, the tidy address, Copy, and the clipboard holds the prompt; Staged; sort, order and filter links. Without scripts: the same form reaches the same tidy address, the prompt is selectable and no Copy button shows; Start with nothing ticked returns to the list. Then 168 cases: every permitted theme at 375 and 1280 px, scripts on and off, list and start page, no sideways overflow and no page errors.
+  - By eye at 375 px in Gloss, Word97, Bubblegum and Midnight.
+  - Full suite not run.
+- Notes:
+  - Resolved the plan's open point about addresses without scripts. A plain form sends `items[]=A&items[]=B`. The server answers with a redirect to `?items=A,B`, so both paths end on the same readable address. With scripts the form goes there directly.
+  - One Start bar, as in the mockup, not a Start button per row. One item starts by ticking it.
+  - The pinned bar covers the bottom row of the view until the reader scrolls; the browser check scrolls a row to the middle before ticking it.
+  - iPhone Safari Copy was not run here; headless Chrome was. The copy script is the one the Agent Prompts page already uses there.
+- Estimate details: original scope unchanged; uncertainty was medium (addresses without scripts), settled by the redirect.
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*

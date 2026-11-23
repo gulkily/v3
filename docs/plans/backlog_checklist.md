@@ -17,7 +17,7 @@ The page, the sorts, the filters, Start with a short prompt, and the agent inter
 - [x] `./v3 feedback list` and `./v3 feedback start`
 - [x] `docs/agents/backlog_to_pr.md`
 - [x] `/backlog` page with sorts and filters, behind a feature flag
-- [ ] `/backlog/start` page with mode choice, prompt and Copy
+- [x] `/backlog/start` page with mode choice, prompt and Copy
 - [ ] `/backlog.txt` and `/backlog/start.txt`
 - [x] Tools entry with an icon in every icon set
 - [ ] Works with scripts off; no sideways overflow at 375 and 1280 px in every theme

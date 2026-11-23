@@ -30,10 +30,12 @@ $backlogLinks = static function (array $options) use ($e): string {
 <?php if ($backlogItems === []): ?>
     <p class="meta">Nothing here.</p>
 <?php else: ?>
+    <form class="backlog-form" method="get" action="/backlog/start" data-backlog-form>
     <ul class="backlog-list">
 <?php foreach ($backlogItems as $item): ?>
       <li class="backlog-row" data-workflow="<?= $e($item['workflow']) ?>">
-        <span class="backlog-row__title"><?= $e($item['title']) ?></span>
+        <input class="backlog-row__pick" type="checkbox" name="items[]" value="<?= $e($item['id']) ?>" id="pick-<?= $e($item['id']) ?>">
+        <label class="backlog-row__title" for="pick-<?= $e($item['id']) ?>"><?= $e($item['title']) ?></label>
         <span class="backlog-row__meta meta">
           <span class="chip backlog-chip"><?= $e($item['workflow']) ?></span>
           <span><?= $e($item['kind']) ?></span>
@@ -47,6 +49,36 @@ $backlogLinks = static function (array $options) use ($e): string {
       </li>
 <?php endforeach; ?>
     </ul>
+    <div class="backlog-start-bar">
+      <span class="meta" data-backlog-count hidden></span>
+      <button type="submit">Start</button>
+    </div>
+    </form>
 <?php endif; ?>
   </article>
 </section>
+<script>
+  // Shows how many items are ticked and sends the tidy address (?items=A,B).
+  // Without this script the form still works: the server redirects to that address.
+  (function (form) {
+    if (!form) return;
+    var count = form.querySelector('[data-backlog-count]');
+    var picked = function () {
+      return Array.prototype.map.call(form.querySelectorAll('input[name="items[]"]:checked'), function (box) { return box.value; });
+    };
+    var show = function () {
+      var n = picked().length;
+      count.hidden = n === 0;
+      count.textContent = n + ' selected';
+    };
+    form.addEventListener('change', show);
+    window.addEventListener('pageshow', show);
+    form.addEventListener('submit', function (event) {
+      var ids = picked();
+      if (ids.length === 0) return;
+      event.preventDefault();
+      location.href = form.getAttribute('action') + '?items=' + ids.join(',');
+    });
+    show();
+  })(document.querySelector('[data-backlog-form]'));
+</script>

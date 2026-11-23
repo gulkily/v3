@@ -970,6 +970,20 @@ final class Application
             return;
         }
 
+        if ($path === '/backlog/start' || $path === '/backlog/start/') {
+            if (!$this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::BACKLOG_ENABLED)) {
+                $this->routeServices()->notFound();
+                return;
+            }
+            $tidy = \ForumRewrite\Http\BacklogPageController::startRedirect($query, $requestUri);
+            if ($tidy !== null) {
+                $this->sendRedirect($tidy, $tidy === '/backlog' ? 'Pick at least one item to start.' : 'Opening the start page.', 303, [], 'tools');
+                return;
+            }
+            $this->sendHtml((new \ForumRewrite\Http\BacklogPageController($this->routeServices(), $this->projectRoot))->start($query), 200);
+            return;
+        }
+
         if ($path === '/guestbook/' || $path === '/guestbook') {
             $guestbookThreadId = \ForumRewrite\Http\GuestbookPageController::threadId();
             if ($guestbookThreadId === null || !$this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::GUESTBOOK_ENABLED)) {
@@ -2658,7 +2672,7 @@ final class Application
             '/downloads/images.zip', '/downloads/images.tar', '/downloads/repository.tar.gz', '/downloads/repository.zip',
             '/downloads/read_model.sqlite3', '/downloads/sqlite_query_catalog.sql',
             '/offline/snapshot.sqlite3',
-            '/activity', '/activity/', '/recent', '/recent/', '/gallery', '/gallery/', '/guestbook', '/guestbook/', '/backlog', '/backlog/',
+            '/activity', '/activity/', '/recent', '/recent/', '/gallery', '/gallery/', '/guestbook', '/guestbook/', '/backlog', '/backlog/', '/backlog/start', '/backlog/start/',
             '/users', '/users/', '/users/pending', '/users/pending/',
             '/tools/user-access', '/tools/user-access/', '/tools/user-access/pending', '/tools/user-access/pending/',
             '/tags', '/tags/',
