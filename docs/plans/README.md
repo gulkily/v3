@@ -687,3 +687,4 @@ and repair its navigation and affected references. See the
 - [Backlog view](backlog_view/backlog_view_step1_solution_assessment.md) — staged: a `/backlog` page under Tools lists open feedback items with five sorts and filters, and Start gives a short agent prompt for one item or several.
 - [Backlog start follow-ups](backlog_start_followups/backlog_start_followups_one_shot.md) — one-shot: an opaque Start bar in see-through themes, an Agent decides mode as the default, and "Please" in the prompt.
 - [Favicon in light theme](favicon_light_theme/favicon_light_theme_one_shot.md) — one-shot: the ZenMemes tab icon redrawn so it looks clean on light tabs (PF-20261111-B02).
+- [Word 97 action fonts](word97_action_fonts/word97_action_fonts_one_shot.md) — one-shot: post-action toggles in Word 97 and the Outbox status line use the UI font (PF-20261104-B12, PF-20261104-B18).
