@@ -678,3 +678,5 @@ and repair its navigation and affected references. See the
 - [Local import status](local_import_status/local_import_status_step1_solution_assessment.md) — staged: after an import, the local start page card reports the source, age and result of the last import and offers one re-import action.
 - [Compact deploy history](deploy_history_compact/deploy_history_compact_one_shot.md) — one-shot: one compact row per version on Tools → Deploy.
 - [Deploy history and rollback](deploy_rollback/deploy_rollback_step1_solution_assessment.md) — staged: a record of deployed versions and a rollback to one of them.
+
+- [Port HN theme and preview](port_hn_preview/port_hn_preview_one_shot.md)
