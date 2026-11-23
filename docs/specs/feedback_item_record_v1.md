@@ -30,6 +30,9 @@ Headers:
   `production-accepted`.
 - `Estimate` (optional): a nonnegative decimal on the Railspike cycle scale, or
   `none`. Clear it when scope changes.
+- `Impact` (optional): a nonnegative decimal on the same scale as `Estimate`, or
+  `none`: how much the outcome matters, judged by the maintainer or in triage.
+  The [backlog](../concepts/backlog_view.md) sorts by it.
 - `Aliases` (optional): comma-separated earlier labels, such as `2026-10-21/F01`.
 - `Duplicate-Of`, `Superseded-By` (required with those workflow values, otherwise
   absent): the ID of the item that replaces this one.
