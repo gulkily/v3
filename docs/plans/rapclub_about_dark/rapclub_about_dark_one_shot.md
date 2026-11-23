@@ -10,7 +10,7 @@ Extended estimates: disabled
 
 **Cycle estimate: 0.25 (intake)**
 
-Status: planned; next permitted action: implement.
+Status: implemented; tests pass; visual check not done (browser unavailable); PR pending; next permitted action: maintainer review.
 
 ## Original request
 
@@ -57,14 +57,34 @@ Concepts touched: [page theme](../../concepts/page_theme.md), used unchanged.
 
 Starting revisions and branch: `origin/main` `93295c828`; branch `feat/rapclub-about-and-dark-theme`.
 
-Planning commit: pending.
+Planning commit: `c6e079326` (record, debug log and index only).
 
 ## Dated execution history
 
-- 2026-11-23: record written.
+- 2026-11-23: record written; planning commit `c6e079326`.
+- 2026-11-23: About: `socials` added to the `about` slot and chosen for `mitrapclub`. `about()` returns `socialsOnly` and, for that variant, empty copy; the template gates the intro/community/hackable and graph/participation/portable sections, so the Find us markup stays in one place. The club's About-only copy (intro, cypher history, graph, participation, portable) was removed from its editorial entry; docs and busy-page copy stay.
+- 2026-11-23: Underground Dark: registry entry borrowing `theme-underground.css`; Underground and Underground Dark are now mutual counterparts (one menu row). The older `mitrapclub` theme still points to Underground one-way and moves to the unpaired list beside Ochre. Shared rules now use `:root:is([data-theme="underground"], [data-theme="undergrounddark"])`; colours the shared rules hard-coded became `--ug-*` variables; fonts moved to one shared block. Dark-only rules: its variables, swatch, menu row, and the halftone layer flipped with `invert(1) hue-rotate(180deg)` and `screen` blend.
+- 2026-11-23, limitation: headless Chrome and Chromium both hang on a screenshot of a blank `data:` page on this machine (they worked earlier the same day), so no screenshots were taken. The halftone flip in particular is unchecked by eye.
+
+## Verification
+
+- `./v3 test --smoke ProfilePresentationContentTest PresentationSlotRegistryTest SiteProfileRegistryTest ThemeRegistryTest ThemeCatalogPageTest PreferencesPageTest LocalAppSmokeTest NavIconSetsTest ThreadThemeTest`: 521 run, 517 passed, 4 failed. The 4 (`AgentPostingApiTest` x2, `SingleRequestHttpTest::testUnicodeRoundTripAndSymbolRejection`, `SignedPostBundleValidatorTest::testStrictSubsetAndExactBytes`) fail the same way on clean `origin/main` `93295c828`; unrelated. Full suite not run.
+- Local server, `FORUM_SITE_ID=mitrapclub`: `/about/` HTML has only the `social-links` section; the board's allow-list includes `undergrounddark`, its stylesheet map points to `theme-underground.*.css`, and the menu has its option.
+- Contrast (WCAG, dark): ink on card 12.51, link blue on card 6.67, blue on page 7.40, graphite meta on card 7.36, button text on blue 7.75, error on card 7.52.
+- Not verified: rendering in a browser (see limitation above), 380px layout, focus ring appearance. Next action: open `/threads/` with Underground Dark on a phone and a desktop and check the halftone moon and grain.
+- Recovery: set the `mitrapclub` `about` slot back to `default` (and restore the copy from git); remove the `undergrounddark` registry entry.
+
+## Outcome
+
+Delivered: socials-only About on `mitrapclub`; Underground Dark theme on `mitrapclub` and `zenmemes`. Not done: browser visual check. Not in scope: making Underground Dark what Auto shows on dark devices for the club (`autoThemes`), which would be a small follow-up if wanted.
+
+## Final review
+
+Diff checked: no duplicated markup (socials section rendered once), one stylesheet for both themes, files within the allowed paths.
 
 ## Study history
 
 - 2026-11-23 UTC, intake: **0.25**. Claude, single exposed rater.
+- 2026-11-23 UTC, closeout: scope unchanged; assessment **0.25**. Browser outage cost time but not scope. Maintainer judgment pending; measured time unknown.
 
 Attribution: Claude · 2026-11-23 UTC · Model: claude-opus-5-5

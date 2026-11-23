@@ -1,6 +1,7 @@
 <section class="stack">
   <h1 class="visually-hidden"><?= $e($aboutContent['title']) ?></h1>
   <article class="card about-sections">
+<?php if (!$aboutContent['socialsOnly']): ?>
     <section class="about-section" data-about-section="intro">
 <?php if ($aboutContent['description'] !== ''): ?>
       <p data-site-description><?= $e($aboutContent['description']) ?></p>
@@ -29,6 +30,7 @@
       <p>Bring an idea, make a fork, or add a small feature: the site is a shared foundation, not a finished product.</p>
     </section>
 <?php endif; ?>
+<?php endif; ?>
 <?php if ($aboutContent['socialLinks'] !== []): ?>
     <section class="about-section" data-about-section="social-links">
       <h2>Find us</h2>
@@ -39,6 +41,7 @@
       </ul>
     </section>
 <?php endif; ?>
+<?php if (!$aboutContent['socialsOnly']): ?>
 <?php
 // graph/participation/portable paragraphs below are rendered without $e()
 // because they carry trusted inline <a> markup (links to /users/,
@@ -65,5 +68,6 @@
       <p><?= $paragraph ?></p>
 <?php endforeach; ?>
     </section>
+<?php endif; ?>
   </article>
 </section>
