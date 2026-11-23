@@ -8,7 +8,7 @@ Extended estimates: enabled. No alternatives or work units, so no unit estimates
 
 **Cycle estimate: 0.15**
 
-Status: planned; next permitted action: implementation.
+Status: implemented and committed; next permitted action: maintainer review (PR).
 
 Feedback item: [PF-20261123-F01](../../feedback/items/PF-20261123-F01.txt) (the backlog page). No separate item: these are the maintainer's notes on that item's merged work.
 
@@ -42,9 +42,42 @@ Verification and recovery plan: `./v3 test --smoke BacklogPageTest FeedbackBackl
 
 Starting revisions and branch: `fix/backlog_start_followups` from `origin/main` `e32bef64e` (the #377 merge).
 
+Planning commit: `5a1937c0f` (plan only, before any implementation). Its first form carried a `Feedback:` trailer by mistake; the message was corrected before implementation and before any push.
+
 Study history:
 - 2026-11-23 UTC, intake and execution entry: **0.15**. Recorded after inspecting the code, so not a clean intake: Claude read `BacklogPrompt.php`, the controller, the stylesheet and the tests while proposing the scope. Claude, single exposed rater (wrote the code being changed in #377). Scope v1. Reference R1, hashes not re-verified.
 
 Dated execution history:
+- 2026-11-23: `public/assets/backlog.css`: the Start bar's background is `--panel` layered over `--page-bg`, the private message composer's rule. Correction.
+- 2026-11-23: `BacklogPrompt::MODES` is `auto`, `one-shot`, `staged`; `mode()` defaults to `auto`; `build()` opens every prompt with "Please" and words `auto` as "one Railspike cycle, one-shot or staged as AGENTS.md says" with "If you go staged, wait for my approval of each step." Addition (the mode) and correction (please).
+- 2026-11-23: the controller lists Agent decides, One-shot, Staged cycle; `startHref()` keeps the first mode out of the address unchanged, so the tidy default address is the same as before and an explicit `mode=one-shot` is now kept. The `/backlog/start.txt` usage text, `BacklogText`'s `Start-Address` line (no mode word now) and `scripts/feedback.php` (default and usage) follow.
+- 2026-11-23: `docs/agents/backlog_to_pr.md` §4 gains the Agent decides bullet (route by thread to pull request step 3; the prompt's giver is the requester; name the mode first). `v3_cli.md`, `agent_api.md`, the concept entry and the UI copy checklist updated.
+- 2026-11-23: tests: `BacklogPageTest` (default, order of the three links, explicit one-shot kept, `auto` out of the address, page = command = text route for no mode, `auto` and `one-shot`); `FeedbackBacklogTest` (please, auto wording, unknown mode means auto); `tests/browser/backlog.mjs` (Agent decides chosen, One-shot then Staged links, please, and the Start bar's computed background is opaque in every permitted theme at both widths).
+- Discovery: the see-through themes are Arena, Console, LCD, Vapor and Vaporgeist; the new check failed first on Console with the old stylesheet (`rgba(8, 18, 10, 0.94)`), so it covers the reported case and the others.
+- 2026-11-23: records: the backlog checklist (merged, deployed, tried on iPhone; this follow-up; what was seen live with no change asked), `PF-20261123-F01` (`Evidence: deployed`, a dated note; stays `blocked` on its Done when start), `docs/feedback/README.md` regenerated, the effort ledger.
+
+Enhancement requests:
+- Opaque Start bar in Arena. Correction of #377. Approved ("go ahead as one-shot"). Implemented here.
+- Agent decides as a third, default mode. Addition. Approved. Implemented here.
+- "Please" in the prompt. Correction of tone. Approved. Implemented here.
+
+Study history, when enrolled:
+- 2026-11-23 UTC, closeout: retrospective scope assessment **0.15**. Delivered as planned; the opaque-background check across themes was the only addition to the plan's verification. Claude, single exposed rater. Maintainer judgment pending; measured time unknown.
+
+Outcome: delivered. The Start bar is opaque in every theme, Start offers Agent decides (default), One-shot and Staged cycle, and every prompt opens with "Please".
+
+Verification:
+- Passed: `./v3 test --smoke BacklogPageTest FeedbackBacklogTest`: 506 run, 506 passed. Full suite not run.
+- Passed: `node tests/browser/backlog.mjs` (playwright-core 1.58.1 from `package.json`, system Chrome): the whole flow with and without scripts, the text routes, and 168 theme, width and script cases without sideways overflow, now with an opaque Start bar in each. With the old stylesheet the same check fails on Console.
+- Passed by eye: Arena at 375 px, list and start page: rows end cleanly behind the Start bar; the three mode links wrap to two lines.
+- Passed: `./v3 feedback check` (358 items, 0 problems), `./v3 feedback index`, `git diff --check`.
+- Pending: the maintainer's look in Arena on his iPhone after deploy; whether agents given Agent decides choose sensibly (the fresh-agent start, still open on the checklist).
+- Inapplicable: schema, read model, migrations and flags: nothing stored or added.
+
+Final review: the diff touches `backlog.css`, `BacklogPrompt.php`, `BacklogText.php`, `BacklogPageController.php`, `scripts/feedback.php`, the two PHP tests and the browser check, `backlog_to_pr.md`, `v3_cli.md`, `agent_api.md`, the concept entry, the UI copy checklist, the backlog checklist, F01 and the feedback index, the ledger and this record. No new component, no dependency change, no schema change. Deploy now is enough.
+
+Commit/merge/publication status: completion commit on `fix/backlog_start_followups`; PR to be opened; not merged.
+
+Debug: [debug log](./backlog_start_followups_debug_log.md).
 
 Attribution: Claude · 2026-11-23 UTC · Model: claude-opus-5-5

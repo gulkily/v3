@@ -85,7 +85,7 @@ if ($command === 'list') {
 
 if ($command === 'start') {
     if (isset($options['mode']) && !in_array($options['mode'], BacklogPrompt::MODES, true)) {
-        fwrite(STDERR, 'Unknown mode: ' . $options['mode'] . ' (use ' . implode(' or ', BacklogPrompt::MODES) . ")\n");
+        fwrite(STDERR, 'Unknown mode: ' . $options['mode'] . ' (use ' . implode(', ', BacklogPrompt::MODES) . ")\n");
         exit(2);
     }
     $picked = BacklogPrompt::pick($check->items, $ids);
@@ -99,9 +99,9 @@ if ($command === 'start') {
         fwrite(STDERR, "Nothing to start. Name at least one open item: ./v3 feedback start PF-YYYYMMDD-F01\n");
         exit(1);
     }
-    fwrite(STDOUT, BacklogPrompt::build($picked['items'], $options['mode'] ?? 'one-shot', SourceRepository::fromProjectRoot($projectRoot)));
+    fwrite(STDOUT, BacklogPrompt::build($picked['items'], $options['mode'] ?? BacklogPrompt::MODES[0], SourceRepository::fromProjectRoot($projectRoot)));
     exit(0);
 }
 
-fwrite($command === '--help' || $command === 'help' ? STDOUT : STDERR, "Usage:\n  ./v3 feedback check [--dir=docs/feedback/items]\n  ./v3 feedback index [--dir=docs/feedback/items]   (writes README.md beside the items folder)\n  ./v3 feedback list [--sort=salient|entered|touched|effort|impact] [--order=newest|oldest]\n                     [--show=can-start|waiting|open|<workflow>] [--kind=all|bug|feature|other]\n  ./v3 feedback start <ID>... [--mode=one-shot|staged]   (prints the prompt that starts an agent)\n\nBacklog: docs/agents/backlog_to_pr.md\nFeedback items: docs/specs/feedback_item_record_v1.md\n");
+fwrite($command === '--help' || $command === 'help' ? STDOUT : STDERR, "Usage:\n  ./v3 feedback check [--dir=docs/feedback/items]\n  ./v3 feedback index [--dir=docs/feedback/items]   (writes README.md beside the items folder)\n  ./v3 feedback list [--sort=salient|entered|touched|effort|impact] [--order=newest|oldest]\n                     [--show=can-start|waiting|open|<workflow>] [--kind=all|bug|feature|other]\n  ./v3 feedback start <ID>... [--mode=auto|one-shot|staged]   (prints the prompt that starts an agent; auto lets it choose)\n\nBacklog: docs/agents/backlog_to_pr.md\nFeedback items: docs/specs/feedback_item_record_v1.md\n");
 exit($command === '--help' || $command === 'help' ? 0 : 2);

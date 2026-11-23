@@ -994,12 +994,12 @@ Runs the local (non-live) agent-reply test suite: `AgentReplyGenerationTest`,
 
 ```bash
 ./v3 feedback list [--sort=salient|entered|touched|effort|impact] [--order=newest|oldest] [--show=can-start|waiting|open|<workflow>] [--kind=all|bug|feature|other]
-./v3 feedback start <ID>... [--mode=one-shot|staged]
+./v3 feedback start <ID>... [--mode=auto|one-shot|staged]
 ```
 
 `list` prints the open [feedback items](../concepts/feedback_items.md) as `Key: value` blocks, in the same order as the Backlog page and `/backlog.txt` for the same words. The defaults are `salient`, `newest`, `can-start` (ready and untriaged) and `all`. An unknown word falls back to its default, is named on standard error, and the command exits 2.
 
-`start` prints the short prompt that starts an agent on the named items as one cycle. Unknown and closed IDs are named on standard error and left out; with no open item left it exits 1. The agent's side is [backlog to pull request](../agents/backlog_to_pr.md).
+`start` prints the short prompt that starts an agent on the named items as one cycle. The mode defaults to `auto`, which leaves one-shot or staged to the agent. Unknown and closed IDs are named on standard error and left out; with no open item left it exits 1. The agent's side is [backlog to pull request](../agents/backlog_to_pr.md).
 
 ## Seed an approved identity (shorthand)
 

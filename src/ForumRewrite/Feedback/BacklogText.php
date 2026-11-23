@@ -22,7 +22,7 @@ final class BacklogText
             'Kind: ' . $words['kind'],
             'Count: ' . count($items),
             'Version: ' . substr($version, 0, 12),
-            'Start-Address: /backlog/start.txt?items=<ID>,<ID>&mode=one-shot',
+            'Start-Address: /backlog/start.txt?items=<ID>,<ID>',
             'Start-Command: ./v3 feedback start <ID>...',
         ])];
         foreach ($items as $item) {

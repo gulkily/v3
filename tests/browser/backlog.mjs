@@ -75,12 +75,16 @@ try {
   await writer.page.getByRole('button', { name: 'Start' }).click();
   await writer.page.waitForURL(base + tidy);
   const prompt = await writer.page.locator('[data-copy-prompt-source]').textContent();
-  assert.match(prompt, /^Work on these 2 v3 backlog items together as one Railspike one-shot cycle\./);
+  assert.match(prompt, /^Please work on these 2 v3 backlog items together as one Railspike cycle, one-shot or staged as AGENTS\.md says\./);
+  assert.equal(await writer.page.locator('[aria-current="true"]', { hasText: 'Agent decides' }).count(), 1, 'the agent decides by default');
   assert.match(prompt, /- docs\/agents\/backlog_to_pr\.md\n- docs\/feedback\/items\/PF-20261101-F01\.txt\n- docs\/feedback\/items\/PF-20261101-B02\.txt\n/);
   await writer.page.getByRole('button', { name: 'Copy prompt' }).click();
   await writer.page.getByRole('button', { name: 'Copied' }).waitFor();
   assert.equal(await writer.page.evaluate(() => navigator.clipboard.readText()), prompt, 'the clipboard holds the prompt');
-  // Staged is a link to the same items in the other mode.
+  // One-shot and Staged are links to the same items in the other modes.
+  await writer.page.getByRole('link', { name: 'One-shot' }).click();
+  await writer.page.waitForURL(base + tidy + '&mode=one-shot');
+  assert.match(await writer.page.locator('[data-copy-prompt-source]').textContent(), /^Please work on these 2 v3 backlog items together as one Railspike one-shot cycle\./);
   await writer.page.getByRole('link', { name: 'Staged cycle' }).click();
   await writer.page.waitForURL(base + tidy + '&mode=staged');
   assert.match(await writer.page.locator('[data-copy-prompt-source]').textContent(), /as one staged Railspike cycle\./);
@@ -105,7 +109,7 @@ try {
   await tick(plain.page, 'A bug', { exact: true });
   await plain.page.getByRole('button', { name: 'Start' }).click();
   await plain.page.waitForURL(base + tidy);
-  assert.match(await plain.page.locator('[data-copy-prompt-source]').textContent(), /^Work on these 2 v3 backlog items together/);
+  assert.match(await plain.page.locator('[data-copy-prompt-source]').textContent(), /^Please work on these 2 v3 backlog items together/);
   assert.equal(await plain.page.locator('[data-copy-prompt-button]').isVisible(), false, 'no script: no Copy button; the text is there to select');
   // Start with nothing ticked returns to the list.
   await plain.page.goto(base + '/backlog');
@@ -115,7 +119,7 @@ try {
   await plain.page.goto(base + '/backlog/start?items=PF-20261101-B02,PF-20261101-F05,PF-20261101-F99');
   assert.match(await plain.page.locator('main').textContent(), /Left out, no such item: PF-20261101-F99/);
   assert.match(await plain.page.locator('main').textContent(), /Left out, already closed: PF-20261101-F05/);
-  assert.match(await plain.page.locator('[data-copy-prompt-source]').textContent(), /^Work on this v3 backlog item as one/);
+  assert.match(await plain.page.locator('[data-copy-prompt-source]').textContent(), /^Please work on this v3 backlog item as one/);
   await plain.context.close();
 
   // Agents: the same list and prompt as plain text.
@@ -129,7 +133,7 @@ try {
   const started = await fetch(base + '/backlog/start.txt?items=PF-20261101-F01,PF-20261101-F05,PF-20261101-F99');
   assert.equal(started.status, 200);
   assert.equal(started.headers.get('x-left-out'), 'PF-20261101-F99,PF-20261101-F05');
-  assert.match(await started.text(), /^Work on this v3 backlog item as one Railspike one-shot cycle\.\n[^]*- docs\/feedback\/items\/PF-20261101-F01\.txt\n/);
+  assert.match(await started.text(), /^Please work on this v3 backlog item as one Railspike cycle, one-shot or staged as AGENTS\.md says\.\n[^]*- docs\/feedback\/items\/PF-20261101-F01\.txt\n/);
   assert.equal((await fetch(base + '/backlog/start.txt?items=PF-20261101-F05')).status, 404);
   assert.equal((await fetch(base + '/backlog/start.txt')).status, 400);
 
@@ -141,7 +145,12 @@ try {
       await viewer.page.goto(base + path);
       if (scripts) assert.equal(await viewer.page.locator('html').getAttribute('data-theme'), theme, `${theme}: theme applied`);
       assert.equal(await fitsWidth(viewer.page), true, `${theme} ${width}px scripts ${scripts} ${path}: fits`);
-      if (shots && scripts && ['gloss', 'word97', 'bubblegum', 'midnight'].includes(theme)) {
+      if (path !== tidy) {
+        // The pinned Start bar covers rows, so it needs a solid background even where --panel is see-through.
+        const color = await viewer.page.locator('.backlog-start-bar').evaluate(node => getComputedStyle(node).backgroundColor);
+        assert.match(color, /^rgb\(/, `${theme} ${width}px scripts ${scripts}: Start bar is opaque (${color})`);
+      }
+      if (shots && scripts && ['gloss', 'word97', 'bubblegum', 'midnight', 'arena', 'vapor'].includes(theme)) {
         await viewer.page.screenshot({ path: join(shots, `backlog-${theme}-${width}-${path.includes('start') ? 'start' : 'list'}.png`) });
       }
       cases++;
@@ -149,7 +158,7 @@ try {
     assert.deepEqual(viewer.errors, [], `${theme} ${width}px: no page errors`);
     await viewer.context.close();
   }
-  console.log(`PASS backlog: tick two, Start, Copy and Staged with JavaScript; plain form to the tidy address without; sort, order and filter links; closed and unknown items left out; /backlog.txt and /backlog/start.txt; ${cases} theme/width/script cases of the list and the start page without sideways overflow`);
+  console.log(`PASS backlog: tick two, Start, Copy, One-shot and Staged with JavaScript (Agent decides by default); plain form to the tidy address without; sort, order and filter links; closed and unknown items left out; /backlog.txt and /backlog/start.txt; ${cases} theme/width/script cases of the list and the start page without sideways overflow`);
 } catch (error) {
   console.error(serverLog.split('\n').filter(line => /error|warning|fatal/i.test(line)).slice(-10).join('\n'));
   throw error;

@@ -28,8 +28,9 @@ The item's `Request:`, `Done when:` and `Notes:` say what to build. Start from t
 
 ## 4. One cycle for all the named items
 
-The prompt names the mode.
+The prompt names the mode, or leaves it to you.
 
+- **Agent decides** ("one-shot or staged as AGENTS.md says"). Choose with [thread to pull request, step 3](thread_to_pr.md#3-choose-the-route); the person who gave you the prompt is the requester. Name the mode and why in your first reply, then follow the matching bullet below.
 - **One-shot.** Follow [thread to pull request, step 4a](thread_to_pr.md#4a-one-shot-route). In the record's `Authorization:` field, quote the prompt with the date.
 - **Staged.** Follow [step 4b](thread_to_pr.md#4b-staged-route). The person who gave you the prompt approves each step, in your session.
 

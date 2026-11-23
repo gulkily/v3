@@ -3,7 +3,7 @@ Title: Backlog page: sort the open items and start work on one or several
 Kind: feature
 Workflow: blocked
 Created: 2026-11-23
-Evidence: locally-verified
+Evidence: deployed
 Estimate: 0.60
 
 Request:
@@ -18,3 +18,4 @@ With the Backlog flag on at zenmemes.com, the maintainer opens Tools → Backlog
 Notes:
 2026-11-23: staged cycle on feat/backlog_view (docs/plans/backlog_view/), the first of three tracked in docs/plans/backlog_checklist.md. This cycle: the page, five sorts, filters, the Impact header, Start with a short prompt, the text routes, the commands and docs/agents/backlog_to_pr.md. Not in this cycle: claims (next cycle backlog_claims) and the parked plans list (backlog_parked). Verified locally with page tests and a browser check in every permitted theme at 375 and 1280 px, scripts on and off. Not done: a real start by a fresh agent, and the maintainer's own start from his phone. Blocked on review, merge, a deploy with FORUM_BACKLOG_ENABLED on, and that start.
 2026-11-23: PR https://github.com/gulkily/v3/pull/377 opened.
+2026-11-23: PR #377 merged and deployed with FORUM_BACKLOG_ENABLED on. The maintainer tried it on desktop and iPhone: sorts, Start and Copy work. His notes went into a follow-up one-shot (docs/plans/backlog_start_followups/): an opaque Start bar in Arena and other see-through themes, an Agent decides mode as the default, and "Please" in the prompt. Still blocked on the Done when start: an agent given only the prompt opening a pull request.

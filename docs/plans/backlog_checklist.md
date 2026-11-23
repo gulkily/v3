@@ -24,8 +24,15 @@ The page, the sorts, the filters, Start with a short prompt, and the agent inter
 - [x] Feedback item allocated; concept entries written
 - [ ] One real start by a fresh agent on a thin item (not run; ask for it)
 - [x] PR opened: https://github.com/gulkily/v3/pull/377 (2026-11-23)
-- [ ] Merged and deployed with the flag on
-- [ ] Maintainer accepts: one real start from his phone ends in a PR
+- [x] Merged (#377, 2026-11-23) and deployed with the flag on
+- [x] Maintainer tried it on desktop and iPhone: sorts, Start and Copy work (2026-11-23)
+- [ ] Maintainer accepts: one real start from his phone ends in a PR (he is trying the prompt)
+- Follow-up one-shot `backlog_start_followups` ([record](./backlog_start_followups/backlog_start_followups_one_shot.md)), from his first look:
+  - [x] Start bar opaque in Arena and the other see-through themes
+  - [x] Three modes: Agent decides (first, default), One-shot, Staged cycle
+  - [x] The prompt says please
+  - [ ] PR opened, merged, deployed
+- Seen live, no change asked: the five lines of link rows at 375 px, Salient not putting ready items first, Effort and Impact sorting one way.
 
 ## Cycle 2 — `backlog_claims` (staged; rough estimate 0.40)
 
@@ -68,6 +75,7 @@ The plans in `docs/plans/backlog/` as their own list.
 - Five sorts, with triage as a filter. (2026-11-23)
 - `Impact` uses the same decimal scale as `Estimate`. (2026-11-23)
 - The prompt is short, assumes the agent has the repository, names files to read, and tells the agent to go to a PR. (2026-11-23)
+- The prompt says please. The agent picks one-shot or staged unless Start names one. (2026-11-23)
 - Several picked items become one cycle. (2026-11-23)
 - Start means prompt plus claim; the claim arrives in cycle 2. (2026-11-23)
 - Parked plans are shown separately. (2026-11-23)

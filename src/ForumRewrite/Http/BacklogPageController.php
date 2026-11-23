@@ -59,7 +59,7 @@ final class BacklogPageController
     /**
      * The tidy address for a start request, when the request is not already in
      * that form. A plain form sends items[]=A&items[]=B; the page lives at
-     * ?items=A,B, with the mode named only when it is not one-shot.
+     * ?items=A,B, with the mode named only when it is not the default (the agent decides).
      *
      * @param array<string, mixed> $query
      */
@@ -87,7 +87,7 @@ final class BacklogPageController
         $picked = BacklogPrompt::pick($this->items(), $ids);
         $openIds = array_map(static fn (FeedbackItem $item): string => $item->id(), $picked['items']);
         $modes = [];
-        foreach (['one-shot' => 'One-shot', 'staged' => 'Staged cycle'] as $key => $label) {
+        foreach (['auto' => 'Agent decides', 'one-shot' => 'One-shot', 'staged' => 'Staged cycle'] as $key => $label) {
             $modes[] = ['key' => $key, 'label' => $label, 'href' => self::startHref($ids, $key), 'is_active' => $mode === $key];
         }
 
@@ -130,7 +130,7 @@ final class BacklogPageController
         $ids = BacklogPrompt::ids($query['items'] ?? null);
         $mode = $query['mode'] ?? BacklogPrompt::MODES[0];
         if ($ids === [] || !is_string($mode) || !in_array($mode, BacklogPrompt::MODES, true)) {
-            return ['status' => 400, 'text' => "Name at least one item and, if not one-shot, the mode:\n/backlog/start.txt?items=PF-YYYYMMDD-F01,PF-YYYYMMDD-B02&mode=staged\nThe list is at /backlog.txt.\n", 'headers' => []];
+            return ['status' => 400, 'text' => "Name at least one item and, to set it, the mode (auto, one-shot or staged; auto lets the agent choose):\n/backlog/start.txt?items=PF-YYYYMMDD-F01,PF-YYYYMMDD-B02&mode=staged\nThe list is at /backlog.txt.\n", 'headers' => []];
         }
         $picked = BacklogPrompt::pick($this->items(), $ids);
         $leftOut = array_merge($picked['unknown'], $picked['closed']);
