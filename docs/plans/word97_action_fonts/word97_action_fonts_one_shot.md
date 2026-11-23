@@ -65,6 +65,6 @@ Delivered. In Word 97 every post-action control now computes to the UI font with
 
 The diff touches `theme-word97.css`, `site.css`, `PostActionThemeTest.php`, the two item files, this record, the plans index, the ledger and the debug log. No new component, no markup or behaviour change, no dependency or schema change. Deploy now is enough.
 
-Commit/merge/publication status: completion commit pending at time of writing; branch `fix/word97_action_fonts`; not merged or deployed.
+Commit/merge/publication status: completion commit `7289d86c9` on `fix/word97_action_fonts`; PR #380 open; not merged or deployed.
 
 Attribution: Claude · 2026-11-23 UTC · Model: claude-opus-5-5
