@@ -9,6 +9,7 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
+- [Quill in Perl and PHP](quill_ports/quill_ports_one_shot.md) — `quill.pl` and `quill.php` beside `quill.py`, same commands and state, each with its own update notice.
 - [Application version source](application_version_source/application_version_source_one_shot.md) — code revision for deploy notifications, with independent cached-page freshness.
 - [Recently released filters](recent_feature_flag_filters/recent_feature_flag_filters_one_shot.md) — keep the release list in sync with flag filters.
 - [Offline writing runbook](offline_runbook_compose/offline_runbook_compose_one_shot.md) — explain cached composers, drafts, and queued offline text.
@@ -671,3 +672,5 @@ and repair its navigation and affected references. See the
 - [Local import progress](local_import_progress/local_import_progress_step1_solution_assessment.md) — staged: the local start page queues its import and shows the Tools → Import steps, timer and time left.
 
 - [Local import status](local_import_status/local_import_status_step1_solution_assessment.md) — staged: after an import, the local start page card reports the source, age and result of the last import and offers one re-import action.
+- [Compact deploy history](deploy_history_compact/deploy_history_compact_one_shot.md) — one-shot: one compact row per version on Tools → Deploy.
+- [Deploy history and rollback](deploy_rollback/deploy_rollback_step1_solution_assessment.md) — staged: a record of deployed versions and a rollback to one of them.

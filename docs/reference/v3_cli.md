@@ -389,10 +389,10 @@ the recorded target applies to this host, not arbitrary OS scheduling delays.
 ## Update the application checkout
 
 ```
-./v3 deploy [--check|--status] [--timeout=SECONDS]
+./v3 deploy [--check|--status|--history|--rollback=COMMIT] [--timeout=SECONDS]
 ```
 
-Fetches `origin/main` and fast-forwards this application checkout, the same routine as **Tools → Deploy**. `--check` only fetches and reports how far behind the checkout is; `--status` reports local state and the latest attempt without contacting GitHub. The default timeout is 120 seconds.
+Fetches `origin/main` and fast-forwards this application checkout, the same routine as **Tools → Deploy**. `--check` only fetches and reports how far behind the checkout is; `--status` reports local state and the latest attempt without contacting GitHub. `--history` lists the versions this checkout has run, newest first. `--rollback=COMMIT` returns to one of them (7 or more hex digits): it prints the commits it undoes and any format warnings, never contacts GitHub, and leaves the checkout on `main` so the next deploy moves forward again; see [deploy history and rollback](../runbooks/production_deploy.md#deploy-history-and-rollback). The default timeout is 120 seconds.
 
 Local edits to tracked files are kept (stashed, then reapplied after the fast-forward). It refuses with the checkout unchanged when the update conflicts with a local edit, on a branch other than `main`, diverged history or a deploy already running, and prints `Outcome`, `Reason`, `Old-Commit`, `New-Commit` and `Message`. Exit status: 0 deployed, up to date or checked; 1 refused or failed; 2 usage error. Pull only; see [Deploy from the Site](../runbooks/production_deploy.md#deploy-from-the-site).
 

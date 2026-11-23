@@ -20,6 +20,13 @@ $commitLink = static fn (string $sha): string => $commitLinkBase === null ? '' :
 $incoming = $s['incoming_commits'] ?? [];
 $stat = $s['incoming_stat'] ?? null;
 $queuedAt = ($task['status'] ?? null) === 'queued' ? (string) ($task['requested_at'] ?? '') : '';
+$versions = $deployVersions ?? [];
+$preview = $rollbackPreview ?? null;
+$commitCode = static function (string $sha) use ($e, $commitLink, $commitLinkBase): string {
+    $code = '<code>' . $e(substr($sha, 0, 8)) . '</code>';
+
+    return $commitLinkBase === null ? $code : '<a href="' . $e($commitLink($sha)) . '">' . $code . '</a>';
+};
 $workerLabels = ['fresh' => 'running normally', 'running' => 'running now', 'stale' => 'has not run recently', 'not_observed' => 'never seen', 'failed' => 'last run failed', 'unavailable' => 'unavailable'];
 ?>
 <section class="stack">
@@ -28,6 +35,31 @@ $workerLabels = ['fresh' => 'running normally', 'running' => 'running now', 'sta
 <?php if (!$s['is_checkout']): ?>
     <p>This application directory is not a Git checkout.</p>
 <?php else: ?>
+<?php if ($preview !== null && $canDeploy): ?>
+<?php $undone = count($preview['commits']) + (int) $preview['more']; ?>
+    <form method="post" action="/tools/deploy/" class="deploy-rollback">
+      <h2>Roll back to <?= $commitCode($preview['commit']) ?>?</h2>
+<?php foreach ($preview['warnings'] as $warning): ?>
+      <p><strong><?= $e($warning) ?></strong></p>
+<?php endforeach; ?>
+      <details class="deploy-incoming"<?= $undone <= 5 ? ' open' : '' ?>>
+        <summary>Undoes <?= $e($undone . ' commit' . ($undone === 1 ? '' : 's')) ?></summary>
+        <ol>
+<?php foreach ($preview['commits'] as $c): ?>
+          <li><?= $commitCode($c['commit']) ?> <?= $e($c['subject']) ?> <span class="meta"><?= $e($c['author']) ?>, <?= $e($c['date']) ?></span></li>
+<?php endforeach; ?>
+        </ol>
+<?php if ($preview['more'] > 0): ?>
+        <p class="meta">and <?= $e((string) $preview['more']) ?> more</p>
+<?php endif; ?>
+      </details>
+      <input type="hidden" name="commit" value="<?= $e($preview['commit']) ?>">
+      <div class="deploy-actions">
+        <button type="submit" name="action" value="rollback" class="deploy-actions__primary">Roll back to <?= $e(substr($preview['commit'], 0, 8)) ?></button>
+        <a href="/tools/deploy/">Cancel</a>
+      </div>
+    </form>
+<?php endif; ?>
     <table class="codebase-facts">
       <tbody>
         <tr>
@@ -128,6 +160,38 @@ $summary = implode(' · ', $parts);
     <p class="meta" role="status" aria-live="polite" data-deploy-status<?= $statusText === '' ? ' hidden' : '' ?>><?= $e($statusText) ?></p>
 <?php elseif (($deployNotice ?? '') !== ''): ?>
     <p class="meta" role="status"><?= $e($deployNotice) ?></p>
+<?php endif; ?>
+<?php if ($versions !== [] && $s['is_checkout']): ?>
+    <h2>History</h2>
+<?php
+// One compact row per version. Merge subjects drop their repeated opening; the full subject stays in the title.
+$versionRow = static function (array $v) use ($e, $commitCode, $canDeploy): string {
+    $subject = preg_replace('/^Merge pull request (#\d+) from [^\/\s]+\/(\S+)/', '$1 $2', $v['subject']) ?? $v['subject'];
+    $at = preg_match('/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/', $v['deployed_at'], $m) === 1 ? $m[1] . ' ' . $m[2] : $v['deployed_at'];
+    $when = $v['action'] === 'earlier' ? 'before the first recorded deploy' : ($v['action'] === 'rollback' ? 'rolled back ' : '') . $at;
+    $row = '      <li><div class="deploy-history__text"><span class="deploy-history__subject" title="' . $e($v['subject']) . '">' . $commitCode($v['commit']) . ' ' . $e($subject) . '</span>'
+        . '<span class="meta">' . $e($when) . ($v['running'] ? ' · <strong>running</strong>' : '') . '</span></div>';
+    if ($v['can_roll_back'] && $canDeploy) {
+        $row .= '<form method="post" action="/tools/deploy/"><input type="hidden" name="commit" value="' . $e($v['commit']) . '">'
+            . '<button type="submit" name="action" value="rollback_preview" class="deploy-actions__secondary">Roll back</button></form>';
+    }
+
+    return $row . "</li>\n";
+};
+$recent = array_slice($versions, 0, 5);
+$earlier = array_slice($versions, 5);
+?>
+    <ol class="deploy-history">
+<?= implode('', array_map($versionRow, $recent)) ?>
+    </ol>
+<?php if ($earlier !== []): ?>
+    <details class="deploy-history-more">
+      <summary><?= $e((string) count($earlier)) ?> earlier</summary>
+      <ol class="deploy-history">
+<?= implode('', array_map($versionRow, $earlier)) ?>
+      </ol>
+    </details>
+<?php endif; ?>
 <?php endif; ?>
   </article>
 <?= $indent($partial('partials/tools_nav_card.php'), 2) ?>

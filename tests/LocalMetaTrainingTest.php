@@ -87,6 +87,44 @@ final class LocalMetaTrainingTest
         assertFalse(isset($byId['russian']));
     }
 
+    public function testOperatorLabelsOverrideEverythingAndAreCounted(): void
+    {
+        [$read, $scores] = self::fixture();
+        $labels = LocalMetaFiles::parseLabels("# corrections\nsuppressed: meta\nother-1: meta  # a support post nobody tagged\nsupport-2: not\n\nuntagged: not\n");
+        ['examples' => $examples, 'counts' => $counts] = (new LocalMetaTraining($read, $scores, $labels))->collect(false);
+        $byId = array_column($examples, null, 'post_id');
+        assertTrue($byId['suppressed']['meta']);
+        assertTrue($byId['other-1']['meta']);
+        assertFalse($byId['support-2']['meta']);
+        assertSame('operator_other', $byId['untagged']['label_source']);
+        assertSame(2, $counts['operator_meta']);
+        assertSame(2, $counts['operator_other']);
+        assertSame(1, $counts['unlabeled']);
+        $threw = null;
+        try { LocalMetaFiles::parseLabels("ok-1: meta\nbroken line\n"); } catch (InvalidArgumentException $error) { $threw = $error; }
+        assertStringContains('line 2', (string) $threw?->getMessage());
+    }
+
+    public function testRunAndSaveReadsTheLabelsFileAndOldModelsCountAsMissing(): void
+    {
+        $dir = sys_get_temp_dir() . '/local-meta-labels-' . bin2hex(random_bytes(5));
+        mkdir($dir . '/state/private', 0700, true);
+        try {
+            $files = new LocalMetaFiles($dir);
+            file_put_contents($files->modelPath(), json_encode(['format' => 'fastmod-local-meta-v1']));
+            assertSame(null, $files->loadModel());
+            file_put_contents($files->labelsPath(), "untagged: meta\n");
+            [$read, $scores] = self::fixture();
+            $report = (new LocalMetaTraining($read, $scores))->runAndSave($files, false);
+            assertSame(1, $report['labels']['operator_meta']);
+            assertStringContains('operator 1', (string) $files->readReport());
+            assertTrue($files->loadModel() instanceof LocalMetaModel);
+        } finally {
+            foreach (glob($dir . '/state/private/*') ?: [] as $file) unlink($file);
+            rmdir($dir . '/state/private'); rmdir($dir . '/state'); rmdir($dir);
+        }
+    }
+
     public function testWeakNegativesOnlyWhenAsked(): void
     {
         [$read, $scores] = self::fixture();
@@ -103,7 +141,8 @@ final class LocalMetaTrainingTest
         $second = (new LocalMetaTraining($read, $scores))->run(false, '2026-11-14T00:00:00Z');
         assertSame($first['report'], $second['report']);
         $report = $first['report'];
-        assertTrue($report['holdout'] > 0 && $report['holdout'] < 64);
+        assertSame($report['meta'] + $report['other'], $report['checked']);
+        assertSame(5, $report['folds']);
         assertSame($report['threshold'], $first['model']->threshold());
         assertTrue($report['threshold'] !== null);
         assertTrue($report['precision'] >= LocalMetaTraining::TARGET_PRECISION);

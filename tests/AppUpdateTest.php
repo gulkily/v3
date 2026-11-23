@@ -29,6 +29,246 @@ final class AppUpdateTest
         assertSame($new, $latest['New-Commit']);
     }
 
+    public function testEachDeployThatChangesTheCommitIsRecordedInTheHistory(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $first = $this->head($app);
+        $update = new AppUpdate($app);
+        assertSame([], $update->history());
+
+        $second = $this->pushCommit($seed, 'second');
+        $update->deploy('openpgp:test', AppUpdate::MODE_INSTANT);
+        $update->deploy('openpgp:test', AppUpdate::MODE_INSTANT); // up to date: no entry
+        $third = $this->pushCommit($seed, 'third');
+        $update->deploy('cli:ops', AppUpdate::MODE_CLI);
+
+        $history = $update->history();
+        assertSame([$third, $second], array_column($history, 'new_commit'));
+        assertSame([$second, $first], array_column($history, 'old_commit'));
+        assertSame(['third', 'second'], array_column($history, 'subject'));
+        assertSame(['deploy', 'deploy'], array_column($history, 'action'));
+        assertSame('cli', $history[0]['mode']);
+        assertSame('cli:ops', $history[0]['actor']);
+        assertSame([$third], array_column($update->history(1), 'new_commit'));
+        assertStringContains("Action: deploy\n", (string) file_get_contents($app . '/state/logs/deploy_history.txt'));
+    }
+
+    public function testHistoryStartsFromTheDeploysInTheAttemptLog(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $first = $this->head($app);
+        $second = $this->pushCommit($seed, 'second');
+        $third = $this->pushCommit($seed, 'third');
+        $this->git($app, ['pull', '-q']);
+        mkdir($app . '/state/logs', 0775, true);
+        // An older rotated log without Read-Model, a refusal, an unreadable block, then a newer deploy.
+        file_put_contents($app . '/state/logs/app_update.log.1',
+            "Finished-At: 2026-11-01T10:00:00Z\nMode: cli\nActor: cli:ops\nOutcome: deployed\nOld-Commit: {$first}\nNew-Commit: {$second}\n\n");
+        file_put_contents($app . '/state/logs/app_update.log',
+            "Finished-At: 2026-11-02T10:00:00Z\nMode: instant\nOutcome: refused\nOld-Commit: {$second}\nNew-Commit: {$second}\n\n"
+            . "Outcome: deployed\nOld-Commit: -\nNew-Commit: -\n\n"
+            . "Finished-At: 2026-11-03T10:00:00Z\nMode: instant\nActor: openpgp:test\nOutcome: deployed\nOld-Commit: {$second}\nNew-Commit: {$third}\nRead-Model: current\n\n");
+
+        $history = (new AppUpdate($app))->history();
+
+        assertSame([$third, $second], array_column($history, 'new_commit'));
+        assertSame(['2026-11-03T10:00:00Z', '2026-11-01T10:00:00Z'], array_column($history, 'deployed_at'));
+        assertSame(['third', 'second'], array_column($history, 'subject'));
+    }
+
+    public function testCliHistoryListsVersionsNewestFirst(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $second = $this->pushCommit($seed, 'second');
+        (new AppUpdate($app))->deploy('cli:ops', AppUpdate::MODE_CLI);
+
+        [$code, $out] = $this->cli($app, ['--history']);
+
+        assertSame(0, $code, $out);
+        assertSame('Running: ' . substr($second, 0, 12) . "\nVersion: ", substr($out, 0, 31));
+        assertStringContains(' deploy ' . substr($second, 0, 12) . " second\n", $out);
+    }
+
+    public function testRollbackReturnsToAnEarlierDeployedCommitAndTheNextDeployMovesForward(): void
+    {
+        [$app, $first, $second, $third] = $this->deployedTwice();
+        $checks = 0;
+        $update = new AppUpdate($app, null, static function () use (&$checks): array {
+            $checks++;
+
+            return ['status' => 'current', 'message' => ''];
+        });
+
+        $result = $update->rollback($second, 'openpgp:test', AppUpdate::MODE_INSTANT);
+
+        assertSame('rolled_back', $result['outcome'], $result['message']);
+        assertSame($third, $result['old_commit']);
+        assertSame($second, $result['new_commit']);
+        assertSame($second, $this->head($app));
+        assertSame('main', trim($this->git($app, ['symbolic-ref', '--short', 'HEAD'])));
+        assertSame(1, $checks);
+        assertSame('rolled_back', $update->latestAttempt()['Outcome']);
+        assertSame('current', $update->latestAttempt()['Read-Model']);
+        $history = $update->history();
+        assertSame(['rollback', 'deploy', 'deploy'], array_column($history, 'action'));
+        assertSame([$second, $third, $second], array_column($history, 'new_commit'));
+
+        // A short commit name works, and so does the version before the first recorded deploy.
+        assertSame('rolled_back', $update->rollback(substr($first, 0, 12), 'openpgp:test', AppUpdate::MODE_INSTANT)['outcome']);
+        assertSame($first, $this->head($app));
+
+        $forward = $update->deploy('openpgp:test', AppUpdate::MODE_INSTANT);
+        assertSame('deployed', $forward['outcome'], $forward['message']);
+        assertSame($third, $this->head($app));
+    }
+
+    public function testRollbackKeepsLocalEditsToFilesItDoesNotTouch(): void
+    {
+        [$app, , $second] = $this->deployedTwice();
+        file_put_contents($app . '/README.md', "app\nlocal edit\n");
+
+        $result = (new AppUpdate($app))->rollback($second, 'openpgp:test', AppUpdate::MODE_INSTANT);
+
+        assertSame('rolled_back', $result['outcome'], $result['message']);
+        assertStringContains('Kept local changes to README.md.', $result['message']);
+        assertSame("app\nlocal edit\n", file_get_contents($app . '/README.md'));
+        assertSame('', trim($this->git($app, ['stash', 'list'])));
+        assertTrue(!is_file($app . '/third.txt'));
+    }
+
+    public function testRollbackThatConflictsWithALocalEditChangesNothing(): void
+    {
+        [$app, $seed] = $this->fixture();
+        file_put_contents($seed . '/config.txt', "new line\n");
+        $this->git($seed, ['add', '.']);
+        $this->git($seed, ['commit', '-q', '-m', 'add config']);
+        $this->git($seed, ['push', '-q', 'origin', 'main']);
+        $first = $this->head($app);
+        $update = new AppUpdate($app);
+        $update->deploy('openpgp:test', AppUpdate::MODE_INSTANT);
+        $second = $this->head($app);
+        // The file does not exist at the older commit, so the edit cannot be put back there.
+        file_put_contents($app . '/config.txt', "new line\nlocal edit\n");
+
+        $result = $update->rollback($first, 'openpgp:test', AppUpdate::MODE_INSTANT);
+
+        assertSame('refused', $result['outcome'], $result['message']);
+        assertSame('local_changes_conflict', $result['reason']);
+        assertStringContains('Nothing was changed; roll back over SSH', $result['message']);
+        assertSame($second, $this->head($app));
+        assertSame("new line\nlocal edit\n", file_get_contents($app . '/config.txt'));
+        assertSame('', trim($this->git($app, ['stash', 'list'])));
+        assertSame(['deploy'], array_column($update->history(), 'action'));
+    }
+
+    public function testRollbackRefusesVersionsItMustNotMoveTo(): void
+    {
+        [$app, $first, $second, $third, $seed] = $this->deployedTwice();
+        $update = new AppUpdate($app);
+        $refusal = static function (string $commit) use ($update): ?string {
+            $result = $update->rollback($commit, 'openpgp:test', AppUpdate::MODE_INSTANT);
+
+            return $result['outcome'] === 'refused' ? $result['reason'] : $result['outcome'];
+        };
+
+        assertSame('already_running', $refusal($third));
+        assertSame('not_deployed_here', $refusal(str_repeat('a', 40)));
+        assertSame('not_deployed_here', $refusal('main'));
+        assertSame('not_deployed_here', $refusal('--hard'));
+        // On origin/main and fetched, but never deployed here.
+        $fourth = $this->pushCommit($seed, 'fourth');
+        $update->check();
+        assertSame('not_deployed_here', $refusal($fourth));
+        // Deployed here, but ahead of the running version after rolling back.
+        $update->rollback($second, 'openpgp:test', AppUpdate::MODE_INSTANT);
+        assertSame('not_behind', $refusal($third));
+        assertSame($second, $this->head($app));
+
+        $this->git($app, ['checkout', '-q', '-b', 'other']);
+        assertSame('wrong_branch', $refusal($first));
+        $this->git($app, ['checkout', '-q', 'main']);
+
+        $lock = fopen($app . '/state/app_update.lock', 'c');
+        flock($lock, LOCK_EX);
+        try {
+            assertSame('busy', $refusal($first));
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+        assertSame($second, $this->head($app));
+    }
+
+    public function testRollbackPreviewListsWhatItUndoesAndChangesNothing(): void
+    {
+        [$app, $first, $second, $third] = $this->deployedTwice();
+        $update = new AppUpdate($app);
+
+        $preview = $update->rollbackPreview(substr($first, 0, 12));
+
+        assertSame($first, $preview['commit']);
+        assertSame(['third', 'second'], array_column($preview['commits'], 'subject'));
+        assertSame([$third, $second], array_column($preview['commits'], 'commit'));
+        assertSame(0, $preview['more']);
+        assertSame([], $preview['warnings']);
+        assertSame($third, $this->head($app));
+
+        assertSame('already_running', $update->rollbackPreview($third)['reason']);
+        assertSame('not_deployed_here', $update->rollbackPreview(str_repeat('a', 40))['reason']);
+        assertSame(null, $update->rollbackPreview($third)['commit']);
+    }
+
+    public function testRollbackPreviewWarnsWhenTheRangeCrossesAFormatChange(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $update = new AppUpdate($app);
+        $write = function (string $path, string $content) use ($seed): string {
+            @mkdir(dirname($seed . '/' . $path), 0777, true);
+            file_put_contents($seed . '/' . $path, $content);
+
+            return $this->pushCommit($seed, 'change-' . md5($path . $content));
+        };
+        $metadata = 'src/ForumRewrite/ReadModel/ReadModelMetadata.php';
+        $base = $write($metadata, "<?php\n    public const SCHEMA_VERSION = '55';\n");
+        $update->deploy('openpgp:test', AppUpdate::MODE_INSTANT);
+        $plain = $write('notes.txt', "notes\n");
+        $update->deploy('openpgp:test', AppUpdate::MODE_INSTANT);
+        assertSame([], $update->rollbackPreview($base)['warnings']);
+
+        $write($metadata, "<?php\n    public const SCHEMA_VERSION = '56';\n");
+        $update->deploy('openpgp:test', AppUpdate::MODE_INSTANT);
+        $warnings = $update->rollbackPreview($plain)['warnings'];
+        assertSame(1, count($warnings));
+        assertStringContains('(56 back to 55)', $warnings[0]);
+
+        $write('src/ForumRewrite/Canonical/RecordParser.php', "<?php\n");
+        $write('docs/specs/record.md', "spec\n");
+        $update->deploy('openpgp:test', AppUpdate::MODE_INSTANT);
+        $warnings = $update->rollbackPreview($plain)['warnings'];
+        assertSame(3, count($warnings));
+        assertStringContains('reads records', $warnings[1]);
+        assertStringContains('docs/specs/', $warnings[2]);
+        // Warnings never block.
+        assertSame('rolled_back', $update->rollback($plain, 'openpgp:test', AppUpdate::MODE_INSTANT)['outcome']);
+    }
+
+    public function testCliRollbackReturnsToAVersionFromTheHistory(): void
+    {
+        [$app, , $second, $third] = $this->deployedTwice();
+
+        [$code, $out] = $this->cli($app, ['--rollback=' . substr($second, 0, 12)]);
+
+        assertSame(0, $code, $out);
+        assertStringContains("Outcome: rolled_back\n", $out);
+        assertStringContains('Undoes-Commit: ' . substr($third, 0, 12) . ' ', $out);
+        assertStringContains('Old-Commit: ' . $third . "\n", $out);
+        assertStringContains('New-Commit: ' . $second . "\n", $out);
+        assertSame($second, $this->head($app));
+        [$again] = $this->cli($app, ['--rollback=' . $second]);
+        assertSame(1, $again);
+        assertSame(2, $this->cli($app, ['--rollback=main'])[0]);
+    }
+
     public function testDeployChecksTheReadModelWithTheNewCodeAndQueuesARebuild(): void
     {
         [$app, $seed] = $this->fixture();
@@ -586,6 +826,42 @@ final class AppUpdateTest
         assertStringContains('Usage: ./v3 deploy', implode("\n", $help));
         exec('php ' . escapeshellarg($root . '/scripts/deploy.php') . ' --bogus 2>&1', $bad, $badCode);
         assertSame(2, $badCode);
+    }
+
+    /**
+     * A checkout that has deployed twice, so its history holds three versions.
+     *
+     * @return array{0: string, 1: string, 2: string, 3: string, 4: string} app, first, second and third commit, seed clone
+     */
+    private function deployedTwice(): array
+    {
+        [$app, $seed] = $this->fixture();
+        $first = $this->head($app);
+        $update = new AppUpdate($app);
+        $second = $this->pushCommit($seed, 'second');
+        $update->deploy('openpgp:test', AppUpdate::MODE_INSTANT);
+        $third = $this->pushCommit($seed, 'third');
+        $update->deploy('openpgp:test', AppUpdate::MODE_INSTANT);
+
+        return [$app, $first, $second, $third, $seed];
+    }
+
+    /**
+     * Runs the real scripts/deploy.php against the fixture checkout.
+     *
+     * @param list<string> $args
+     * @return array{0: int, 1: string} exit code, combined output
+     */
+    private function cli(string $app, array $args): array
+    {
+        if (!is_dir($app . '/scripts')) {
+            mkdir($app . '/scripts');
+            copy(dirname(__DIR__) . '/scripts/deploy.php', $app . '/scripts/deploy.php');
+            file_put_contents($app . '/autoload.php', '<?php require ' . var_export(dirname(__DIR__) . '/autoload.php', true) . ";\n");
+        }
+        exec('php ' . escapeshellarg($app . '/scripts/deploy.php') . ' ' . implode(' ', array_map('escapeshellarg', $args)) . ' 2>&1', $lines, $code);
+
+        return [$code, implode("\n", $lines) . "\n"];
     }
 
     /**

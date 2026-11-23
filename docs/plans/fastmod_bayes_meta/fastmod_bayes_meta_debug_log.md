@@ -72,3 +72,14 @@ Supersedes nothing in the 02:20 entry; adds findings from the revision.
 ### Uncertain assessments
 
 - `step4_implementation_do.md`: no rule covers a mid-plan gate that only the maintainer can run (Stage 5). Recorded it as pending, committed the summary, and handed off with a PR instead of continuing to Stage 6.
+
+## 2026-11-22 23:55 UTC — Stage 5 failure and Revision 2
+
+### Necessary/useful instructions
+
+- `step3_development_plan_do.md`, known environment: Stage 5 as a production gate caught a model that only looked good on paper (precision equal to the meta share of a lopsided test set). Retain.
+
+### Uncertain assessments
+
+- `RAILSPIKE.md`: no rule covers rebuilding evidence offline from public data when production data can't be reached. Used the public site for the replay and kept production as the gate.
+- Labels written by the agent itself now enter training. Recorded as operator labels the maintainer chooses to install, not as automatic labels.
