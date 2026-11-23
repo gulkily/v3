@@ -87,6 +87,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Guestbook](guestbook/guestbook_step3_development_plan.md) — a `/guestbook/` page shows the guestbook thread's top-level replies as a paper book with numbered pages and a "Sign the book" form; the thread stays available as an ordinary thread.
 
+[Tagsets file comments](tagsets_file_comments/tagsets_file_comments_one_shot.md) — one-shot: plainer comments in `resources/tagsets.txt`.
+
 [Editable tagsets](editable_tagsets/editable_tagsets_step3_development_plan.md) — operators edit and add tagsets on the Tag Unlocks page; a signed site record replaces `resources/tagsets.txt`.
 
 [Tag unlocks](tag_unlocks/tag_unlocks_step3_development_plan.md) — a thread's tag unlocks extra tags on its replies; first use: Resolved and Closed on replies in `#meta` threads, which fold to one line.
