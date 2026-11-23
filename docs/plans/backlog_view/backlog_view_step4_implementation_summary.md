@@ -116,3 +116,24 @@ Stage estimates below are copied from the approved Step 3 plan; copying is not a
 - Estimate details: original scope unchanged; uncertainty was medium (addresses without scripts), settled by the redirect.
 
 *— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
+
+## Stage 5 - Text routes
+
+**Original estimate: 0.06**
+
+**Retrospective stage work: 0.05**
+
+- Changes:
+  - Routes `/backlog.txt` and `/backlog/start.txt` in `Application.php`, following the flag. `BacklogPageController` gains `listText()` and `startText()`, which call the same `BacklogText` and `BacklogPrompt` as the commands.
+  - `/backlog/start.txt` names left-out IDs in an `X-Left-Out` header, answers 404 when no open item is left and 400 with a usage line when no ID or an unknown mode is given.
+  - `/llms.txt` lists the backlog under More while the flag is on (`LlmsTxtRenderer.php`). `docs/reference/agent_api.md` gains a Backlog section.
+- Verification:
+  - `php tests/run.php LlmsTxtRendererTest ApiRouteCatalogTest AgentApiWorkedExampleTest BacklogPageTest`: all passed. New case: `/backlog.txt` gives the same bytes as `./v3 feedback list` for three word combinations, `/backlog/start.txt` the same bytes as `./v3 feedback start`, in both address forms; fallback, usage and nothing-to-start texts; flag off; the `/llms.txt` line with the flag on and off.
+  - `node tests/browser/backlog.mjs`: passed, now also checking over HTTP the content type, the item order, the `X-Left-Out` header and the 404 and 400 answers.
+  - Full suite not run.
+- Notes:
+  - Deviation: the plan named `ApiTextController.php` and `ApiRouteCatalog.php`. Neither fits: the catalog lists `/api/` routes only, and these two routes sit beside the page they mirror. They are routed in `Application.php` like `/llms.txt`.
+  - The text routes do not redirect to a tidy address; an agent gets its answer in one request.
+- Estimate details: original scope unchanged; uncertainty was low; no revisions.
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*

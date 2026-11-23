@@ -764,6 +764,31 @@ unchanged. Resending the same signed request is safe (`already_applied: true`).
 The post record is never rewritten; the [post format record](../specs/post_format_record_v1.md)
 is kept beside it and `get_post` reports the current format.
 
+## Backlog
+
+On an instance that develops the software and has the Backlog flag on, the open
+[feedback items](../concepts/feedback_items.md) are listed for agents as plain text.
+Both routes are public `GET` routes and answer Not Found while the flag is off.
+
+- `/backlog.txt` returns `Key: value` blocks: a first block with the words in
+  force, the count and the version of the code the list was read from, then one
+  block per item (`ID`, `Title`, `Kind`, `Workflow`, `Created`, `Touched`,
+  `Estimate` and `Impact` when set, `File`). Optional words: `sort`
+  (`salient`, `entered`, `touched`, `effort`, `impact`), `order` (`newest`,
+  `oldest`), `show` (`can-start`, `waiting`, `open`, or one workflow value) and
+  `kind` (`all`, `bug`, `feature`, `other`). An unknown word falls back to its
+  default. Example: `/backlog.txt?sort=effort&kind=bug`.
+- `/backlog/start.txt?items=<ID>,<ID>&mode=<one-shot|staged>` returns the short
+  prompt that starts work on those items as one cycle; `mode` defaults to
+  `one-shot`. Unknown and closed IDs are left out and named in an `X-Left-Out`
+  header. With no open item left the answer is 404; with no ID or an unknown
+  mode it is 400.
+
+The list is as fresh as the instance's last deploy, so follow
+[backlog to pull request](../agents/backlog_to_pr.md): check each item in a fresh
+checkout before building it. `./v3 feedback list` and `./v3 feedback start` give
+the same output from a checkout. People use the same list at `/backlog`.
+
 ## Reply resolution (tag unlocks)
 
 A thread tag can unlock extra tags on the thread's replies. The shipped list is

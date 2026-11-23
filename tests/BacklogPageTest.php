@@ -138,6 +138,35 @@ final class BacklogPageTest
         });
     }
 
+    public function testTextRoutesGiveTheSameBytesAsTheCommands(): void
+    {
+        $this->withSite(true, function (Application $application): void {
+            $v3 = 'cd ' . escapeshellarg(dirname(__DIR__)) . ' && ./v3 feedback ';
+            foreach ([['', ''], ['?sort=effort&kind=bug', '--sort=effort --kind=bug'], ['?sort=entered&order=oldest&show=waiting', '--sort=entered --order=oldest --show=waiting']] as [$query, $options]) {
+                $command = (string) shell_exec($v3 . 'list ' . $options . ' 2>/dev/null');
+                assertTrue(str_starts_with($command, 'Sort: '));
+                assertSame($command, $this->raw($application, '/backlog.txt' . $query), 'Same list for: ' . $query);
+            }
+            assertStringContains("Sort: salient\n", $this->raw($application, '/backlog.txt?sort=sideways'), 'An unknown word falls back.');
+
+            $items = BacklogPageController::load(dirname(__DIR__));
+            $open = FeedbackBacklog::select($items, 'can-start', 'all');
+            [$a, $b] = [$open[0]->id(), $open[1]->id()];
+            $command = (string) shell_exec($v3 . 'start ' . $a . ' ' . $b . ' --mode=staged 2>/dev/null');
+            assertSame($command, $this->raw($application, '/backlog/start.txt?items=' . $a . ',' . $b . '&mode=staged'));
+            assertSame($command, $this->raw($application, '/backlog/start.txt?items[]=' . $a . '&items[]=' . $b . '&mode=staged'));
+            assertStringContains('Name at least one item', $this->raw($application, '/backlog/start.txt'));
+            assertStringContains('Name at least one item', $this->raw($application, '/backlog/start.txt?items=' . $a . '&mode=fast'));
+            assertStringContains('Nothing to start: no open item among PF-00000000-F99.', $this->raw($application, '/backlog/start.txt?items=PF-00000000-F99'));
+            assertStringContains('- [Backlog](/backlog.txt)', $this->raw($application, '/llms.txt'));
+        });
+        $this->withSite(false, function (Application $application): void {
+            assertStringContains('Not Found', $this->raw($application, '/backlog.txt'));
+            assertStringContains('Not Found', $this->raw($application, '/backlog/start.txt?items=PF-20261101-F01'));
+            assertStringNotContains('/backlog.txt', $this->raw($application, '/llms.txt'));
+        });
+    }
+
     public function testCheckoutWithoutItemsGivesAnEmptyList(): void
     {
         $root = sys_get_temp_dir() . '/v3-backlog-empty-' . bin2hex(random_bytes(4));
@@ -175,6 +204,14 @@ final class BacklogPageTest
         $application->handle('GET', $path);
 
         return (string) preg_replace('/<style data-role="critical-css">.*?<\/style>/s', '', (string) ob_get_clean());
+    }
+
+    private function raw(Application $application, string $path): string
+    {
+        ob_start();
+        $application->handle('GET', $path);
+
+        return (string) ob_get_clean();
     }
 
     private function runCommand(string $cwd, string $command): void

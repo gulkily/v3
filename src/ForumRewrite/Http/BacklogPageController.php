@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Http;
 
 use ForumRewrite\Feedback\BacklogPrompt;
+use ForumRewrite\Feedback\BacklogText;
 use ForumRewrite\Feedback\FeedbackBacklog;
 use ForumRewrite\Feedback\FeedbackItem;
 use ForumRewrite\Feedback\FeedbackItemCheck;
@@ -102,6 +103,42 @@ final class BacklogPageController
             ],
             'backlogStartTextHref' => $openIds === [] ? null : self::startHref($openIds, $mode, '/backlog/start.txt'),
         ], 'Start', 'tools');
+    }
+
+    /**
+     * /backlog.txt: the list as Key: value text, byte for byte what
+     * ./v3 feedback list prints for the same words.
+     *
+     * @param array<string, mixed> $query
+     */
+    public function listText(array $query): string
+    {
+        $words = FeedbackBacklog::words($query);
+        $items = FeedbackBacklog::sort(FeedbackBacklog::select($this->items(), $words['show'], $words['kind']), $words['sort'], $words['order']);
+        return BacklogText::render($items, $words, ReadModelMetadata::repositoryHead($this->projectRoot));
+    }
+
+    /**
+     * /backlog/start.txt: the prompt for the named items, as ./v3 feedback
+     * start prints it. Items left out are named in the X-Left-Out header.
+     *
+     * @param array<string, mixed> $query
+     * @return array{status: int, text: string, headers: list<string>}
+     */
+    public function startText(array $query): array
+    {
+        $ids = BacklogPrompt::ids($query['items'] ?? null);
+        $mode = $query['mode'] ?? BacklogPrompt::MODES[0];
+        if ($ids === [] || !is_string($mode) || !in_array($mode, BacklogPrompt::MODES, true)) {
+            return ['status' => 400, 'text' => "Name at least one item and, if not one-shot, the mode:\n/backlog/start.txt?items=PF-YYYYMMDD-F01,PF-YYYYMMDD-B02&mode=staged\nThe list is at /backlog.txt.\n", 'headers' => []];
+        }
+        $picked = BacklogPrompt::pick($this->items(), $ids);
+        $leftOut = array_merge($picked['unknown'], $picked['closed']);
+        $headers = $leftOut === [] ? [] : ['X-Left-Out: ' . implode(',', $leftOut)];
+        if ($picked['items'] === []) {
+            return ['status' => 404, 'text' => "Nothing to start: no open item among " . implode(', ', $ids) . ".\nThe list is at /backlog.txt.\n", 'headers' => $headers];
+        }
+        return ['status' => 200, 'text' => BacklogPrompt::build($picked['items'], $mode, SourceRepository::fromProjectRoot($this->projectRoot)), 'headers' => $headers];
     }
 
     /** @return list<FeedbackItem> */

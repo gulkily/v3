@@ -118,6 +118,21 @@ try {
   assert.match(await plain.page.locator('[data-copy-prompt-source]').textContent(), /^Work on this v3 backlog item as one/);
   await plain.context.close();
 
+  // Agents: the same list and prompt as plain text.
+  const list = await fetch(base + '/backlog.txt?sort=entered&order=oldest');
+  assert.equal(list.status, 200);
+  assert.match(list.headers.get('content-type'), /^text\/plain/);
+  const listText = await list.text();
+  assert.match(listText, /^Sort: entered\nOrder: oldest\nShow: can-start\nKind: all\nCount: 3\n/);
+  assert.deepEqual([...listText.matchAll(/^ID: (\S+)$/gm)].map(m => m[1]), ['PF-20261101-F01', 'PF-20261101-B02', 'PF-20261101-F03']);
+  assert.match(listText, /ID: PF-20261101-F01\n[^]*?Estimate: 0\.15\nImpact: 0\.6\nFile: docs\/feedback\/items\/PF-20261101-F01\.txt\n/);
+  const started = await fetch(base + '/backlog/start.txt?items=PF-20261101-F01,PF-20261101-F05,PF-20261101-F99');
+  assert.equal(started.status, 200);
+  assert.equal(started.headers.get('x-left-out'), 'PF-20261101-F99,PF-20261101-F05');
+  assert.match(await started.text(), /^Work on this v3 backlog item as one Railspike one-shot cycle\.\n[^]*- docs\/feedback\/items\/PF-20261101-F01\.txt\n/);
+  assert.equal((await fetch(base + '/backlog/start.txt?items=PF-20261101-F05')).status, 404);
+  assert.equal((await fetch(base + '/backlog/start.txt')).status, 400);
+
   // Every permitted theme, phone and desktop, scripts on and off: nothing pushes the page sideways.
   let cases = 0;
   for (const theme of themes) for (const width of [375, 1280]) for (const scripts of [true, false]) {
@@ -134,7 +149,7 @@ try {
     assert.deepEqual(viewer.errors, [], `${theme} ${width}px: no page errors`);
     await viewer.context.close();
   }
-  console.log(`PASS backlog: tick two, Start, Copy and Staged with JavaScript; plain form to the tidy address without; sort, order and filter links; closed and unknown items left out; ${cases} theme/width/script cases of the list and the start page without sideways overflow`);
+  console.log(`PASS backlog: tick two, Start, Copy and Staged with JavaScript; plain form to the tidy address without; sort, order and filter links; closed and unknown items left out; /backlog.txt and /backlog/start.txt; ${cases} theme/width/script cases of the list and the start page without sideways overflow`);
 } catch (error) {
   console.error(serverLog.split('\n').filter(line => /error|warning|fatal/i.test(line)).slice(-10).join('\n'));
   throw error;
