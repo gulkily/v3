@@ -17,11 +17,13 @@ final class FeedbackItem
     /**
      * @param array<string, string> $headers
      * @param list<string> $sources source URLs in file order
+     * @param string $notes the Notes: section, used for the touched date
      */
     public function __construct(
         public readonly string $path,
         public readonly array $headers,
         public readonly array $sources,
+        public readonly string $notes = '',
     ) {
     }
 
@@ -38,6 +40,27 @@ final class FeedbackItem
     public function isClosed(): bool
     {
         return in_array($this->header('Workflow'), self::CLOSED_WORKFLOWS, true);
+    }
+
+    /**
+     * Date of the latest dated note ("YYYY-MM-DD: ..."), else the created date.
+     */
+    public function touched(): string
+    {
+        $latest = $this->header('Created');
+        if (preg_match_all('/^(\d{4}-\d{2}-\d{2}):/m', $this->notes, $matches) > 0) {
+            $latest = max($latest, max($matches[1]));
+        }
+        return $latest;
+    }
+
+    /**
+     * Estimate or Impact as a number; null when absent or "none".
+     */
+    public function number(string $header): ?float
+    {
+        $value = $this->header($header);
+        return $value === '' || $value === 'none' ? null : (float) $value;
     }
 
     /**

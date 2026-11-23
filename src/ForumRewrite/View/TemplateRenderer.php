@@ -26,6 +26,8 @@ final class TemplateRenderer
     /** @var array<string, list<string>> */
     private const PAGE_STYLESHEET_PATHS = [
         'about.php' => ['/assets/about.css'],
+        'backlog.php' => ['/assets/backlog.css'],
+        'backlog_start.php' => ['/assets/agent.css', '/assets/backlog.css'],
         'guestbook.php' => ['/assets/compose.css', '/assets/guestbook.css'],
         'themes.php' => ['/assets/themes.css'],
         'agent.php' => ['/assets/agent.css'],
@@ -95,6 +97,7 @@ final class TemplateRenderer
         private readonly string $versionStorageKey = 'forum_pending_app_version',
         /** Returns the current request path, for page themes. */
         private readonly ?\Closure $requestPath = null,
+        private readonly ?string $pageVersion = null,
     ) {
     }
 
@@ -279,6 +282,7 @@ final class TemplateRenderer
             'openBesideCssPath' => $this->assetPath('/assets/open-beside.css'),
             'siteName' => SiteConfig::displayName(),
             'appVersion' => $this->appVersion,
+            'pageVersion' => $this->pageVersion ?? $this->appVersion,
             'versionEndpoint' => $this->versionEndpoint,
             'versionStorageKey' => $this->versionStorageKey,
             'appVersionNotificationEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::APP_VERSION_NOTIFICATION),
@@ -558,7 +562,7 @@ final class TemplateRenderer
         $items = $isQdbNavigation
             ? QdbPresentation::navigation()
             : [
-                ['href' => '/', 'label' => 'Board', 'section' => 'board'],
+                ['href' => '/threads/', 'label' => 'Board', 'section' => 'board'],
                 ['href' => '/recent/', 'label' => 'Recent', 'section' => 'recent'],
                 ['href' => '/about/', 'label' => 'About', 'section' => 'about'],
                 ['href' => '/users/', 'label' => 'Users', 'section' => 'profiles'],
@@ -784,6 +788,9 @@ final class TemplateRenderer
         }
         if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::INSTANCE_IMPORT_PAGE_ENABLED)) {
             $hiddenTools[] = 'import';
+        }
+        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::BACKLOG_ENABLED)) {
+            $hiddenTools[] = 'backlog';
         }
         if ($hiddenTools !== []) {
             foreach (['toolPages', 'toolNavOptions'] as $toolListKey) {

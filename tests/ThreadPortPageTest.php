@@ -30,7 +30,8 @@ final class ThreadPortPageTest
         $member = ['identity_id' => self::MEMBER, 'username_token' => 'ilyag', 'is_approved' => 1, '_authenticated_identity' => true];
 
         // The bookmarklet's form: from another site, no session.
-        [$status, $html] = $this->call(null, 'receive', 'POST', ['port' => self::PORT], ['HTTP_SEC_FETCH_SITE' => 'cross-site']);
+        $port = str_replace("%%\nItem: 500", "Points: 42\nComment-Count: 7\n%%\nItem: 500", self::PORT);
+        [$status, $html] = $this->call(null, 'receive', 'POST', ['port' => $port], ['HTTP_SEC_FETCH_SITE' => 'cross-site']);
         threadPortPageAssertSame(303, $status);
         preg_match('#/port/([a-f0-9]{12})#', $html, $m);
         $id = $m[1] ?? '';
@@ -39,7 +40,11 @@ final class ThreadPortPageTest
         [$status, $html] = $this->call($member, 'preview', 'GET', [], [], $id);
         threadPortPageAssertSame(200, $status);
         threadPortPageAssertContains('Ask HN: Test', $html);
-        threadPortPageAssertContains('2 comments', $html);
+        threadPortPageAssertContains('2 comments to port', $html);
+        threadPortPageAssertContains('7 comments on HN', $html);
+        threadPortPageAssertContains('42 points', $html);
+        threadPortPageAssertContains('2026-01-01 00:00:00 UTC', $html);
+        threadPortPageAssertContains('Question?', $html);
         threadPortPageAssertContains('<form method="post" action="/port/' . $id . '">', $html);
 
         // Port from another site is refused; nothing is written.

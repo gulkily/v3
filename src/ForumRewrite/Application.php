@@ -117,6 +117,7 @@ final class Application
     ) {
         SignatureCheckCache::useBeside($databasePath);
         \ForumRewrite\Qdb\QdbModeration::useRepository($repositoryRoot);
+        \ForumRewrite\Support\Tagsets::useRepository($repositoryRoot);
     }
 
     /**
@@ -201,6 +202,7 @@ final class Application
             (new \ForumRewrite\Http\LocalDevelopmentPageController($this->routeServices(),
                 new \ForumRewrite\Support\LocalDevelopmentImport($this->repositoryRoot),
                 $this->localImportRequests(),
+                new \ForumRewrite\Import\LastImportSummary($this->repositoryRoot),
             ))->handle($method);
             return;
         }
@@ -557,6 +559,16 @@ final class Application
 
         if ($path === '/api/prepare_high_traffic' || $path === '/api/finalize_high_traffic') {
             $this->toolsPageController()->highTrafficApi($method,$query,$path === '/api/finalize_high_traffic');
+            return;
+        }
+
+        if ($path === '/api/preview_tagsets') {
+            $this->toolsPageController()->previewTagsetsApi($method, $query);
+            return;
+        }
+
+        if ($path === '/api/prepare_tagsets_change' || $path === '/api/finalize_tagsets_change') {
+            $this->toolsPageController()->tagsetsChangeApi($method, $query, $path === '/api/finalize_tagsets_change');
             return;
         }
 
@@ -922,16 +934,68 @@ final class Application
         }
 
         if ($path === '/gallery/' || $path === '/gallery') {
-            if (!$this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_GALLERY_ENABLED)) {
+            $flags = $this->featureFlags();
+            $galleryEnabled = $flags->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::IMAGE_GALLERY_ENABLED);
+            $controller = new \ForumRewrite\Http\RecentPageController($this->routeServices());
+            if (($query['view'] ?? null) === 'zen') {
+                $tags = SiteProfileRegistry::zenStripTags();
+                if ($tags === [] || !$flags->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::ZEN_STRIP_ENABLED)) {
+                    $this->routeServices()->notFound();
+                } elseif (!$galleryEnabled) {
+                    $this->sendRedirect('/tags/' . implode('+', $tags), 'Opening the Zen meme threads.', 302, activeSection: 'board');
+                } else {
+                    $this->sendHtml($controller->zenGallery($tags, $query['page'] ?? null), 200);
+                }
+                return;
+            }
+            if (!$galleryEnabled) {
                 $this->routeServices()->notFound();
                 return;
             }
-            $location = (new \ForumRewrite\Http\RecentPageController($this->routeServices()))->withLocation('gallery', $query['with'] ?? null);
+            $location = $controller->withLocation('gallery', $query['with'] ?? null);
             if ($location !== null) {
                 $this->sendRedirect($location, 'Opening that post in Gallery.', 303, activeSection: 'gallery');
                 return;
             }
-            $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->gallery($query['page'] ?? null), 200);
+            $this->sendHtml($controller->gallery($query['page'] ?? null), 200);
+            return;
+        }
+
+        if ($path === '/backlog' || $path === '/backlog/') {
+            if (!$this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::BACKLOG_ENABLED)) {
+                $this->routeServices()->notFound();
+                return;
+            }
+            $this->sendHtml((new \ForumRewrite\Http\BacklogPageController($this->routeServices(), $this->projectRoot))->list($query), 200);
+            return;
+        }
+
+        if ($path === '/backlog.txt' || $path === '/backlog/start.txt') {
+            if (!$this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::BACKLOG_ENABLED)) {
+                $this->routeServices()->notFound();
+                return;
+            }
+            $backlog = new \ForumRewrite\Http\BacklogPageController($this->routeServices(), $this->projectRoot);
+            if ($path === '/backlog.txt') {
+                $this->sendText($backlog->listText($query), 200);
+                return;
+            }
+            $prompt = $backlog->startText($query);
+            $this->sendText($prompt['text'], $prompt['status'], $prompt['headers']);
+            return;
+        }
+
+        if ($path === '/backlog/start' || $path === '/backlog/start/') {
+            if (!$this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::BACKLOG_ENABLED)) {
+                $this->routeServices()->notFound();
+                return;
+            }
+            $tidy = \ForumRewrite\Http\BacklogPageController::startRedirect($query, $requestUri);
+            if ($tidy !== null) {
+                $this->sendRedirect($tidy, $tidy === '/backlog' ? 'Pick at least one item to start.' : 'Opening the start page.', 303, [], 'tools');
+                return;
+            }
+            $this->sendHtml((new \ForumRewrite\Http\BacklogPageController($this->routeServices(), $this->projectRoot))->start($query), 200);
             return;
         }
 
@@ -2015,6 +2079,7 @@ final class Application
             versionEndpoint: $this->docsPage ? '/api/docs-version' : '/api/version',
             versionStorageKey: $this->docsPage ? 'forum_pending_docs_version' : 'forum_pending_app_version',
             requestPath: fn (): string => $this->requestPath,
+            pageVersion: $this->docsPage ? null : $this->appVersion() . ':' . ReadModelMetadata::repositoryHead($this->repositoryRoot),
         );
     }
 
@@ -2092,7 +2157,7 @@ final class Application
             return $this->appVersion;
         }
 
-        $this->appVersion = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+        $this->appVersion = ReadModelMetadata::repositoryHead($this->projectRoot);
 
         return $this->appVersion;
     }
@@ -2622,7 +2687,7 @@ final class Application
             '/downloads/images.zip', '/downloads/images.tar', '/downloads/repository.tar.gz', '/downloads/repository.zip',
             '/downloads/read_model.sqlite3', '/downloads/sqlite_query_catalog.sql',
             '/offline/snapshot.sqlite3',
-            '/activity', '/activity/', '/recent', '/recent/', '/gallery', '/gallery/', '/guestbook', '/guestbook/',
+            '/activity', '/activity/', '/recent', '/recent/', '/gallery', '/gallery/', '/guestbook', '/guestbook/', '/backlog', '/backlog/', '/backlog/start', '/backlog/start/', '/backlog.txt', '/backlog/start.txt',
             '/users', '/users/', '/users/pending', '/users/pending/',
             '/tools/user-access', '/tools/user-access/', '/tools/user-access/pending', '/tools/user-access/pending/',
             '/tags', '/tags/',
@@ -2649,6 +2714,7 @@ final class Application
             '/api/prepare_profile_name', '/api/finalize_profile_name',
             '/api/prepare_key_retirement', '/api/finalize_key_retirement', '/api/key_retirement_status',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
+            '/api/preview_tagsets', '/api/prepare_tagsets_change', '/api/finalize_tagsets_change',
             '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/read_event_phrase', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/prepare_attribution_cutoff', '/api/finalize_attribution_cutoff', '/api/prepare_operator_grant', '/api/finalize_operator_grant', '/api/link_identity', '/api/approve_user',
             '/forte', '/forte/', '/llms.txt', '/skill.md',
             '/latest', '/top', '/leetness', '/queue', '/add', '/random', '/search',

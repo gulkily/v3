@@ -26,6 +26,7 @@ final class FeatureFlagRegistry
     public const DRAGGABLE_WINDOWS_ENABLED = 'FORUM_DRAGGABLE_WINDOWS_ENABLED';
     public const OPEN_BESIDE_ENABLED = 'FORUM_OPEN_BESIDE_ENABLED';
     public const GUESTBOOK_ENABLED = 'FORUM_GUESTBOOK_ENABLED';
+    public const BACKLOG_ENABLED = 'FORUM_BACKLOG_ENABLED';
     public const ZEN_STRIP_ENABLED = 'FORUM_ZEN_STRIP_ENABLED';
     public const AGENT_CHECKIN_ENABLED = 'FORUM_AGENT_CHECKIN_ENABLED';
     public const TITLE_DIRECTIVE_ENABLED = 'FORUM_TITLE_DIRECTIVE_ENABLED';
@@ -85,7 +86,7 @@ final class FeatureFlagRegistry
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED, self::AGENT_CHECKIN_ENABLED,
             self::READING_MARGINS_ENABLED, self::DRAGGABLE_WINDOWS_ENABLED, self::OPEN_BESIDE_ENABLED, self::GUESTBOOK_ENABLED, self::ZEN_STRIP_ENABLED, self::POST_RECORDS_ENABLED,
             self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED, self::THREAD_PORT_ENABLED, self::THREAD_PORT_GUESTS_ENABLED,
-            self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED, self::QDB_QUEUE_ENABLED],
+            self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED, self::QDB_QUEUE_ENABLED, self::BACKLOG_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
             self::THREAD_ACTIVITY_DRAWER_ENABLED],
@@ -512,7 +513,7 @@ final class FeatureFlagRegistry
             new FeatureFlagDefinition(
                 self::ZEN_STRIP_ENABLED,
                 'Zen strip',
-                "Open the home page with Zen memes: threads an approved member tagged with every tag the site profile names (on zenmemes.com, #zen and #meme). The top-liked one shows large, and a row of tiny thumbnails under it opens their tag page. Sites whose profile names no tags show none.",
+                "Open the home page with Zen memes: threads an approved member tagged with every tag the site profile names (on zenmemes.com, #zen and #meme). The top-liked one shows large, and a row of tiny thumbnails under it opens the Zen meme gallery (their tag page if Gallery is off). Sites whose profile names no tags show none.",
                 true,
                 self::ZEN_STRIP_ENABLED,
                 siteMutable: true,
@@ -609,6 +610,16 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 group: 'EXPERIENCE',
                 releasedOn: '2026-11-14',
+            ),
+            new FeatureFlagDefinition(
+                self::BACKLOG_ENABLED,
+                'Backlog',
+                'Offer Tools → Backlog at /backlog: the open feedback items from this site\'s own copy of the code (docs/feedback/items), which anyone can sort and filter, with a Start step that gives a short prompt for an agent. Agents read the same list at /backlog.txt. For sites that develop the software; others leave it off.',
+                false,
+                self::BACKLOG_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+                releasedOn: '2026-11-23',
             ),
             new FeatureFlagDefinition(
                 self::PLEDGES_ENABLED,

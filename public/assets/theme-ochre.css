@@ -259,6 +259,11 @@
   border-radius: 0;
 }
 
+/* The Pending summary overlays page content and needs an opaque surface. */
+:root[data-theme="ochre"] .card.pending-user-dialog {
+  background: var(--panel);
+}
+
 :root[data-theme="ochre"] textarea,
 :root[data-theme="ochre"] input[type="text"],
 :root[data-theme="ochre"] input[type="search"],

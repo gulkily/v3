@@ -131,6 +131,13 @@
     menu.querySelector("summary").focus();
   });
 
+  // A click or tap anywhere else closes an open "…" menu, including another post's "…".
+  document.addEventListener("click", function (event) {
+    document.querySelectorAll("details.post-more-actions[open]").forEach(function (menu) {
+      if (!menu.contains(event.target)) menu.open = false;
+    });
+  });
+
   document.addEventListener("click", function (event) {
     const button = event.target instanceof Element ? event.target.closest('[data-action="retract-post"]') : null;
     if (!button || button.hasAttribute("disabled")) {

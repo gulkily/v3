@@ -882,7 +882,7 @@ PHP;
             $databasePath = sys_get_temp_dir() . '/forum-rewrite-private-clear-identity-' . bin2hex(random_bytes(6)) . '.sqlite3';
             $application = new Application(dirname(__DIR__), $this->repositoryRoot, $databasePath);
 
-            assertStringContains('class="nav-link is-active" href="/">Board</a>', $this->render($application, '/'));
+            assertStringContains('class="nav-link is-active" href="/threads/">Board</a>', $this->render($application, '/'));
 
             $response = $this->renderMethod($application, 'POST', '/api/clear_identity');
             $boardAfterClear = $this->render($application, '/');
@@ -912,7 +912,7 @@ PHP;
                 'class="nav-link" href="/profiles/openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954">Profile</a>',
                 $lobbyAfterClear,
             );
-            assertStringNotContains('href="/">Board</a>', $lobbyAfterClear);
+            assertStringNotContains('href="/threads/">Board</a>', $lobbyAfterClear);
         } finally {
             $_COOKIE = $previousCookie;
             TestViewerSession::reset();
@@ -970,7 +970,7 @@ PHP;
             assertStringContains('<h1>Lobby</h1>', $lobby);
             assertStringContains('class="nav-link is-active" href="/lobby/"', $lobby);
             assertStringContains('class="nav-link" href="/account/key/"', $lobby);
-            assertStringNotContains('href="/">Board</a>', $lobby);
+            assertStringNotContains('href="/threads/">Board</a>', $lobby);
             assertStringNotContains('href="/about/">About</a>', $lobby);
             assertStringNotContains('href="/users/">Users</a>', $lobby);
             assertStringNotContains('href="/tools/">Tools</a>', $lobby);
@@ -979,7 +979,7 @@ PHP;
             assertStringContains('data-role="profile-link-wrap" hidden', $account);
             assertStringContains('class="nav-link" href="/lobby/"', $account);
             assertStringContains('class="nav-link is-active" href="/account/key/"', $account);
-            assertStringNotContains('href="/">Board</a>', $account);
+            assertStringNotContains('href="/threads/">Board</a>', $account);
             $threadResume = $this->render($application, '/threads/root-001');
             assertStringContains('<h1 class="requires-script">Reconnecting</h1>', $threadResume);
             assertStringContains('data-auth-return-to="/threads/root-001"', $threadResume);
@@ -1088,7 +1088,7 @@ PHP;
                 $lobby,
             );
             assertStringContains('class="nav-link" href="/account/key/"', $lobby);
-            assertStringNotContains('href="/">Board</a>', $lobby);
+            assertStringNotContains('href="/threads/">Board</a>', $lobby);
             assertStringNotContains('href="/about/">About</a>', $lobby);
             assertStringNotContains('href="/users/">Users</a>', $lobby);
             assertStringNotContains('href="/tools/">Tools</a>', $lobby);
@@ -2054,7 +2054,7 @@ PHP;
         assertStringContains('Board', $threadsIndexNoSlash);
         assertSame($board, $threadsIndex);
         assertSame($board, $threadsIndexNoSlash);
-        assertStringContains('href="/">Board</a>', $board);
+        assertStringContains('href="/threads/">Board</a>', $board);
         assertStringContains('href="/about/">About</a>', $board);
         assertStringNotContains('New Post', $board);
         assertStringContains('New post', $board);
@@ -2225,8 +2225,8 @@ PHP;
         assertStringNotContains('class="nav tools-nav"', $tools);
         assertStringNotContains('tool-launcher-description', $tools);
         foreach (\ForumRewrite\Tools\ToolsPageSupport::registry() as $tool) {
-            // The usage tools and Import appear only while their flags are on (off by default).
-            if (in_array($tool['key'], ['usage-log', 'usage-reports', 'import'], true)) {
+            // The usage tools, Import and Backlog appear only while their flags are on (off by default).
+            if (in_array($tool['key'], ['usage-log', 'usage-reports', 'import', 'backlog'], true)) {
                 assertSame(0, substr_count($tools, 'href="' . $tool['href'] . '"'), $tool['href']);
                 continue;
             }
@@ -2355,7 +2355,7 @@ PHP;
         assertStringContains('/threads/root-001', $tagPage);
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertFingerprintedAsset($pendingUsers, 'pending_approvals.js');
-        assertStringContains('meta name="app-version" content="no-git"', $board);
+        assertStringContains('meta name="app-version" content="' . ReadModelMetadata::repositoryHead(dirname(__DIR__)) . '"', $board);
         assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","bubblegum","spearmint","arena","thermal","whitehot","word97","midnight","gloss","glossdark","engagify","ochre"];', $board);
         assertStringContains('data-role="theme-menu"', $board);
         assertStringContains('aria-haspopup="menu"', $board);
@@ -3253,7 +3253,7 @@ PHP;
         assertStringContains('Created-At: 2026-04-10T12:00:00Z', $post);
         assertStringContains('Profile-Slug: openpgp-0168ff20eb09c3ea6193bd3c92a73aa7d20a0954', $profile);
         assertStringContains('Approved: yes', $profile);
-        assertSame("no-git\n", $version);
+        assertSame(ReadModelMetadata::repositoryHead(dirname(__DIR__)) . "\n", $version);
         assertStringContains('status=ready', $readModelStatus);
         assertStringContains('lock_status=unlocked', $readModelStatus);
         assertStringContains('stale_marker=absent', $readModelStatus);
@@ -4024,7 +4024,7 @@ PHP;
         assertStringContains('/assets/thread-list.', $reader);
         assertStringContains('/assets/tags.', $reader);
         assertFingerprintedAsset($reader, 'content-interactions.css');
-        assertStringContains('class="nav-link is-active" href="/"', $reader);
+        assertStringContains('class="nav-link is-active" href="/threads/"', $reader);
         assertStringNotContains('class="nav-link is-active" href="/offline/"', $reader);
         assertStringContains('rel="manifest" href="/manifest.webmanifest"', $reader);
         assertStringContains('/assets/pwa_registration.', $reader);

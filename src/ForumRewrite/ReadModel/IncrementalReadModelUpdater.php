@@ -544,6 +544,68 @@ class IncrementalReadModelUpdater
         }
     }
 
+    /**
+     * After the site tagsets change, recompute the posts whose state could change: those
+     * with a stored state, and those with a mark that is now a state tag.
+     * @return array{timings:array<string,float>,changed_post_ids:list<string>}
+     */
+    public function applyTagsetsWrite(string $commitSha): array
+    {
+        $timings = [];
+        $pdo = (new ReadModelConnection($this->databasePath))->open();
+        $pdo->beginTransaction();
+        try {
+            $changed = $this->measure($timings, 'refresh_tagset_post_states', fn (): array => $this->refreshTagsetPostStates($pdo));
+            $this->writeMetadata($pdo, $commitSha);
+            $pdo->commit();
+
+            return ['timings' => $timings, 'changed_post_ids' => $changed];
+        } catch (\Throwable $error) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $error;
+        }
+    }
+
+    /** @return list<string> posts whose state changed */
+    private function refreshTagsetPostStates(PDO $pdo): array
+    {
+        $stateTags = array_fill_keys(\ForumRewrite\Support\Tagsets::forRepository($this->repositoryRoot)->exclusiveTags(), true);
+        $targets = [];
+        foreach ($pdo->query('SELECT post_id FROM posts WHERE resolution_state IS NOT NULL')->fetchAll(PDO::FETCH_COLUMN) as $postId) {
+            $targets[(string) $postId] = true;
+        }
+        $recordsByPost = [];
+        foreach ($this->loadPostReactionRecords(null) as $record) {
+            $recordsByPost[$record->postId][] = $record;
+            if (array_intersect_key(array_flip($record->tags), $stateTags) !== []) {
+                $targets[$record->postId] = true;
+            }
+        }
+        $approved = $this->loadApprovedIdentityIds($pdo);
+        $cutoff = VerifiedAttribution::storedCutoff($pdo);
+        $verified = VerifiedAttribution::storedEnabled($pdo) ?? false;
+        $select = $pdo->prepare('SELECT author_label, resolution_state, resolution_set_by FROM posts WHERE post_id = ?');
+        $changed = [];
+        foreach (array_keys($targets) as $postId) {
+            $select->execute([$postId]);
+            $row = $select->fetch(PDO::FETCH_ASSOC);
+            $select->closeCursor();
+            if (!is_array($row)) {
+                continue;
+            }
+            $state = $this->derivePostReactionState($postId, (string) $row['author_label'], $recordsByPost[$postId] ?? [], $approved, $cutoff, $verified);
+            $this->updatePostReactions($pdo, $postId, $state);
+            SignalEligibility::apply($pdo, 'post-reactions', [$postId => $state['eligible']]);
+            if ($state['resolution']['state'] !== $row['resolution_state'] || $state['resolution']['set_by'] !== $row['resolution_set_by']) {
+                $changed[] = $postId;
+            }
+        }
+
+        return $changed;
+    }
+
     /** @param array<string,float> $timings @return list<string> */
     private function refreshApprovalDerivedState(PDO $pdo, array &$timings): array
     {
@@ -1989,7 +2051,7 @@ class IncrementalReadModelUpdater
 
         return [
             'tags' => $tagList,
-            'resolution' => PostResolution::derive(array_filter($records, static fn (PostReactionRecord $r): bool => $r->postId === $postId), $approvedIdentityIds),
+            'resolution' => PostResolution::derive(array_filter($records, static fn (PostReactionRecord $r): bool => $r->postId === $postId), $approvedIdentityIds, \ForumRewrite\Support\Tagsets::forRepository($this->repositoryRoot)),
             'post_score_total' => $verifiedEnabled ? $verifiedScoreTotal : $scoreTotal,
             'approved_flag_count' => $approvedFlagCount,
             'claimed_post_score_total' => $scoreTotal,

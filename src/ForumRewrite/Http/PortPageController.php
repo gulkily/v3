@@ -12,7 +12,7 @@ use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
  * Porting a thread from another site (docs/concepts/ported_thread.md).
  *
  * POST /port       the bookmarklet's form, from the other site: hold the file, 303 to the preview.
- * GET  /port/<id>  the preview: title, comment count, and Port for an approved member.
+ * GET  /port/<id>  the preview: source details and Port for an approved member.
  * POST /port/<id>  Port, from the preview on this site: write the thread, 303 to it.
  *
  * The first POST carries no session cookie (SameSite=Lax), so it only holds the

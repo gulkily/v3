@@ -13,6 +13,13 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Publisher CLI conventions](publish_keys_cli_conventions/publish_keys_cli_conventions_one_shot.md) — hostname handling, visible source repository and help consistency follow-up.
 - [Direct key publication](publish_keys_direct/publish_keys_direct_one_shot.md) — publish by default, preview with --dry-run; remove mandatory review files and fingerprint copying.
 - [Publisher PR handoff](publisher_pr_handoff/publisher_pr_handoff_one_shot.md) — epic checklist, main integration and public-key publisher PR.
+- [Zen gallery accessibility intake](zen_gallery_accessibility_intake/zen_gallery_accessibility_intake_one_shot.md) — record the generic names on two image-only links.
+- [Zen meme gallery](zen_meme_gallery/zen_meme_gallery_one_shot.md) — the homepage thumbnail row opens a gallery of the same collection.
+- [Quill prints the thread link](quill_thread_link/quill_thread_link_one_shot.md) — after a post, Quill prints `/threads/<thread>` (with `#<post>` for a reply) instead of `/posts/<post>`.
+- [Close the post "…" menu on an outside click](post_menu_outside_close/post_menu_outside_close_one_shot.md) — a click elsewhere closes an open post "More actions" menu.
+- [Ochre Pending summary background](ochre_pending_dialog/ochre_pending_dialog_one_shot.md) — keep page text from showing through the summary.
+- [Quill in Perl and PHP](quill_ports/quill_ports_one_shot.md) — `quill.pl` and `quill.php` beside `quill.py`, same commands and state, each with its own update notice.
+- [Application version source](application_version_source/application_version_source_one_shot.md) — code revision for deploy notifications, with independent cached-page freshness.
 - [Recently released filters](recent_feature_flag_filters/recent_feature_flag_filters_one_shot.md) — keep the release list in sync with flag filters.
 - [Offline writing runbook](offline_runbook_compose/offline_runbook_compose_one_shot.md) — explain cached composers, drafts, and queued offline text.
 - [Optional thread author details](thread_author_details/thread_author_details_one_shot.md) — opt-in speakers in the text thread API.
@@ -28,6 +35,8 @@ checklists, and proposals remain at the top level or in the collections below.
 [Calendar iCal feed](calendar_ics_feed/calendar_ics_feed_step3_development_plan.md) — `/calendar.ics`, tag feeds, a Subscribe panel and per-event "Add to Google Calendar" links, behind `FORUM_CALENDAR_FEED_ENABLED`; Stages 1–6 done ([summary](calendar_ics_feed/calendar_ics_feed_step4_implementation_summary.md)), the production phone check pending.
 
 [Key approval agent API](key_approval_api/key_approval_api_step3_development_plan.md) — `GET /api/pending_keys`, `Author-Identity-ID` on post reads, and `quill.py pending` / `quill.py approve` so agents approve the right key; Stages 1–5 done ([summary](key_approval_api/key_approval_api_step4_implementation_summary.md)), the post-deploy check pending.
+
+[State button verbs](state_button_verbs/state_button_verbs_one_shot.md) — one-shot: state buttons read Claim, Resolve, Close, Unclaim, Reopen; stored tags unchanged.
 
 [Quill rename](quill_rename/quill_rename_one_shot.md) — the posting client `frm.py` becomes `quill.py` (old URL kept), sends its version on every request, and gets an update notice when it is out of date.
 
@@ -86,6 +95,10 @@ checklists, and proposals remain at the top level or in the collections below.
 [Pledges checklist](pledges_checklist.md) — pledge campaigns in eight cycles, with the [spec](pledges_spec.md). Cycle 1: [pledge campaigns](pledge_campaigns/pledge_campaigns_step3_development_plan.md) — a thread with a `goal:` line shows a totals block, and replies with a `pledge:` line add to it.
 
 [Guestbook](guestbook/guestbook_step3_development_plan.md) — a `/guestbook/` page shows the guestbook thread's top-level replies as a paper book with numbered pages and a "Sign the book" form; the thread stays available as an ordinary thread.
+
+[Tagsets file comments](tagsets_file_comments/tagsets_file_comments_one_shot.md) — one-shot: plainer comments in `resources/tagsets.txt`.
+
+[Editable tagsets](editable_tagsets/editable_tagsets_step3_development_plan.md) — operators edit and add tagsets on the Tag Unlocks page; a signed site record replaces `resources/tagsets.txt`.
 
 [Tag unlocks](tag_unlocks/tag_unlocks_step3_development_plan.md) — a thread's tag unlocks extra tags on its replies; first use: Resolved and Closed on replies in `#meta` threads, which fold to one line.
 
@@ -659,6 +672,7 @@ and repair its navigation and affected references. See the
 - [Zen strip](zen_strip/zen_strip_step1_solution_assessment.md) — staged: the front page opens with a strip of Zen memes, threads an approved member tagged #zen and #meme.
 - [Zen strip grid](zen_strip_grid/zen_strip_grid_one_shot.md) — one-shot: the Zen strip becomes a wrapping grid of whole, readable images.
 - [Zen hero](zen_hero/zen_hero_step1_solution_assessment.md) — staged: the front page shows one top-liked Zen meme with a row of tiny thumbnails that opens All, on the home page only.
+- [Board nav to /threads/](board_nav_threads/board_nav_threads_one_shot.md) — one-shot: Board links to /threads/, so the Zen hero only greets the home page.
 - [Image loading](image_loading/image_loading_step1_solution_assessment.md) — staged: images load faster through browser caching, a lighter serving path and home page tweaks.
 
 - [Calendar export timezone](calendar_export_timezone/calendar_export_timezone_one_shot.md)
@@ -670,3 +684,15 @@ and repair its navigation and affected references. See the
 - [Read-model insert columns](read_model_insert_columns/read_model_insert_columns_one_shot.md) — one-shot: the four read-model schema inserts name their columns.
 
 - [Local import progress](local_import_progress/local_import_progress_step1_solution_assessment.md) — staged: the local start page queues its import and shows the Tools → Import steps, timer and time left.
+
+- [Local import status](local_import_status/local_import_status_step1_solution_assessment.md) — staged: after an import, the local start page card reports the source, age and result of the last import and offers one re-import action.
+- [Compact deploy history](deploy_history_compact/deploy_history_compact_one_shot.md) — one-shot: one compact row per version on Tools → Deploy.
+- [Deploy history and rollback](deploy_rollback/deploy_rollback_step1_solution_assessment.md) — staged: a record of deployed versions and a rollback to one of them.
+
+- [Port HN theme and preview](port_hn_preview/port_hn_preview_one_shot.md)
+- [Backlog view](backlog_view/backlog_view_step1_solution_assessment.md) — staged: a `/backlog` page under Tools lists open feedback items with five sorts and filters, and Start gives a short agent prompt for one item or several.
+- [Backlog start follow-ups](backlog_start_followups/backlog_start_followups_one_shot.md) — one-shot: an opaque Start bar in see-through themes, an Agent decides mode as the default, and "Please" in the prompt.
+- [Backlog prompt access](backlog_prompt_access/backlog_prompt_access_one_shot.md) — one-shot: the backlog prompt asks for a clone and a pull request instead of patch files, and for a word before building items that do not belong together.
+- [Favicon in light theme](favicon_light_theme/favicon_light_theme_one_shot.md) — one-shot: the ZenMemes tab icon redrawn so it looks clean on light tabs (PF-20261111-B02).
+- [Word 97 action fonts](word97_action_fonts/word97_action_fonts_one_shot.md) — one-shot: post-action toggles in Word 97 and the Outbox status line use the UI font (PF-20261104-B12, PF-20261104-B18).
+- [Midnight action fonts](midnight_action_fonts/midnight_action_fonts_one_shot.md) — one-shot: Midnight post actions get Word 97’s UI font, no underline and Like/Flag bevel (PF-20261111-F19).

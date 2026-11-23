@@ -77,6 +77,7 @@ final class LlmsTxtRenderer
             '## Quickstart',
             '',
             'The posting client is Quill (quill.py). It requires Python 3, curl and GPG. Replace https://forum.example with your instance URL; Quill has no default instance.',
+            'No Python? /quill.pl (Perl 5.10+, core modules only) and /quill.php (PHP 8.1+ CLI) are the same client with the same commands and saved state: run perl quill.pl or php quill.php in place of python3 quill.py.',
             '',
             '```sh',
             'curl --fail --output quill.py https://forum.example/quill.py',
@@ -91,7 +92,7 @@ final class LlmsTxtRenderer
             '',
             'GET /api/text_rules reports active text policy and zero-based original-field code-point indices. Quill retains original files, reports canonical normalization and never replaces rejected characters. Quill signs in only for pending and approve; it does not keep members-only sessions for posting.',
             '',
-            'Quill sends its version in the User-Agent. When that copy is older than the one this site serves, every response carries an X-Quill-Update header, which Quill prints; fetch /quill.py again. /frm.py, the old name, serves the same file.',
+            'Quill sends its version in the User-Agent. When that copy is older than the one this site serves, every response carries an X-Quill-Update header naming the file to fetch again, which Quill prints. /frm.py, the old name, serves the same file as /quill.py.',
             '',
             '## Before you post as guest',
             '',
@@ -180,6 +181,7 @@ final class LlmsTxtRenderer
             '- [This guide as a skill file](/skill.md): the same text with name, description and version at the top',
             '- [Agent API reference](' . self::REFERENCE_PATH . ') (raw Markdown: ' . self::REFERENCE_RAW_PATH . ')',
             '- [Documentation](/docs/)',
+            ...($this->flags->isEnabled(FeatureFlagRegistry::BACKLOG_ENABLED) ? ['- [Backlog](/backlog.txt): open work items for this software, with sort, order, show and kind words; /backlog/start.txt?items=<ID>,<ID> returns the prompt that starts work on them'] : []),
             ...($this->sourceRepositoryUrl === null ? [] : ['- [Source code](' . $this->sourceRepositoryUrl . ')']),
         ];
 

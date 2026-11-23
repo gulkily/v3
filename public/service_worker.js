@@ -275,7 +275,9 @@ function keepable(response) {
 }
 
 async function pageVersion(response) {
-  const match = (await response.clone().text()).match(/<meta name="app-version" content="([^"]*)">/);
+  const html = await response.clone().text();
+  const match = html.match(/<meta name="page-version" content="([^"]*)">/)
+    || html.match(/<meta name="app-version" content="([^"]*)">/);
   return match ? match[1] : null;
 }
 

@@ -4,11 +4,11 @@ Deliver the improvements in [the messaging proposal](backlog/improve_messaging.t
 through four independently usable releases: find and start conversations, read
 and reply comfortably, retrieve older history, and track unread conversations.
 Use this checklist to track coverage across the releases and the
-[Feature Development Process](../fdp/FEATURE_DEVELOPMENT_PROCESS.md) to plan and
+[Railspike workflow](../railspike/RAILSPIKE.md) to plan and
 implement each release.
 
-This is a coordination checklist. Individual FDP requirements, development plans,
-and implementation approvals remain separate. Cycles 1–5 are complete on `main`; historical-message synchronization is also complete and merged into local `main` at `ed36a069`, including the requested removal of global sync messaging.
+This is a coordination checklist. Individual cycle requirements, development plans,
+and implementation approvals remain separate. Cycles 1–6 are complete in the repository; the recorded merge commits are now in remote `main`. This records code availability, not production deployment or end-to-end recovery acceptance. Public-key publication is tracked below as a separate prerequisite.
 Check items off when their acceptance criteria are verified, and link the relevant
 FDP artifacts and verification evidence here as each cycle progresses.
 
@@ -18,10 +18,10 @@ FDP artifacts and verification evidence here as each cycle progresses.
 | --- | --- | --- | --- |
 | 1 | Find a conversation or start one from Messages | [Plan](./private_message_conversation_list/private_message_conversation_list_step3_development_plan.md) · [Implementation and verification](./private_message_conversation_list/private_message_conversation_list_step4_implementation_summary.md) | Complete |
 | 2 | Read and reply comfortably without reloading | [Plan](./private_message_chat_refinement/private_message_chat_refinement_step3_development_plan.md) · [Implementation and verification](./private_message_chat_refinement/private_message_chat_refinement_step4_implementation_summary.md) | Complete; merged into local `main` with Cycle 3 |
-| 3 | Retrieve messages older than the initial history window | [Plan](private_message_history/private_message_history_step3_development_plan.md) · [Implementation and verification](private_message_history/private_message_history_step4_implementation_summary.md); Step 1 skipped | Complete; merged into local `main` at `95ac3114`; not pushed |
-| 4 | See reliable unread indicators and counts | [Plan](./private_message_unread/private_message_unread_step3_development_plan.md) · [Implementation](./private_message_unread/private_message_unread_step4_implementation_summary.md) | Complete; merged into local `main` at `34b48f40`; not pushed |
+| 3 | Retrieve messages older than the initial history window | [Plan](private_message_history/private_message_history_step3_development_plan.md) · [Implementation and verification](private_message_history/private_message_history_step4_implementation_summary.md); Step 1 skipped | Complete; `95ac3114` is in remote `main`; production acceptance not inferred |
+| 4 | See reliable unread indicators and counts | [Plan](./private_message_unread/private_message_unread_step3_development_plan.md) · [Implementation](./private_message_unread/private_message_unread_step4_implementation_summary.md) | Complete; `34b48f40` is in remote `main`; production acceptance not inferred |
 | 5 | Read past unavailable messages without repeated large error widgets | [Plan](./private_message_unavailable/private_message_unavailable_step3_development_plan.md) · [Implementation](./private_message_unavailable/private_message_unavailable_step4_implementation_summary.md) | Complete with Options B and C combined; merged into `main` at `68a5a3fd` |
-| 6 | Restore recoverable history on a newly approved device automatically | [Step 1 assessment](./private_message_history_sync/private_message_history_sync_step1_solution_assessment.md) · [Step 2 description](./private_message_history_sync/private_message_history_sync_step2_feature_description.md) · [Step 3 plan](./private_message_history_sync/private_message_history_sync_step3_development_plan.md) · [Storage findings](./private_message_history_sync/private_message_history_sync_storage_findings.md) | Implemented; [verification](./private_message_history_sync/private_message_history_sync_step4_implementation_summary.md) · [rollout](./private_message_history_sync/private_message_history_sync_rollout.md); merged into local `main` at `ed36a069`; not pushed or deployed |
+| 6 | Restore recoverable history on a newly approved device automatically | [Step 1 assessment](./private_message_history_sync/private_message_history_sync_step1_solution_assessment.md) · [Step 2 description](./private_message_history_sync/private_message_history_sync_step2_feature_description.md) · [Step 3 plan](./private_message_history_sync/private_message_history_sync_step3_development_plan.md) · [Storage findings](./private_message_history_sync/private_message_history_sync_storage_findings.md) | Implemented; [verification](./private_message_history_sync/private_message_history_sync_step4_implementation_summary.md) · [rollout](./private_message_history_sync/private_message_history_sync_rollout.md); `ed36a069` is in remote `main`; production acceptance not inferred |
 
 Follow this order and reuse the components and contracts established in earlier
 cycles. Unread indicators are deliberately deferred from cycle 1 to cycle 4;
@@ -208,8 +208,48 @@ Evidence: [implementation summary](./private_message_unavailable/private_message
   restored-device forwarding, original signature verification and storage isolation.
   Approval authorizes history access without another sharing prompt; recoverability
   still depends on available keys or retained transfers. Revocation cannot retract
-  delivered secrets. Authentication redesign and counterpart-assisted recovery
-  remain outside this release.
+  delivered secrets. Authentication redesign remains outside this scope. Sender-assisted recovery
+  was added in a later [implemented cycle](private_message_sender_history_sync/private_message_sender_history_sync_step4_implementation_summary.md);
+  the [bounded background-sync cycle](private_message_sync_idle/private_message_sync_idle_step4_implementation_summary.md)
+  also has local verification. Their production replay remains a distinct check.
+
+## Cross-instance keys and encrypted-history access
+
+Public-key publication supplies registration on another instance. It does not
+grant membership or establish that encrypted history is readable. The existing
+[history recovery implementation](private_message_history_sync/private_message_history_sync_step4_implementation_summary.md)
+and [operational guide](private_message_history_sync/private_message_history_sync_rollout.md)
+remain the basis for recovery; verify them rather than treating recovery as a
+new, unimplemented feature.
+
+- [x] Review existing registration, approval and encrypted-history recovery
+  contracts. [Publisher assessment](publish_local_public_keys/publish_local_public_keys_step1_solution_assessment.md).
+- [x] Implement public-key-only publication through existing registration/profile
+  APIs, with source/name/retirement checks, read-back and safe partial retries.
+  [Original implementation](publish_local_public_keys/publish_local_public_keys_step4_implementation_summary.md).
+- [x] Follow ordinary instance argument conventions and show the resolved source.
+  [CLI follow-up](publish_keys_cli_conventions/publish_keys_cli_conventions_one_shot.md).
+- [x] Make publication one command, with optional `--dry-run` and fingerprint
+  selection. [Direct-publication verification](publish_keys_direct/publish_keys_direct_one_shot.md).
+- [x] Maintainer reports running `./v3 publish-keys zenmemes.com` on 2026-11-23.
+  Individual results were not supplied; this records execution, not acceptance
+  of every key. The earlier preview's local `guest` name conflict was refused.
+- [ ] Record per-key production results and resolve any refused/unknown outcome;
+  rerun should skip accepted identities without duplicates.
+- [ ] Open the publisher PR.
+  [PR handoff](publisher_pr_handoff/publisher_pr_handoff_one_shot.md).
+- [ ] Review and merge the PR, then update the normal checkout.
+- [ ] Verify the intended keys have the appropriate account approval on the
+  destination, using the existing approval policy and acceptance evidence.
+- [ ] Replay encrypted-history recovery with an approved destination key and an
+  available donor or retained transfer; verify actual decryption and original
+  signatures. Record unavailable history honestly when no recovery source exists.
+
+Current publisher feedback: [PF-20261123-B02](../feedback/items/PF-20261123-B02.txt).
+Broader reverse content import and approval propagation are not completed by
+publishing public keys. Next milestone after the PR is production registration
+evidence followed by the existing approval/recovery journey, not automatic
+approval or a new recovery mechanism.
 
 ## Final acceptance
 
@@ -221,4 +261,4 @@ Evidence: [implementation summary](./private_message_unavailable/private_message
 - [x] Confirm focused automated checks and browser checks cover the changed
   behavior, encryption and authorization boundaries, accessibility, and recovery.
 
-Next action: review Cycle 6's [implementation and evidence](./private_message_history_sync/private_message_history_sync_step4_implementation_summary.md) and [operational guide](./private_message_history_sync/private_message_history_sync_rollout.md). Cycles 1–6 are merged into local `main`. Cycle 6 has not been pushed or deployed; its guide now includes a shareable explanation of how recovery works.
+Next action: finish the publisher PR/review, record destination registration and approval results, then replay the existing encrypted-history recovery journey using the [operational guide](private_message_history_sync/private_message_history_sync_rollout.md). Do not infer live deployment or successful decryption from code being present in remote `main` or from key registration alone.

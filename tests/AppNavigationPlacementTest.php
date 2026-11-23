@@ -37,7 +37,7 @@ final class AppNavigationPlacementTest
                     $items = $renderer->navigationItems($viewer);
                     $placements = array_column($items, 'placement', 'href');
                     assertSame(count($items), count($placements), $name);
-                    assertSame('main', $placements['/'], $name);
+                    assertSame('main', $placements['/threads/'], $name);
                     assertSame('main', $placements['/recent/'], $name);
                     assertSame('main', $placements['/users/'], $name);
                     // Desktop bar holds every destination that is not about the viewer.
@@ -48,7 +48,7 @@ final class AppNavigationPlacementTest
                     // Phones: every destination is in More and can earn a tab; Board is a starting tab.
                     $phones = array_column($items, 'phone', 'href');
                     assertSame(true, in_array('board', TemplateRenderer::navSlotDefaults($items), true), $name);
-                    foreach (['/', '/recent/', '/users/', '/search', '/about/', '/tools/', '/account/key/'] as $href) {
+                    foreach (['/threads/', '/recent/', '/users/', '/search', '/about/', '/tools/', '/account/key/'] as $href) {
                         assertSame('more', $phones[$href], $name . ' ' . $href);
                     }
                     // Member-only links are rendered for every viewer and shown before paint by the client.
@@ -126,7 +126,7 @@ final class AppNavigationPlacementTest
                 ->renderLayout('Board', '', 'board', viewerProfile: self::VIEWERS['approved']);
             preg_match('/<nav class="nav">.*?<\/nav>/s', $html, $bar);
             preg_match('/<details class="account-menu".*?<\/details>/s', $html, $menu);
-            foreach (['/', '/recent/', '/agent/start/', '/users/', '/messages', '/search', '/about/', '/tools/'] as $href) {
+            foreach (['/threads/', '/recent/', '/agent/start/', '/users/', '/messages', '/search', '/about/', '/tools/'] as $href) {
                 assertStringContains('href="' . $href . '"', $bar[0]);
             }
             // Prompts follows the content destinations, before Users.
@@ -144,7 +144,7 @@ final class AppNavigationPlacementTest
             assertStringContains('data-tab="recent" data-phone="more"', $bar[0]);
             // The same panel lists the phone-only More destinations once more, for every viewer.
             assertStringContains('class="account-menu__links account-menu__more"', $menu[0]);
-            foreach (['/', '/recent/', '/users/', '/messages', '/search', '/about/', '/tools/'] as $href) {
+            foreach (['/threads/', '/recent/', '/users/', '/messages', '/search', '/about/', '/tools/'] as $href) {
                 assertStringContains('href="' . $href . '"', $menu[0]);
             }
             assertStringContains('account-menu__label--more">More<', $menu[0]);

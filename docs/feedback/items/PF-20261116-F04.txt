@@ -1,8 +1,9 @@
 ID: PF-20261116-F04
 Title: PHP and Perl versions of Quill
 Kind: feature
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-16
+Evidence: locally-verified
 
 Request:
 The maintainer wants PHP and Perl versions of the posting client too, like the other multi-language scripts (docs/reference/multi_language_scripts.md).
@@ -12,3 +13,4 @@ Sources:
 
 Notes:
 2026-11-16: stated in an earlier session when the name Quill was chosen; not started. Each version should send its own User-Agent so the update notice can tell them apart.
+2026-11-22: implemented in quill_ports (docs/plans/quill_ports/quill_ports_one_shot.md): public/quill.pl (Pollyanna Perl style) and public/quill.php, served at /quill.pl and /quill.php, User-Agents quill-pl/ and quill-php/ with per-file update notices. QuillClientTest runs every HTTP test against all three versions. Blocked on deployment; next action: after deploy, fetch /quill.pl and /quill.php from zenmemes.com and post once with each.

@@ -24,6 +24,8 @@ final class UsageNames
         '/activity' => 'Activity',
         '/agent' => 'Agent Prompts',
         '/approvals/root/*' => 'Root approval',
+        '/backlog' => 'Backlog',
+        '/backlog/start' => 'Backlog start',
         '/calendar' => 'Calendar',
         '/calendar/*' => 'Calendar day',
         '/calendar/*/*' => 'Calendar day',

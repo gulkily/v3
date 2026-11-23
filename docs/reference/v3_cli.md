@@ -103,6 +103,9 @@ Import form. `/local/` returns to that page; `/threads/?view=all` opens all loca
 threads. Import queues the existing `import-instance` command for the task worker
 and shows its steps, elapsed time and time left; other pages stay usable while it
 runs. With `--no-worker` the page starts a worker for the import itself.
+After an import the card reports the source, the age and the result of the last
+import, including one run with `./v3 import-instance`, and offers Check for new
+content, which imports again from the same source.
 Failures retain the source; Resume finishes interrupted publication.
 These controls require a loopback peer and Host without proxy headers. Remote
 clients and deployed servers keep their existing homepage. Imports merge content;
@@ -386,10 +389,10 @@ the recorded target applies to this host, not arbitrary OS scheduling delays.
 ## Update the application checkout
 
 ```
-./v3 deploy [--check|--status] [--timeout=SECONDS]
+./v3 deploy [--check|--status|--history|--rollback=COMMIT] [--timeout=SECONDS]
 ```
 
-Fetches `origin/main` and fast-forwards this application checkout, the same routine as **Tools → Deploy**. `--check` only fetches and reports how far behind the checkout is; `--status` reports local state and the latest attempt without contacting GitHub. The default timeout is 120 seconds.
+Fetches `origin/main` and fast-forwards this application checkout, the same routine as **Tools → Deploy**. `--check` only fetches and reports how far behind the checkout is; `--status` reports local state and the latest attempt without contacting GitHub. `--history` lists the versions this checkout has run, newest first. `--rollback=COMMIT` returns to one of them (7 or more hex digits): it prints the commits it undoes and any format warnings, never contacts GitHub, and leaves the checkout on `main` so the next deploy moves forward again; see [deploy history and rollback](../runbooks/production_deploy.md#deploy-history-and-rollback). The default timeout is 120 seconds.
 
 Local edits to tracked files are kept (stashed, then reapplied after the fast-forward). It refuses with the checkout unchanged when the update conflicts with a local edit, on a branch other than `main`, diverged history or a deploy already running, and prints `Outcome`, `Reason`, `Old-Commit`, `New-Commit` and `Message`. Exit status: 0 deployed, up to date or checked; 1 refused or failed; 2 usage error. Pull only; see [Deploy from the Site](../runbooks/production_deploy.md#deploy-from-the-site).
 
@@ -1019,6 +1022,17 @@ Runs the local (non-live) agent-reply test suite: `AgentReplyGenerationTest`,
 `WriteApiSmokeTest` cases covering status and task-queue fulfillment.
 
 - no parameters
+
+## List the backlog and start an agent on it
+
+```bash
+./v3 feedback list [--sort=salient|entered|touched|effort|impact] [--order=newest|oldest] [--show=can-start|waiting|open|<workflow>] [--kind=all|bug|feature|other]
+./v3 feedback start <ID>... [--mode=auto|one-shot|staged]
+```
+
+`list` prints the open [feedback items](../concepts/feedback_items.md) as `Key: value` blocks, in the same order as the Backlog page and `/backlog.txt` for the same words. The defaults are `salient`, `newest`, `can-start` (ready and untriaged) and `all`. An unknown word falls back to its default, is named on standard error, and the command exits 2.
+
+`start` prints the short prompt that starts an agent on the named items as one cycle. The mode defaults to `auto`, which leaves one-shot or staged to the agent. The prompt asks for work in a clone and an open pull request, not patch files; for several items it also asks the agent to say so first when they do not belong in one pull request. Unknown and closed IDs are named on standard error and left out; with no open item left it exits 1. The agent's side is [backlog to pull request](../agents/backlog_to_pr.md).
 
 ## Seed an approved identity (shorthand)
 

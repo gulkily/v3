@@ -971,6 +971,10 @@ Verification: Chromium; `private_message_redesign.mjs` in all 18 themes with 390
 ## Local start page import progress — 2026-11-22
 
 - [x] Removed "Importing… This can take several minutes. Keep this page open." The shared step list replaces it; the form and its explanation are hidden while an import runs. No new copy beyond what Tools → Import already uses, plus one line of counts after an import. The review sentence drops "Local content is available below." when records were imported and the link to them shows. Checked in every offered theme at 390 and 1280 px, scripts on and off ([Step 4](local_import_progress/local_import_progress_step4_implementation_summary.md)).
+
+## Local start page import status — 2026-11-22
+
+- [x] After an import the card is a status, not the form again. Removed: the "Some content needs review…" alert, the bare count line, "Import again", and the explanation paragraph once a copy has imported. Added: one status line (source, age, what came in), the held-back line as the details label, "Check for new content", "Downloads everything again; last time took N s." and "Change source". Checked in every offered theme at 390 and 1280 px, scripts on and off ([Step 4](local_import_status/local_import_status_step4_implementation_summary.md)).
 - 2026-11-17, [new instance home quickfix](./new_instance_home/new_instance_home_quickfix.md). Changed: the empty Liked text ("Threads you like will show up here." → "Threads people like show up here.", since Liked is anyone's likes). Added: a "Getting started" link on the board only while it falls back to All, and on "No threads yet"; the `/start/` page. `/local/`'s "search your local content" became "search" (shared partial).
 - 2026-11-17, [issue tagset quickfix](./issue_tagset/issue_tagset_quickfix.md). Changed: the tag-unlocks flag description and the tour line now name #issue instead of #meta. No text added.
 - 2026-11-18, [guest name visibility](./guest_name_visibility/guest_name_visibility_one_shot.md). Added: "Posting as guest · Choose a name" under Post in every composer, for guest browsers only (hidden before paint once this browser's key has a name). Changed: Account's Name row action reads "Choose a name" instead of "Change" for a key still named guest. The removed "Post as {name} · Change" row (2026-10-28, "takes up way too much space") was a full-width row with an inline editor for everyone; this is one meta line, guests only.
@@ -979,3 +983,12 @@ Verification: Chromium; `private_message_redesign.mjs` in all 18 themes with 390
 
 - Clarified the flag's existing description so the calendar query finds Event support as well as Calendar feed. No new UI or renamed switch.
 - Verified exact query and clearing using the rendered canonical fixture and actual filter script. Added the browser regression; Chromium launch and visual checks remain pending in this executor. [Verification record](calendar_flag_search/calendar_flag_search_one_shot.md#delivery-and-verification).
+
+## Backlog page — 2026-11-23
+
+- [x] New pages `/backlog` and `/backlog/start` ([backlog view](./backlog_view/backlog_view_step4_implementation_summary.md)). Text on the list: the link labels (five sorts, five show words, four kinds), one count line ("288 of 346 open · version … · text"), each row's own values, and Start. No headings, no explanation of the sorts and no help text. The three link rows carry their names (Sort by, Show, Kind) for screen readers only.
+- [x] Status text appears only when there is something to say: "Not understood, so the default is shown: …", "Left out, no such item: …", "Left out, already closed: …", "Nothing to start." and, with scripts, "N selected" once an item is ticked.
+- [x] The start page reuses the Agent Prompts copy control and its messages; no new copy for copying.
+- Verified in `tests/BacklogPageTest.php` and `tests/browser/backlog.mjs` (every permitted theme, 375 and 1280 px, scripts on and off). Not checked on a real iPhone.
+- [x] 2026-11-23 follow-up ([record](./backlog_start_followups/backlog_start_followups_one_shot.md)): one more mode link, "Agent decides", first and chosen by default, before One-shot and Staged cycle. No explanation of the modes on the page; the prompt carries it. The maintainer checked the first version on his iPhone.
+- [x] 2026-11-23 follow-up ([record](./backlog_prompt_access/backlog_prompt_access_one_shot.md)): no page text added. The prompt itself gains one paragraph (work in a clone, open the pull request, no patch files) and, for several items, one sentence (say so first if they do not belong together). The prompt is the page's content, read by an agent; the page still explains nothing.

@@ -7,6 +7,7 @@ use ForumRewrite\Images\ImageStore;
 use ForumRewrite\Images\ListThumbnails;
 use ForumRewrite\Pagination\PageNavigation;
 use ForumRewrite\ReadModel\RecentPostRepository;
+use ForumRewrite\ReadModel\ZenStrip;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\ThreadTitle;
 
@@ -60,6 +61,28 @@ final class RecentPageController
         }
         $pagination = PageNavigation::numbered('/gallery/', [], $number, $page['has_next'], $page['items'] === []);
         return $this->routeServices->renderPageTemplate('gallery.php', ['tiles'=>$tiles, 'pagination'=>$pagination, 'paginationError'=>null], 'Gallery', 'gallery', $tiles === [] ? [] : ['/assets/gallery_zoom.js']);
+    }
+
+    /** @param list<string> $tags */
+    public function zenGallery(array $tags, mixed $page = null): string
+    {
+        $number = PageNavigation::pageNumber($page);
+        $pdo = $this->routeServices->pdo();
+        $offset = ($number - 1) * self::GALLERY_PAGE_SIZE;
+        $threads = ZenStrip::load($pdo, $tags, self::GALLERY_PAGE_SIZE + 1, $offset);
+        $hasNext = count($threads) > self::GALLERY_PAGE_SIZE;
+        if ($hasNext) {
+            array_pop($threads);
+        }
+        $threads = ListThumbnails::attach($pdo, $this->routeServices->repositoryRoot(), true, $threads, 'root_post_id', true);
+        $pagination = PageNavigation::numbered('/gallery/', ['view' => 'zen'], $number, $hasNext, $threads === []);
+
+        return $this->routeServices->renderPageTemplate(
+            'gallery.php',
+            ['zenThreads' => $threads, 'pagination' => $pagination, 'paginationError' => null],
+            'Zen memes',
+            'gallery',
+        );
     }
 
     /** The page holding a `with` post on Recent or Gallery; null shows the list normally. */

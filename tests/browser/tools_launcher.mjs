@@ -31,8 +31,10 @@ runInThisContext(readFileSync(join(project, 'public/assets/openpgp.min.js'), 'ut
 const keys = await globalThis.openpgp.generateKey({ type: 'ecc', curve: 'ed25519', userIDs: [{ name: 'alice' }], format: 'armored' });
 const fingerprint = (await globalThis.openpgp.readKey({ armoredKey: keys.publicKey })).getFingerprint();
 const root = await mkdtemp(join(tmpdir(), 'tools-launcher-'));
-// Usage reports and the Import page on, so every registry tool is listed (they are hidden while their flags are off).
-const env = { ...process.env, FORUM_SECRETS_PATH: join(root, 'unused-secrets.php'), FORUM_USAGE_REPORTS_ENABLED: '1', FORUM_INSTANCE_IMPORT_PAGE_ENABLED: '1' };
+// Usage reports, the Import page and the Backlog on, so every registry tool is listed (they are hidden while their flags are off).
+const env = { ...process.env, FORUM_SECRETS_PATH: join(root, 'unused-secrets.php'), FORUM_USAGE_REPORTS_ENABLED: '1', FORUM_INSTANCE_IMPORT_PAGE_ENABLED: '1', FORUM_BACKLOG_ENABLED: '1',
+  // Permitted themes that sit behind a flag, so the theme matrix can apply them.
+  FORUM_ZALGO_THEME_ENABLED: '1', FORUM_VAPORGEIST_THEME_ENABLED: '1' };
 const seeded = spawnSync('php', [join(project, 'tests/Support/private_message_browser_fixture.php'), root], {
   input: JSON.stringify({ profiles: [{ name: 'alice', fingerprint, publicKey: keys.publicKey }], incoming: 'unused', outgoing: 'unused' }), encoding: 'utf8', env,
 });

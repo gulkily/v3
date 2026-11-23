@@ -175,6 +175,112 @@ PHP;
         assertSame(0, $exitCode, implode("\n", $output));
     }
 
+    public function testHistoryListsVersionsAndRollsBackThroughAConfirmation(): void
+    {
+        $base = sys_get_temp_dir() . '/deploy-history-' . bin2hex(random_bytes(6));
+        mkdir($base, 0777, true);
+        $git = static fn (string $dir, string ...$args): array => ['git', '-c', 'user.name=Ada', '-c', 'user.email=a@example.invalid', '-C', $dir, ...$args];
+        $this->run(['git', 'init', '-q', '--bare', '-b', 'main', $base . '/remote.git']);
+        $this->run(['git', 'init', '-q', '-b', 'main', $base . '/seed']);
+        file_put_contents($base . '/seed/.gitignore', "state/\n");
+        $this->run($git($base . '/seed', 'remote', 'add', 'origin', $base . '/remote.git'));
+        $commits = [];
+        foreach (['initial', 'Add <second> thing', 'c3', 'c4', 'c5', 'c6', 'c7', 'Merge pull request #12 from ada/short-name'] as $i => $subject) {
+            file_put_contents($base . '/seed/file' . $i . '.txt', $subject . "\n");
+            $this->run($git($base . '/seed', 'add', '.'));
+            $this->run($git($base . '/seed', 'commit', '-q', '-m', $subject));
+            $this->run($git($base . '/seed', 'push', '-q', 'origin', 'main'));
+            $commits[] = trim($this->capture(['git', '-C', $base . '/seed', 'rev-parse', 'HEAD']));
+            if ($i === 0) {
+                $this->run(['git', 'clone', '-q', $base . '/remote.git', $base . '/app']);
+            } else {
+                (new AppUpdate($base . '/app'))->deploy('openpgp:test', AppUpdate::MODE_INSTANT);
+            }
+        }
+
+        $script = <<<'PHP'
+require $argv[1] . '/autoload.php';
+require $argv[1] . '/tests/Support/TestViewerSession.php';
+
+use ForumRewrite\Application;
+use ForumRewrite\Deploy\AppUpdate;
+use ForumRewrite\Http\DeployController;
+
+[$base, $first, $second, $third] = array_slice($argv, 4);
+putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $base . '/missing/tasks.sqlite3');
+$_COOKIE = [];
+TestViewerSession::signIn($argv[3]);
+$_SERVER = array_merge($_SERVER, ['HTTP_HOST' => 'forum.test', 'HTTP_SEC_FETCH_SITE' => 'same-origin']);
+$application = new Application($argv[1], $argv[2], $base . '/index.sqlite3');
+ob_start();
+$application->handle('GET', '/threads/');
+ob_end_clean();
+$routeServices = (fn () => $this->routeServices())->call($application);
+$update = new AppUpdate($base . '/app', null, static fn (): array => ['status' => 'current', 'message' => '']);
+$controller = new DeployController($routeServices, $update, $base . '/missing/tasks.sqlite3', 'https://github.com/example/app');
+$head = static fn (): string => trim((string) shell_exec('git -C ' . escapeshellarg($base . '/app') . ' rev-parse HEAD'));
+$post = static function (array $fields) use ($controller): string {
+    $_POST = $fields;
+    ob_start();
+    $controller->submit([]);
+    return (string) ob_get_clean();
+};
+$need = static function (string $page, array $needles, string $what): void {
+    foreach ($needles as $needle) {
+        if (!str_contains($page, $needle)) throw new RuntimeException($what . ' missing: ' . $needle);
+    }
+};
+$count = static fn (string $page, string $needle): int => substr_count($page, $needle);
+
+$page = $controller->render();
+$need($page, ['<h2>History</h2>', 'Add &lt;second&gt; thing', '· <strong>running</strong>', 'before the first recorded deploy',
+    '</code></a> #12 short-name</span>', 'title="Merge pull request #12 from ada/short-name"', '<summary>3 earlier</summary>',
+    'href="https://github.com/example/app/commit/' . $second . '"', 'name="commit" value="' . $second . '"', 'name="commit" value="' . $first . '"',
+    'value="rollback_preview"'], 'History');
+if ($count($page, 'value="rollback_preview"') !== 7) throw new RuntimeException('The running version must not offer Roll back.');
+if (preg_match('/<span class="meta">\d{4}-\d{2}-\d{2} \d{2}:\d{2} · /', $page) !== 1 || preg_match('/<span class="meta">[^<]*\dT\d/', $page) === 1) {
+    throw new RuntimeException('History times should read as a short date and time.');
+}
+if (strpos($page, '<summary>3 earlier</summary>') < strpos($page, 'c4</span>') || strpos($page, '<summary>3 earlier</summary>') > strpos($page, 'c3</span>')) {
+    throw new RuntimeException('The five newest versions show; older ones sit under the disclosure.');
+}
+if (str_contains($page, 'class="deploy-rollback"')) throw new RuntimeException('No confirmation before it is asked for.');
+
+$confirm = $post(['action' => 'rollback_preview', 'commit' => $second]);
+$need($confirm, ['class="deploy-rollback"', 'Roll back to', 'Undoes 6 commits', 'short-name', 'value="rollback"', 'name="commit" value="' . $second . '"', '>Cancel</a>'], 'Confirmation');
+if ($head() !== $third) throw new RuntimeException('A preview must not move the checkout.');
+$need($post(['action' => 'rollback_preview', 'commit' => $third]), ['That version is already running.'], 'Refused preview');
+
+$done = $post(['action' => 'rollback', 'commit' => $second]);
+if ($head() !== $second) throw new RuntimeException('Rollback did not move the checkout: ' . substr($done, 0, 300));
+$need($done, ['/tools/deploy/', 'Rolled back to ' . substr($second, 0, 12)], 'Rollback reply');
+$after = $controller->render();
+$need($after, ['rolled back ', '<strong>rolled back</strong>'], 'Page after rollback');
+if ($count($after, 'value="rollback_preview"') !== 1 || str_contains($after, 'name="commit" value="' . $third . '"')) {
+    throw new RuntimeException('After rolling back, only the version behind the running one offers Roll back.');
+}
+
+$_SERVER['HTTP_X_REQUESTED_WITH'] = 'ForumDeploy';
+$json = json_decode($post(['action' => 'rollback', 'commit' => str_repeat('a', 40)]), true);
+if (($json['result']['outcome'] ?? null) !== 'refused' || ($json['result']['reason'] ?? null) !== 'not_deployed_here') {
+    throw new RuntimeException('Unknown version must be refused: ' . json_encode($json));
+}
+$json = json_decode($post(['action' => 'rollback_preview', 'commit' => $first]), true);
+if (($json['result']['commit'] ?? null) !== $first || count($json['result']['commits'] ?? []) !== 1) {
+    throw new RuntimeException('JSON preview: ' . json_encode($json));
+}
+
+TestViewerSession::reset();
+$_COOKIE = [];
+$application = new Application($argv[1], $argv[2], $base . '/index.sqlite3');
+$readOnly = (new DeployController((fn () => $this->routeServices())->call($application), $update, $base . '/missing/tasks.sqlite3'))->render();
+if (!str_contains($readOnly, '<h2>History</h2>') || str_contains($readOnly, 'rollback_preview')) {
+    throw new RuntimeException('A reader sees the history without Roll back.');
+}
+PHP;
+        $this->runScript($script, [$base, $commits[0], $commits[1], $commits[7]]);
+    }
+
     public function testActionsRequireSameOriginOperatorSession(): void
     {
         $same = ['HTTP_SEC_FETCH_SITE' => 'same-origin', 'HTTP_ORIGIN' => 'http://forum.test'];
@@ -187,8 +293,10 @@ PHP;
             'no origin evidence' => [self::OPERATOR, [], null],
         ];
         foreach ($refused as $name => [$identity, $server, $hint]) {
-            $result = $this->postAction($identity, $server, 'queue', $hint);
-            assertSame('error', $result['status'] ?? null, "Deploy action allowed for {$name}");
+            foreach (['queue', 'rollback', 'rollback_preview'] as $action) {
+                $result = $this->postAction($identity, $server, $action, $hint);
+                assertSame('error', $result['status'] ?? null, "Deploy action {$action} allowed for {$name}");
+            }
         }
         $ok = $this->postAction(self::OPERATOR, $same, 'status');
         assertSame('ok', $ok['status'] ?? null, json_encode($ok));

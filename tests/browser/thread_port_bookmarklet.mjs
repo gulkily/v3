@@ -28,7 +28,7 @@ function bookmarklet(mode) {
 
 function parse(portText) {
   const php = `require '${project}autoload.php'; $p = ForumRewrite\\Port\\PortFile::parse(stream_get_contents(STDIN));
-    echo json_encode(['title' => $p->threadTitle, 'link' => $p->threadLink, 'items' => array_map(fn ($i) => (array) $i, $p->items)]);`;
+    echo json_encode(['title' => $p->threadTitle, 'link' => $p->threadLink, 'points' => $p->points, 'commentCount' => $p->sourceCommentCount, 'items' => array_map(fn ($i) => (array) $i, $p->items)]);`;
   return JSON.parse(execFileSync('php', ['-r', php], { input: portText }).toString());
 }
 
@@ -64,6 +64,8 @@ try {
   let port = await run();
   assert.equal(port.title, 'Show HN: A test story');
   assert.equal(port.link, 'https://news.ycombinator.com/item?id=1000');
+  assert.equal(port.points, 42);
+  assert.equal(port.commentCount, 7);
   const parents = Object.fromEntries(port.items.map(i => [i.id, i.parent]));
   assert.deepEqual(parents, { 1000: null, 1001: '1000', 1002: '1001', 1003: '1002', 1004: '1001', 1005: '1004', 1006: '1000', 1007: '1006' });
   const byId = Object.fromEntries(port.items.map(i => [i.id, i]));
@@ -84,6 +86,8 @@ try {
   assert.equal(port.link, 'https://news.ycombinator.com/item?id=1000');
   assert.deepEqual(port.items.map(i => [i.id, i.parent]), [['1006', null], ['1007', '1006']]);
   assert.equal(port.items[0].title, '');
+  assert.equal(port.points, null);
+  assert.equal(port.commentCount, null);
 
   // A selection inside comment 1002 ports it and its replies only.
   await page.goto('https://news.ycombinator.com/item?id=1000');
@@ -96,6 +100,8 @@ try {
   port = await run();
   assert.deepEqual(port.items.map(i => [i.id, i.parent]), [['1002', null], ['1003', '1002']]);
   assert.equal(port.title, 'Show HN: A test story');
+
+  assert.equal(port.commentCount, 7, 'the discussion count is distinct from the selected replies');
 
   // Not a Hacker News item page: an alert, nothing sent.
   await page.goto('https://forum.test/elsewhere');

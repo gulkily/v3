@@ -5,11 +5,11 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.25**
 
-Status: planned; next action: commit plan, reconcile main/checklist, verify and open PR.
+Status: integration and epic checklist locally verified; ready to push and open PR.
 Authorization: 2026-11-23 session user asks "do we have a checklist for this epic that we can update? please go ahead and make pr". Authorizes updating the existing epic coordination record, integration needed for a reviewable publisher PR, branch push and PR creation. No merge/deploy, additional messaging feature, live key publication or external forum reply.
 Parent: [direct publication](../publish_keys_direct/publish_keys_direct_one_shot.md), with original publisher and CLI follow-ups retained. Scope is documentation/integration/release handoff; no new application feature. Existing ordinary CLI and safety contracts remain unchanged.
 Starting revisions: c6e73b7d1; freshly fetched origin/main 2e14bcb96. New feat/publish-public-keys branch in the existing /home/wsl/v3-publish-local-public-keys checkout; remote branch absent and no existing direct-publication PR found. No new worktree; original ~/v3 untouched.
-Planning commit: pending.
+Planning commit: bf7d48966 (plan/index only, confirmed before integration/checklist edits).
 
 ## Outcome, reuse and risks
 
@@ -37,3 +37,11 @@ Concepts touched: existing public-key publication and historical-message recover
 
 Outcome: pending. Commit/push/PR/merge/deployment: planning pending, others not yet performed.
 Attribution: Codex, 2026-11-23 UTC.
+
+2026-11-23: Integrated origin/main 2e14bcb96 without rewriting prior publisher commits. Three conflicts were limited to plan/feedback indexes and the colliding B04 file. Plans index preserves both sides; feedback index regenerated. Main's canonical Ochre B04 is byte-identical, original local publisher B04 is archived byte-identical, and new canonical publisher intake B02 explains the collision/historical trailers. No authored application behavior change; normal auto-merge preserved both current main and publisher CLI/help. Runtime verification reruns because main advanced.
+
+2026-11-23: Updated the existing private-messaging master checklist, not a duplicate epic. Checked implementation and user-reported production execution separately; per-key outcomes, actual destination approval/history recovery, PR opening and merge/update remain unchecked until their own evidence. Existing history synchronization is already implemented; this task does not authorize a new recovery mechanism. User's "done" records only that the suggested production command was run, not a transcript or successful registration count.
+
+2026-11-23: Integrated smoke/affected checks: ./v3 test --smoke PublishKeysCommandTest PublicKeyPublisherTest PublicKeyPublishHttpTest InstanceSourceResolverTest ScriptsIndexTest — 513 run, 509 passed, only the same four parent-reproduced Unicode/PCRE failures. All selected publisher/resolver/index and actual API checks passed; no full suite run. PHP syntax, bash syntax, help and git diff --check pass. Feedback check: 361 items, zero problems, 36 existing source-review notices; index regenerated. Verified main's B04 and the original publisher archive byte-for-byte.
+
+2026-11-23: Existing epic had stale "not pushed" claims: ed36a069, 95ac3114, 34b48f40 and 68a5a3fd are proven ancestors of fetched origin/main. Updated code-availability wording without claiming deployment, linked implemented sender-assisted/bounded-background recovery, and repaired the epic's missing old FDP workflow link to Railspike. No new runtime feature was implemented. Per-key live registration/approval/decryption evidence still unchecked.

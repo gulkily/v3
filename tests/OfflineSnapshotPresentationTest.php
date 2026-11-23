@@ -308,7 +308,7 @@ NODE;
         assertSame('', $result['invalid']);
         assertSame([
             ['href' => '/tags/', 'text' => 'Back to Tags'],
-            ['href' => '/', 'text' => 'Back to Board'],
+            ['href' => '/threads/', 'text' => 'Back to Board'],
             ['href' => '/threads/t3', 'text' => 'Three'],
             ['href' => '/threads/t2', 'text' => 'Two'],
         ], $result['rendered']['links']);

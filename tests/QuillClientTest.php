@@ -21,12 +21,42 @@ final class QuillClientTest
         }
         return $dir;
     }
-    public static function run(string $script, array $args, string $python='python3'): array
+    /** Every Quill version and the interpreter that runs it; the HTTP tests run each one (docs/reference/multi_language_scripts.md). */
+    private const CLIENTS = ['quill.py' => 'python3', 'quill.pl' => 'perl', 'quill.php' => 'php'];
+    /** The version the current check runs; quill.py outside self::each(). */
+    private static string $client = 'quill.py';
+
+    /** Runs a check once per Quill version, naming the version in any failure. */
+    private static function each(callable $check): void
     {
-        $cmd=$python.' '.escapeshellarg($script).' '.implode(' ',array_map('escapeshellarg',$args));
+        foreach (array_keys(self::CLIENTS) as $client) {
+            self::$client=$client;
+            try { $check($client); }
+            catch (Throwable $error) { throw new RuntimeException($client.': '.$error->getMessage(),0,$error); }
+            finally { self::$client='quill.py'; }
+        }
+    }
+
+    /** Downloads the current version from the test server, as an agent would. */
+    private static function download(object $server, string $root): string
+    {
+        $script=$root.'/'.self::$client; file_put_contents($script,file_get_contents($server->url.'/'.self::$client));
+        return $script;
+    }
+
+    /** Runs a script with the interpreter for its extension unless one is given. */
+    public static function run(string $script, array $args, ?string $interpreter=null): array
+    {
+        $interpreter??=self::CLIENTS['quill.'.pathinfo($script,PATHINFO_EXTENSION)] ?? 'python3';
+        $cmd=$interpreter.' '.escapeshellarg($script).' '.implode(' ',array_map('escapeshellarg',$args));
         exec($cmd.' 2>&1',$output,$code); return [$code,implode("\n",$output)];
     }
     public function testLostResponseResumeWithoutDuplicateForBothProtocols(): void
+    {
+        self::each(fn () => $this->checkLostResponseResumeWithoutDuplicateForBothProtocols());
+    }
+
+    private function checkLostResponseResumeWithoutDuplicateForBothProtocols(): void
     {
         foreach ([false,true] as $legacy) {
             [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
@@ -37,7 +67,7 @@ final class QuillClientTest
                 $hook='if ($_SERVER["REQUEST_URI"] === '.var_export($route,true).') ob_start(function($body) { if (is_file('.var_export($marker,true).')) { unlink('.var_export($marker,true).'); http_response_code(502); return "response lost"; } return $body; });';
                 if ($legacy) $hook.='ob_start(fn($body) => preg_replace("/^POST \\/api\\/create_signed_post[^\\n]*\\n/m", "", $body));';
                 file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
-                $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
+                $script=self::download($server,$root);
                 file_put_contents($root.'/body.txt',"Recovery body.\n");
                 $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client'),'--retries','0'];
                 $write=['thread','--subject','Recovery','--body-file',$root.'/body.txt'];
@@ -54,12 +84,17 @@ final class QuillClientTest
 
     public function testBusyRetriesAreBoundedAndExact(): void
     {
+        self::each(fn () => $this->checkBusyRetriesAreBoundedAndExact());
+    }
+
+    private function checkBusyRetriesAreBoundedAndExact(): void
+    {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
         try {
             $counter=$root.'/attempts';$hashes=$root.'/hashes';
             $hook='if ($_SERVER["REQUEST_URI"] === "/api/create_signed_post") { $n=is_file('.var_export($counter,true).')?(int)file_get_contents('.var_export($counter,true).'):0; file_put_contents('.var_export($counter,true).', $n+1); file_put_contents('.var_export($hashes,true).',hash("sha256",file_get_contents("php://input"))."\n",FILE_APPEND); if($n<3) {http_response_code(503);header("Retry-After: 0");echo json_encode(["status"=>"busy","error"=>"busy","retry_after"=>0]);return;} }';
             $router=$server->directory.'/public/router.php';file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
-            $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
+            $script=self::download($server,$root);
             file_put_contents($root.'/body.txt',"Busy body.\n");
             $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
             [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Busy','--body-file',$root.'/body.txt']));
@@ -73,9 +108,14 @@ final class QuillClientTest
 
     public function testCharacterCorrectionPreservesOriginalPositionsAndKey(): void
     {
+        self::each(fn () => $this->checkCharacterCorrectionPreservesOriginalPositionsAndKey());
+    }
+
+    private function checkCharacterCorrectionPreservesOriginalPositionsAndKey(): void
+    {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server(['FORUM_UNICODE_AUTHORED_TEXT'=>'true']);
         try {
-            $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
+            $script=self::download($server,$root);
             // A no-break space is still rejected; arrows were accepted in c90eea84.
             $body="  Cafe\u{0301}\r\nx\u{00A0}\n";file_put_contents($root.'/body.txt',$body);
             $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
@@ -90,9 +130,14 @@ final class QuillClientTest
 
     public function testStagedPostIsReportedAndReplacedUnderItsId(): void
     {
+        self::each(fn () => $this->checkStagedPostIsReportedAndReplacedUnderItsId());
+    }
+
+    private function checkStagedPostIsReportedAndReplacedUnderItsId(): void
+    {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server(['FORUM_UNICODE_AUTHORED_TEXT'=>'true','FORUM_EMOJI_AUTHORED_TEXT'=>'false']);
         try {
-            $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
+            $script=self::download($server,$root);
             $base=['--site',$server->url,'--state-dir',self::stateDir($root,'staged')];
             file_put_contents($root.'/first.txt',"Registering this key.\n");
             [$code,$out]=self::run($script,array_merge($base,['thread','--subject','First','--body-file',$root.'/first.txt'])); assertSame(0,$code,$out);
@@ -133,13 +178,18 @@ final class QuillClientTest
 
     public function testInterruptedLegacyRegistrationResolvesSameIdentity(): void
     {
+        self::each(fn () => $this->checkInterruptedLegacyRegistrationResolvesSameIdentity());
+    }
+
+    private function checkInterruptedLegacyRegistrationResolvesSameIdentity(): void
+    {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
         try {
             $marker=$root.'/lose-registration';file_put_contents($marker,'yes');
             $router=$server->directory.'/public/router.php';
             $hook='ob_start(fn($body) => preg_replace("/^POST \\/api\\/create_signed_post[^\\n]*\\n/m", "", $body)); if($_SERVER["REQUEST_URI"] === "/api/create_identity") ob_start(function($body) { if(is_file('.var_export($marker,true).')) {unlink('.var_export($marker,true).');http_response_code(502);return "lost";}return $body;});';
             file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
-            $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
+            $script=self::download($server,$root);
             file_put_contents($root.'/body.txt',"Registered then resumed.\n");
             $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
             $before=count(glob($repo.'/records/identity/*'));
@@ -153,13 +203,18 @@ final class QuillClientTest
 
     public function testLegacyMissingTokenAndUnknownReadDoNotReprepare(): void
     {
+        self::each(fn () => $this->checkLegacyMissingTokenAndUnknownReadDoNotReprepare());
+    }
+
+    private function checkLegacyMissingTokenAndUnknownReadDoNotReprepare(): void
+    {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
         try {
             $marker=$root.'/block';file_put_contents($marker,'yes');
             $router=$server->directory.'/public/router.php';
             $hook='ob_start(fn($body) => preg_replace("/^POST \\/api\\/create_signed_post[^\\n]*\\n/m", "", $body)); if($_SERVER["REQUEST_URI"] === "/api/create_prepared_post" && is_file('.var_export($marker,true).')) {http_response_code(503);echo "busy";return;}';
             file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
-            $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
+            $script=self::download($server,$root);
             file_put_contents($root.'/body.txt',"Uncertain.\n");
             $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client'),'--retries','0'];
             [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Recovery','--body-file',$root.'/body.txt']));assertSame(2,$code,$out);
@@ -176,9 +231,14 @@ final class QuillClientTest
 
     public function testMemberDenialAndSigningFailurePreserveWork(): void
     {
+        self::each(fn () => $this->checkMemberDenialAndSigningFailurePreserveWork());
+    }
+
+    private function checkMemberDenialAndSigningFailurePreserveWork(): void
+    {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server(['FORUM_APPROVED_MEMBERS_ONLY'=>'true']);
         try {
-            $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
+            $script=self::download($server,$root);
             $body="Retained draft.\n";file_put_contents($root.'/body.txt',$body);
             $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
             $before=(new \ForumRewrite\Write\SignedPostTransaction($repo))->git(['rev-parse','HEAD']);
@@ -198,13 +258,18 @@ final class QuillClientTest
 
     public function testSubmissionRedirectNeverSwitchesProtocolAndRefreshPendingReplays(): void
     {
+        self::each(fn () => $this->checkSubmissionRedirectNeverSwitchesProtocolAndRefreshPendingReplays());
+    }
+
+    private function checkSubmissionRedirectNeverSwitchesProtocolAndRefreshPendingReplays(): void
+    {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
         try {
             $marker=$root.'/redirect';file_put_contents($marker,'yes');
             $router=$server->directory.'/public/router.php';
             $hook='if($_SERVER["REQUEST_URI"] === "/api/create_signed_post") { if(is_file('.var_export($marker,true).')) {http_response_code(302);header("Location: /api/create_thread");return;} ob_start(function($body) {$p=json_decode($body,true); if(is_array($p)&&($p["status"]??"")==="ok") {$p["refresh_pending"]=true;return json_encode($p);}return $body;});}';
             file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
-            $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));file_put_contents($root.'/body.txt',"Redirect draft.\n");
+            $script=self::download($server,$root);file_put_contents($root.'/body.txt',"Redirect draft.\n");
             $tx=new \ForumRewrite\Write\SignedPostTransaction($repo);$before=$tx->git(['rev-parse','HEAD']);
             $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
             [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Redirect','--body-file',$root.'/body.txt']));assertSame(2,$code,$out);
@@ -219,6 +284,11 @@ final class QuillClientTest
 
     public function testFirstWriteReuseAndLegacyFallback(): void
     {
+        self::each(fn () => $this->checkFirstWriteReuseAndLegacyFallback());
+    }
+
+    private function checkFirstWriteReuseAndLegacyFallback(): void
+    {
         foreach ([false,true] as $legacy) {
             [$server,$repo,$db,$root]=SingleRequestHttpTest::server(['FORUM_UNICODE_AUTHORED_TEXT'=>'true']);
             $identitiesBefore=count(glob($repo.'/records/identity/*'));
@@ -229,7 +299,7 @@ final class QuillClientTest
                     $source=str_replace('<?php', '<?php if (str_starts_with($_SERVER["REQUEST_URI"],"/api/text_rules")) { http_response_code(404); echo "not found"; return; } ob_start(fn($body) => preg_replace("/^POST \\/api\\/create_signed_post[^\\n]*\\n/m", "", $body));', $source);
                     file_put_contents($router,$source);
                 }
-                $script=$root.'/quill.py'; file_put_contents($script,file_get_contents($server->url.'/quill.py'));
+                $script=self::download($server,$root);
                 file_put_contents($root.'/body.txt', "Café — 5 µg, “quoted”, Привет\n");
                 $base=['--site',$server->url,'--state-dir',self::stateDir($root,'client')];
                 [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Example','--body-file',$root.'/body.txt']));
@@ -256,12 +326,17 @@ final class QuillClientTest
 
     public function testFailedWritePostsOneRedactedTroubleReport(): void
     {
+        self::each(fn () => $this->checkFailedWritePostsOneRedactedTroubleReport());
+    }
+
+    private function checkFailedWritePostsOneRedactedTroubleReport(): void
+    {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
         try {
             $context=stream_context_create(['http'=>['method'=>'POST','ignore_errors'=>true,'header'=>"Content-Type: application/x-www-form-urlencoded\r\n",'content'=>http_build_query(['subject'=>'Agent trouble reports','body'=>"Reports land here.\n"]),'timeout'=>40]]);
             $created=file_get_contents($server->url.'/api/create_thread',false,$context);
             preg_match('/^thread_id=(\S+)$/m',(string)$created,$match); $thread=$match[1]??''; assertTrue($thread!=='',(string)$created);
-            $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
+            $script=self::download($server,$root);
             file_put_contents($root.'/body.txt',"Secret draft text.\n");
             $state=self::stateDir($root,'report');
             $write=['--site',$server->url,'--state-dir',$state,'reply','--thread','thread-missing','--body-file',$root.'/body.txt','--report-thread',$thread];
@@ -281,9 +356,14 @@ final class QuillClientTest
 
     public function testImageAttachmentNeedsApprovalThenPublishesTheSignedBytes(): void
     {
+        self::each(fn () => $this->checkImageAttachmentNeedsApprovalThenPublishesTheSignedBytes());
+    }
+
+    private function checkImageAttachmentNeedsApprovalThenPublishesTheSignedBytes(): void
+    {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server(['FORUM_IMAGE_CONTENT_ENABLED'=>'true']);
         try {
-            $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
+            $script=self::download($server,$root);
             file_put_contents($root.'/pixel.png',ImageContentTest::png());
             file_put_contents($root.'/body.txt',"Screenshot attached.\n");
             $base=['--site',$server->url,'--state-dir',self::stateDir($root,'image'),'--retries','0'];
@@ -298,15 +378,16 @@ final class QuillClientTest
             $tx=new \ForumRewrite\Write\SignedPostTransaction($repo);$tx->git(['add',$seed]);$tx->git(['commit','-qm','Approve Quill image author']);
             (new \ForumRewrite\ReadModel\ReadModelBuilder($repo,$db,new \ForumRewrite\Canonical\CanonicalRecordRepository($repo)))->rebuild();
             // python3 -S hides site-packages, so this is the standard-library path: the prepared PNG goes as is.
-            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Picture','--body-file',$root.'/body.txt'],$image),'python3 -S');
-            assertSame(0,$code,$out); assertStringContains('Status: accepted',$out); assertStringContains('Pillow not installed',$out);
+            // quill.pl and quill.php always take this path.
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Picture','--body-file',$root.'/body.txt'],$image),self::$client==='quill.py'?'python3 -S':null);
+            assertSame(0,$code,$out); assertStringContains('Status: accepted',$out); assertStringContains('metadata removed',$out);
             preg_match('/Post-ID: (\S+)/',$out,$m); $post=file_get_contents($server->url.'/api/get_post?post_id='.$m[1]);
             $hash=hash('sha256',ImageContentTest::png());
             assertStringContains("Screenshot attached.\n\nImage-v1: {$hash} png ".strlen(ImageContentTest::png()).' 1 1 One%20white%20pixel%20%28test%29',$post);
             assertSame(ImageContentTest::png(),file_get_contents($server->url.'/images/'.$hash.'.png'));
             // With Pillow, a large image is prepared like the browser composer before upload.
             exec('python3 -c '.escapeshellarg('import sys; from PIL import Image; Image.new("RGB",(2500,1200),"white").save(sys.argv[1])').' '.escapeshellarg($root.'/wide.png').' 2>&1',$o,$pillow);
-            if ($pillow===0) {
+            if ($pillow===0 && self::$client==='quill.py') {
                 $wide=array_merge($base,['reply','--thread',$m[1],'--body-file',$root.'/body.txt','--no-report','--image',$root.'/wide.png','--image-description','Wide']);
                 [$code,$out]=self::run($script,$wide);
                 assertSame(0,$code,$out); assertStringContains('Image: 2048 x 983 PNG',$out);
@@ -327,7 +408,7 @@ final class QuillClientTest
     private static function approvalFixture(array $environment=[]): array
     {
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server($environment);
-        $script=$root.'/quill.py';file_put_contents($script,file_get_contents($server->url.'/quill.py'));
+        $script=self::download($server,$root);
         file_put_contents($root.'/body.txt',"Hello from a test key.\n");
         $bases=[]; $posts=[];
         foreach (['approver'=>'approver-agent','one'=>'shared-agent','two'=>'shared-agent'] as $label=>$name) {
@@ -386,6 +467,11 @@ final class QuillClientTest
 
     public function testApproveByPostPicksTheRightKeyAmongSharedNames(): void
     {
+        self::each(fn () => $this->checkApproveByPostPicksTheRightKeyAmongSharedNames());
+    }
+
+    private function checkApproveByPostPicksTheRightKeyAmongSharedNames(): void
+    {
         [$server,$repo,$db,$root,$script,$approver,$pending,$posts]=self::approvalFixture();
         try {
             [$approverId,$oneId,$twoId]=array_keys($posts);
@@ -427,6 +513,11 @@ final class QuillClientTest
     }
 
     public function testCheckinSignsInListsRepliesAndCaughtUpClearsThem(): void
+    {
+        self::each(fn () => $this->checkCheckinSignsInListsRepliesAndCaughtUpClearsThem());
+    }
+
+    private function checkCheckinSignsInListsRepliesAndCaughtUpClearsThem(): void
     {
         [$server,$repo,$db,$root,$script,$approver,$pending,$posts]=self::approvalFixture(['FORUM_INBOX_ENABLED'=>'true']);
         try {
@@ -473,14 +564,22 @@ final class QuillClientTest
 
     public function testDownloadedReaderAndPublicDelivery(): void
     {
+        self::each(fn () => $this->checkDownloadedReaderAndPublicDelivery());
+    }
+
+    private function checkDownloadedReaderAndPublicDelivery(): void
+    {
+        $name=self::$client;
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
         try {
-            [$h,$script]=AgentPostingApiTest::request($server,'/quill.py');
+            [$h,$script]=AgentPostingApiTest::request($server,'/'.$name);
             assertStringContains('200',$h[0]); assertTrue(in_array('Content-Type: text/plain; charset=utf-8',$h,true));
-            assertSame(file_get_contents(dirname(__DIR__).'/public/quill.py'),$script);
-            [$h,$old]=AgentPostingApiTest::request($server,'/frm.py');
-            assertStringContains('200',$h[0]); assertSame($script,$old);
-            $path=$root.'/downloaded.py'; file_put_contents($path,$script);
+            assertSame(file_get_contents(dirname(__DIR__).'/public/'.$name),$script);
+            if ($name==='quill.py') {
+                [$h,$old]=AgentPostingApiTest::request($server,'/frm.py');
+                assertStringContains('200',$h[0]); assertSame($script,$old);
+            }
+            $path=$root.'/downloaded.'.pathinfo($name,PATHINFO_EXTENSION); file_put_contents($path,$script);
             [$code,$out]=self::run($path,['--site',$server->url,'index']); assertSame(0,$code,$out);
             $input=SignedPostIdentityTest::bundle(); [, $post]=SingleRequestHttpTest::request($server,$input);
             foreach(['read','check'] as $action) {
@@ -489,35 +588,73 @@ final class QuillClientTest
             }
             [$code,$out]=self::run($path,['--site',$server->url,'check','missing']); assertSame(1,$code,$out);
             assertStringContains('Status: missing',$out);
-            [$h,$body]=AgentPostingApiTest::request($server,'/quill.py','HEAD'); assertSame('',$body);
+            [$h,$body]=AgentPostingApiTest::request($server,'/'.$name,'HEAD'); assertSame('',$body);
         } finally {$server->close();}
         [$server]=SingleRequestHttpTest::server(['FORUM_APPROVED_MEMBERS_ONLY'=>'true']);
         try {
-            [$h,$body]=AgentPostingApiTest::request($server,'/quill.py'); assertStringContains('200',$h[0]);
+            [$h,$body]=AgentPostingApiTest::request($server,'/'.$name); assertStringContains('200',$h[0]);
             [$code,$out]=self::run($path,['--site',$server->url,'check','missing']); assertSame(2,$code,$out); assertStringContains('Status: unknown',$out);
         } finally {$server->close();}
     }
+
+    /** The served PHP client is text, never a script the web server runs. */
+    public function testServedPhpClientIsNeverExecuted(): void
+    {
+        [$server]=SingleRequestHttpTest::server();
+        try {
+            [$h,$body]=AgentPostingApiTest::request($server,'/quill.php');
+            assertTrue(in_array('Content-Type: text/plain; charset=utf-8',$h,true)); assertStringContains("const QUILL_VERSION = '",$body);
+        } finally {$server->close();}
+        exec('php-cgi -v 2>/dev/null',$o,$cgi);
+        if ($cgi===0) {
+            exec('php-cgi -q '.escapeshellarg(dirname(__DIR__).'/public/quill.php').' 2>&1',$output,$code);
+            assertSame('',trim(implode("\n",$output)),'Outside the CLI, quill.php prints nothing');
+        }
+    }
+
     public function testUpdateNoticeComparesVersions(): void
     {
         $public=dirname(__DIR__).'/public';
-        $current=\ForumRewrite\Http\ClientDownload::currentVersion($public);
-        assertTrue($current!==null && preg_match('/^\d{4}-\d{2}-\d{2}(\.\d+)?$/',$current)===1, 'public/quill.py needs a QUILL_VERSION line');
-        $notice=\ForumRewrite\Http\ClientDownload::notice('quill/2000-01-01',$public);
-        assertSame('You are running Quill 2000-01-01; this site serves '.$current.'. Fetch it from /quill.py.',$notice);
-        foreach (['quill/'.$current,'quill/'.$current.'.2','quill/2999-01-01','quill/unknown','Python-urllib/3.12','curl/8.5.0',''] as $agent) {
+        foreach (['quill'=>'quill.py','quill-pl'=>'quill.pl','quill-php'=>'quill.php'] as $agent=>$name) {
+            $current=\ForumRewrite\Http\ClientDownload::currentVersion($public,$name);
+            assertTrue($current!==null && preg_match('/^\d{4}-\d{2}-\d{2}(\.\d+)?$/',$current)===1, 'public/'.$name.' needs a QUILL_VERSION line');
+            $notice=\ForumRewrite\Http\ClientDownload::notice($agent.'/2000-01-01',$public);
+            assertSame('You are running Quill 2000-01-01; this site serves '.$current.'. Fetch it from /'.$name.'.',$notice);
+            foreach ([$agent.'/'.$current,$agent.'/'.$current.'.2',$agent.'/2999-01-01',$agent.'/unknown'] as $same) {
+                assertSame(null,\ForumRewrite\Http\ClientDownload::notice($same,$public),$same);
+            }
+        }
+        foreach (['Python-urllib/3.12','curl/8.5.0','quill-rb/2000-01-01',''] as $agent) {
             assertSame(null,\ForumRewrite\Http\ClientDownload::notice($agent,$public),$agent);
         }
         $root=sys_get_temp_dir().'/quill-version-'.bin2hex(random_bytes(4)); mkdir($root);
         try {
             file_put_contents($root.'/quill.py',"#!/usr/bin/env python3\n\"\"\"Quill.\"\"\"\nQUILL_VERSION = \"2026-11-16.2\"\n");
+            file_put_contents($root.'/quill.pl',"#!/usr/bin/env perl\nour \$QUILL_VERSION = '2026-11-17';\n");
+            file_put_contents($root.'/quill.php',"#!/usr/bin/env php\n<?php\n\ndeclare(strict_types=1);\n\nconst QUILL_VERSION = '2026-11-18.3';\n");
             assertSame('2026-11-16.2',\ForumRewrite\Http\ClientDownload::currentVersion($root));
+            assertSame('2026-11-17',\ForumRewrite\Http\ClientDownload::currentVersion($root,'quill.pl'));
+            assertSame('2026-11-18.3',\ForumRewrite\Http\ClientDownload::currentVersion($root,'quill.php'));
             assertTrue(\ForumRewrite\Http\ClientDownload::notice('quill/2026-11-16',$root)!==null);
             assertSame(null,\ForumRewrite\Http\ClientDownload::notice('quill/2026-11-16.2',$root));
+            // Each version is compared with its own file: a Perl copy as new as quill.pl is current even though quill.py is older.
+            assertSame(null,\ForumRewrite\Http\ClientDownload::notice('quill-pl/2026-11-17',$root));
+            assertTrue(str_ends_with((string) \ForumRewrite\Http\ClientDownload::notice('quill-php/2026-11-18.2',$root),'Fetch it from /quill.php.'));
             assertSame(null,\ForumRewrite\Http\ClientDownload::notice('quill/2026-11-16',$root.'/missing'));
-        } finally { @unlink($root.'/quill.py'); @rmdir($root); }
+        } finally { foreach (['py','pl','php'] as $ext) @unlink($root.'/quill.'.$ext); @rmdir($root); }
     }
+
     public function testOutdatedCopyIsToldOnEveryResponse(): void
     {
+        self::each(fn () => $this->checkOutdatedCopyIsToldOnEveryResponse());
+    }
+
+    private function checkOutdatedCopyIsToldOnEveryResponse(): void
+    {
+        $name=self::$client;
+        $agent=['quill.py'=>'quill','quill.pl'=>'quill-pl','quill.php'=>'quill-php'][$name];
+        $versionLine=['quill.py'=>'/^QUILL_VERSION = "[^"]+"/m','quill.pl'=>'/^our \$QUILL_VERSION = \'[^\']+\'/m','quill.php'=>'/^const QUILL_VERSION = \'[^\']+\'/m'][$name];
+        $oldLine=['quill.py'=>'QUILL_VERSION = "2000-01-01"','quill.pl'=>'our $QUILL_VERSION = \'2000-01-01\'','quill.php'=>'const QUILL_VERSION = \'2000-01-01\''][$name];
         [$server,$repo,$db,$root]=SingleRequestHttpTest::server();
         try {
             $get=static function (string $path, string $agent) use ($server): array {
@@ -525,21 +662,91 @@ final class QuillClientTest
                 $body=file_get_contents($server->url.$path,false,$context);
                 return [$http_response_header,$body];
             };
-            foreach (['/api/','/api/list_index','/quill.py','/no-such-page'] as $path) {
-                [$h]=$get($path,'quill/2000-01-01');
-                assertTrue((bool) preg_grep('/^X-Quill-Update: You are running Quill 2000-01-01; /i',$h),$path);
+            foreach (['/api/','/api/list_index','/'.$name,'/no-such-page'] as $path) {
+                [$h]=$get($path,$agent.'/2000-01-01');
+                assertTrue((bool) preg_grep('/^X-Quill-Update: You are running Quill 2000-01-01; .*Fetch it from \/'.preg_quote($name,'/').'\.$/i',$h),$path);
                 [$h]=$get($path,'curl/8.5.0');
                 assertSame([],preg_grep('/^X-Quill-Update:/i',$h),$path);
             }
-            [, $script]=$get('/quill.py','curl/8.5.0');
-            $current=\ForumRewrite\Http\ClientDownload::currentVersion(dirname(__DIR__).'/public');
-            [$h]=$get('/api/','quill/'.$current); assertSame([],preg_grep('/^X-Quill-Update:/i',$h));
-            $path=$root.'/frm.py'; file_put_contents($path,preg_replace('/^QUILL_VERSION = "[^"]+"/m','QUILL_VERSION = "2000-01-01"',$script,1));
+            [, $script]=$get('/'.$name,'curl/8.5.0');
+            $current=\ForumRewrite\Http\ClientDownload::currentVersion(dirname(__DIR__).'/public',$name);
+            [$h]=$get('/api/',$agent.'/'.$current); assertSame([],preg_grep('/^X-Quill-Update:/i',$h));
+            $path=$root.'/'.($name==='quill.py'?'frm.py':$name); file_put_contents($path,preg_replace($versionLine,$oldLine,$script,1));
+            assertStringContains('2000-01-01',(string) file_get_contents($path));
             [$code,$out]=self::run($path,['--site',$server->url,'index']); assertSame(0,$code,$out);
-            assertSame(1,substr_count($out,'Update: You are running Quill 2000-01-01; this site serves '.$current.'. Fetch it from /quill.py.'),$out);
+            assertSame(1,substr_count($out,'Update: You are running Quill 2000-01-01; this site serves '.$current.'. Fetch it from /'.$name.'.'),$out);
             file_put_contents($path,$script);
             [$code,$out]=self::run($path,['--site',$server->url,'index']); assertSame(0,$code,$out);
             assertTrue(!str_contains($out,'Update:'),$out);
+        } finally {$server->close();}
+    }
+
+    /**
+     * The three versions share one state directory: a key made by one posts from the others under
+     * the same identity, and a write one version saved is resumed by another without a duplicate.
+     */
+    public function testVersionsShareKeysAndResumeEachOthersOperations(): void
+    {
+        [$server,$repo,$db,$root]=SingleRequestHttpTest::server(['FORUM_UNICODE_AUTHORED_TEXT'=>'true']);
+        try {
+            $marker=$root.'/lose-response';
+            $router=$server->directory.'/public/router.php';
+            $hook='if ($_SERVER["REQUEST_URI"] === "/api/create_signed_post") ob_start(function($body) { if (is_file('.var_export($marker,true).')) { unlink('.var_export($marker,true).'); http_response_code(502); return "response lost"; } return $body; });';
+            file_put_contents($router,str_replace('<?php','<?php '.$hook,file_get_contents($router)));
+            $scripts=[];
+            foreach (array_keys(self::CLIENTS) as $name) { self::$client=$name; $scripts[$name]=self::download($server,$root); }
+            self::$client='quill.py';
+            file_put_contents($root.'/body.txt',"Shared key, three clients. Café.\n");
+            $base=['--site',$server->url,'--state-dir',self::stateDir($root,'shared'),'--retries','0'];
+            $identitiesBefore=count(glob($repo.'/records/identity/*'));
+            [$code,$out]=self::run($scripts['quill.py'],array_merge($base,['thread','--subject','Shared','--body-file',$root.'/body.txt','--no-report']));
+            assertSame(0,$code,$out); preg_match('/Post-ID: (\S+)/',$out,$thread); preg_match('/Identity-ID: (\S+)/',$out,$identity);
+            assertStringContains("\nURL: ".$server->url.'/threads/'.$thread[1]."\n",$out."\n");
+            foreach (['quill.pl','quill.php'] as $name) {
+                [$code,$out]=self::run($scripts[$name],array_merge($base,['reply','--thread',$thread[1],'--body-file',$root.'/body.txt','--no-report']));
+                assertSame(0,$code,$name.': '.$out); assertStringContains('Identity-ID: '.$identity[1],$out);
+                preg_match('/Post-ID: (\S+)/',$out,$reply);
+                assertStringContains("\nURL: ".$server->url.'/threads/'.$thread[1].'#'.$reply[1]."\n",$out."\n");
+                $post=(string) file_get_contents($server->url.'/api/get_post?post_id='.rawurlencode($reply[1]));
+                assertStringContains('Author-Identity-ID: '.$identity[1],$post); assertStringContains('Shared key, three clients. Café.',$post);
+            }
+            assertSame($identitiesBefore+1,count(glob($repo.'/records/identity/*')));
+            // A lost response in one version, resumed by the next: same bytes, one post.
+            $tx=new \ForumRewrite\Write\SignedPostTransaction($repo);
+            foreach ([['quill.pl','quill.py'],['quill.py','quill.php'],['quill.php','quill.pl']] as [$writer,$resumer]) {
+                file_put_contents($marker,'yes');
+                [$code,$out]=self::run($scripts[$writer],array_merge($base,['reply','--thread',$thread[1],'--body-file',$root.'/body.txt','--no-report']));
+                assertSame(2,$code,$writer.': '.$out); assertStringContains('Resume: ',$out);
+                preg_match('/^Saved-operation: (.+)$/m',$out,$operation);
+                $head=$tx->git(['rev-parse','HEAD']);
+                [$code,$out]=self::run($scripts[$resumer],array_merge($base,['reply','--resume',$operation[1],'--no-report']));
+                assertSame(0,$code,$resumer.' resuming '.$writer.': '.$out); assertSame($head,$tx->git(['rev-parse','HEAD']));
+                assertSame(1,preg_match('#^URL: '.preg_quote($server->url,'#').'/threads/'.preg_quote($thread[1],'#').'\#\S+$#m',$out),$resumer.': '.$out);
+            }
+            foreach (glob(self::stateDir($root,'shared').'/*/keyring') as $home) \ForumRewrite\Security\GpgHomeCleaner::dispose($home);
+        } finally {$server->close();}
+    }
+
+    /** Without the intl extension, quill.php sends non-ASCII drafts through the prepared route; the server composes NFC. */
+    public function testPhpWithoutIntlStillPostsUnicode(): void
+    {
+        exec('php -n -r '.escapeshellarg('echo class_exists("Normalizer") ? "yes" : "no";'),$o,$code);
+        if (($o[0]??'')!=='no') return; // intl is compiled in; nothing to check
+        [$server,$repo,$db,$root]=SingleRequestHttpTest::server(['FORUM_UNICODE_AUTHORED_TEXT'=>'true']);
+        try {
+            self::$client='quill.php'; $script=self::download($server,$root); self::$client='quill.py';
+            file_put_contents($root.'/body.txt',"Cafe\u{0301} without intl.\n");
+            $base=['--site',$server->url,'--state-dir',self::stateDir($root,'nointl')];
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','Café','--body-file',$root.'/body.txt','--no-report']),'php -n');
+            assertSame(0,$code,$out); assertStringContains('intl extension unavailable',$out);
+            preg_match('/Post-ID: (\S+)/',$out,$id);
+            $post=(string) file_get_contents($server->url.'/api/get_post?post_id='.rawurlencode($id[1]));
+            assertStringContains("Caf\u{00E9} without intl.",$post);
+            assertStringContains('Protocol: prepared',(string) file_get_contents(glob(self::stateDir($root,'nointl').'/*/operation-*/operation.txt')[0]));
+            file_put_contents($root.'/ascii.txt',"Plain ASCII.\n");
+            [$code,$out]=self::run($script,array_merge($base,['thread','--subject','ASCII','--body-file',$root.'/ascii.txt','--no-report']),'php -n');
+            assertSame(0,$code,$out); assertStringNotContains('intl extension unavailable',$out);
+            foreach (glob(self::stateDir($root,'nointl').'/*/keyring') as $home) \ForumRewrite\Security\GpgHomeCleaner::dispose($home);
         } finally {$server->close();}
     }
 }

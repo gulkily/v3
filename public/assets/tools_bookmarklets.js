@@ -151,6 +151,7 @@
     var threadTitle = isStory ? (titleLink ? titleLink.textContent : "") : (onStory ? onStory.getAttribute("title") || onStory.textContent : "");
     var storyId = isStory ? fat.id : (onStory ? (onStory.getAttribute("href").match(/id=(\d+)/) || [])[1] : fat.id);
 
+    var storyStats = isStory && fat.nextElementSibling && fat.nextElementSibling.querySelector(".subline");
     var rows = [].slice.call(document.querySelectorAll("table.comment-tree tr.athing.comtr"));
     var root = null;
     var sel = window.getSelection ? window.getSelection() : null;
@@ -171,6 +172,20 @@
     var rootText = root ? textOf(root.querySelector(".commtext") || root) : textOf(document.querySelector("table.fatitem " + (isStory ? ".toptext" : ".commtext")) || document.createElement("div"));
     var text = "Port-Format: hn-v1\nThread-Title: " + threadTitle.replace(/\s+/g, " ").trim()
       + "\nThread-Link: https://news.ycombinator.com/item?id=" + storyId + "\n";
+    if (storyStats) {
+      var score = storyStats.querySelector(".score");
+      var points = score && score.textContent.trim().match(/^(\d+) points?$/);
+      if (points) text += "Points: " + points[1] + "\n";
+      var links = storyStats.querySelectorAll('a[href="item?id=' + storyId + '"]');
+      for (var i = 0; i < links.length; i++) {
+        var label = links[i].textContent.trim();
+        var count = label.match(/^(\d+)\s+comments?$/);
+        if (count || label === "discuss") {
+          text += "Comment-Count: " + (count ? count[1] : "0") + "\n";
+          break;
+        }
+      }
+    }
     text += block([["Item", rootItem.id], ["Author", rootItem.author], ["Created-At", rootItem.createdAt],
       ["Title", isStory ? threadTitle : ""], ["Link", isStory && titleLink && /^https?:/.test(titleLink.href) && titleLink.href.indexOf("https://news.ycombinator.com/item?id=") !== 0 ? titleLink.href : ""]], rootText);
 

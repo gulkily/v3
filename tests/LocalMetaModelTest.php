@@ -25,10 +25,21 @@ final class LocalMetaModelTest
         $model = LocalMetaModel::train(self::examples());
         $bug = $model->score('Bug: the reply button does nothing', '');
         $hike = $model->score('A weekend at the beach', 'We saw seals.');
-        assertTrue($bug['probability'] > 0.8);
-        assertTrue($hike['probability'] < 0.1);
+        assertTrue($bug['probability'] > 0.6);
+        assertTrue($hike['probability'] < 0.4);
         assertTrue(in_array('bug', $bug['top_words'], true));
         assertTrue(in_array('beach', $hike['top_words'], true) || in_array('weekend', $hike['top_words'], true));
+    }
+
+    public function testLongPostsDoNotDriftToTheEndsJustByBeingLong(): void
+    {
+        $model = LocalMetaModel::train(self::examples());
+        $short = $model->score('Notes on a paper', 'about proteins');
+        $long = $model->score('Notes on a paper', str_repeat('about proteins and rap and a weekend hike, then the page and a button. ', 40));
+        // Summing evidence would push this mixed long post toward 0 or 1; averaging keeps it near its words' typical lean.
+        assertTrue($long['probability'] > 0.2 && $long['probability'] < 0.8);
+        assertTrue($short['probability'] < 0.5);
+        assertSame($model->score('Bug in the theme', 'see #meta and https://example.com/bug-theme-button'), $model->score('Bug in the theme', 'see'));
     }
 
     public function testCyrillicIsNeverMetaAndIsLeftOutOfTraining(): void

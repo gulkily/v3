@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 final class PostActionThemeTest
 {
-    public function testWord97AndChicagoPostActionsUseUiTypography(): void
+    public function testRetroThemePostActionsUseUiTypography(): void
     {
-        foreach (['word97', 'chicago'] as $theme) {
+        foreach (['word97', 'chicago', 'midnight'] as $theme) {
             $css = $this->themeCss($theme);
             $scope = ':root[data-theme="' . $theme . '"]';
 
@@ -15,6 +15,42 @@ final class PostActionThemeTest
             assertStringContains('font-family: var(--ui-font);', $css);
             assertStringContains('text-decoration: none;', $css);
         }
+    }
+
+    public function testWord97AndMidnightPostActionTogglesUseUiTypography(): void
+    {
+        foreach (['word97', 'midnight'] as $theme) {
+            $css = $this->themeCss($theme);
+            $scope = ':root[data-theme="' . $theme . '"]';
+
+            foreach ([
+                ' .post-more-summary',
+                ' .post-more-actions > summary',
+                ' .post-analysis > summary',
+                ' .retraction-details > summary',
+            ] as $selector) {
+                assertStringContains($scope . $selector, $css);
+            }
+        }
+    }
+
+    public function testMidnightLikeAndFlagBevelMatchesWord97(): void
+    {
+        $css = $this->themeCss('midnight');
+        $selector = ':root[data-theme="midnight"] .post-card-actions button.thread-reaction-button'
+            . ':not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.account-row)';
+
+        assertStringContains($selector . ' {', $css);
+        assertStringContains($selector . ':active {', $css);
+        assertStringContains('padding: 0 0.6em;', $css);
+        assertStringContains('border-color: #6a6a6a #000000 #000000 #6a6a6a;', $css);
+        assertStringContains('border-color: #000000 #6a6a6a #6a6a6a #000000;', $css);
+    }
+
+    public function testOutboxStatusUsesUiFontInEveryTheme(): void
+    {
+        $css = file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
+        assertStringContains("[data-role=\"outbox-status\"] {\n  font-family: var(--ui-font);\n}", (string) $css);
     }
 
     public function testChicagoLikeAndFlagBevelStaysScopedAndPressable(): void

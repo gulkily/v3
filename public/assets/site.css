@@ -1608,12 +1608,17 @@ pre {
 }
 
 /* Light-backed pictures glare on a dark page, so dark schemes dim them. */
-.zen-strip img {
+.zen-strip img,
+.zen-gallery img {
   filter: brightness(var(--media-dim, 1));
 }
 
 .zen-strip__card--text {
   min-height: 9rem;
+}
+
+.zen-gallery .zen-strip__card--text {
+  min-height: 0;
 }
 
 .zen-strip__card--text span {
@@ -2283,6 +2288,11 @@ pre {
 
 .outbox-unsent__item {
   border-style: dashed;
+}
+
+/* The Outbox page's status line ("No local drafts…") is UI text, not content. */
+[data-role="outbox-status"] {
+  font-family: var(--ui-font);
 }
 
 /* Post records list (post page) and record page */

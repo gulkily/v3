@@ -41,7 +41,7 @@ final class FeedbackIndex
                 $order = array_search($a->header('Workflow'), self::OPEN_ORDER, true) <=> array_search($b->header('Workflow'), self::OPEN_ORDER, true);
                 return $order !== 0 ? $order : strcmp($a->id(), $b->id());
             });
-            array_push($lines, '', '## ' . $heading, '', '| Item | Title | Workflow | Evidence | Estimate | Sources |', '| --- | --- | --- | --- | --- | --- |');
+            array_push($lines, '', '## ' . $heading, '', '| Item | Title | Workflow | Evidence | Estimate | Impact | Sources |', '| --- | --- | --- | --- | --- | --- | --- |');
             foreach ($kindItems as $item) {
                 $lines[] = self::row($item, $item->header('Workflow'));
             }
@@ -49,7 +49,7 @@ final class FeedbackIndex
 
         if ($closed !== []) {
             usort($closed, static fn (FeedbackItem $a, FeedbackItem $b): int => strcmp($a->id(), $b->id()));
-            array_push($lines, '', '## Closed', '', '| Item | Title | Outcome | Evidence | Estimate | Sources |', '| --- | --- | --- | --- | --- | --- |');
+            array_push($lines, '', '## Closed', '', '| Item | Title | Outcome | Evidence | Estimate | Impact | Sources |', '| --- | --- | --- | --- | --- | --- | --- |');
             foreach ($closed as $item) {
                 $outcome = $item->header('Workflow');
                 $target = $item->header('Duplicate-Of', $item->header('Superseded-By'));
@@ -83,6 +83,7 @@ final class FeedbackIndex
             $workflow,
             $item->header('Evidence', 'unknown'),
             $item->header('Estimate', '—'),
+            $item->header('Impact', '—'),
             (string) count($item->sources),
         ];
         return '| ' . implode(' | ', $cells) . ' |';

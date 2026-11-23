@@ -13,5 +13,5 @@
 ]), 1) ?>
 <?php endforeach; ?>
 <?= $indent($partial('partials/page_navigation.php', ['pagination' => $pagination]), 1) ?>
-  <p class="meta"><a href="/tags/">Back to Tags</a> <span>|</span> <a href="/">Back to Board</a></p>
+  <p class="meta"><a href="/tags/">Back to Tags</a> <span>|</span> <a href="/threads/">Back to Board</a></p>
 </section>

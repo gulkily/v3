@@ -113,9 +113,10 @@ Extended estimates: enabled
 ## Stage 5 - Production gate
 
 **Original estimate: 0.02**
-**Retrospective: pending**
+**Retrospective: 0.03**
 
-- Status: pending, waiting on the maintainer. Slice 1 (Stages 1–4) is on the PR for this branch.
+- Result (2026-11-22): **failed.** First run: 382 meta and 35 not-meta labels, threshold below 0.01 (it tagged almost everything). Second run with `--weak-negatives`: no threshold reached 0.95 precision; all 194 held-out disagreements were posts the model called meta against a not-meta label. Claude's review of the 194: about 78 really meta, 85 clearly not, 31 unclear. Continued as Stage 5 Revision 2 below.
+- Original status: pending, waiting on the maintainer. Slice 1 (Stages 1–4) is on the PR for this branch.
 - To run after merging and deploying:
   1. Tools → Fastmod → Retrain (or `./v3 fast-score local-train` over SSH).
   2. After the next worker run, read the report on the same page.
@@ -123,3 +124,26 @@ Extended estimates: enabled
 - Stages 6–8 don't start until this passes.
 
 *— Claude · 2026-11-14 UTC · Model: claude-opus-5-5*
+
+## Stage 5 Revision 2 - Model fix and operator labels
+
+**Original estimate: 0.10**
+**Retrospective: 0.12**
+
+- Offline replay (scratch, not committed): rebuilt the training set from the 1,608 public roots (`/api/list_index`, `/api/get_post`) and the 368 threads on `/tags/meta`. Claude labeled every untagged root it could: 1,182 labels (340 meta) plus 31 unclear. About one untagged root in four is really meta.
+  - With weak negatives, summing word evidence reached recall 0.14 at precision 0.95 on corrected held-out labels; averaging per word reached 0.57, damped averaging 0.63; damped averaging trained on corrected labels reached 0.84 at the best possible cut.
+  - With the threshold chosen by five folds on the training side only, held-out precision 0.97 and recall 0.69 (Python replay); 0.99 and 0.57 (the PHP code below).
+- Changes:
+  - `LocalMetaModel`: format `fastmod-local-meta-v2`; score is `(prior × 2 + Σ word evidence) / (words + 2)`; tokens skip hashtags and URLs. `LocalMetaFiles::loadModel()` returns null for an older format, so the page and sweep ask for a retrain.
+  - `LocalMetaTraining`: operator labels (`state/private/fastmod_local_meta_labels.txt`, read through `LocalMetaFiles::loadLabels()`) override every other label; five folds by post-ID hash score every labeled root out of fold; threshold, precision and recall come from all of those scores; up to 300 disagreements are listed with the full count shown.
+  - Report: operator label counts; `Cross-Checked` replaces `Held-Out`.
+  - Seed file `docs/plans/fastmod_bayes_meta/zenmemes_local_meta_labels.txt` with the 1,182 labels.
+  - Tests: new length and hashtag/URL test; operator label precedence and parse errors; labels file read by `runAndSave()`; v1 model treated as missing.
+- Verification:
+  - PHP replay on all public data with the seed labels: cross-checked precision 0.95, recall 0.71, threshold 0.58.
+  - `./v3 test --smoke` plus the local meta, Fastmod, worker and post-detail tests: 521 run, 521 passed. `LocalAppSmokeTest::testThreadCardWrapsMediaEmbedPreviewInDiv`, which failed before, now passes on main without changes here.
+  - Full suite not run.
+- Notes: production has about 330 roots that aren't public and aren't in the seed file; without weak negatives they are left out of training.
+- Estimate details: model change and folds small; labeling and replay most of it; uncertainty medium until the production run.
+
+*— Claude · 2026-11-22 UTC · Model: claude-opus-5-5*

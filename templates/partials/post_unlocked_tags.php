@@ -6,6 +6,7 @@ $tagsets = \ForumRewrite\Support\Tagsets::forApplication();
 foreach ($unlockedPostTags as $unlockedTag):
     $isState = $tagsets->exclusiveGroupOf($unlockedTag) !== null;
     $label = $isState ? \ForumRewrite\Support\PostStateView::buttonLabel($unlockedTag, $postResolution) : ucfirst($unlockedTag);
+    $appliedLabel = $isState ? \ForumRewrite\Support\PostStateView::appliedLabel($unlockedTag, $postResolution) : $label;
     $hidden = $isState && \ForumRewrite\Support\PostStateView::buttonHidden($unlockedTag, $postResolution);
 ?>
 <button
@@ -14,6 +15,6 @@ foreach ($unlockedPostTags as $unlockedTag):
   data-action="apply-post-tag"
   data-post-id="<?= $e($post['post_id']) ?>"
   data-tag="<?= $e($unlockedTag) ?>"
-  data-applied-label="<?= $e($label) ?>"
+  data-applied-label="<?= $e($appliedLabel) ?>"
 <?= $isState ? '  data-state-tag="1"' . "\n" : '' ?><?= $hidden ? '  hidden' . "\n" : '' ?>><?= $e($label) ?></button>
 <?php endforeach; ?>

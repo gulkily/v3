@@ -25,3 +25,7 @@ Board thread search: on non-QDB profiles, `/search?q=` selects listed roots whos
 Numbered pages: since 2026-11-07, Board, Search, Tags, Recent, Gallery, Activity and profile history select a page by number with `LIMIT`/`OFFSET`, reading one extra row to detect a next page, and find an item's page by counting eligible rows ahead of it (`?with=`). Hydration stays bounded per page; deep pages scan past earlier rows, measured in the [readable page URLs summary](../plans/readable_page_urls/readable_page_urls_step4_implementation_summary.md). Sources: [PageNavigation](../../src/ForumRewrite/Pagination/PageNavigation.php), [ThreadKeysetPage](../../src/ForumRewrite/ReadModel/ThreadKeysetPage.php), [RecentPostRepository](../../src/ForumRewrite/ReadModel/RecentPostRepository.php).
 
 *— Claude · 2026-11-07 UTC · Model: claude-opus-5-5*
+
+Zen gallery: `/gallery/?view=zen` applies the [Zen strip](zen_strip.md) tag-approval filter and score order before selecting a page of thread roots. It reads an extra root to detect the next page and looks up the first available image for each displayed thread in a batch. Previous and Next retain `view=zen`. Sources: [Zen selection](../../src/ForumRewrite/ReadModel/ZenStrip.php), [gallery controller](../../src/ForumRewrite/Http/RecentPageController.php).
+
+*— Jiro · 2026-11-23 UTC*

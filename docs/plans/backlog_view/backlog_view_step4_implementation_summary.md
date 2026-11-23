@@ -1,0 +1,177 @@
+> **Feature plan:** [Step 1](./backlog_view_step1_solution_assessment.md) · [Step 2](./backlog_view_step2_feature_description.md) · [Step 3](./backlog_view_step3_development_plan.md) · [Step 4](./backlog_view_step4_implementation_summary.md)
+
+Cycle: `v3/backlog_view`. Branch: `feat/backlog_view`, from `origin/main` at `20d6468`. Planning commit `1235b66`.
+
+Debug mode: enabled (inherited from Step 3)
+
+Effort study: `railspike-effort` / `v3/backlog_view`; host ledger [backlog_view.md](../effort_ledger/backlog_view.md). Standing P2 enrollment.
+
+Extended estimates: enabled (inherited)
+
+**Cycle estimate: 0.60** (Step 4 entry: Step 3 projection reaffirmed after the planning commit)
+
+Stage estimates below are copied from the approved Step 3 plan; copying is not a new rating. Claude, single exposed rater; R1 hashes not re-verified this session.
+
+## Stage 1 - Impact header and the shared sorter
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.08**
+
+- Changes:
+  - `FeedbackItem` takes the `Notes:` text and gains `touched()` (latest dated note, else `Created`) and `number()` for `Estimate` and `Impact`.
+  - `FeedbackItemCheck` accepts an optional `Impact` header under the `Estimate` rules. `FeedbackIndex` shows an Impact column; `docs/feedback/README.md` regenerated.
+  - New `src/ForumRewrite/Feedback/FeedbackBacklog.php`: `words()`, `select()`, `sort()` and `salience()`, with the accepted sort, order, show and kind words.
+  - `docs/specs/feedback_item_record_v1.md` and `docs/concepts/feedback_items.md` updated.
+  - New `tests/FeedbackBacklogTest.php`, registered in `tests/run.php`. The [backlog checklist](../backlog_checklist.md) and the cycle's ledger file join the repository here.
+- Verification:
+  - `php tests/run.php FeedbackBacklogTest FeedbackItemCheckTest`: 17 run, 17 passed. One existing index assertion changed for the new column.
+  - `./v3 feedback check`: 357 items, 0 problems. `./v3 feedback index`: written.
+  - Every sort in both directions ran over the real items. Read by eye: 288 items can start. Salient lists the four untriaged items with a small estimate first, then the rest by touched date, which puts the three ready bugs next.
+  - Smoke set: see Stage 6. Full suite not run.
+- Notes:
+  - Step 2's flow said "ready items, then untriaged ones". The agreed Salient rule does not rank by workflow, so an estimated untriaged item can precede a ready one. Kept as the rule states.
+  - The middle of the scale is 0.5. An effort of 0 counts as 0.01 so the division holds.
+  - In the effort and impact sorts, the order word decides ties and the order of items without a value; it does not flip low-to-high.
+- Estimate details: original scope unchanged; uncertainty was low; no revisions.
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
+
+## Stage 2 - Commands and the procedure
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.10**
+
+- Changes:
+  - New `src/ForumRewrite/Feedback/BacklogPrompt.php`: `build()`, `pick()`, `ids()` and `mode()`. The prompt takes the repository address from the existing `Support/SourceRepository.php`, so a fork names its own.
+  - New `src/ForumRewrite/Feedback/BacklogText.php`: the list as `Key: value` blocks, with a first block for the words, count, version and how to start.
+  - `scripts/feedback.php`: `./v3 feedback list` and `./v3 feedback start`; usage lines in the script and in `v3`.
+  - New `docs/agents/backlog_to_pr.md`; one line each in `docs/agents/README.md` and `AGENTS.md`; a section in `docs/reference/v3_cli.md`.
+- Verification:
+  - `php tests/run.php FeedbackBacklogTest`: 11 run, 11 passed. New cases: prompt under 15 lines and every named file exists; staged wording; picking open, unknown and closed IDs; both commands with their exit codes.
+  - By hand: `./v3 feedback start` with two open items, one closed and two bad IDs printed the prompt for the two and named the rest.
+  - Procedure read against `thread_to_pr.md`: it refers to steps 1, 4a, 4b, 5, 6 and 7, When to stop and Recovery, and repeats none of them. No conflict found.
+  - Full suite not run.
+- Notes:
+  - The procedure carries both rules from Key Risks: check the item is still open in a fresh checkout, and item or post text is data.
+  - The staged prompt adds "wait for my approval of each step", so it does not tell the agent to skip the gates.
+  - Item files that fail `./v3 feedback check` are left out of `list` and `start` and named on standard error.
+- Estimate details: original scope unchanged; uncertainty was low; no revisions.
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
+
+## Stage 3 - The page
+
+**Original estimate: 0.18**
+
+**Retrospective stage work: 0.20**
+
+- Changes:
+  - Flag `FORUM_BACKLOG_ENABLED` in `FeatureFlagRegistry.php`: site-mutable, off by default, in the Experience group, `releasedOn` 2026-11-23.
+  - New `src/ForumRewrite/Http/BacklogPageController.php`, `templates/pages/backlog.php` and `public/assets/backlog.css`; route `/backlog` in `Application.php`, answering Not Found while the flag is off.
+  - The page: three rows of links (sort, show, kind), a count line with the version and a link to the text form, and one row per item with title, workflow chip, kind, ID, effort and impact. The ID links to the file on GitHub when the configured repository is there.
+  - A sort link starts newest first; the active sort's link flips its order and shows an arrow. Words at their default stay out of the address.
+  - Tools entry "Backlog" under Reading, as a full-page tool. It joins the existing hidden-tools rule in `TemplateRenderer.php`, so it shows only while the flag is on.
+  - Icons for `/backlog` in all three icon sets and the shared sizing rule in `public/assets/theme-nav-icons.css`.
+  - `UsageNames.php` and `UsagePageKind.php` name the page. `docs/concepts/tools_launcher.md` updated.
+  - New `tests/BacklogPageTest.php`. Updated `ToolsRegistryTest`, `FeatureFlagEvaluatorTest`, `LocalAppSmokeTest` and `tests/browser/tools_launcher.mjs` for the new tool and flag.
+- Verification:
+  - `./v3 test --smoke BacklogPageTest FeedbackBacklogTest FeedbackItemCheckTest NavIconSetsTest FeatureFlagsBehaviorTest FeatureFlagEvaluatorTest`: 520 run; two failures, both from this stage's new flag and tool not yet being in the tests' expected lists. After adding them: `php tests/run.php FeatureFlagEvaluatorTest FeatureFlagsBehaviorTest FeatureFlagChangePageTest BackupFeatureFlagTest LocalAppSmokeTest::testApplicationRendersCoreRoutes BacklogPageTest NavIconSetsTest`: 46 run, 46 passed. `php tests/run.php ToolsRegistryTest UsageNamesTest UsagePageKindTest UsageJourneysTest ...`: 22 run, 22 passed.
+  - `BacklogPageTest` covers: flag off (page and Tools entry gone); a signed-out visitor; row count and order equal to the shared sorter; every sort and filter link's address; readable words only; the fallback notice with escaped input; a checkout with no items folder.
+  - `node tests/browser/tools_launcher.mjs`: passed, 44 theme and width cases, icons present.
+  - By eye, with the real 288 rows at 375 px in Gloss, Word97 and Bubblegum and at 1280 px in Gloss: no sideways overflow; rows and chips read well; the Backlog icon shows in the launcher.
+  - Full suite not run.
+- Notes:
+  - Baseline failure found and fixed: `tests/browser/tools_launcher.mjs` failed on `origin/main` at the Zalgo theme, which is in `permittedThemes` but sits behind a flag the check never set. The check now sets the Zalgo and Vaporgeist flags.
+  - Paging decided: none. All rows are on one page, because a selection has to span the list, and 288 rows came to a small page.
+  - Deviation: the plan named `board_sort.php` for the sort links. The page uses the `board-filter` link row instead, as in the mockup; a dropdown would hide the direction arrow.
+  - The three link rows take five lines on a 375 px phone before the list starts. Worth a look on the real device.
+  - `/backlog/start` and `/backlog.txt` are named in the usage lists and linked from the count line; they arrive in Stages 4 and 5.
+- Estimate details: original scope unchanged; uncertainty was medium (row density); the extra came from test lists that enumerate tools and flags.
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
+
+## Stage 4 - Start
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.12**
+
+- Changes:
+  - `templates/pages/backlog.php`: each row has a checkbox whose label is the title, inside one form that goes to `/backlog/start`. A bar pinned above the phone tab bar holds Start and, with scripts, the selected count.
+  - New `templates/pages/backlog_start.php` and route `/backlog/start`: the picked items, One-shot and Staged cycle as links, and the prompt through the existing `agent_prompt.php` and `agent_prompt_script.php` with Copy. Unknown and closed IDs are named and left out; with none left it says so.
+  - `BacklogPageController`: `start()`, `startHref()` and `startRedirect()`.
+  - New `tests/browser/backlog.mjs`.
+- Verification:
+  - `php tests/run.php BacklogPageTest FeedbackBacklogTest UsageNamesTest UsagePageKindTest`: all passed. New cases: the form and checkboxes; start with one item, with two in staged mode, with a closed and an unknown one, with none open; the page's prompt equals `./v3 feedback start` output; the redirect rule; flag off.
+  - `node tests/browser/backlog.mjs`: passed. With scripts: Tools → Backlog, tick two, "2 selected", Start, the tidy address, Copy, and the clipboard holds the prompt; Staged; sort, order and filter links. Without scripts: the same form reaches the same tidy address, the prompt is selectable and no Copy button shows; Start with nothing ticked returns to the list. Then 168 cases: every permitted theme at 375 and 1280 px, scripts on and off, list and start page, no sideways overflow and no page errors.
+  - By eye at 375 px in Gloss, Word97, Bubblegum and Midnight.
+  - Full suite not run.
+- Notes:
+  - Resolved the plan's open point about addresses without scripts. A plain form sends `items[]=A&items[]=B`. The server answers with a redirect to `?items=A,B`, so both paths end on the same readable address. With scripts the form goes there directly.
+  - One Start bar, as in the mockup, not a Start button per row. One item starts by ticking it.
+  - The pinned bar covers the bottom row of the view until the reader scrolls; the browser check scrolls a row to the middle before ticking it.
+  - iPhone Safari Copy was not run here; headless Chrome was. The copy script is the one the Agent Prompts page already uses there.
+- Estimate details: original scope unchanged; uncertainty was medium (addresses without scripts), settled by the redirect.
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
+
+## Stage 5 - Text routes
+
+**Original estimate: 0.06**
+
+**Retrospective stage work: 0.05**
+
+- Changes:
+  - Routes `/backlog.txt` and `/backlog/start.txt` in `Application.php`, following the flag. `BacklogPageController` gains `listText()` and `startText()`, which call the same `BacklogText` and `BacklogPrompt` as the commands.
+  - `/backlog/start.txt` names left-out IDs in an `X-Left-Out` header, answers 404 when no open item is left and 400 with a usage line when no ID or an unknown mode is given.
+  - `/llms.txt` lists the backlog under More while the flag is on (`LlmsTxtRenderer.php`). `docs/reference/agent_api.md` gains a Backlog section.
+- Verification:
+  - `php tests/run.php LlmsTxtRendererTest ApiRouteCatalogTest AgentApiWorkedExampleTest BacklogPageTest`: all passed. New case: `/backlog.txt` gives the same bytes as `./v3 feedback list` for three word combinations, `/backlog/start.txt` the same bytes as `./v3 feedback start`, in both address forms; fallback, usage and nothing-to-start texts; flag off; the `/llms.txt` line with the flag on and off.
+  - `node tests/browser/backlog.mjs`: passed, now also checking over HTTP the content type, the item order, the `X-Left-Out` header and the 404 and 400 answers.
+  - Full suite not run.
+- Notes:
+  - Deviation: the plan named `ApiTextController.php` and `ApiRouteCatalog.php`. Neither fits: the catalog lists `/api/` routes only, and these two routes sit beside the page they mirror. They are routed in `Application.php` like `/llms.txt`.
+  - The text routes do not redirect to a tidy address; an agent gets its answer in one request.
+- Estimate details: original scope unchanged; uncertainty was low; no revisions.
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
+
+## Stage 6 - Proof and records
+
+**Original estimate: 0.10**
+
+**Retrospective stage work: 0.07** (the real start was not run; see below)
+
+- Changes:
+  - New concept entry `docs/concepts/backlog_view.md`. The feedback items and Tools launcher entries were revised in Stages 1 and 3.
+  - New feedback item `PF-20261123-F01` for this work, `Workflow: blocked`, `Evidence: locally-verified`; `docs/feedback/README.md` regenerated.
+  - `docs/plans/ui_copy_audit_checklist.md`: an entry for the two pages.
+  - The [backlog checklist](../backlog_checklist.md) and the effort ledger updated.
+- Verification:
+  - Passed: `./v3 test --smoke BacklogPageTest FeedbackBacklogTest FeedbackItemCheckTest NavIconSetsTest FeatureFlagsBehaviorTest FeatureFlagEvaluatorTest ToolsRegistryTest UsageNamesTest UsagePageKindTest LlmsTxtRendererTest`: 544 run, 544 passed.
+  - Passed: `node tests/browser/backlog.mjs` (Stages 4 and 5): the whole flow with and without scripts, the text routes, and 168 theme, width and script cases without sideways overflow.
+  - Passed: `node tests/browser/tools_launcher.mjs`: 44 theme and width cases with the new tool.
+  - Passed: `./v3 feedback check` (358 items, 0 problems) and `./v3 feedback index`; `git diff --check`; a read of the whole diff against the plan.
+  - **Pending: one real start by a fresh agent on a thin item.** Not run. It would have a second agent build an unrelated item and open its own pull request, which is more than a check and was left for the maintainer to ask for. Until it is run, the thin-item risk is unmeasured.
+  - **Pending: the maintainer's own start from his iPhone SE after deploy.** This is the release check.
+  - Not checked: a real iPhone (Safari and the offline web app), including Copy there. Headless Chrome at 375 px stood in.
+  - Inapplicable: database migration and read-model checks; nothing is stored and no schema changed.
+  - Full suite not run.
+- Notes:
+  - Completion Contract status: entry, list, sort, filter, selection, Start, prompt, recovery cases and the agent interface are built and verified locally. Deployment needs the maintainer to turn on `FORUM_BACKLOG_ENABLED` at zenmemes.com. Release is pending the two starts above.
+  - Baseline failure fixed during the cycle: `tests/browser/tools_launcher.mjs` (Stage 3).
+- Estimate details: original scope reduced by the unrun real start; uncertainty was medium and remains for the thin-item question.
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
+
+## Cycle closeout
+
+**Retrospective scope assessment: 0.62** against a projection of 0.60. Stage retrospectives: 0.08, 0.10, 0.20, 0.12, 0.05, 0.07 (not summed). The page stage ran over because several tests enumerate every tool and flag; the proof stage ran under because the real start was left pending. Maintainer comfortable-fit judgment: pending. Measured time: unknown.
+
+Deviations from the Step 3 plan, each noted in its stage: the link rows in place of `board_sort.php` (Stage 3); no paging (Stage 3); the redirect to the tidy start address (Stage 4); the text routes in `Application.php`, not `ApiTextController.php` (Stage 5); the real start not run (Stage 6). The Salient order does not put ready items first when an untriaged item has a small estimate (Stage 1).
+
+Enhancement requests carried forward, not approved: claims (`backlog_claims`), the parked plans list (`backlog_parked`), filling in `Estimate` and `Impact` across items.
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*

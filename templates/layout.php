@@ -264,6 +264,9 @@
   </script>
 <?php if ($appVersionNotificationEnabled): ?>
   <meta name="app-version" content="<?= $e($appVersion) ?>">
+<?php if (($navCachedCopyScriptPath ?? null) !== null): ?>
+  <meta name="page-version" content="<?= $e($pageVersion) ?>">
+<?php endif; ?>
   <meta name="app-version-endpoint" content="<?= $e($versionEndpoint) ?>">
 <?php if ($versionStorageKey !== 'forum_pending_app_version'): ?>
   <meta name="app-version-storage-key" content="<?= $e($versionStorageKey) ?>">
