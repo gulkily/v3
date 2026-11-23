@@ -2,7 +2,7 @@
 
 | Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
 | --- | --- | --- | --- | --- | --- |
-| `v3/backlog_view` | Step 4 complete; PR pending | v3 / R1 / P2 | 0.60 (v2 0.70, v1 0.50); retrospective 0.62 | [Step 1](../backlog_view/backlog_view_step1_solution_assessment.md#study-snapshots-and-approval), [Step 2](../backlog_view/backlog_view_step2_feature_description.md#study-snapshots-and-approval), [Step 3](../backlog_view/backlog_view_step3_development_plan.md#study-snapshots-and-approval), [Step 4](../backlog_view/backlog_view_step4_implementation_summary.md#cycle-closeout) | New cycle; related to parked `v3/work_page`; maintainer judgment pending |
+| `v3/backlog_view` | Step 4 complete; PR #377 open | v3 / R1 / P2 | 0.60 (v2 0.70, v1 0.50); retrospective 0.62 | [Step 1](../backlog_view/backlog_view_step1_solution_assessment.md#study-snapshots-and-approval), [Step 2](../backlog_view/backlog_view_step2_feature_description.md#study-snapshots-and-approval), [Step 3](../backlog_view/backlog_view_step3_development_plan.md#study-snapshots-and-approval), [Step 4](../backlog_view/backlog_view_step4_implementation_summary.md#cycle-closeout) | New cycle; related to parked `v3/work_page`; maintainer judgment pending |
 
 2026-11-23 — Step 1. Intake and handoff **0.50** for Option B (A 0.15, C 0.80; alternatives, not summed). Single exposed Claude rater. Measured time unknown.
 

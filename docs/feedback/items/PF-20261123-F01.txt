@@ -17,3 +17,4 @@ With the Backlog flag on at zenmemes.com, the maintainer opens Tools → Backlog
 
 Notes:
 2026-11-23: staged cycle on feat/backlog_view (docs/plans/backlog_view/), the first of three tracked in docs/plans/backlog_checklist.md. This cycle: the page, five sorts, filters, the Impact header, Start with a short prompt, the text routes, the commands and docs/agents/backlog_to_pr.md. Not in this cycle: claims (next cycle backlog_claims) and the parked plans list (backlog_parked). Verified locally with page tests and a browser check in every permitted theme at 375 and 1280 px, scripts on and off. Not done: a real start by a fresh agent, and the maintainer's own start from his phone. Blocked on review, merge, a deploy with FORUM_BACKLOG_ENABLED on, and that start.
+2026-11-23: PR https://github.com/gulkily/v3/pull/377 opened.
