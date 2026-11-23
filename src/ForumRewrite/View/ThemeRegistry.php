@@ -42,6 +42,8 @@ final class ThemeRegistry
         'sticker' => 'arena',
         'arena' => 'sticker',
         'ochre' => 'dark',
+        'underground' => 'mitrapclub',
+        'mitrapclub' => 'underground',
     ];
 
     /**
@@ -82,6 +84,7 @@ final class ThemeRegistry
             ['name' => 'chouse', 'label' => 'Chouse', 'mode' => 'dark'],
             ['name' => 'qdb', 'label' => 'QDB', 'mode' => 'light'],
             ['name' => 'mitrapclub', 'label' => 'MIT Rap Club', 'mode' => 'dark'],
+            ['name' => 'underground', 'label' => 'Underground', 'mode' => 'light'],
             ['name' => 'ochre', 'label' => 'Ochre', 'mode' => 'light', 'script' => true],
         ];
     }

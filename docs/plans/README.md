@@ -13,6 +13,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Publisher CLI conventions](publish_keys_cli_conventions/publish_keys_cli_conventions_one_shot.md) — hostname handling, visible source repository and help consistency follow-up.
 - [Direct key publication](publish_keys_direct/publish_keys_direct_one_shot.md) — publish by default, preview with --dry-run; remove mandatory review files and fingerprint copying.
 - [Publisher PR handoff](publisher_pr_handoff/publisher_pr_handoff_one_shot.md) — epic checklist, main integration and public-key publisher PR.
+- [Post format defaults](post_format_default_docs/post_format_default_docs_one_shot.md) — clarify prepared, unsigned and direct-signed posting defaults.
 - [Zen gallery accessibility intake](zen_gallery_accessibility_intake/zen_gallery_accessibility_intake_one_shot.md) — record the generic names on two image-only links.
 - [Zen meme gallery](zen_meme_gallery/zen_meme_gallery_one_shot.md) — the homepage thumbnail row opens a gallery of the same collection.
 - [Quill prints the thread link](quill_thread_link/quill_thread_link_one_shot.md) — after a post, Quill prints `/threads/<thread>` (with `#<post>` for a reply) instead of `/posts/<post>`.
@@ -673,6 +674,7 @@ and repair its navigation and affected references. See the
 - [Zen strip grid](zen_strip_grid/zen_strip_grid_one_shot.md) — one-shot: the Zen strip becomes a wrapping grid of whole, readable images.
 - [Zen hero](zen_hero/zen_hero_step1_solution_assessment.md) — staged: the front page shows one top-liked Zen meme with a row of tiny thumbnails that opens All, on the home page only.
 - [Board nav to /threads/](board_nav_threads/board_nav_threads_one_shot.md) — one-shot: Board links to /threads/, so the Zen hero only greets the home page.
+- [Underground theme](underground_theme/underground_theme_one_shot.md) — one-shot: a lavender-and-ultramarine halftone theme from the MIT Rap Club "underground concert" flyer; default on the mitrapclub profile.
 - [Image loading](image_loading/image_loading_step1_solution_assessment.md) — staged: images load faster through browser caching, a lighter serving path and home page tweaks.
 
 - [Calendar export timezone](calendar_export_timezone/calendar_export_timezone_one_shot.md)

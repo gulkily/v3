@@ -5,7 +5,7 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.25**
 
-Status: integration and epic checklist locally verified; ready to push and open PR.
+Status: checklist updated and PR #387 open; final metadata push and read-back pending.
 Authorization: 2026-11-23 session user asks "do we have a checklist for this epic that we can update? please go ahead and make pr". Authorizes updating the existing epic coordination record, integration needed for a reviewable publisher PR, branch push and PR creation. No merge/deploy, additional messaging feature, live key publication or external forum reply.
 Parent: [direct publication](../publish_keys_direct/publish_keys_direct_one_shot.md), with original publisher and CLI follow-ups retained. Scope is documentation/integration/release handoff; no new application feature. Existing ordinary CLI and safety contracts remain unchanged.
 Starting revisions: c6e73b7d1; freshly fetched origin/main 2e14bcb96. New feat/publish-public-keys branch in the existing /home/wsl/v3-publish-local-public-keys checkout; remote branch absent and no existing direct-publication PR found. No new worktree; original ~/v3 untouched.
@@ -35,7 +35,7 @@ Concepts touched: existing public-key publication and historical-message recover
 
 2026-11-23T17:41:46Z: Intake unavailable after prior review/exposure; no retrospective intake invented. Entry whole-cycle projection 0.25, v1/R1/P2, exposed Codex rater; R1 hashes verified. Includes checklist evidence reconciliation, fresh-main/feedback collision handling and PR verification. No measured labor or artificial stages. Maintainer fit and acceptance pending.
 
-Outcome: pending. Commit/push/PR/merge/deployment: planning pending, others not yet performed.
+Outcome: epic checklist reconciled and publisher PR opened. Planning bf7d48966; integration 9ac6dfe94 pushed; PR https://github.com/gulkily/v3/pull/387 . Final metadata/integration commit reference is the commit introducing this closeout. No PR merge or deployment performed.
 Attribution: Codex, 2026-11-23 UTC.
 
 2026-11-23: Integrated origin/main 2e14bcb96 without rewriting prior publisher commits. Three conflicts were limited to plan/feedback indexes and the colliding B04 file. Plans index preserves both sides; feedback index regenerated. Main's canonical Ochre B04 is byte-identical, original local publisher B04 is archived byte-identical, and new canonical publisher intake B02 explains the collision/historical trailers. No authored application behavior change; normal auto-merge preserved both current main and publisher CLI/help. Runtime verification reruns because main advanced.
@@ -45,3 +45,19 @@ Attribution: Codex, 2026-11-23 UTC.
 2026-11-23: Integrated smoke/affected checks: ./v3 test --smoke PublishKeysCommandTest PublicKeyPublisherTest PublicKeyPublishHttpTest InstanceSourceResolverTest ScriptsIndexTest — 513 run, 509 passed, only the same four parent-reproduced Unicode/PCRE failures. All selected publisher/resolver/index and actual API checks passed; no full suite run. PHP syntax, bash syntax, help and git diff --check pass. Feedback check: 361 items, zero problems, 36 existing source-review notices; index regenerated. Verified main's B04 and the original publisher archive byte-for-byte.
 
 2026-11-23: Existing epic had stale "not pushed" claims: ed36a069, 95ac3114, 34b48f40 and 68a5a3fd are proven ancestors of fetched origin/main. Updated code-availability wording without claiming deployment, linked implemented sender-assisted/bounded-background recovery, and repaired the epic's missing old FDP workflow link to Railspike. No new runtime feature was implemented. Per-key live registration/approval/decryption evidence still unchecked.
+
+## Closeout
+
+**Retrospective cycle scope assessment: 0.25**
+
+2026-11-23T17:48:54+00:00: Whole-cycle retrospective made separately from entry projection 0.25, same v1/R1/P2 and exposed Codex rater. Missing intake remains unavailable; no measured labor, artificial stages or independent-rating claim. Maintainer fit/acceptance date pending. Parent cycles are not recounted as new outcomes.
+
+PR #387 created successfully via the connected GitHub tool, title "Publish local public keys to another instance", head feat/publish-public-keys, base main, open and not merged. URL: https://github.com/gulkily/v3/pull/387 . Epic's Open PR milestone checked; review/merge/update and live per-key/approval/decryption verification remain unchecked. User's reported production run remains separate from accepted per-key evidence.
+
+Main advanced to 93295c828 while opening the PR, so the initial metadata reported a conflict. Integrated that revision, preserving both sides of the single plan-index conflict. Existing main's theme/post-format changes are not authored publisher changes. Final focused PublishKeysCommandTest/PublicKeyPublisherTest/PublicKeyPublishHttpTest/InstanceSourceResolverTest/ScriptsIndexTest: 26/26 pass on this latest integration. Prior smoke at 2e14bcb96: 509/513 with four reproduced baseline failures. No repeat broad run after the final theme/docs integration; focused actual API checks cover publisher/shared registration, and authored changes remain coordination/integration only. Full suite not run and CI/full-suite results not awaited.
+
+Passed: scoped links and epic workflow link repair, feedback check/index (361 items, zero problems, 36 source-review notices), exact canonical B04/archive preservation, PHP/bash syntax, help and git diff --check. Final diff against main inspected for only publisher/tests/documentation/handoff; no new API, schema, dependency or authored browser/theme/navigation behavior. Corresponding UI/migration checks inapplicable. Production key publication, actual history recovery and deployment were not performed in this cycle.
+
+Next action: review PR #387, merge/update the normal checkout through the maintainer's workflow, then record per-key destination registration/approval and replay existing encrypted-history recovery with an available source. Keep feedback B02 blocked pending review/deployment acceptance and broad F03 open. No external forum reply authorized or sent. Final PR state/head verification follows the authorized push; its commit's own hash is intentionally not fabricated here.
+
+Attribution: Codex, 2026-11-23 UTC.

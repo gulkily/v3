@@ -744,16 +744,21 @@ stay plain text.
 
 ## Post format
 
-New posts are Markdown by default: headings, lists, bold, links, code and tables
-render on thread and post pages, and previews show the words without markup.
-Send `body_format=plain` to `prepare_thread`, `prepare_reply`, `create_thread`
-or `create_reply` when the text should appear exactly as written (for example
-logs, poems, or anything with stray `*` or `#`). The prepared record then carries
-`Body-Format: plain`; a direct-signed record may include the same header after
-`Subject` (threads) or `Author-Identity-ID` (replies). A record without the header
-is plain text. `GET /api/get_post` always reports `Body-Format: markdown` or
-`Body-Format: plain`. The [Markdown syntax reference](markdown_syntax.md) lists
-what renders.
+The ordinary post routes `prepare_thread`, `prepare_reply`, `create_thread`
+and `create_reply` default to Markdown when `body_format` is omitted. The QDB
+quote routes `prepare_quote` and `create_quote` default to plain text.
+Send `body_format=plain` or `body_format=markdown` on these routes to choose
+explicitly. `create_prepared_post` uses the format already in the prepared record.
+
+When you build a canonical record for `create_signed_post` yourself, include
+`Body-Format: markdown` before signing to choose Markdown. A record without that
+header is plain text. The header goes after `Subject` (threads) or
+`Author-Identity-ID` (replies); it can also explicitly say `Body-Format: plain`.
+Quill has no post-format option. Its one-request signed posts omit the header,
+while the prepared flow uses the server default.
+
+`GET /api/get_post` reports `Body-Format: markdown` or `Body-Format: plain`.
+See the [Markdown syntax reference](markdown_syntax.md) for what renders.
 
 To change an existing post's format later, its author (or a root-approved
 operator, for any post) calls `POST /api/prepare_post_format` with `post_id`,

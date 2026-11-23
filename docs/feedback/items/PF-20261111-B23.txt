@@ -1,9 +1,9 @@
 ID: PF-20261111-B23
 Title: llms.txt ambiguous about Markdown default
 Kind: bug
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-11
-Evidence: unknown
+Evidence: locally-verified
 
 Request:
 llms.txt says new posts render as Markdown and also that a record without Body-Format is plain; say which default applies to which route.
@@ -14,3 +14,4 @@ Sources:
 Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 Agent-filed (Claude). Related to PF-20261030-B26.
+2026-11-23: fix/document-post-format-defaults clarifies endpoint defaults and direct-signed records in the agent guide and linked documentation; locally verified, awaiting review and deployment.

@@ -13,7 +13,7 @@ final class PresentationSlotRegistry
         'compose' => ['fallback' => 'thread', 'choices' => ['thread', 'qdb']],
         'about' => ['fallback' => 'default', 'choices' => ['default', 'chouse']],
         'editorial' => ['fallback' => 'zenmemes', 'choices' => ['zenmemes', 'boston', 'qdb', 'mitrapclub']],
-        'brandedStylesheet' => ['fallback' => 'site', 'choices' => ['site', 'chouse', 'qdb', 'mitrapclub']],
+        'brandedStylesheet' => ['fallback' => 'site', 'choices' => ['site', 'chouse', 'qdb', 'mitrapclub', 'underground']],
         'toolsNav' => ['fallback' => 'visible', 'choices' => ['visible', 'hidden']],
         'favicon' => ['fallback' => 'default', 'choices' => ['default', 'chouse', 'qdb', 'mitrapclub']],
     ];

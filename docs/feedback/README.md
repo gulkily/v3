@@ -262,6 +262,7 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261108-B01](items/PF-20261108-B01.txt) | Sent reply briefly shows without header and footer | blocked | locally-verified | — | — | 4 |
 | [PF-20261110-B01](items/PF-20261110-B01.txt) | Page titles are inconsistent across pages | blocked | locally-verified | — | — | 4 |
 | [PF-20261111-B02](items/PF-20261111-B02.txt) | Favicon odd in light theme | blocked | locally-verified | — | — | 1 |
+| [PF-20261111-B23](items/PF-20261111-B23.txt) | llms.txt ambiguous about Markdown default | blocked | locally-verified | — | — | 1 |
 | [PF-20261114-B01](items/PF-20261114-B01.txt) | Bubblegum: You menu buttons and wrapping tool labels | blocked | locally-verified | — | — | 1 |
 | [PF-20261115-B01](items/PF-20261115-B01.txt) | Bubblegum: open More tab label invisible on phones | blocked | locally-verified | — | — | 1 |
 | [PF-20261116-B01](items/PF-20261116-B01.txt) | Agent posts land as guest with run-together tags and nothing says so | blocked | locally-verified | — | — | 3 |
@@ -341,7 +342,6 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261111-B20](items/PF-20261111-B20.txt) | Account page expandos look broken | untriaged | unknown | — | — | 1 |
 | [PF-20261111-B21](items/PF-20261111-B21.txt) | Gloss SQLite viewer cells clipped | untriaged | unknown | — | — | 1 |
 | [PF-20261111-B22](items/PF-20261111-B22.txt) | frm.py cannot post Markdown | untriaged | unknown | — | — | 4 |
-| [PF-20261111-B23](items/PF-20261111-B23.txt) | llms.txt ambiguous about Markdown default | untriaged | unknown | — | — | 1 |
 | [PF-20261111-B24](items/PF-20261111-B24.txt) | frm.py keyring path too long on headless hosts | untriaged | unknown | — | — | 3 |
 | [PF-20261111-B25](items/PF-20261111-B25.txt) | Post menu missing on cached pages | untriaged | unknown | — | — | 1 |
 | [PF-20261111-B26](items/PF-20261111-B26.txt) | First visits are slow | untriaged | unknown | — | — | 2 |

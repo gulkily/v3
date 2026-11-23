@@ -236,7 +236,7 @@ new, unimplemented feature.
   of every key. The earlier preview's local `guest` name conflict was refused.
 - [ ] Record per-key production results and resolve any refused/unknown outcome;
   rerun should skip accepted identities without duplicates.
-- [ ] Open the publisher PR.
+- [x] Open the publisher PR: [#387](https://github.com/gulkily/v3/pull/387).
   [PR handoff](publisher_pr_handoff/publisher_pr_handoff_one_shot.md).
 - [ ] Review and merge the PR, then update the normal checkout.
 - [ ] Verify the intended keys have the appropriate account approval on the
