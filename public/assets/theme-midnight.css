@@ -182,6 +182,38 @@
     inset 1px 1px 0 0 #000000;
 }
 
+/* Post actions (Reply, Like, Flag, Agent, Retract, and the More, "…", Post
+   analysis and retraction Details toggles) are UI controls, as in Word 97:
+   UI font, no underline. */
+:root[data-theme="midnight"] .post-card-actions > a[href^="/compose/reply"],
+:root[data-theme="midnight"] .thread-reaction-button,
+:root[data-theme="midnight"] .post-more-summary,
+:root[data-theme="midnight"] .post-more-actions > summary,
+:root[data-theme="midnight"] .post-analysis > summary,
+:root[data-theme="midnight"] .retraction-details > summary {
+  font-family: var(--ui-font);
+  text-decoration: none;
+}
+
+/* Like and Flag in the action row: draw the raised bevel from the border
+   (light top-left, black bottom-right) with room on the sides, like Word 97's.
+   The selector repeats the generic button rule's :not() chain so it outranks it. */
+:root[data-theme="midnight"] .post-card-actions button.thread-reaction-button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.account-row) {
+  padding: 0 0.6em;
+  border: 1px solid;
+  border-color: #6a6a6a #000000 #000000 #6a6a6a;
+  box-shadow:
+    inset 1px 1px 0 0 #4a4a4a,
+    inset -1px -1px 0 0 #1a1a1a;
+}
+
+:root[data-theme="midnight"] .post-card-actions button.thread-reaction-button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.account-row):active {
+  border-color: #000000 #6a6a6a #6a6a6a #000000;
+  box-shadow:
+    inset 1px 1px 0 0 #1a1a1a,
+    inset -1px -1px 0 0 #4a4a4a;
+}
+
 :root[data-theme="midnight"] .nav-link {
   border: 1px solid transparent;
   background: transparent;

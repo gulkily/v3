@@ -1,9 +1,9 @@
 ID: PF-20261111-F19
 Title: Midnight Like and Flag match Word 97
 Kind: feature
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-11
-Evidence: unknown
+Evidence: locally-verified
 
 Request:
 Bring the button styling (Like/Flag) in Midnight in line with the Word 97 theme.
@@ -11,6 +11,10 @@ Bring the button styling (Like/Flag) in Midnight in line with the Word 97 theme.
 Sources:
 - https://zenmemes.com/posts/thread-20261107024511-eda36827
 
+Done when:
+In Midnight, Like and Flag (and the other post actions) look like Word 97's in dark: UI font, no underline, side padding and a border-drawn raised bevel.
+
 Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 Compare PF-20261104-F48 and PF-20261104-F66.
+2026-11-23: triaged as real (source post now 404; the maintainer asked for it directly after PR #380). Midnight got Word 97's post-action typography rule and Like/Flag bevel rule in its own greys. One-shot midnight_action_fonts on fix/midnight_action_fonts (record docs/plans/midnight_action_fonts/midnight_action_fonts_one_shot.md); computed-style and screenshot checked in headless Chrome; awaiting review, deployment and a look on the phone.

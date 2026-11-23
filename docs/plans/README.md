@@ -669,6 +669,7 @@ and repair its navigation and affected references. See the
 - [Zen strip](zen_strip/zen_strip_step1_solution_assessment.md) — staged: the front page opens with a strip of Zen memes, threads an approved member tagged #zen and #meme.
 - [Zen strip grid](zen_strip_grid/zen_strip_grid_one_shot.md) — one-shot: the Zen strip becomes a wrapping grid of whole, readable images.
 - [Zen hero](zen_hero/zen_hero_step1_solution_assessment.md) — staged: the front page shows one top-liked Zen meme with a row of tiny thumbnails that opens All, on the home page only.
+- [Board nav to /threads/](board_nav_threads/board_nav_threads_one_shot.md) — one-shot: Board links to /threads/, so the Zen hero only greets the home page.
 - [Image loading](image_loading/image_loading_step1_solution_assessment.md) — staged: images load faster through browser caching, a lighter serving path and home page tweaks.
 
 - [Calendar export timezone](calendar_export_timezone/calendar_export_timezone_one_shot.md)
@@ -691,3 +692,4 @@ and repair its navigation and affected references. See the
 - [Backlog prompt access](backlog_prompt_access/backlog_prompt_access_one_shot.md) — one-shot: the backlog prompt asks for a clone and a pull request instead of patch files, and for a word before building items that do not belong together.
 - [Favicon in light theme](favicon_light_theme/favicon_light_theme_one_shot.md) — one-shot: the ZenMemes tab icon redrawn so it looks clean on light tabs (PF-20261111-B02).
 - [Word 97 action fonts](word97_action_fonts/word97_action_fonts_one_shot.md) — one-shot: post-action toggles in Word 97 and the Outbox status line use the UI font (PF-20261104-B12, PF-20261104-B18).
+- [Midnight action fonts](midnight_action_fonts/midnight_action_fonts_one_shot.md) — one-shot: Midnight post actions get Word 97’s UI font, no underline and Like/Flag bevel (PF-20261111-F19).
