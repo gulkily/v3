@@ -88,3 +88,5 @@ Diff checked: no duplicated markup (socials section rendered once), one styleshe
 - 2026-11-23 UTC, closeout: scope unchanged; assessment **0.25**. Browser outage cost time but not scope. Maintainer judgment pending; measured time unknown.
 
 Attribution: Claude · 2026-11-23 UTC · Model: claude-opus-5-5
+
+Commit/merge/publication status: planning `c6e079326`, implementation `903fc509f`, pushed to `feat/rapclub-about-and-dark-theme`, [PR #389](https://github.com/gulkily/v3/pull/389) open; not merged or deployed.
