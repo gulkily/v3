@@ -34,6 +34,7 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261111-F01](items/PF-20261111-F01.txt) | Describe an event's date in words | blocked | locally-verified | 0.90 | 1 |
 | [PF-20261111-F02](items/PF-20261111-F02.txt) | The new post form is busy below Post | blocked | locally-verified | 0.20 | 4 |
 | [PF-20261111-F03](items/PF-20261111-F03.txt) | Gloss and Gloss Dark are the ZenMemes defaults | blocked | locally-verified | 0.10 | 1 |
+| [PF-20261111-F37](items/PF-20261111-F37.txt) | frm.py prints the thread link | blocked | locally-verified | — | 2 |
 | [PF-20261111-F32](items/PF-20261111-F32.txt) | Close the ... menu on outside click | blocked | locally-verified | — | 1 |
 | [PF-20261114-F01](items/PF-20261114-F01.txt) | Client-side preferences page | blocked | locally-verified | 0.15 | 2 |
 | [PF-20261114-F02](items/PF-20261114-F02.txt) | Gallery zoom | blocked | locally-verified | 0.12 | 1 |
@@ -208,7 +209,6 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261111-F34](items/PF-20261111-F34.txt) | Plain summary on the Offline page | untriaged | unknown | — | 1 |
 | [PF-20261111-F35](items/PF-20261111-F35.txt) | Archive and discard old media | untriaged | unknown | — | 1 |
 | [PF-20261111-F36](items/PF-20261111-F36.txt) | Signed likes and tag votes for agents | untriaged | unknown | — | 2 |
-| [PF-20261111-F37](items/PF-20261111-F37.txt) | frm.py prints the thread link | untriaged | unknown | — | 2 |
 | [PF-20261111-F38](items/PF-20261111-F38.txt) | frm.py attaches images | untriaged | unknown | — | 1 |
 | [PF-20261111-F39](items/PF-20261111-F39.txt) | Voice dictation in text boxes | untriaged | unknown | — | 1 |
 | [PF-20261111-F40](items/PF-20261111-F40.txt) | Cache decrypted messages | untriaged | unknown | — | 1 |

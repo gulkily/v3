@@ -3,7 +3,7 @@
 
 declare(strict_types=1);
 
-const QUILL_VERSION = '2026-11-22';
+const QUILL_VERSION = '2026-11-22.1';
 
 // quill.php: portable forum client. PHP 8.1+ CLI, curl and GPG; no extensions beyond core
 // (intl is used for Unicode normalization when present). One of three versions (quill.py,
@@ -636,6 +636,17 @@ function payloadFrom(string $operation, array $meta): array
     return $payload;
 }
 
+/** The thread page, at the post for a reply. Servers that omit thread_id get the post page. */
+function postLink(string $site, array $result): string
+{
+    $postId = (string) $result['post_id'];
+    $threadId = (string) ($result['thread_id'] ?? '');
+    if ($threadId === '') {
+        return $site . '/posts/' . $postId;
+    }
+    return $site . '/threads/' . $threadId . ($threadId === $postId ? '' : '#' . $postId);
+}
+
 function submit(string $operation, array &$meta, array $args): int
 {
     $meta['State'] = 'sending';
@@ -668,7 +679,7 @@ function submit(string $operation, array &$meta, array $args): int
     saveMeta("$operation/operation.txt", $meta);
     out("Status: accepted\nPost-ID: " . $result['post_id'] . "\n");
     if (!empty($result['refresh_pending'])) out("Refresh: pending; resume this exact operation to finish refresh.\n");
-    out('URL: ' . $meta['Site'] . '/posts/' . $result['post_id'] . "\n");
+    out('URL: ' . postLink($meta['Site'], $result) . "\n");
     return 0;
 }
 
