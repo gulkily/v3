@@ -201,6 +201,7 @@ final class Application
             (new \ForumRewrite\Http\LocalDevelopmentPageController($this->routeServices(),
                 new \ForumRewrite\Support\LocalDevelopmentImport($this->repositoryRoot),
                 $this->localImportRequests(),
+                new \ForumRewrite\Import\LastImportSummary($this->repositoryRoot),
             ))->handle($method);
             return;
         }

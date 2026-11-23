@@ -22,7 +22,8 @@ RUNTIME = [
     'src/ForumRewrite/Application.php', 'src/ForumRewrite/Host/FrontController.php',
     'src/ForumRewrite/Support/LocalDevelopmentImport.php',
     'src/ForumRewrite/Http/LocalDevelopmentPageController.php', 'src/ForumRewrite/Http/ImportController.php',
-    'src/ForumRewrite/Import/InstanceImportRequests.php', 'src/ForumRewrite/View/TemplateRenderer.php',
+    'src/ForumRewrite/Import/InstanceImportRequests.php', 'src/ForumRewrite/Import/LastImportSummary.php',
+    'src/ForumRewrite/View/TemplateRenderer.php',
     'templates/pages/local_development.php', 'templates/pages/tools_import.php',
     'templates/partials/import_run.php', 'public/assets/import_control.js',
 ]
@@ -120,18 +121,35 @@ with tempfile.TemporaryDirectory(prefix='local-start-browser-') as tmp:
                             page.screenshot(path=f'/tmp/local-start-{width}-{theme}-{scripting}.png', full_page=True)
                     page.get_by_role('link', name='Browse threads', exact=True).click()
                     assert 'view=all' in page.url
-                    assert page.get_by_text('Hello world', exact=True).is_visible()
+                    # Wait for the board: is_visible() right after a click races the navigation.
+                    page.get_by_text('Hello world', exact=True).first.wait_for(timeout=10000)
                     page.goto(url)
                     state['fail'] = True
-                    page.locator('input[name=source]').fill(source)
-                    page.locator('[data-import-form] button[type=submit]').click()
+                    if imported_once:
+                        # A copy that has imported: one action, a stated cost, and the source folded away.
+                        assert page.get_by_role('button', name='Check for new content').is_visible()
+                        assert 'Downloads everything again' in page.locator('[data-import-form]').inner_text()
+                        assert page.locator('[data-import-last]').is_visible()
+                        change = page.locator('details', has=page.get_by_text('Change source', exact=True))
+                        assert not change.locator('input[name=source]').is_visible()
+                        page.get_by_text('Change source', exact=True).click()
+                        change.locator('input[name=source]').fill(source)
+                        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), (width, 'change source')
+                        page.screenshot(path=f'/tmp/local-start-{width}-status-{scripting}.png', full_page=True)
+                        change.get_by_role('button', name='Import', exact=True).click()
+                    else:
+                        page.locator('input[name=source]').fill(source)
+                        page.locator('[data-import-form] button[type=submit]').click()
+                    had_status = imported_once
                     imported_once = True
                     # The failed download ends in the reason, the kept source and Retry, with or without scripts.
                     page.get_by_role('alert').wait_for(timeout=40000)
                     assert 'Retry or resume below.' in page.get_by_role('alert').inner_text()
-                    assert page.locator('input[name=source]').input_value() == source
+                    assert page.locator('[data-import-form] input[name=source]').input_value() == source
                     assert page.get_by_role('button', name='Retry import').is_visible()
-                    page.get_by_text('Import details', exact=True).click()
+                    # The last good import is still reported under the failure.
+                    assert page.locator('[data-import-last]').count() == (1 if had_status else 0)
+                    page.get_by_text('Import details', exact=True).first.click()
                     assert page.locator('pre').is_visible()
                     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
                     page.screenshot(path=f'/tmp/local-start-{width}-failure-{scripting}.png', full_page=True)
@@ -145,7 +163,8 @@ with tempfile.TemporaryDirectory(prefix='local-start-browser-') as tmp:
                     assert not page.locator('[data-import-form]').is_visible()
                     # The earlier failure and its details give way to the steps.
                     assert not page.get_by_role('alert').is_visible()
-                    assert not page.get_by_text('Import details', exact=True).is_visible()
+                    assert not page.get_by_text('Import details', exact=True).first.is_visible()
+                    assert not page.locator('[data-import-last]').is_visible()
                     assert page.get_by_text('Keep this page open').count() == 0
                     if scripting:
                         # Live: the step list reaches Downloading and the timer ticks between polls.
@@ -164,17 +183,23 @@ with tempfile.TemporaryDirectory(prefix='local-start-browser-') as tmp:
                         page.reload()
                         assert 'Downloading' in page.locator('.import-steps li.is-current').inner_text()
                     else:
-                        # Without scripts nothing polls: the page must reload itself and move on.
-                        first = current.first.inner_text()
+                        # Without scripts nothing polls or ticks: the page must reload itself to move on.
+                        before = page.locator('[data-import-timing]').inner_text()
                         page.locator('.import-steps li.is-current', has_text='Downloading').wait_for(timeout=12000)
-                        assert first != page.locator('.import-steps li.is-current').inner_text()
-                    page.get_by_role('link', name='Browse imported threads').wait_for(timeout=60000)
+                        deadline = time.monotonic() + 12
+                        while page.locator('[data-import-timing]').inner_text() == before:
+                            assert time.monotonic() < deadline, 'the page did not reload itself'
+                            page.wait_for_timeout(500)
+                    page.locator('[data-import-root][data-import-busy="0"] [data-import-last]').wait_for(timeout=60000)
                     state['delay'] = 0
                     assert page.get_by_role('alert').count() == 0
-                    # The first pass imports the record; later passes find it already there.
-                    summary = page.locator('[data-import-root]').inner_text()
-                    assert 'imported 1' in summary or 'duplicate 1' in summary, summary
-                    page.get_by_text('Import details', exact=True).click()
+                    # The first pass imports the record; later passes find nothing new.
+                    status = page.locator('[data-import-last]').inner_text()
+                    assert status.startswith('Imported from 127.0.0.1:') and 'just now' in status, status
+                    assert status.endswith('1 imported') or status.endswith('nothing new'), status
+                    assert page.get_by_role('link', name='Browse imported threads').is_visible()
+                    assert page.get_by_role('button', name='Check for new content').is_visible()
+                    page.get_by_text('Import details', exact=True).first.click()
                     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
                     page.screenshot(path=f'/tmp/local-start-{width}-imported-{scripting}.png', full_page=True)
                     page.get_by_role('link', name='Browse imported threads').click()
@@ -183,7 +208,7 @@ with tempfile.TemporaryDirectory(prefix='local-start-browser-') as tmp:
                     page.goto(url)
                 context.close()
             browser.close()
-        print('PASS fresh checkout + ./v3 start; local bootstrap; all offered themes at 390/1280; JS on/off; download failure, retry with live steps, ticking timer, usable site mid-import, reload, self-reload without scripts, result counts, imported thread; no overflow')
+        print('PASS fresh checkout + ./v3 start; local bootstrap; all offered themes at 390/1280; JS on/off; download failure, retry with live steps, ticking timer, usable site mid-import, reload, self-reload without scripts, last-import status, one-click re-import, Change source, imported thread; no overflow')
     finally:
         os.killpg(server.pid, signal.SIGTERM)
         server.wait(timeout=15)
