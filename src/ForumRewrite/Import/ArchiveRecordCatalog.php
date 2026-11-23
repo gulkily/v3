@@ -17,6 +17,7 @@ final class ArchiveRecordCatalog
 
         return $relativePath === 'records/instance/public.txt'
             || $relativePath === 'records/instance/feature-flags.txt'
+            || $relativePath === 'records/instance/tagsets.txt'
             || preg_match('#^records/posts/(?:\d{4}/\d{2}/\d{2}/)?[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/(?:key-retirements|key-retirement-acceptances)/openpgp-[a-f0-9]{40}\.txt$#D', $relativePath) === 1
             || preg_match('#^records/approval-acceptances/[A-Za-z0-9][A-Za-z0-9._-]*\.(?:txt|json)$#', $relativePath) === 1
@@ -157,6 +158,10 @@ final class ArchiveRecordCatalog
 
             if ($relativePath === 'records/instance/feature-flags.txt') {
                 return 'instance:feature-flags';
+            }
+
+            if ($relativePath === 'records/instance/tagsets.txt') {
+                return 'instance:tagsets';
             }
         } catch (\ForumRewrite\Support\OperationLimitException|\ForumRewrite\Canonical\RecordReadException|\ForumRewrite\Canonical\RecordSizeException $error) { throw $error; } catch (\RuntimeException|\JsonException) {
             return null;

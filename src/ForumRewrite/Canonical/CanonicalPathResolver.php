@@ -99,4 +99,15 @@ final class CanonicalPathResolver
     {
         return 'records/instance/feature-flags.txt';
     }
+
+    /** The site tagsets; when present they replace resources/tagsets.txt. */
+    public static function tagsets(): string
+    {
+        return \ForumRewrite\Support\Tagsets::SITE_RECORD_PATH;
+    }
+
+    public static function tagsetsChange(string $recordId): string
+    {
+        return 'records/tagsets-changes/' . $recordId . '.txt';
+    }
 }

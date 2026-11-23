@@ -745,7 +745,7 @@ final class ReadModelBuilder
             sort($tags);
             $approvedFlagCount = count($flaggersByPost[$postId] ?? []);
             $isHidden = $approvedFlagCount > 0 && $post['author_label'] === 'reply-agent';
-            $resolution = PostResolution::derive($reactionRecordsByPost[$postId] ?? [], $approvalState);
+            $resolution = PostResolution::derive($reactionRecordsByPost[$postId] ?? [], $approvalState, \ForumRewrite\Support\Tagsets::forRepository($this->repositoryRoot));
             $updatePost->execute([
                 'post_tags_json' => json_encode($tags, JSON_THROW_ON_ERROR),
                 'resolution_state' => $resolution['state'],

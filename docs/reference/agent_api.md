@@ -766,8 +766,10 @@ is kept beside it and `get_post` reports the current format.
 
 ## Reply resolution (tag unlocks)
 
-A thread tag can unlock extra tags on the thread's replies. The list lives in
-[`resources/tagsets.txt`](../../resources/tagsets.txt). On zenmemes, a thread tagged
+A thread tag can unlock extra tags on the thread's replies. The shipped list is
+[`resources/tagsets.txt`](../../resources/tagsets.txt); an operator can replace it on
+the site (Tools → Tag Unlocks), so read `/tools/tag-unlocks/` for the rules in force.
+On zenmemes, a thread tagged
 `#issue` (by its author or a label) offers `claimed`, `resolved`, `closed` and `open`
 on each reply and on the thread's opening post. `#meta` is a topic and unlocks nothing; tag work items `#issue`. Claim a report before you start work on it
 so nobody else starts the same work; `open` releases it. Mark a reply with `POST /api/apply_post_tag` and `tag=resolved`

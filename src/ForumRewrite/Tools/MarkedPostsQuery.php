@@ -99,6 +99,64 @@ final class MarkedPostsQuery
         return $parents;
     }
 
+    /**
+     * Threads whose marks would lose their buttons if $next replaced $current: a post carries a
+     * tag that $current unlocks for it but $next does not. Most marks first.
+     *
+     * @return list<array{thread_id:string,thread_subject:string,tags:list<string>,marks:int}>
+     */
+    public static function losingButtons(PDO $pdo, \ForumRewrite\Support\Tagsets $current, \ForumRewrite\Support\Tagsets $next, int $limit = 50): array
+    {
+        $unlockable = [];
+        foreach ($current->all() as $set) {
+            foreach ($set['unlocks'] as $tag) {
+                $unlockable[$tag] = true;
+            }
+        }
+        if ($unlockable === []) {
+            return [];
+        }
+        $in = implode(',', array_fill(0, count($unlockable), '?'));
+        // Unqualified `threads` so Fastmod's request-local label view, when present, applies.
+        $stmt = $pdo->prepare(
+            "SELECT posts.post_id, posts.thread_id, posts.post_tags_json, threads.board_tags_json, threads.thread_labels_json,
+                    threads.subject AS thread_subject
+             FROM posts
+             JOIN threads ON threads.root_post_id = COALESCE(posts.thread_id, posts.post_id)
+             WHERE posts.is_hidden = 0 AND posts.retracted_at IS NULL AND threads.retracted_at IS NULL
+               AND EXISTS (SELECT 1 FROM json_each(posts.post_tags_json) WHERE lower(value) IN ($in))"
+        );
+        $stmt->execute(array_keys($unlockable));
+        $threads = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $threadTags = array_merge(self::jsonList($row['board_tags_json']), self::jsonList($row['thread_labels_json']));
+            $threadId = (string) ($row['thread_id'] ?? '') !== '' ? (string) $row['thread_id'] : (string) $row['post_id'];
+            $target = $threadId === (string) $row['post_id'] ? \ForumRewrite\Support\Tagsets::TARGET_ROOT : \ForumRewrite\Support\Tagsets::TARGET_REPLY;
+            $lost = array_diff(
+                array_intersect(array_map('strtolower', self::jsonList($row['post_tags_json'])), $current->unlockedFor($threadTags, $target)),
+                $next->unlockedFor($threadTags, $target),
+            );
+            if ($lost === []) {
+                continue;
+            }
+            $threads[$threadId] ??= ['thread_id' => $threadId, 'thread_subject' => trim((string) ($row['thread_subject'] ?? '')), 'tags' => [], 'marks' => 0];
+            $threads[$threadId]['tags'] = array_values(array_unique([...$threads[$threadId]['tags'], ...$lost]));
+            $threads[$threadId]['marks']++;
+        }
+        $threads = array_values($threads);
+        usort($threads, static fn (array $a, array $b): int => [$b['marks'], $a['thread_id']] <=> [$a['marks'], $b['thread_id']]);
+
+        return array_slice($threads, 0, $limit);
+    }
+
+    /** @return list<string> */
+    private static function jsonList(mixed $json): array
+    {
+        $list = is_string($json) ? json_decode($json, true) : null;
+
+        return is_array($list) ? array_values(array_filter($list, 'is_string')) : [];
+    }
+
     /** @param array<string, mixed> $row */
     private static function item(array $row): array
     {

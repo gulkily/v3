@@ -14,7 +14,7 @@ final class ApiRouteCatalogTest
     public function testCatalogMatchesRouterApiPaths(): void
     {
         $source = (string) file_get_contents(__DIR__ . '/../src/ForumRewrite/Application.php');
-        preg_match_all("#'(/api/[a-z_/]*)'#", $source, $matches);
+        preg_match_all("#'(/api/[a-z_/-]*)'#", $source, $matches);
         $routed = array_values(array_unique($matches[1]));
         // Prefix literals (str_starts_with checks) end in '/' or '_'.
         $prefixes = array_values(array_filter($routed, static fn (string $p): bool => $p !== '/api/' && preg_match('#[/_]$#', $p) === 1));
