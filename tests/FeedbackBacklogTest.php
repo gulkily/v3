@@ -145,6 +145,20 @@ final class FeedbackBacklogTest
 
         assertSame(true, str_starts_with($prompt, 'Please work on '));
 
+        // Access comes before the files to read, in every mode; the grouping check only with several items.
+        foreach (BacklogPrompt::MODES as $mode) {
+            $two = BacklogPrompt::build($open, $mode, null);
+            assertSame(true, strpos($two, BacklogPrompt::ACCESS) < strpos($two, 'Read first:'), $mode);
+            assertSame(1, substr_count($two, BacklogPrompt::TOGETHER), $mode);
+            assertSame(true, strpos($two, 'Begin now') < strpos($two, BacklogPrompt::TOGETHER), $mode);
+            $single = BacklogPrompt::build([$open[0]], $mode, null);
+            assertSame(1, substr_count($single, BacklogPrompt::ACCESS), $mode);
+            assertSame(false, str_contains($single, BacklogPrompt::TOGETHER), $mode);
+            assertSame(true, substr_count($single, "\n") < 15, $mode);
+        }
+        assertSame(true, str_contains(BacklogPrompt::ACCESS, "don't give me patch files"));
+        assertSame(true, str_contains(BacklogPrompt::ACCESS, 'tell me what to connect'));
+
         $auto = BacklogPrompt::build([$open[0]], 'auto', null);
         assertSame($auto, BacklogPrompt::build([$open[0]], 'fast', null), 'An unknown mode means the agent decides.');
         assertSame(true, str_starts_with($auto, 'Please work on this v3 backlog item as one Railspike cycle, one-shot or staged as AGENTS.md says.'));

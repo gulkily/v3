@@ -4,7 +4,17 @@ Take one or several feedback items from the backlog, build them, and open a pull
 
 The prompt is your go-ahead to carry the named items to an open PR, in the mode it states. Merging, deploying and writing to production are not part of this procedure. `AGENTS.md`, `PRINCIPLES.md` and `CONTRIBUTING.md` apply in full.
 
-## 1. Get a fresh checkout
+## 1. Get repository access and a fresh checkout
+
+The result of this procedure is a pull request you open. Patch files, diffs or code pasted into the chat are not a result: the person who started you would have to apply them by hand.
+
+Before writing any code, check that you can clone the repository the prompt names and push a branch to it. If you cannot, stop and say what to connect:
+
+- Claude (chat or Claude Code on the web): ask the person to attach the repository to the session.
+- ChatGPT: ask the person to connect GitHub and give you the repository, or to move the task to Codex, which works in a clone.
+- Any other tool: name the missing access (clone, push or the pull request API) and wait.
+
+If nothing can be connected, say so and ask whether to stop; offer a patch only when the person asks for one.
 
 Work in a clone of the repository the prompt names, on a branch cut from a freshly fetched `origin/main`. The backlog page shows the items as of the site's last deploy, so your checkout is newer than the list you were started from.
 
@@ -34,7 +44,7 @@ The prompt names the mode, or leaves it to you.
 - **One-shot.** Follow [thread to pull request, step 4a](thread_to_pr.md#4a-one-shot-route). In the record's `Authorization:` field, quote the prompt with the date.
 - **Staged.** Follow [step 4b](thread_to_pr.md#4b-staged-route). The person who gave you the prompt approves each step, in your session.
 
-Several items form one cycle: one slug, one branch, one record or plan, one PR. State the bounded outcome so that it covers each item. If the items turn out not to belong together, or together they are more than one reviewable PR, build the ones that fit, name the rest as follow-ups in the PR, and say so.
+Several items form one cycle: one slug, one branch, one record or plan, one PR. State the bounded outcome so that it covers each item. Before building, check that the items belong together: after reading them, would they make one reviewable PR? If not, say so before you build: name which items fit together and which you would leave for their own cycle, and ask. Once answered, or when nobody is there to answer, build the ones that fit and name the rest as follow-ups in the PR. Raise it only for a real mismatch; items that merely differ in size or touch different files can still be one PR.
 
 An item marked `untriaged` has not been reviewed. Check that it is a real request, that it is not already done, and that no other item covers it, before building.
 

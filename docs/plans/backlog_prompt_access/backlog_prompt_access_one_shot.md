@@ -8,7 +8,7 @@ Extended estimates: enabled. No alternatives or work units, so no unit estimates
 
 **Cycle estimate: 0.10**
 
-Status: planned; next permitted action: implementation.
+Status: implemented and committed; next permitted action: maintainer review (PR).
 
 Feedback item: [PF-20261123-F01](../../feedback/items/PF-20261123-F01.txt) (the backlog page). No separate item: these are the maintainer's notes on that item's merged work.
 
@@ -60,10 +60,40 @@ Verification and recovery plan: `./v3 test --smoke BacklogPageTest FeedbackBackl
 
 Starting revisions and branch: `fix/backlog_prompt_access` from `origin/main` `cdc8abf46` (the #379 merge).
 
-Planning commit: pending.
+Planning commit: `d0764b8dd` (plan and index entry only, before any implementation).
 
 Study history:
 - 2026-11-23 UTC, intake and execution entry: **0.10**. Recorded after inspecting `BacklogPrompt.php`, the procedure and the tests, so not a clean intake. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified.
+
+Dated execution history:
+- 2026-11-23: `BacklogPrompt` gains `ACCESS` and `TOGETHER`; `build()` prints `ACCESS` above "Read first" in every mode and adds `TOGETHER` after "Begin now" (after the Step 1 sentence in staged) when more than one item is picked. Addition.
+- 2026-11-23: `docs/agents/backlog_to_pr.md`: §1 is now "Get repository access and a fresh checkout" (a pull request is the result, patches are not; check clone and push before writing code; what to ask for in Claude, ChatGPT and other tools; a patch only when asked). §4: check the grouping before building and say so first on a real mismatch; this replaces "build the ones that fit … and say so", which told the agent to decide alone. Change of an instruction.
+- 2026-11-23: the concept entry, `v3_cli.md`, `agent_api.md` and the UI copy checklist follow.
+- 2026-11-23: tests: `FeedbackBacklogTest` (access before "Read first" and the grouping sentence present for two items and absent for one, in all three modes; still under 15 lines); `BacklogPageTest` (both on the start page); `tests/browser/backlog.mjs` (both in the copied prompt).
+- Discovery: PF-20261111-B02, the thin item the checklist proposed for the fresh-agent start, was built as PR #378 before this session. The maintainer started PF-20261104-B18 and PF-20261104-B12 instead, with the #379 prompt. Recorded on the checklist.
+- Discovery: `#issue` threads already offer a `claimed` reply state. Added to the cycle 2 Step 1 line on the checklist as an option to compare.
+- Discovery, no change: `/backlog/start.txt` is served with `Cache-Control: max-age=172800`. Noted on the checklist.
+- 2026-11-23: records: the backlog checklist (#379 merged and deployed; this follow-up; two decisions), `PF-20261123-F01` (a dated note; stays `blocked`), the feedback index, the effort ledger.
+
+Study history, closeout:
+- 2026-11-23 UTC: retrospective scope assessment **0.10**. Delivered as planned. Claude, single exposed rater. Maintainer judgment pending; measured time unknown.
+
+Outcome: delivered. Every backlog prompt asks for a clone and an open pull request instead of patch files, and to stop and say what to connect; a prompt for several items asks for a word before building when they do not belong together; the procedure says the same.
+
+Verification:
+- Passed: `./v3 test --smoke BacklogPageTest FeedbackBacklogTest`: 506 run, 506 passed. Full suite not run.
+- Passed: `node tests/browser/backlog.mjs` (pinned playwright-core): the whole flow with and without scripts, the text routes, 168 theme, width and script cases.
+- Passed: `./v3 feedback check`, `./v3 feedback index`, `git diff --check`.
+- By hand: `./v3 feedback start` with two items (Agent decides) and one item (staged) print the prompts shown above.
+- Unverified: whether agents that start with patch files now connect to the repository instead. It cannot be replayed here. The maintainer's start on B18 and B12 with the old prompt is the baseline; his next start is the comparison.
+- Unverified: the Claude and ChatGPT lines in §1 were not run against those tools.
+- Inapplicable: schema, read model, migrations, flags, icons.
+
+Final review: the diff touches `BacklogPrompt.php`, the two PHP tests and the browser check, `backlog_to_pr.md`, `v3_cli.md`, `agent_api.md`, the concept entry, the UI copy checklist, the backlog checklist, F01 and the feedback index, the ledger, the debug log and this record. No new component, no dependency, no schema or flag change. Deploy now is enough.
+
+Commit/merge/publication status: completion commit pending at the time of writing; PR to follow.
+
+Debug: [debug log](./backlog_prompt_access_debug_log.md).
 
 Enhancement requests:
 - Access lines in the backlog prompt. Addition. Approved ("go ahead as a one-shot"). In this cycle.

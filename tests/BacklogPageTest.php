@@ -94,6 +94,8 @@ final class BacklogPageTest
             $one = $this->render($application, '/backlog/start?items=' . $a);
             assertStringContains('Please work on this v3 backlog item as one Railspike cycle, one-shot or staged as AGENTS.md says.', $one);
             assertStringContains('- docs/feedback/items/' . $a . '.txt', $one);
+            assertStringContains(htmlspecialchars(\ForumRewrite\Feedback\BacklogPrompt::ACCESS), $one, 'The prompt asks for a clone and a pull request, not patch files.');
+            assertStringNotContains('belong in one pull request', $one, 'One item: nothing to group.');
             assertStringContains('aria-current="true">Agent decides</a>', $one, 'The agent decides by default.');
             assertSame(true, strpos($one, '>Agent decides</a>') < strpos($one, '>One-shot</a>') && strpos($one, '>One-shot</a>') < strpos($one, '>Staged cycle</a>'), 'Agent decides, One-shot, Staged cycle, in that order.');
             assertStringContains('href="/backlog/start?items=' . $a . '&amp;mode=one-shot"', $one);
@@ -108,6 +110,7 @@ final class BacklogPageTest
 
             $two = $this->render($application, '/backlog/start?items=' . $a . ',' . $b . '&mode=staged');
             assertStringContains('Please work on these 2 v3 backlog items together as one staged Railspike cycle.', $two);
+            assertStringContains(htmlspecialchars(\ForumRewrite\Feedback\BacklogPrompt::TOGETHER), $two, 'Several items: say so before building if they do not belong together.');
             assertStringContains('aria-current="true">Staged cycle</a>', $two);
             exec('cd ' . escapeshellarg(dirname(__DIR__)) . ' && ./v3 feedback start ' . $a . ' ' . $b . ' --mode=staged 2>/dev/null', $command);
             assertStringContains(htmlspecialchars(implode("\n", $command)), $two, 'The page and the command give the same prompt.');
