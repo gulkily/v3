@@ -8,7 +8,7 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.20**
 
-Status: implemented; PR pending; next permitted action: maintainer review.
+Status: implemented; PR #390 open; next permitted action: maintainer review.
 
 Original request (2026-11-23): "when i go to the home page, i want the large image to be sized to appear fully in the viewport. the extra thumbnails can go to the side of it if that improves composition. but right now the taller images are cut off on a wide screen."
 
@@ -51,6 +51,6 @@ Verification:
 
 Final review: diff limited to the two Zen partial/CSS rules, the two themes' `--zen-chrome`, one test assertion, this record, the index and the ledger. No new component.
 
-Commit/merge/publication status: planning `88752dd61`; completion commit pending at writing; push/PR follow.
+Commit/merge/publication status: planning `88752dd61`; completion `a3caf9d4b`; pushed to `feat/zen-hero-fit-viewport`; PR #390.
 
 *Claude · 2026-11-23 UTC · Model: claude-opus-5-5*
