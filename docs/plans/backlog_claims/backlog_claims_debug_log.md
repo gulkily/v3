@@ -73,3 +73,32 @@
 - The source of the two-day cache header is not in the repository; Stage 5's explicit header may be overridden by the host, so the live check is listed for release.
 - The plan is seven stages and well over one page.
 - The cycle estimate rose to 0.45 after two approvals at 0.40.
+
+## 2026-11-23T23:59Z — Step 4 handoff
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md`, planning commit gate: `f0c1576c6` holds Steps 1 to 3, the debug log and the index entry only; the summary and ledger came after it.
+- `step4_implementation_do.md`, one commit per stage with its summary section: seven stage commits follow the planning commit.
+- `AGENTS.md` (host), Follow-up changes after a PR: sixteen hours had passed since Step 3 was written, so `origin/main` was fetched again before branching; PRs #380 and #381 had merged, and the branch was cut from the new head.
+- `AGENTS.md` (host), inspect existing implementations: the pledge buttons use the thread page's viewer (session, else identity hint), not the page default; the first version of the Claim form used the default and drew nothing. The pledge tests showed the pattern.
+- `AGENTS.md` (host), pages look final on first paint: the Claim and Release controls are hidden by a `(scripting: none)` rule, not revealed by a script after paint.
+- Step 2's success criterion "with no claims thread named, the same bytes as before": checked after every stage by rendering six routes before and after and comparing. It caught an inline script line and an attribute that had been added for every site.
+- `AGENTS.md` (host), run the smoke set plus the tests for what changed: done at each stage; the full suite was not run.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- Navigation icons, read-model schema rules, dependency approval, feature flags: none touched.
+
+### Uncertain assessments
+
+- The scripts-off case is verified in Chrome started with scripting off. It was not tried in Safari, and a browser without the `scripting` media feature would show the buttons.
+- The cache header is the application's; the two-day header seen on zenmemes.com came from the host and may still win there.
+- The Recent, board and check-in rows of the Stage 6 table come from reading code, not from a run.
+- The environment restarted once during Stage 7; the working tree and commits were intact, and the browser check was rerun afterwards.
+- The retrospective 0.50 is above the 0.45 projection and the 0.40 the first two steps were approved at.
+- Nothing here was tried on the live site or on an iPhone.
