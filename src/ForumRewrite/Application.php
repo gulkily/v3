@@ -2184,6 +2184,10 @@ final class Application
             return null;
         }
 
+        if ($thread['event_date'] !== null) {
+            [$thread] = \ForumRewrite\Calendar\EventTimes::apply($this->pdo(), $this->repositoryRoot, [$thread]);
+        }
+
         return $this->hydrateThreadRow($thread);
     }
 

@@ -7,7 +7,7 @@ Extended estimates: enabled (no separate work units in this one-shot)
 
 **Cycle estimate: 0.55** (execution entry; Step 1 handoff was 0.45)
 
-Status: implementation in progress (handed off 2026-11-24 17:50Z); next permitted action: continue the remaining work listed under Handoff.
+Status: implementation and local event replay complete. Browser and GnuPG checks remain blocked in this workspace. Next permitted action: push the completion commit and open the PR.
 
 ## Original request
 
@@ -84,9 +84,42 @@ Remaining:
 9. Tests: smoke set plus new/changed tests (`./v3 test --smoke ...`); do not run the full suite. Fix any test that fails on the base commit too.
 10. Closeout: complete this record (Outcome, Verification, Final review, closeout estimate), update `docs/plans/effort_ledger/event_end_time.md`, append a closeout entry to the debug log, completion commit, push, open the PR (with a checkout snippet). After merge and deploy, post `event-time: 13:00-16:00` as claude in thread-20261116102241-f0e948f6.
 
+## Outcome
+
+- New events can specify Ends in the composer or `event_end_time` through the API. The built-in phrase reader fills the end of a time range and carries it through both forms of Fill. The direct and prepared writers store the same validated header.
+- A reply from the verified root author or a current operator corrects the start and end without changing the root record. The event block, calendar day, iCalendar feeds, single-event iCalendar and Google Calendar link use the latest eligible reply. A start-only correction restores the default end.
+- The reported 1–4 p.m. lecture was reproduced locally with a legacy start-only event. The correction changed its exported end from 2 to 4 p.m. on all three export paths. Production needs the deployed code and a correction reply from the recorded author or a current operator.
+- The public offline snapshot and its browser reader carry no event metadata or event views. The feature leaves that snapshot schema alone. The event time controls use the existing composer row styling. No new feedback item matched the feature. The nearby PF-20261111-F11 still tracks the wider composer layout work.
+
+## Verification
+
+- Baseline `2d7805c8`: `./v3 test --smoke` passed 461 and failed 26. Two test setup fixes recovered 19 cases. The feature flag fixture now creates its destination before copying, and the API busy test now supplies a valid signing identity and uses normal HTTP warning handling so it can reach and observe the intended error response.
+- Feature branch: the following run passed 545 cases, including all 65 selected event and browser-signing transport cases. Seven baseline cases still fail because their GnuPG fixtures cannot start an agent in this workspace. The local socket check returned `Operation not permitted`. The full suite was not run.
+
+```bash
+./v3 test --smoke CalendarPageTest CalendarIcsTest EventPhraseReaderTest \
+  EventPhraseComposeTest EventPhraseLlmReaderTest EventWhenRecordTest \
+  BrowserSigningNormalizationTest::testThreadSubmitTransportHelpersCollectFieldsAndParseResponses \
+  BrowserSigningNormalizationTest::testThreadSubmitTransportHelperCollectsEventFieldsWhenPresent
+```
+
+- Passed PHP lint, JavaScript syntax checks and `git diff --check`. The browser fixture was updated to check the end field and the signed record, but `CHROMIUM_PATH=/usr/lib/chromium/chromium node tests/browser/event_when.mjs` was blocked at browser startup by the same socket restriction. Visual checks and the signed browser round trip remain unverified.
+- The migration fixture removes `event_end_time` and marks the database version 56. Normal startup rebuilt it to schema 57 and rendered the restored range. The export tests cover overnight and multi-day ends, older one-hour behavior and reply authority. The production thread was left untouched.
+
+## Final review
+
+Reviewed the diff against Option C, including the existing event feature flags, template consumers, schema projection and rebuild paths, and documented API contract. The plans index entry sits beside the earlier Event time cycle. The completion commit includes this record, the ledger and the debug log. PR publication is separate from deployment and production verification.
+
 ## Study history
 
 - Step 1 handoff (staged): 0.45, Option C.
 - Execution entry, 2026-11-24 UTC: 0.55. New understanding, same scope: the end time has to travel through two composer paths, the signed-compose script, the phrase API and two read-model writers, more plumbing than Step 1 assumed. Claude single exposed rater; R1/P2.
 
 *— Claude · 2026-11-24 UTC · Model: Claude Opus 5.5*
+
+
+## Closeout checkpoint
+
+2026-11-24 UTC. Scope v1, starting revision `2d7805c8b6d63b0f2ff6ecdd264ec257eaece23b`. R1 hashes verified against the host ledger. Codex read the prior scores before implementation and made one exposed retrospective assessment. **Retrospective scope assessment: 0.55.** The end field spans storage, composer, phrase parsing and exports, with one additional reply-authority path. The prior 0.45 and 0.55 projections remain as recorded. The browser and GnuPG limits above keep verification partial. Maintainer comfortable-fit judgment and study acceptance remain pending.
+
+*— Codex · 2026-11-24 UTC*

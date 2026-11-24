@@ -53,6 +53,15 @@ final class CalendarIcsTest
         calendarIcsAssertContains("DTSTART:20261120T233000\r\nDTEND:20261122T003000\r\n", $ics);
     }
 
+    public function testExplicitEndUsesTheLastDayOrRollsOvernight(): void
+    {
+        $event = $this->event(['event_time' => '23:30', 'event_end_time' => '01:00']);
+        calendarIcsAssertContains("DTSTART:20261120T233000\r\nDTEND:20261121T010000\r\n", $this->write([$event]));
+        $event['event_end_date'] = '2026-11-23';
+        calendarIcsAssertContains("DTSTART:20261120T233000\r\nDTEND:20261123T010000\r\n", $this->write([$event]));
+        calendarIcsAssertContains('dates=20261120T233000%2F20261123T010000', (string) CalendarIcs::googleEventUrl($event));
+    }
+
     public function testStatusFollowsTheEventState(): void
     {
         $open = $this->write([$this->event()]);

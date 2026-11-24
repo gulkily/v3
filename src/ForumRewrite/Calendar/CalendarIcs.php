@@ -77,11 +77,12 @@ final class CalendarIcs
 
         $lines = ['BEGIN:VEVENT', 'UID:' . self::text($threadId . '@' . $host), 'DTSTAMP:' . $stamp];
         $time = self::time((string) ($event['event_time'] ?? ''));
+        $endTime = self::time((string) ($event['event_end_time'] ?? ''));
         if ($time === null) {
             $lines[] = 'DTSTART;VALUE=DATE:' . $first->format('Ymd');
             $lines[] = 'DTEND;VALUE=DATE:' . $last->modify('+1 day')->format('Ymd');
         } else {
-            [$start, $end] = self::timedDates($first, $last, $time, $timeZone);
+            [$start, $end] = self::timedDates($first, $last, $time, $endTime, $timeZone);
             $lines[] = 'DTSTART:' . $start;
             $lines[] = 'DTEND:' . $end;
         }
@@ -126,10 +127,11 @@ final class CalendarIcs
             $last = $first;
         }
         $time = self::time((string) ($event['event_time'] ?? ''));
+        $endTime = self::time((string) ($event['event_end_time'] ?? ''));
         if ($time === null) {
             $dates = $first->format('Ymd') . '/' . $last->modify('+1 day')->format('Ymd');
         } else {
-            $dates = implode('/', self::timedDates($first, $last, $time, $timeZone));
+            $dates = implode('/', self::timedDates($first, $last, $time, $endTime, $timeZone));
         }
         $details = array_values(array_filter([
             trim((string) ($event['event_when'] ?? '')),
@@ -165,12 +167,14 @@ final class CalendarIcs
 
     /**
      * @param array{int, int} $time
+     * @param array{int, int}|null $endTime
      * @return array{string, string}
      */
     private static function timedDates(
         \DateTimeImmutable $first,
         \DateTimeImmutable $last,
         array $time,
+        ?array $endTime,
         ?\DateTimeZone $timeZone,
     ): array {
         [$hour, $minute] = $time;
@@ -181,8 +185,15 @@ final class CalendarIcs
         }
         $utc = new \DateTimeZone('UTC');
         $start = $first->setTime($hour, $minute)->setTimezone($utc);
-        $end = $last->setTime($hour, $minute)->setTimezone($utc)
-            ->modify('+' . self::TIMED_EVENT_MINUTES . ' minutes');
+        if ($endTime === null) {
+            $end = $last->setTime($hour, $minute)->setTimezone($utc)
+                ->modify('+' . self::TIMED_EVENT_MINUTES . ' minutes');
+        } else {
+            if ($first == $last && $endTime <= $time) {
+                $last = $last->modify('+1 day');
+            }
+            $end = $last->setTime(...$endTime)->setTimezone($utc);
+        }
         $format = $timeZone === null ? 'Ymd\THis' : 'Ymd\THis\Z';
 
         return [$start->format($format), $end->format($format)];

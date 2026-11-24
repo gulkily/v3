@@ -34,14 +34,17 @@ final class EventPhraseComposeTest
 
         $html = $this->request($application, 'POST', '/compose/thread', [
             'body' => 'Board games', 'subject' => 'Games night', 'board_tags' => 'general',
-            'event_when' => 'tomorrow', 'event_when_fill' => '1', 'event_location' => 'Kitchen',
+            'event_when' => 'tomorrow 1-4pm', 'event_when_fill' => '1', 'event_location' => 'Kitchen',
         ]);
 
         eventPhraseComposeAssertContains('name="event_date" value="' . $tomorrow . '"', $html);
-        eventPhraseComposeAssertContains('name="event_when" maxlength="120" autocomplete="off" placeholder="next Friday at 7" value="tomorrow"', $html);
+        eventPhraseComposeAssertContains('name="event_when" maxlength="120" autocomplete="off" placeholder="next Friday at 7" value="tomorrow 1-4pm"', $html);
         eventPhraseComposeAssertContains('Board games', $html);
         eventPhraseComposeAssertContains('value="Games night"', $html);
         eventPhraseComposeAssertContains('name="event_location" value="Kitchen"', $html);
+        eventPhraseComposeAssertContains('name="event_time" value="13:00"', $html);
+        eventPhraseComposeAssertContains('name="event_end_time" value="16:00"', $html);
+        eventPhraseComposeAssertContains('13:00–16:00', $html);
         eventPhraseComposeAssertContains('Read with today as ' . gmdate('Y-m-d') . ' (UTC).', $html);
         eventPhraseComposeAssertContains('data-compose-disclosure="event" open', $html);
         eventPhraseComposeAssertSame($head, $this->head($root));
@@ -83,8 +86,8 @@ final class EventPhraseComposeTest
         $today = gmdate('Y-m-d');
         $tomorrow = gmdate('Y-m-d', time() + 86400);
 
-        $payload = $this->json($application, ['phrase' => 'tomorrow 7pm', 'today' => $today]);
-        eventPhraseComposeAssertSame(['ok', true, $tomorrow, '', '19:00', ''], [$payload['status'], $payload['filled'], $payload['event_date'], $payload['event_end_date'], $payload['event_time'], $payload['message']]);
+        $payload = $this->json($application, ['phrase' => 'tomorrow 1-4pm', 'today' => $today]);
+        eventPhraseComposeAssertSame(['ok', true, $tomorrow, '', '13:00', '16:00', ''], [$payload['status'], $payload['filled'], $payload['event_date'], $payload['event_end_date'], $payload['event_time'], $payload['event_end_time'], $payload['message']]);
 
         $local = $this->json($application, ['phrase' => 'today', 'today' => $tomorrow]);
         eventPhraseComposeAssertSame($tomorrow, $local['event_date']);

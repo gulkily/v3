@@ -24,10 +24,12 @@ $details = [];
 if ((string) ($entry['event_end_date'] ?? '') !== '') {
     $details[] = $e($entry['event_date'] . ' – ' . $entry['event_end_date']);
 }
-foreach (['event_time', 'event_location'] as $field) {
-    if ((string) ($entry[$field] ?? '') !== '') {
-        $details[] = $e($entry[$field]);
-    }
+$time = \ForumRewrite\Calendar\EventTimes::display($entry);
+if ($time !== '') {
+    $details[] = $e($time);
+}
+if ((string) ($entry['event_location'] ?? '') !== '') {
+    $details[] = $e($entry['event_location']);
 }
 if ($entry['event_state'] !== null) {
     $details[] = $e(ucfirst((string) $entry['event_state']));

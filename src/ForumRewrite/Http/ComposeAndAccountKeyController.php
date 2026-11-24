@@ -60,7 +60,8 @@ final class ComposeAndAccountKeyController
             (string) ($query['event_location'] ?? ''),
             (string) ($query['event_link'] ?? ''),
             (string) ($query['event_time'] ?? ''),
-            (string) ($query['event_end_date'] ?? '')
+            (string) ($query['event_end_date'] ?? ''),
+            (string) ($query['event_end_time'] ?? '')
         );
     }
 
@@ -140,6 +141,7 @@ final class ComposeAndAccountKeyController
                         (string) ($input['event_link'] ?? ''),
                         (string) ($input['event_time'] ?? ''),
                         (string) ($input['event_end_date'] ?? ''),
+                        (string) ($input['event_end_time'] ?? ''),
                         $exception instanceof ComposeAttemptRetired ? $exception->attempt : null,
                         $this->eventWhenState($input)
                     ),
@@ -282,6 +284,7 @@ final class ComposeAndAccountKeyController
         string $eventLink = '',
         string $eventTime = '',
         string $eventEndDate = '',
+        string $eventEndTime = '',
         ?string $retiredComposeAttempt = null,
         array $eventWhenState = []
     ): string {
@@ -296,6 +299,7 @@ final class ComposeAndAccountKeyController
             'eventLink' => $eventLink,
             'eventTime' => $eventTime,
             'eventEndDate' => $eventEndDate,
+            'eventEndTime' => $eventEndTime,
             'retiredComposeAttempt' => $retiredComposeAttempt,
         ], 'New Post', 'compose', $this->identityScripts(['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js']));
     }
@@ -318,6 +322,7 @@ final class ComposeAndAccountKeyController
                 'event_date' => (string) ($input['event_date'] ?? ''),
                 'event_end_date' => (string) ($input['event_end_date'] ?? ''),
                 'event_time' => (string) ($input['event_time'] ?? ''),
+                'event_end_time' => (string) ($input['event_end_time'] ?? ''),
             ],
             $state['composerEventDateFixed']
         );
@@ -338,6 +343,7 @@ final class ComposeAndAccountKeyController
             (string) ($input['event_link'] ?? ''),
             $result['fields']['event_time'],
             $result['fields']['event_end_date'],
+            $result['fields']['event_end_time'],
             null,
             $state
         );

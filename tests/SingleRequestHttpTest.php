@@ -12,7 +12,8 @@ final class SingleRequestHttpTest
         foreach(['public','templates','docs','prompts'] as $name) symlink(dirname(__DIR__).'/'.$name,$root.'/'.$name);
         file_put_contents($root.'/unused.php','<?php return [];');
         (new ReadModelBuilder($repo,$db,new CanonicalRecordRepository($repo)))->rebuild();
-        $router='<?php ini_set("session.save_path",'.var_export($root.'/sessions',true).'); require '.var_export(dirname(__DIR__).'/autoload.php',true).'; (new ForumRewrite\\Host\\FrontController('.var_export($root,true).','.var_export($repo,true).','.var_export($db,true).','.var_export($root.'/static',true).'))->handle($_SERVER["REQUEST_METHOD"],$_SERVER["REQUEST_URI"],$_COOKIE);';
+        // Match production: PHP warnings go to the server log so the host can send its error status.
+        $router='<?php ini_set("display_errors", "0"); ini_set("session.save_path",'.var_export($root.'/sessions',true).'); require '.var_export(dirname(__DIR__).'/autoload.php',true).'; (new ForumRewrite\\Host\\FrontController('.var_export($root,true).','.var_export($repo,true).','.var_export($db,true).','.var_export($root.'/static',true).'))->handle($_SERVER["REQUEST_METHOD"],$_SERVER["REQUEST_URI"],$_COOKIE);';
         $server=new FrontendTestServer($router,null,$environment+['FORUM_SECRETS_PATH'=>$root.'/unused.php','FORUM_STATIC_HTML_ROOT'=>$root.'/static','FORUM_PUBLIC_ARTIFACT_ROOT'=>$artifacts,'FORUM_APPROVED_MEMBERS_ONLY'=>'false','FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED'=>'false']);
         return [$server,$repo,$db,$root];
     }

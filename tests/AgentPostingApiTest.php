@@ -53,7 +53,10 @@ final class AgentPostingApiTest
             $lock=fopen(dirname($db).'/forum-rewrite.lock','c+'); flock($lock,LOCK_EX);
             try {
                 foreach (['/api/prepare_thread','/api/create_thread'] as $path) {
-                    [$h,$body]=self::request($server,$path,'POST',['subject'=>'test','body'=>'hello']);
+                    [$h,$body]=self::request($server,$path,'POST',[
+                        'subject' => 'test', 'body' => 'hello',
+                        'author_identity_id' => 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954',
+                    ]);
                     assertStringContains('503',$h[0]); assertSame('busy',json_decode($body,true)['status']);
                     assertTrue(in_array('Retry-After: 10',$h,true));
                 }

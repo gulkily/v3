@@ -3144,6 +3144,7 @@ PHP;
 
         try {
             $repositoryRoot = $root . '/repository';
+            mkdir($repositoryRoot, 0700);
             $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
             $application = new Application(dirname(__DIR__), $repositoryRoot, $root . '/index.sqlite3');
             $featureFlags = $this->render($application, '/tools/feature-flags/');

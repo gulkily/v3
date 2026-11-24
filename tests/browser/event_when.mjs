@@ -1,5 +1,5 @@
 // Run with: CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/event_when.mjs
-// The When box: Fill reads a phrase into Date, Until and Time in place with JavaScript, by
+// The When box: Fill reads a phrase into Date, Until, Time and Ends in place with JavaScript, by
 // submitting without it, keeps a calendar day page's date, and never posts.
 import assert from 'node:assert/strict';
 import { mkdtemp } from 'node:fs/promises';
@@ -56,12 +56,13 @@ try {
     assert.equal(await when.isVisible(), true);
 
     // Fill in place, with the browser's own date.
-    await when.fill('tomorrow 7pm');
+    await when.fill('tomorrow 1-4pm');
     await form.getByRole('button', { name: 'Fill' }).click();
-    await assert.doesNotReject(() => writer.page.waitForFunction(() => document.querySelector('[name="event_time"]').value === '19:00'));
+    await assert.doesNotReject(() => writer.page.waitForFunction(() => document.querySelector('[name="event_end_time"]').value === '16:00'));
+    assert.equal(await field(form, 'event_time').inputValue(), '13:00');
     assert.equal(await field(form, 'event_date').inputValue(), await localDate(writer.page, 1));
     assert.equal(await form.locator('[data-role="event-when-status"]').isHidden(), true);
-    assert.match(await form.locator('[data-compose-disclosure="event"] [data-role="compose-disclosure-summary"]').textContent(), /19:00/);
+    assert.match(await form.locator('[data-compose-disclosure="event"] [data-role="compose-disclosure-summary"]').textContent(), /13:00–16:00/);
 
     // Enter means Fill, not Post; a span fills Until.
     await when.fill('Friday to Sunday');
@@ -69,6 +70,7 @@ try {
     await writer.page.waitForFunction(() => document.querySelector('[name="event_end_date"]').value !== '');
     assert.equal(writer.page.url(), base + '/compose/thread');
     assert.equal(await field(form, 'event_time').inputValue(), '');
+    assert.equal(await field(form, 'event_end_time').inputValue(), '');
 
     // An unread phrase changes nothing and says why.
     const kept = await field(form, 'event_date').inputValue();
@@ -132,15 +134,15 @@ try {
   await signed.getByRole('textbox', { name: 'Title' }).fill('Signed games night');
   await signed.getByRole('textbox', { name: 'Body' }).fill('Bring a game');
   await signed.locator('[data-compose-disclosure="event"] > summary').click();
-  await signed.getByRole('textbox', { name: 'When' }).fill('2027-06-05 at 7pm');
+  await signed.getByRole('textbox', { name: 'When' }).fill('2027-06-05 at 7-10pm');
   await signed.getByRole('button', { name: 'Fill' }).click();
-  await signer.page.waitForFunction(() => document.querySelector('[name="event_time"]').value === '19:00');
+  await signer.page.waitForFunction(() => document.querySelector('[name="event_end_time"]').value === '22:00');
   await signed.getByRole('button', { name: 'Post', exact: true }).click();
   await signer.page.waitForURL(/\/threads\//, { timeout: 60000 });
-  await signer.page.getByText('“2027-06-05 at 7pm”').first().waitFor();
+  await signer.page.getByText('“2027-06-05 at 7-10pm”').first().waitFor();
   const signedRecord = latestRecord();
   assert.match(signedRecord, /Author-Identity-ID: openpgp:/, 'signed by the browser key');
-  assert.match(signedRecord, /Event-Date: 2027-06-05\nEvent-Time: 19:00\nEvent-When: 2027-06-05 at 7pm\n/);
+  assert.match(signedRecord, /Event-Date: 2027-06-05\nEvent-Time: 19:00\nEvent-End-Time: 22:00\nEvent-When: 2027-06-05 at 7-10pm\n/);
   assert.deepEqual(signer.seen, { dialogs: [], errors: [] });
   await signer.context.close();
 
