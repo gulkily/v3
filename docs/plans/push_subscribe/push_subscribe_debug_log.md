@@ -66,3 +66,28 @@ Mode: enabled from the `.railspike_debug_on` marker (new workflow, no explicit r
 - Stage sizing "<=50 lines of change": Stage 3 and Stage 4 likely exceed 50 lines with tests. They stay single stages because each is one testable slice under an hour of work; splitting them would separate routes from their tests.
 
 *— Claude · 2026-11-24 UTC*
+
+## 2026-11-24T01:30Z — Step 4 (implementation)
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md`, Planning Docs Commit Gate. Kept the ledger and summary out of the planning commit, which needed a deliberate split because the ledger had been edited during Steps 1–3. Retain.
+- `step4_implementation_do.md`, Stage Boundary Protocol. One commit per stage with its summary made each stage reviewable; the stage 3 commit carries the pre-existing test fix visibly. Retain.
+- Host `AGENTS.md`, Tests, plus the maintainer's rule on pre-existing failures. `PrivateConfigCommandTest` failed on `main`; the rule turned it into an in-scope fix instead of a note. Retain.
+- `implementation_standards.md`, "Inspect existing implementations before creating ... API payloads". Found that no code under `src/` uses `curl`, which changed the sender to PHP streams. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- Documentation-only verification rules: application change.
+- Follow-up cycles before merge: a new branch from `origin/main`.
+
+### Uncertain assessments
+
+- `step4_implementation_do.md` asks for stages under two hours and Step 3 asked for about 50 lines. Stages 3 and 4 were each several hundred lines with tests, but each stayed one testable slice; splitting them would have separated routes from their own tests.
+- The reply "Proved step 3" was read as `Approved Step 3` (a voice transcription). Railspike asks for the exact phrase; the plain intent and the user's follow-up questions, which did not change scope, supported the reading.
+
+*— Claude · 2026-11-24 UTC*
