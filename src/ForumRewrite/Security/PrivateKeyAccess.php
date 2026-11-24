@@ -12,7 +12,7 @@ use PDO;
  * Approval lets a key post as its username. Private access needs more: the key is the
  * username's first key or a root seed (rule 1), was approved by a same-username key that
  * itself has private access (rule 2), was approved by a root-approved operator (rule 3), or
- * was later confirmed by a key meeting rule 2 or 3 (rule 4, added with confirm records).
+ * was later confirmed by a key meeting rule 2 or 3 (rule 4, a PrivateAccessConfirmation record).
  * Every other approved key is "public only".
  *
  * Retired keys still count as links in a chain (a key approved by an old, now-retired phone
@@ -35,7 +35,7 @@ final class PrivateKeyAccess
     private array $profileCache = [];
     /** @var array<string, true>|null */
     private ?array $columns = null;
-    /** @var \Closure(string): (array{classification:string,target_username:string}|null|false) */
+    /** @var \Closure(string): (array{classification:string,target_username:string,actor_is_operator:bool}|null|false) */
     private \Closure $receiptFor;
     /** @var \Closure(string): bool */
     private \Closure $isOperator;
@@ -43,7 +43,7 @@ final class PrivateKeyAccess
     private \Closure $confirmersFor;
 
     /**
-     * @param (callable(string): (array{classification:string,target_username:string}|null|false))|null $receiptFor
+     * @param (callable(string): (array{classification:string,target_username:string,actor_is_operator:bool}|null|false))|null $receiptFor
      *        Receipt facts for a target key: null when none exists, false when one exists but is invalid.
      * @param (callable(string): bool)|null $isOperator Whether a key is a root-approved operator.
      * @param (callable(string): list<string>)|null $confirmersFor Keys that signed a confirm record for a target.
@@ -55,10 +55,15 @@ final class PrivateKeyAccess
         ?callable $isOperator = null,
         ?callable $confirmersFor = null,
     ) {
-        $this->receiptFor = $receiptFor !== null ? \Closure::fromCallable($receiptFor) : fn (string $id) => $this->repositoryReceipt($id);
+        $lookup = $receiptFor !== null ? \Closure::fromCallable($receiptFor) : fn (string $id) => $this->repositoryReceipt($id);
+        $memo = [];
+        $this->receiptFor = static function (string $id) use ($lookup, &$memo) {
+            return array_key_exists($id, $memo) ? $memo[$id] : ($memo[$id] = $lookup($id));
+        };
         $this->isOperator = $isOperator !== null ? \Closure::fromCallable($isOperator)
             : fn (string $id): bool => $this->repositoryRoot !== null && ApprovalPolicy::isOperator($this->repositoryRoot, $id);
-        $this->confirmersFor = $confirmersFor !== null ? \Closure::fromCallable($confirmersFor) : static fn (string $id): array => [];
+        $this->confirmersFor = $confirmersFor !== null ? \Closure::fromCallable($confirmersFor)
+            : fn (string $id): array => $this->repositoryRoot === null ? [] : PrivateAccessConfirmation::confirmersFor($this->repositoryRoot, $id);
     }
 
     public function hasAccess(string $identityId): bool
@@ -161,7 +166,7 @@ final class PrivateKeyAccess
                 $reasons[$id] = self::ROOT;
             }
         }
-        foreach ($this->firstKeys($usernameToken, $candidates) as $id) {
+        foreach ($reasons === [] ? $this->firstKeys($usernameToken, $candidates) : [] as $id) {
             $reasons[$id] ??= self::FIRST;
         }
 
@@ -177,7 +182,7 @@ final class PrivateKeyAccess
                 $reason = null;
                 if ($approver !== '' && $approver !== $id && isset($reasons[$approver])) {
                     $reason = self::OWN_ACCOUNT;
-                } elseif ($approver !== '' && $approver !== $id && ($this->isOperator)($approver)) {
+                } elseif ($approver !== '' && $approver !== $id && $this->approvedAsOperator($id, $approver)) {
                     $reason = self::OPERATOR;
                 } else {
                     foreach (($this->confirmersFor)($id) as $confirmer) {
@@ -198,7 +203,8 @@ final class PrivateKeyAccess
     }
 
     /**
-     * Rule 1. A key renamed into the username never counts as its first key.
+     * Rule 1, when the username has no root seed (a root seed is its account's first key).
+     * A key renamed into the username never counts as its first key.
      * With receipts: keys whose receipt says new_account under this username. Without any such
      * receipt: the earliest-created key that has no receipt at all (legacy grants). A key with a
      * cross-account, own-account or invalid receipt is never a first key.
@@ -242,6 +248,20 @@ final class PrivateKeyAccess
         });
 
         return [array_key_first($legacy)];
+    }
+
+    /**
+     * Rule 3 asks whether the approver was an operator when it approved, as its receipt records.
+     * Only a legacy grant without a receipt falls back to the approver's current operator status.
+     */
+    private function approvedAsOperator(string $identityId, string $approver): bool
+    {
+        $receipt = ($this->receiptFor)($identityId);
+        if (is_array($receipt)) {
+            return $receipt['actor_is_operator'];
+        }
+
+        return $receipt === null && ($this->isOperator)($approver);
     }
 
     /** @return list<array<string, mixed>> approved or once-approved profiles of a username */
@@ -312,7 +332,7 @@ final class PrivateKeyAccess
      * The acceptance receipt for the grant that approved a key, found among the posts that
      * reply to its bootstrap post. Null when no receipt exists; false when one is invalid.
      *
-     * @return array{classification:string,target_username:string}|null|false
+     * @return array{classification:string,target_username:string,actor_is_operator:bool}|null|false
      */
     private function repositoryReceipt(string $identityId): array|null|false
     {
@@ -348,6 +368,7 @@ final class PrivateKeyAccess
             return [
                 'classification' => (string) ($context['classification'] ?? ''),
                 'target_username' => (string) ($context['target_username'] ?? ''),
+                'actor_is_operator' => ($context['actor_is_operator'] ?? false) === true,
             ];
         }
 

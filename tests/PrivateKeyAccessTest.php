@@ -33,8 +33,8 @@ final class PrivateKeyAccessTest
         $this->add($pdo, 'openpgp:ilya1', 'ilyag', 'openpgp:bob');
         $this->add($pdo, 'openpgp:mallory', 'ilyag', 'openpgp:carol');
         $this->add($pdo, 'openpgp:carol', 'carol', 'openpgp:bob');
-        $this->receipts['openpgp:ilya1'] = ['classification' => 'new_account', 'target_username' => 'ilyag'];
-        $this->receipts['openpgp:mallory'] = ['classification' => 'cross_account_key', 'target_username' => 'ilyag'];
+        $this->receipts['openpgp:ilya1'] = ['classification' => 'new_account', 'target_username' => 'ilyag', 'actor_is_operator' => false];
+        $this->receipts['openpgp:mallory'] = ['classification' => 'cross_account_key', 'target_username' => 'ilyag', 'actor_is_operator' => false];
 
         $access = $this->access($pdo);
         assertTrue($access->hasAccess('openpgp:ilya1'));
@@ -50,10 +50,10 @@ final class PrivateKeyAccessTest
         $this->add($pdo, 'openpgp:ilya1', 'ilyag', 'openpgp:bob');
         $this->add($pdo, 'openpgp:ilya2', 'ilyag', 'openpgp:ilya1');
         $this->add($pdo, 'openpgp:ilya3', 'ilyag', 'openpgp:ilya2');
-        $this->receipts['openpgp:ilya1'] = ['classification' => 'new_account', 'target_username' => 'ilyag'];
-        $this->receipts['openpgp:ilya2'] = ['classification' => 'own_account_key', 'target_username' => 'ilyag'];
+        $this->receipts['openpgp:ilya1'] = ['classification' => 'new_account', 'target_username' => 'ilyag', 'actor_is_operator' => false];
+        $this->receipts['openpgp:ilya2'] = ['classification' => 'own_account_key', 'target_username' => 'ilyag', 'actor_is_operator' => false];
         // A session bootstrap records the vouching session's key as the approver.
-        $this->receipts['openpgp:ilya3'] = ['classification' => 'own_account_key', 'target_username' => 'ilyag'];
+        $this->receipts['openpgp:ilya3'] = ['classification' => 'own_account_key', 'target_username' => 'ilyag', 'actor_is_operator' => false];
 
         $access = $this->access($pdo);
         assertSame(PrivateKeyAccess::OWN_ACCOUNT, $access->reason('openpgp:ilya2'));
@@ -67,9 +67,9 @@ final class PrivateKeyAccessTest
         $this->add($pdo, 'openpgp:ilya1', 'ilyag', 'openpgp:bob');
         $this->add($pdo, 'openpgp:fake1', 'ilyag', 'openpgp:carol');
         $this->add($pdo, 'openpgp:fake2', 'ilyag', 'openpgp:fake1');
-        $this->receipts['openpgp:ilya1'] = ['classification' => 'new_account', 'target_username' => 'ilyag'];
-        $this->receipts['openpgp:fake1'] = ['classification' => 'cross_account_key', 'target_username' => 'ilyag'];
-        $this->receipts['openpgp:fake2'] = ['classification' => 'own_account_key', 'target_username' => 'ilyag'];
+        $this->receipts['openpgp:ilya1'] = ['classification' => 'new_account', 'target_username' => 'ilyag', 'actor_is_operator' => false];
+        $this->receipts['openpgp:fake1'] = ['classification' => 'cross_account_key', 'target_username' => 'ilyag', 'actor_is_operator' => false];
+        $this->receipts['openpgp:fake2'] = ['classification' => 'own_account_key', 'target_username' => 'ilyag', 'actor_is_operator' => false];
 
         $access = $this->access($pdo);
         assertFalse($access->hasAccess('openpgp:fake1'));
@@ -85,11 +85,20 @@ final class PrivateKeyAccessTest
         $this->add($pdo, 'openpgp:op', 'opal', 'openpgp:root');
         $this->operators['openpgp:op'] = true;
         $this->add($pdo, 'openpgp:ilya2', 'ilyag', 'openpgp:op');
-        $this->receipts['openpgp:ilya2'] = ['classification' => 'cross_account_key', 'target_username' => 'ilyag'];
+        $this->receipts['openpgp:ilya2'] = ['classification' => 'cross_account_key', 'target_username' => 'ilyag', 'actor_is_operator' => true];
+        // Made an operator only after approving: the receipt says it approved as a member.
+        $this->add($pdo, 'openpgp:later', 'lena', null);
+        $this->operators['openpgp:later'] = true;
+        $this->add($pdo, 'openpgp:ilya3', 'ilyag', 'openpgp:later');
+        $this->receipts['openpgp:ilya3'] = ['classification' => 'cross_account_key', 'target_username' => 'ilyag', 'actor_is_operator' => false];
+        // A legacy grant without a receipt falls back to current operator status.
+        $this->add($pdo, 'openpgp:ilya4', 'ilyag', 'openpgp:op');
 
         $access = $this->access($pdo);
         assertSame(PrivateKeyAccess::ROOT, $access->reason('openpgp:root'));
         assertSame(PrivateKeyAccess::OPERATOR, $access->reason('openpgp:ilya2'));
+        assertFalse($access->hasAccess('openpgp:ilya3'));
+        assertSame(PrivateKeyAccess::OPERATOR, $access->reason('openpgp:ilya4'));
     }
 
     public function testRetiredApproverStillVouchesButRetiredKeyHasNoAccess(): void
@@ -97,8 +106,8 @@ final class PrivateKeyAccessTest
         $pdo = $this->database();
         $this->add($pdo, 'openpgp:oldphone', 'ilyag', 'openpgp:bob', retired: true);
         $this->add($pdo, 'openpgp:newphone', 'ilyag', 'openpgp:oldphone');
-        $this->receipts['openpgp:oldphone'] = ['classification' => 'new_account', 'target_username' => 'ilyag'];
-        $this->receipts['openpgp:newphone'] = ['classification' => 'own_account_key', 'target_username' => 'ilyag'];
+        $this->receipts['openpgp:oldphone'] = ['classification' => 'new_account', 'target_username' => 'ilyag', 'actor_is_operator' => false];
+        $this->receipts['openpgp:newphone'] = ['classification' => 'own_account_key', 'target_username' => 'ilyag', 'actor_is_operator' => false];
 
         $access = $this->access($pdo);
         assertFalse($access->hasAccess('openpgp:oldphone'));
@@ -143,9 +152,9 @@ final class PrivateKeyAccessTest
         $this->add($pdo, 'openpgp:ilya1', 'ilyag', 'openpgp:bob');
         $this->add($pdo, 'openpgp:laptop', 'ilyag', 'openpgp:carol');
         $this->add($pdo, 'openpgp:fake', 'ilyag', 'openpgp:carol');
-        $this->receipts['openpgp:ilya1'] = ['classification' => 'new_account', 'target_username' => 'ilyag'];
-        $this->receipts['openpgp:laptop'] = ['classification' => 'cross_account_key', 'target_username' => 'ilyag'];
-        $this->receipts['openpgp:fake'] = ['classification' => 'cross_account_key', 'target_username' => 'ilyag'];
+        $this->receipts['openpgp:ilya1'] = ['classification' => 'new_account', 'target_username' => 'ilyag', 'actor_is_operator' => false];
+        $this->receipts['openpgp:laptop'] = ['classification' => 'cross_account_key', 'target_username' => 'ilyag', 'actor_is_operator' => false];
+        $this->receipts['openpgp:fake'] = ['classification' => 'cross_account_key', 'target_username' => 'ilyag', 'actor_is_operator' => false];
         $this->confirmations['openpgp:laptop'] = ['openpgp:ilya1'];
         // A public-only key cannot confirm another.
         $this->confirmations['openpgp:fake'] = ['openpgp:laptop2'];
@@ -172,8 +181,8 @@ final class PrivateKeyAccessTest
         $this->add($pdo, 'openpgp:ilya1', 'ilyag', 'openpgp:bob');
         $this->add($pdo, 'openpgp:mallory', 'ilyag', 'openpgp:carol');
         $this->add($pdo, 'openpgp:carol', 'carol', 'openpgp:bob');
-        $this->receipts['openpgp:ilya1'] = ['classification' => 'new_account', 'target_username' => 'ilyag'];
-        $this->receipts['openpgp:mallory'] = ['classification' => 'cross_account_key', 'target_username' => 'ilyag'];
+        $this->receipts['openpgp:ilya1'] = ['classification' => 'new_account', 'target_username' => 'ilyag', 'actor_is_operator' => false];
+        $this->receipts['openpgp:mallory'] = ['classification' => 'cross_account_key', 'target_username' => 'ilyag', 'actor_is_operator' => false];
 
         $rows = $this->access($pdo)->report();
         $reasons = array_combine(array_column($rows, 'identity_id'), array_column($rows, 'reason'));
