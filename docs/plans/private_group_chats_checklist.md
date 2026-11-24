@@ -35,7 +35,8 @@ A key gets private access only if it is the username's first key, was approved b
 
 - [x] Step 1 written, Option A recommended (receipts plus a signed confirm record), 2026-11-24
 - [x] Step 1 Revision 1: how the owner finds out (device line with short code, QR confirm link, Confirm / Not me card on Unread and Messages, operator path); estimate 0.90, 2026-11-24
-- [ ] Step 1 approved
+- [x] Step 1 approved, 2026-11-24
+- [x] Step 2 written, 2026-11-24: Not me reuses key retirement; release order is flag off, deploy, confirm own devices from User Access, flag on
 - [ ] Step 2 approved
 - [ ] Step 3 approved; plans moved to `docs/plans/private_key_access/` and committed
 - [ ] Before deploy: list the zenmemes.com keys the downgrade affects; maintainer confirms his own devices

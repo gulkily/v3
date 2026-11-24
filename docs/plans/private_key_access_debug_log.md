@@ -26,3 +26,18 @@
 
 **Inapplicable instructions**
 - Step 1 "/new or /clear" reminder: once per cycle; not repeated on revision.
+
+## 2026-11-24T17:35Z — Step 2
+
+**Necessary/useful instructions**
+- `implementation_standards.md` "Identify all existing UI/API surfaces": found `private_message_access.php` (existing pre-paint access states), the bundled QR generator, and that retirement already covers Not me; each removed a new component; retain.
+- `step2_feature_description.md` "Known user or environment": forced a release order for zenmemes.com (flag off, deploy, confirm, flag on) that keeps Ilya from locking himself out; retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Documentation-only scope rules: application change.
+
+**Uncertain assessments**
+- Whether the read model's `approved_by_identity_id` is complete for legacy grants; Step 3 should check it against receipts on an import before relying on it.
