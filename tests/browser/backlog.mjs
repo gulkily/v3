@@ -331,7 +331,41 @@ try {
     assert.deepEqual(viewer.errors, [], `${theme} ${width}px: no page errors`);
     await viewer.context.close();
   }
-  console.log(`PASS backlog: tick two, Start, Copy, One-shot and Staged with JavaScript (Agent decides by default); plain form to the tidy address without; sort, order and filter links; closed and unknown items left out; /backlog.txt and /backlog/start.txt; holder lines, Hide claimed and claim lines in the text list on a site with a claims thread, none on a site without; Start claims in the background with the prompt already shown, once, never on a reload or a pasted address; a failed claim says so and Claim retries; no claim without a key or without scripts; Release frees one item of a claim from its row; ${cases} theme/width/script cases of the list and the start page without sideways overflow`);
+  // Two sessions, no browser: agents with their own keys, the real ./v3 feedback commands and the real Quill
+  // client against this site. PF-20261101-B02 has only a guest claim at this point.
+  // Quill keeps a GPG keyring under its state directory, and GPG's agent socket needs a path this short (see QuillClientTest::stateDir).
+  const quillState = { one: await mkdtemp('/tmp/q'), two: await mkdtemp('/tmp/q') };
+  const agent = (name, ...args) => spawnSync(join(project, 'v3'), ['feedback', ...args], { encoding: 'utf8',
+    env: { ...process.env, NO_PROXY: '127.0.0.1', no_proxy: '127.0.0.1', http_proxy: '', HTTP_PROXY: '',
+      V3_QUILL: `python3 ${join(project, 'public/quill.py')} --state-dir ${quillState[name]}` } });
+  const authorOf = start => site(`$find = $db->prepare("SELECT author_identity_id FROM posts WHERE body LIKE ? AND COALESCE(author_identity_id, '') != '' ORDER BY sequence_number DESC LIMIT 1");
+    $find->execute([$argv[1] . '%']); echo $find->fetchColumn();`, start).trim();
+  // Session one meets a guest claim: it is told, and since a guest claim holds nothing, its own claim is posted.
+  const first = agent('one', 'claim', `--site=${claimsBase}`, 'PF-20261101-B02', '--note=two-session check, session one');
+  assert.equal(first.status, 0, first.stdout + first.stderr);
+  assert.match(first.stdout, /ID: PF-20261101-B02\nClaim-State: none\nGuest-Claims: 1\n/, 'a guest claim is reported, not obeyed');
+  // A key nobody has approved yet: the claim waits and holds nothing.
+  assert.match(await (await fetch(claimsBase + '/backlog/claims.txt?items=PF-20261101-B02')).text(), /Claim-State: none\nClaims-Waiting-For-Approval: \S+\nGuest-Claims: 1\n/);
+  approve(authorOf('claim: PF-20261101-B02\n\ntwo-session check, session one'));
+  assert.match(await (await fetch(claimsBase + '/backlog/claims.txt?items=PF-20261101-B02')).text(), /Claim-State: held\nClaimed-By: \S+\nClaimed-Since: \S+\nClaim-Post: \S+\nGuest-Claims: 1\n/, 'approved, the same post counts');
+  // Session two, another key, the same item: told who holds it, nothing posted, a failing exit.
+  const postsBefore = claimPosts();
+  const second = agent('two', 'claim', `--site=${claimsBase}`, 'PF-20261101-B02');
+  assert.equal(second.status, 1, second.stdout + second.stderr);
+  assert.match(second.stderr, /^Held: PF-20261101-B02 by \S+ since \S+\nNothing was posted\./m);
+  assert.equal(claimPosts(), postsBefore);
+  // Session two cannot release session one's claim: the reply is posted and changes nothing.
+  assert.equal(agent('two', 'release', `--site=${claimsBase}`, 'PF-20261101-B02').status, 0);
+  assert.match(await (await fetch(claimsBase + '/backlog/claims.txt?items=PF-20261101-B02')).text(), /Claim-State: held\n/, 'a stranger\'s release has no effect');
+  // Session one stops short of a pull request and releases; session two can then claim.
+  const released = agent('one', 'release', `--site=${claimsBase}`, 'PF-20261101-B02');
+  assert.equal(released.status, 0, released.stdout + released.stderr);
+  assert.match(await (await fetch(claimsBase + '/backlog/claims.txt?items=PF-20261101-B02')).text(), /Claim-State: none\n/);
+  const third = agent('two', 'claim', `--site=${claimsBase}`, 'PF-20261101-B02');
+  assert.equal(third.status, 0, third.stdout + third.stderr);
+  assert.equal(claimPosts(), postsBefore + 1);
+
+  console.log(`PASS backlog: tick two, Start, Copy, One-shot and Staged with JavaScript (Agent decides by default); plain form to the tidy address without; sort, order and filter links; closed and unknown items left out; /backlog.txt and /backlog/start.txt; holder lines, Hide claimed and claim lines in the text list on a site with a claims thread, none on a site without; Start claims in the background with the prompt already shown, once, never on a reload or a pasted address; a failed claim says so and Claim retries; no claim without a key or without scripts; Release frees one item of a claim from its row; two agent sessions with their own keys and the real Quill client: the second is told who holds the item and posts nothing, and can claim after the first releases; ${cases} theme/width/script cases of the list and the start page without sideways overflow`);
 } catch (error) {
   console.error(serverLog.split('\n').filter(line => /error|warning|fatal/i.test(line)).slice(-10).join('\n'));
   throw error;

@@ -55,8 +55,7 @@ final class BacklogPageController
         $fileBase = $repository !== null && str_starts_with($repository, 'https://github.com/') ? $repository . '/blob/main/docs/feedback/items/' : null;
         [$viewerId, $viewerIsOperator] = $this->viewer($viewer, $claims);
 
-        return $this->routeServices->renderPageTemplate('backlog.php', [
-            'backlogItems' => array_map(static fn (FeedbackItem $item): array => [
+        $rows = array_map(static fn (FeedbackItem $item): array => [
                 'id' => $item->id(),
                 'title' => $item->header('Title'),
                 'kind' => $item->header('Kind'),
@@ -67,7 +66,10 @@ final class BacklogPageController
                 'href' => $fileBase !== null ? $fileBase . rawurlencode($item->id()) . '.txt' : null,
                 'claim_lines' => BacklogClaims::lines($claims[$item->id()] ?? null),
                 'release_post' => BacklogClaims::releasable($claims[$item->id()] ?? null, $viewerId, $viewerIsOperator),
-            ], $items),
+            ], $items);
+
+        return $this->routeServices->renderPageTemplate('backlog.php', [
+            'backlogItems' => $rows,
             'backlogOpenCount' => count($open),
             'backlogUnknownWords' => $words['unknown'],
             'backlogVersion' => substr(ReadModelMetadata::repositoryHead($this->projectRoot), 0, 12),
@@ -83,7 +85,8 @@ final class BacklogPageController
             'backlogKindOptions' => $this->options('kind', self::KIND_LABELS, $words),
             'backlogTextHref' => self::href($words, [], '/backlog.txt'),
             'backlogClaimsThread' => $claims === null ? null : SiteProfileRegistry::backlogClaimsThread(),
-        ], 'Backlog', 'tools', $claims === null ? [] : self::CLAIM_SCRIPTS);
+        // The signing scripts are only needed where a Release button is drawn.
+        ], 'Backlog', 'tools', array_filter(array_column($rows, 'release_post')) === [] ? [] : self::CLAIM_SCRIPTS);
     }
 
     /**

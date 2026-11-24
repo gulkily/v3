@@ -173,3 +173,44 @@ Decisions in force (Step 3 approved with every default): the claims thread may r
 - Estimate details: original scope as Step 3 Stage 6; uncertainty low; no revisions.
 
 *— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
+
+## Stage 7 - Proof and records
+
+**Original estimate: 0.07**
+
+**Retrospective stage-work assessment: 0.07**
+
+- Changes:
+  - `tests/browser/backlog.mjs`: a two-session run with no browser. Two agents with their own keys use the real `./v3 feedback claim` and `release` and the real `public/quill.py` against the check's site.
+  - New `docs/concepts/work_claim.md`; `docs/concepts/backlog_view.md` revised (the `claimed` word, Start claiming, the cache header, the boundary).
+  - New feedback item `PF-20261123-F02`, `blocked`, with the index regenerated.
+  - `docs/plans/ui_copy_audit_checklist.md` and `docs/plans/backlog_checklist.md` (cycle 2 ticked as far as it goes; the fresh-agent start from cycle 1 recorded as PR #380; PR #381 merged).
+  - `BacklogPageController::list()` loads the signing scripts only when a Release button is drawn, found in the final read of the diff.
+- Verification:
+  - `./v3 test --smoke BacklogClaimsTest BacklogPageTest FeedbackBacklogTest InboxFeedTest InboxPageTest LlmsTxtRendererTest PlatformDocsCatalogTest ScriptsIndexTest UsageNamesTest GuestbookPageTest SiteProfileRegistryTest AgentCheckinTest`: 586 run, 586 passed. The full suite was not run.
+  - `node tests/browser/backlog.mjs`: passed, 176 theme, width and script cases plus every flow named in Stages 2 to 5.
+  - Two sessions, in that check: session one meets a guest claim, is shown it, and claims; its key is not approved, so the claim reads as waiting and holds nothing; once the key is approved the same post counts. Session two, another key, asks for the same item: it is told who holds it and since when, posts nothing and exits 1. Session two's release of session one's claim changes nothing. Session one releases; session two then claims.
+  - `./v3 feedback check`: 362 items, 0 problems. `./v3 feedback index`: written. `git diff --check`: clean. Links in the concept entry, the summary, the checklist and the procedure resolve.
+  - No thread named: the six routes compared with the planning commit: identical except the page's `app-version` meta and the new feedback item appearing in the list it belongs in.
+  - Final read of the diff against the plan: 35 files; no new dependency, no schema change, no new flag; `PledgeCampaign`, the pledge script and `quill.py` are unchanged.
+- Notes:
+  - Pending for release, not done here: the claims thread on zenmemes.com and its ID in the profile; the two-session test against the live site; the live `Cache-Control` after deploy; the maintainer's Start from his iPhone with and without a stored key.
+  - The guest run measures what the plan asked: a second session is told about a guest claim. Whether an agent then looks for the branch, as the procedure says, depends on the agent reading the procedure; that was not run with a fresh agent.
+  - `PF-20261123-F01` is not changed. PR #380 looks like the start its Done when asks for; closing it is the maintainer's call.
+- Estimate details: original scope as Step 3 Stage 7; uncertainty was the scripted two-session check; no revisions.
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
+
+## Cycle closeout
+
+**Retrospective scope assessment: 0.50** (projection at Step 4 entry 0.45; Steps 1 and 2 said 0.40)
+
+- Delivered as planned in seven stages, each with its own commit after the planning commit `f0c1576c6`.
+- Larger than projected in three places: recognising the viewer for Claim and Release, the scripts-off case, and Release forms that cannot nest in the Start form.
+- Completion Contract: normal entry and end-to-end outcome are met on a local site with real signed posts. Recovery cases are met locally. Deployment needs no schema or flag change. Release conditions are pending as listed in Stage 7.
+- Decisions taken as defaults, all recorded in Step 3's approval line. One is still open in practice: the thread's ID.
+- Maintainer comfortable-fit judgment: pending. Measured time: unknown.
+
+Debug: [debug log](./backlog_claims_debug_log.md).
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*

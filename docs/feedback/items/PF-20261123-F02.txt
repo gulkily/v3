@@ -1,0 +1,19 @@
+ID: PF-20261123-F02
+Title: Backlog claims: Start claims the picked items and the page shows who holds them
+Kind: feature
+Workflow: blocked
+Created: 2026-11-23
+Evidence: locally-verified
+Estimate: 0.45
+
+Request:
+"it also means 'claim' so that there's no effort duplication" (the maintainer, on what Start means). Start claims the items, the page shows who holds them, and agents claim and release. A claim is a `claim:` line in a signed reply in one claims thread, as pledges use `pledge:` lines. It ends when released by hand, when the item closes or is blocked, and reads as stale after three days. A guest's unsigned claim is shown and not counted.
+
+Sources:
+- Session: Claude chat with the maintainer, 2026-11-23
+
+Done when:
+With a claims thread named in the zenmemes profile, the maintainer ticks two items on Tools → Backlog on his phone and presses Start; both rows read "Claimed by ilyag"; a second agent session given one of those items is told who holds it and does not start; after the pull request is merged and deployed the items show no claim. Release from a row frees an item.
+
+Notes:
+2026-11-23: staged cycle on feat/backlog_claims (docs/plans/backlog_claims/), the second of three tracked in docs/plans/backlog_checklist.md; concept docs/concepts/work_claim.md. Built: the claim and release lines and their reader, holder lines and Hide claimed on the page and in /backlog.txt, Start claiming in the background, Release, /backlog/claims.txt, ./v3 feedback claim and release, a Claims line in a site-made prompt, and bare claim lines kept out of Unread. Verified locally with reader, page and command tests, and a browser check with real signed posts in every permitted theme at 375 and 1280 px, including two agent sessions with their own keys and the real Quill client. Blocked on: the claims thread being posted on zenmemes.com and named in the profile (the profile names none yet, so claims are off after this deploy), then the two-session test on the live site and the maintainer's own Start from his iPhone.
