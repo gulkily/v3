@@ -370,3 +370,39 @@ self.addEventListener("fetch", (event) => {
     return cached || fetch(event.request);
   })());
 });
+
+// Notifications (push_subscribe): show every push, because iPhone stops delivering to a site
+// that receives a push without showing one. The payload is the server's JSON (title, body,
+// url, tag); anything unreadable still shows a plain notice.
+function pushNotice(event) {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (error) { data = {}; }
+  if (!data || typeof data !== "object") data = {};
+  let url = "/";
+  try {
+    const target = new URL(typeof data.url === "string" ? data.url : "/", self.location.origin);
+    if (target.origin === self.location.origin) url = target.pathname + target.search + target.hash;
+  } catch (error) { url = "/"; }
+  const options = {
+    body: typeof data.body === "string" ? data.body : "Something new",
+    icon: "/assets/app-icon-192.png",
+    data: { url }
+  };
+  if (typeof data.tag === "string" && data.tag) options.tag = data.tag;
+  return { title: typeof data.title === "string" && data.title ? data.title : "ZenMemes", options };
+}
+self.addEventListener("push", (event) => {
+  const notice = pushNotice(event);
+  event.waitUntil(self.registration.showNotification(notice.title, notice.options));
+});
+// A tap focuses an open app window if there is one, else opens the notice's page.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || "/", self.location.origin).href;
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const open = windows.find((client) => new URL(client.url).origin === self.location.origin && "focus" in client);
+    if (open) return open.focus();
+    return self.clients.openWindow(url);
+  })());
+});

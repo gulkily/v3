@@ -75,3 +75,28 @@ Dependency delta so far: zero. No package, manifest or lock is added; the sender
 - Estimate details: original scope as in Step 3; retrospective higher for the extra route and the pre-existing test fix.
 
 *— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Preferences row and worker
+
+**Original estimate: 0.20**
+**Retrospective: 0.20**
+
+- Changes:
+  - `templates/pages/preferences.php`: a Notifications `account-row` with a state and two actions (Send a test, Turn on or Turn off), rendered only with the flag on. The inline script shows it before paint only for a browser with a saved key and push support, with the last known state from `forum_push_state` (Blocked when permission was refused).
+  - `public/assets/push_preferences.js`, loaded only with the flag on: Turn on asks permission first, inside the tap, then subscribes with the site key and saves; Turn off unsubscribes and tells the server; Send a test shows "Test sent", "Refused: <reason>", or Off when the server says the device is gone. On load, a subscription the browser still holds is saved again, so it follows the current sign-in and a changed site key.
+  - `public/service_worker.js`: `push` shows every message, with "ZenMemes" / "Something new" when the payload can't be read and only same-site page addresses; `notificationclick` focuses an open window, else opens the message's page.
+  - `public/assets/preferences.css`: the row's actions wrap together at the right on a phone.
+  - `ToolsPageController::preferences()` passes `pushEnabled`.
+  - New `tests/browser/push_preferences.mjs`.
+- Verification:
+  - Passed: `CHROMIUM_PATH=/usr/bin/google-chrome node tests/browser/push_preferences.mjs`: no row with the flag off; hidden without a key; nothing asked on load; on, test, reload (state drawn before paint with the page script blocked, then saved again), off; Blocked; a refusal shown; gone unsubscribes the browser; the worker's four payload cases and both tap cases.
+  - Passed: `node tests/browser/preferences.mjs` (existing page unchanged with the flag off); `./v3 test --smoke PreferencesPageTest PushApiTest`, 496 of 496.
+  - Looked at 375 to 380 px in Gloss, Gloss Dark and Word97: the title stays on one line and the actions sit under the state.
+  - Navigation icons: none added, so `theme-nav-icons.css` is unchanged.
+  - Not tested here: a real browser's push service. The stubs stand in for `PushManager` and `Notification`.
+- Notes:
+  - The plan said "a tap on the row"; the row has explicit Turn on and Turn off buttons instead, like the other rows' actions.
+  - `npm install` of the existing `playwright-core` dev dependency was run locally to run the browser tests; no manifest or lock changed (`package-lock.json` is ignored).
+- Estimate details: original scope as in Step 3; no revisions.
+
+*— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*
