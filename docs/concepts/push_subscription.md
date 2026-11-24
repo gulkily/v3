@@ -1,0 +1,11 @@
+# Push subscription
+
+Purpose: Let a member's installed app (or browser) receive notifications from the site while it is closed, one device at a time.
+Scenario: With "Notifications" on (`FORUM_PUSH_ENABLED`, off by default), a signed-in member opens Preferences in the app added to the Home Screen and taps Turn on. Only then does the browser ask for permission. It subscribes with the site's push key, which the server made on first use, and the server stores the device under the member's username, key and session. Send a test makes the server encrypt a short message for that device (RFC 8291), sign a token for the push service (RFC 8292) and post it; the service worker shows it, and a tap focuses the app. Turn off, signing out, or a 404 or 410 from the push service deletes the device; a send also checks that the session that subscribed it is still signed in as that key. Agents do not receive push.
+Sources: [crypto](../../src/ForumRewrite/Push/WebPushCrypto.php) and [keys](../../src/ForumRewrite/Push/P256Key.php), [site key](../../src/ForumRewrite/Push/PushVapidKeys.php), [sender](../../src/ForumRewrite/Push/PushSender.php) and [allowed push services](../../src/ForumRewrite/Push/PushEndpointPolicy.php), [store](../../src/ForumRewrite/Push/PushSubscriptionStore.php) and [paths](../../src/ForumRewrite/Push/PushStorageConfig.php), [routes](../../src/ForumRewrite/Http/PushApiController.php), [Preferences row](../../templates/pages/preferences.php) and [its script](../../public/assets/push_preferences.js), [worker listeners](../../public/service_worker.js), [agent API](../reference/agent_api.md#notifications-browser-push).
+
+The store (`state/private/push.sqlite3`, or `PUSH_DATABASE_PATH`) and the key (`push_vapid.pem` beside it, mode 0600) stay outside the content repository, backups and offline snapshots. The server only sends to https endpoints on the Apple, Google, Mozilla and Microsoft push services. A member keeps at most 10 devices. Losing the key makes every device subscribe again quietly the next time Preferences opens.
+
+Proposed, not built yet: notices for DMs and replies (cycle `push_on_events`), and opening the right page from a tap (cycle `push_tap_routing`); see the [notifications checklist](../plans/notifications_checklist.md).
+
+*— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*

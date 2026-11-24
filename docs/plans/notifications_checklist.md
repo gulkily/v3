@@ -30,11 +30,14 @@ Found on a first read at `93295c82`. Each cycle re-checks its own part before pl
   - [x] Merged (2026-11-23).
   - [ ] Deployed. On 2026-11-23 after the merge, zenmemes.com was still on `8bb02ba3` and served the old manifest.
   - [ ] Real-phone check: remove and re-add the app on the iPhone SE (iPhone reads the manifest only when adding), see "ZenMemes", open it online and in airplane mode.
-- [ ] **2. `push_subscribe`** (staged; estimate 0.75; in progress on branch `feature/push-subscribe`) — a member turns notifications on for this device and gets a test notification. The flag (off by default); a VAPID key pair made on first use and kept in private state; a "Notifications" switch in Preferences that asks for permission only when tapped; the subscription stored under username and key in a private store; turning it off removes it; "Send a test" sends one. Includes the sender itself, since the test needs it.
+- [ ] **2. `push_subscribe`** (staged; estimate 0.75; retrospective 0.80; Step 4 done on branch `feature/push-subscribe`) — a member turns notifications on for this device and gets a test notification. The flag (off by default); a VAPID key pair made on first use and kept in private state; a "Notifications" switch in Preferences that asks for permission only when tapped; the subscription stored under username and key in a private store; turning it off removes it; "Send a test" sends one. Includes the sender itself, since the test needs it.
   - Step 1 compares: a sender written with `openssl` (no new dependency, tested against the RFC 8291 and 8292 examples) against a library (needs dependency approval); and an empty "tickle" push the worker answers by asking the server what is new, against an encrypted payload.
   - Step 1 written 2026-11-23 ([assessment](./push_subscribe/push_subscribe_step1_solution_assessment.md)): Option A, an `openssl` sender with an encrypted payload, approved 2026-11-23 with the three assumptions (sign-out turns a device off; any signed-in member, up to 10 devices; the site's address as the token contact).
   - Step 2 approved 2026-11-23 ([description](./push_subscribe/push_subscribe_step2_feature_description.md)).
-  - Step 3 written 2026-11-23 ([plan](./push_subscribe/push_subscribe_step3_development_plan.md)): five stages; approved 2026-11-24 UTC. Step 4 under way.
+  - Step 3 written 2026-11-23 ([plan](./push_subscribe/push_subscribe_step3_development_plan.md)): five stages; approved 2026-11-24 UTC.
+  - Step 4 done 2026-11-24 ([summary](./push_subscribe/push_subscribe_step4_implementation_summary.md)): five stage commits; flag off by default; no new dependency.
+  - [ ] Merged and deployed.
+  - [ ] Real-phone check on the iPhone SE (home-screen app), with the flag turned on: Turn on, allow, Send a test, see it arrive, tap it, Turn off, Send a test no longer offered. If Apple refuses, the row shows its reason.
   - Endpoints the push service reports gone (404, 410) are deleted when a send hits them.
   - The agent API gets the subscription routes in `docs/reference/agent_api.md`; agents do not receive push.
 - [ ] **3. `push_ios_guide`** (one-shot; estimate 0.10) — on iPhone in Safari, outside the installed app, the Notifications switch is replaced by a one-screen "Add to Home Screen" guide. In the installed app, the switch shows. Copy kept short, per the UI copy rules.
@@ -57,5 +60,6 @@ Not planned until the MVP is in use. Each is a candidate, not a commitment.
 
 1. ~~Where should the installed app open, and under what name?~~ Answered in cycle 1: the home page, "ZenMemes" (name confirmed by the maintainer; the start page is open to his overrule).
 2. Which events notify by default? The outline's lean: DMs and replies on, new posts off. (cycles 4 and 7)
+   - The maintainer, 2026-11-24, is still deciding between per-member feeds and one site-wide feed plus DMs. Web push has no broadcast: every device has its own subscription and the server sends to each, so any feed design is a choice of which devices get which event on top of cycle 2's store. Agents post a lot, so a site-wide "new posts" feed would be noisy; new threads only, human posts only, or a digest are options. A feed for signed-out visitors would need subscriptions without a username.
 3. Is an email fallback worth it for members who never install the app?
 4. zenmemes.com first, or a small private instance for the vending operators?

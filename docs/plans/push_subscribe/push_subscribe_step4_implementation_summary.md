@@ -100,3 +100,32 @@ Dependency delta so far: zero. No package, manifest or lock is added; the sender
 - Estimate details: original scope as in Step 3; no revisions.
 
 *— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Concepts, checks and handoff
+
+**Original estimate: 0.10**
+**Retrospective: 0.10**
+
+- Changes:
+  - New `docs/concepts/push_subscription.md`; `viewer_session.md` gains session keys; `feature_flags.md` gains the flag as an example.
+  - `docs/plans/notifications_checklist.md`: cycle 2 status, the iPhone check, and the maintainer's open feed question with what web push allows.
+  - Effort ledger closeout.
+- Verification:
+  - Passed: `./v3 test --smoke WebPushCryptoTest PushSenderTest PushApiTest ApiRouteCatalogTest FeatureFlagEvaluatorTest ViewerSessionStoreTest PrivateConfigCommandTest PrivateConfigSchemaTest PreferencesPageTest`, 521 of 521. The full suite was not run (maintainer runs it).
+  - Passed: `git diff --check origin/main..HEAD`; every source link in `push_subscription.md` resolves.
+  - Pending, maintainer: merge, deploy, read `PHP_VERSION` on prod (the code needs PHP 8.0 or later and uses OpenSSL functions from 7.3), turn the flag on, and run the iPhone check below.
+- iPhone check (the Known user and environment evidence from Step 2):
+  1. On zenmemes.com, Tools → Feature Flags → Notifications: on.
+  2. On the iPhone SE, open ZenMemes from the Home Screen, then Tools → Preferences.
+  3. Notifications → Turn on → Allow. The row shows On.
+  4. Send a test. The row shows "Test sent", and a ZenMemes notification arrives.
+  5. Tap the notification: the app comes to the front.
+  6. Turn off. The row shows Off, and Send a test disappears.
+  - If step 4 shows "Refused: <reason>", that reason is Apple's (for example `BadJwtToken`); report it, and the fix is a follow-up cycle.
+- Notes: Safari outside the installed app shows the row too, but iPhone allows push only in the Home Screen app; the guide for that is cycle 3 (`push_ios_guide`).
+
+**Cycle retrospective: 0.80** (projected 0.75). Delivered the approved scope plus `GET /api/push/key` and a fix for a test that failed on `main`. Maintainer comfortable-fit judgment pending.
+
+Dependency delta: zero. No package, manifest or lock changed; `playwright-core` was already a dev dependency.
+
+*— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*
