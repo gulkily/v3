@@ -704,3 +704,4 @@ and repair its navigation and affected references. See the
 - [Midnight action fonts](midnight_action_fonts/midnight_action_fonts_one_shot.md) — one-shot: Midnight post actions get Word 97’s UI font, no underline and Like/Flag bevel (PF-20261111-F19).
 - [Zen hero fits the screen](zen_hero_fit/zen_hero_fit_one_shot.md) — one-shot: the featured Zen meme on the home page fits the viewport on wide screens, with thumbnails beside upright images.
 - [Zen hero square on phones](zen_hero_square/zen_hero_square_one_shot.md) — one-shot: on phones the featured Zen meme sits whole in a square box so it fits the first screen.
+- [Event end time](event_end_time/event_end_time_one_shot.md) — one-shot: events get an end time (`Event-End-Time`, composer Ends, ranges like "1-4pm") and an `event-time:` reply to correct an event's times; calendar exports stop assuming one hour.
