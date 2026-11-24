@@ -8,7 +8,7 @@ Extended estimates: disabled (no alternatives or work units in this cycle)
 
 **Cycle estimate: 0.15**
 
-Status: implemented and committed on `fix/dm-verify-reason`; next permitted action: push and PR for maintainer review.
+Status: implemented; PR open; next permitted action: maintainer review.
 
 Original request (2026-11-24): "can you please make two one-shot fixes for the things we've uncovered so far? (the unclear message, and the history sync spam)". This cycle is the unclear message; history sync is separate and waits for the maintainer's go-ahead on the approach.
 
@@ -31,7 +31,7 @@ Verification and recovery plan: extend `PrivateMessageReaderTest` with a future-
 
 Starting revision and branch: `fix/dm-verify-reason` from `origin/main` `2d7805c`.
 
-Planning commit: `35f35ff` (plan and index only; confirmed with `git log`).
+Planning commit: `10fe328` (plan and index only; first made as `35f35ff`, then rebased onto `origin/main` `b4a4eec`).
 
 Dated execution history:
 - 2026-11-24: `signatureProblem` added to `private_message_reader.js`; `problemLabel` takes the reason. Verification now settles every signature with `Promise.allSettled` before choosing the first failure (the old `Promise.all` gave the same pass/fail, but a sequential loop would have left later rejections unhandled).
@@ -43,7 +43,7 @@ Verification: `./v3 test --smoke PrivateMessageReaderTest`: 492 run, 492 passed 
 
 Final review: diff is the reader, its test, this record, the index line and the ledger; no duplicated helper (the reader had no time formatter or key-ID matcher to reuse).
 
-Commit/merge/publication status: completion commit pending at time of writing; not pushed or merged.
+Commit/merge/publication status: completion commit `b654047` (first `9dc73a2`, rebased onto `b4a4eec`; reader tests rerun after the rebase, 492/492 and both browser tests pass). Pushed to `fix/dm-verify-reason`; PR open; not merged.
 
 Study history:
 - 2026-11-24 UTC, intake: **0.15** whole cycle. Claude, single exposed rater (reader code read before the estimate). Measured time unknown.
