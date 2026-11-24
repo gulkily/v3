@@ -7,7 +7,7 @@ Extended estimates: enabled (no separate work units)
 
 **Cycle estimate: 0.20**
 
-Status: planned; next permitted action: implement after the planning commit.
+Status: implemented and verified locally; awaiting review, merge and production check.
 
 ## Original request
 
@@ -67,10 +67,50 @@ Concepts touched: [Private-message history](../../concepts/private_message_histo
 - Run `./v3 test --smoke PrivateMessageHistoryCryptoTest` plus the other history browser tests through their PHP runners. The full suite is not run.
 
 Starting revision and branch: `fix/history-sync-pacing` from `origin/main` at `270cdbe32`.
-Planning commit: pending.
+Planning commit: `91c0e5df9` (confirmed with Git before implementation).
+
+## Dated execution history
+
+- 2026-11-24, decision (refinement within scope): the shared window limit is 14 requests per key in 10 s, not 12. With a limit equal to the 12-request turn budget, a new turn could only start once the entire previous turn had aged out, and foreground reads and receipts would have no room. Fourteen keeps two below the server's 16.
+- 2026-11-24, decision: "time the next turn to when the oldest request ages out" is implemented as "when the window has room for a full turn". That is the oldest request that must age out for 12 more sends to fit. A literal reading would start a turn with room for only one send, and pacing would end it at once.
+- 2026-11-24, discovery: two existing browser tests asserted that history sync writes nothing to `localStorage`, to keep secrets out. The pacing record holds only timestamps, so both tests now allow exactly that record's key and shape, and still fail on any other write.
+- 2026-11-24, discovery: `private_message_history_verification.cjs` ran six "later visits" within milliseconds of real time. Under the new limit those visits are paced, as intended, so the test now advances its clock 11 s per visit.
+
+## Enhancement requests
+
+- Stop history sync on 403 `reason: public_only` (from `private_key_access` Stage 3). Disposition: done here as an addition, because without it a public-only key would keep sending refused requests, which is the spam this hotfix removes. Inert on `main` until `feat/private-key-access` merges. Approval: within the authorized pacing outcome. Outcome: implemented and tested.
+
+## Outcome
+
+- `public/assets/private_message_history_sync.js`:
+  - A shared pacing record per key in `localStorage` (`forum_history_pacing:<account>:<digest>`). `request()` refuses to send while the shared backoff runs or 14 sends already fall in the last 10 s, logs each send, and shares every 429's `Retry-After`. Storage failures fall back to memory, and backoff more than 60 s away is ignored.
+  - Turn budget 16 → 12, and the soft stop 14 → 10.
+  - `continueLater` waits for the later of the backoff and room for a full turn.
+  - `flushConfirmations` keeps a batch on a 429 or a predicted backoff and retries it after the backoff.
+  - A 403 `public_only` stops sync for the page until the identity changes.
+- Concept entry "Bounded history continuation" updated.
+- Limitations:
+  - The server's per-account limit (64 in 10 s, across all of the account's devices) cannot be shared from one browser. Devices still compete for it.
+  - B (only recently active targets) and D (batching) remain open.
+
+## Verification
+
+- `node tests/browser/private_message_history_continuation.cjs`: passed. New cases cover a second tab waiting out another tab's backoff, a full shared window holding a request, a receipt retried after Retry-After rather than dropped, and `public_only` stopping further requests. The turn now sends 12, and the existing cases are unchanged.
+- `node tests/browser/private_message_history_verification.cjs` with no flags, `--modern`, `--retired`, and `--modern --retired`: passed.
+- scheduling, gate, donor and reader browser tests: passed.
+- `./v3 test --smoke PrivateMessageFeatureFlagTest PrivateMessageHistoryCryptoTest PrivateMessageReleaseIsolationTest PrivateMessageHistorySyncTest`: 529 of 529 passed. The full suite was not run.
+- Not verified: production 429 counts on zenmemes.com with many tabs. That is the maintainer's check after deploy.
+
+## Final review
+
+The diff covers one client file, three browser tests and one concept entry. No server change, no new dependency, and no duplicated helper: pacing reuses the lock's key scheme and the existing Retry-After parsing.
+
+Commit/merge/publication status: planning `91c0e5df9`; implementation commit pending in this update; not merged; not deployed.
 
 ## Study history
 
 - Intake, 2026-11-24 UTC: 0.20 projected total, scope v1. Exposure: the file was read in full before the estimate. Claude single exposed rater; R1 hashes not re-verified.
+- Execution entry: 0.20 reaffirmed.
+- Closeout, 2026-11-24 UTC: retrospective 0.25. The two test harnesses that assumed no storage writes and instant revisits were ordinary correction. The `public_only` stop was a small addition. Maintainer comfortable-fit judgment pending.
 
 *— Claude · 2026-11-24 UTC · Model: Claude Opus 5.5*

@@ -15,7 +15,8 @@ vm.runInThisContext(fs.readFileSync('public/assets/openpgp.min.js','utf8'));
  try {
   assert.equal((await call({action:'setup',keys:keys.map(({fp,publicKey})=>({fp,publicKey})),source:source.fp,envelope,submitting:keys[1].fp,retired:process.argv.includes('--retired')?[keys[1].fp,signer.fp]:[]})).status,'ok');
   const values={forum_pki_username:'alice',forum_pki_public_key:source.publicKey,forum_pki_private_key:source.privateKey};
-  global.localStorage={getItem:k=>values[k]||'',setItem:()=>assert.fail('No secrets persisted')};
+  // Only the shared pacing record (timestamps) may be written; never a secret.
+  global.localStorage={getItem:k=>values[k]||'',setItem:(k,v)=>{if(k.startsWith('forum_history_pacing:alice:') && /^\{"retryAt":\d+,"log":\[[\d,]*\]\}$/.test(v)){values[k]=v;return;}assert.fail('No secrets persisted');}};
   global.sessionStorage={getItem:()=>'',setItem:()=>{}};
   global.CustomEvent=class {constructor(type,options){this.type=type;this.detail=options.detail;}};
   const events={};global.document={hidden:false,querySelector:()=>({dataset:{viewer:'alice'}}),addEventListener:(n,f)=>events[n]=f,dispatchEvent:()=>{}};
@@ -39,7 +40,10 @@ vm.runInThisContext(fs.readFileSync('public/assets/openpgp.min.js','utf8'));
   vm.runInThisContext(fs.readFileSync(process.argv.includes('--modern')?'public/assets/private_message_history_sync.js':'tests/browser/fixtures/private_message_history_sync_legacy.js','utf8'));
   events.DOMContentLoaded();await window.ForumPrivateMessageHistorySync.refresh();
   // Legacy clients require ordinary later visits after their old eight-bundle window.
-  for(let visit=0;visit<5&&!verified;visit++)await window.ForumPrivateMessageHistorySync.refresh(true);
+  // Visits are seconds apart in practice; move the clock past the shared 10 s request window.
+  const realNow=Date.now;let offset=0;Date.now=()=>realNow()+offset;
+  try {for(let visit=0;visit<5&&!verified;visit++){offset+=11000;await window.ForumPrivateMessageHistorySync.refresh(true);}}
+  finally {Date.now=realNow;}
   assert(verified,'An unchanged legacy coordinator must reach the later actual signer');
   assert(pages>8,'Signer must be beyond the first verification pages');
   const receipt=await call({action:'receipt',target:source.fp,envelope});assert(receipt.receipt);
