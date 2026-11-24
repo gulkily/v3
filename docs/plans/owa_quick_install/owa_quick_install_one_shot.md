@@ -7,7 +7,7 @@ Extended estimates: enabled (no alternatives or work units, so only the cycle es
 
 **Cycle estimate: 0.06**
 
-Status: implemented and committed on `fix/owa-quick-install`; PR pending. Next action: open the PR, merge, deploy, then the maintainer's Android check.
+Status: PR [#412](https://github.com/gulkily/v3/pull/412) open; not merged or deployed. Next action: merge, deploy, then the maintainer's Android check.
 
 ## Request and authorization
 
@@ -73,7 +73,7 @@ Delivered as planned. Limitation: a phone that goes offline in the seconds betwe
 
 Diff checked: four files plus this record, debug log, ledger and index; no duplicated helpers (install reuses `fetchOfflineResource`, `cacheKey`, `isOwnedCacheName`, `refreshOfflineReader`); no UI copy; no manifest change.
 
-Commit/merge/publication status: implementation commit pending at writing; not pushed, merged or deployed.
+Commit/merge/publication status: implementation commit `7e2135f` (confirmed with Git); pushed as `fix/owa-quick-install`, PR [#412](https://github.com/gulkily/v3/pull/412) opened 2026-11-24; not merged or deployed.
 
 ## Study history
 
