@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/zen_hero_square`; host ledger [zen_hero_s
 
 **Cycle estimate: 0.10**
 
-Status: implemented; PR pending; next permitted action: maintainer review.
+Status: implemented; PR #396 open; next permitted action: maintainer review.
 
 Original request (2026-11-24): "the big Zen meme on the homepage ... fits on the page on desktop, but it doesn't fit on the page on mobile. It needs to fit on the page on mobile too, please." Then: "solution, or part of the solution, would be to just square the images."
 
