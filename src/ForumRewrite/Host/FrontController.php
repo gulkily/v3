@@ -58,6 +58,13 @@ final class FrontController
             if($busy) { header('Retry-After: 10'); $payload['retry_after']=10; }
             echo json_encode($payload, JSON_THROW_ON_ERROR);
         }
+        if (\ForumRewrite\Push\PushAfterResponse::requested()) {
+            try {
+                \ForumRewrite\Push\PushAfterResponse::run($this->projectRoot, $this->databasePath);
+            } catch (Throwable $error) {
+                error_log('Push notices after the response failed: ' . $error->getMessage());
+            }
+        }
     }
 
     private function handleRequest(string $method, string $requestUri, array $cookies = []): void

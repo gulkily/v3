@@ -19,6 +19,8 @@ final class SqliteTaskQueueStore
     /** Operator-requested application deploy; claimed ahead of all other queued work. */
     public const APP_UPDATE = 'app_update';
     public const INSTANCE_IMPORT = 'instance_import';
+    /** Sends waiting DM and reply notices (PushNotifier); one outstanding task, key `push-notify`. */
+    public const PUSH_NOTIFY = 'push_notify';
     public const EXECUTOR_HEARTBEAT_FRESHNESS_SECONDS = 120;
     public const READ_MODEL_SCHEMA_RECOVERY_REASON = 'read_model_schema';
     public const TERMINAL_TASK_HISTORY_LIMIT = 100;
@@ -852,7 +854,7 @@ final class SqliteTaskQueueStore
 
     private function assertAllowedType(string $type): void
     {
-        if (!in_array($type, [self::RETRACTION_SWEEP, self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP, self::LOCAL_SCORE_SWEEP, self::LOCAL_META_TRAIN, self::PUBLISH_OFFLINE_SNAPSHOT, self::AGENT_REPLY, self::APP_UPDATE, self::INSTANCE_IMPORT], true)) {
+        if (!in_array($type, [self::RETRACTION_SWEEP, self::REBUILD_READ_MODEL, self::FAST_SCORE_SWEEP, self::LOCAL_SCORE_SWEEP, self::LOCAL_META_TRAIN, self::PUBLISH_OFFLINE_SNAPSHOT, self::AGENT_REPLY, self::APP_UPDATE, self::INSTANCE_IMPORT, self::PUSH_NOTIFY], true)) {
             throw new InvalidArgumentException('Unsupported internal task type: ' . $type);
         }
     }

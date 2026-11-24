@@ -75,3 +75,25 @@ Dependency delta so far: zero.
 - Estimate details: original scope as in Step 3; no revisions.
 
 *— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Sending right after the response, and the queue
+
+**Original estimate: 0.15**
+**Retrospective: 0.15**
+
+- Changes:
+  - `SqliteTaskQueueStore::PUSH_NOTIFY` (`push_notify`), an allowed type. `TaskQueueWorker` gets an optional `runPushNotify` runner: it records the counts as task progress, requeues the task (`requeueClaimed()`, as the retraction sweep does) while notices are held, and completes it otherwise. `scripts/task_queue.php` runs `PushNotifierFactory::forProject()->sendDue(now, 'queue')` there, and nothing while `FORUM_PUSH_ENABLED` is off.
+  - `PushNotifierFactory::forProject()`: the notifier for this instance's private stores; read check from `InboxMarkStore::isCaughtUp()` (replies) and `PrivateMessageStore::isSeenBy()` (DMs); device filter `PushNotices::deviceMayReceive()`.
+  - `RouteServices::recordPushNotices()`: when a notice is recorded, enqueues `push_notify` with the fixed key `push-notify` and calls `PushAfterResponse::request()` with its task ID.
+  - `PushAfterResponse::run()`, called at the end of `FrontController::handle()`: with `fastcgi_finish_request()`, ends the response, then runs the pass in the same request under `ignore_user_abort` and a 60-second limit; without it, `DetachedTaskQueueLauncher::launchForTask()` starts a one-task worker for that task only (`run --task-id=N`). The queued task stays either way, so cron sends what this misses.
+  - `tests/PushAfterResponseTest.php`, listed in `tests/run.php`.
+- Verification:
+  - Passed: `./v3 test PushAfterResponseTest`, 5 of 5. Nothing recorded runs nothing; with a finish function the pass runs once in the request and marks the route `after-response`; without one the worker is launched for that task only, and a failed launch is reported; two notices in a request share one queued task; the site address is remembered from `HTTP_HOST`; a recording failure is swallowed; the worker requeues while notices are held, completes when none are, and a worker without the runner fails the task with `push_notify_unavailable`.
+  - Passed: `./v3 test --smoke PushAfterResponseTest PushNotifierTest PushReplyNoticeTest PushMessageNoticeTest PushApiTest TaskQueueWorkerTest TaskQueueStoreTest TaskQueueCommandTest DetachedTaskQueueLauncherTest`, 557 of 557. Full suite not run.
+  - Not run: a real php-fpm request, and the CLI worker against a live push service. Tests run under the CLI, where `fastcgi_finish_request()` does not exist; Stage 5's replay on zenmemes.com covers the host.
+- Notes:
+  - An agent reply written by the task worker records its notice there, but no request ends to send it; the queued task sends it on the next worker run (about a minute with cron).
+  - The plan's per-request response-time check is covered by construction: everything after `fastcgi_finish_request()` runs once the poster has their answer, and the detached route only starts a process.
+- Estimate details: original scope as in Step 3; no revisions.
+
+*— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*

@@ -352,7 +352,18 @@ final class RouteServices
             }
             $notices = new \ForumRewrite\Push\PushNotices($this->pdo(), static fn (): \ForumRewrite\Push\PushSubscriptionStore => $store, $site, \ForumRewrite\SiteProfileRegistry::backlogClaimsThread());
 
-            return $record($notices);
+            $recorded = $record($notices);
+            if ($recorded > 0) {
+                // The queue task is the fallback; the request itself sends once its response is out.
+                $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
+                if (!is_dir(dirname($queuePath))) {
+                    @mkdir(dirname($queuePath), 0700, true);
+                }
+                $task = (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->enqueue(SqliteTaskQueueStore::PUSH_NOTIFY, 'push-notify');
+                \ForumRewrite\Push\PushAfterResponse::request((int) $task['id']);
+            }
+
+            return $recorded;
         } catch (\Throwable $error) {
             error_log('Push notice could not be recorded: ' . $error->getMessage());
             return 0;
