@@ -27,8 +27,8 @@ Sources: [activity and schedule store](../../src/ForumRewrite/Messaging/PrivateM
 
 Name: Bounded history continuation
 Purpose: Finish useful recovery during an ordinary visible visit, then stop repeated work.
-Scenario: Ten-original, sixteen-attempt background turns yield between batches and honor admission delays. Foreground readers take priority between turns. Settled revision-aware passes use one small response; new relevant data reopens recovery. A recorded submitting key is a verification hint, not proof of the original encrypted signer; bounded fallback preserves other approved signers and existing send acceptance.
-Sources: [coordinator](../../public/assets/private_message_history_sync.js), [service](../../src/ForumRewrite/Messaging/PrivateMessageHistorySyncService.php), [acceptance](../plans/message_sync_activity/acceptance.txt).
+Scenario: Ten-original, twelve-attempt background turns yield between batches and honor admission delays. Every tab of a key shares one pacing record in browser storage (backoff and sends in the last 10 s, at most 14), so tabs, foreground reads and receipts never spend the same server budget twice; the next turn waits until the window has room for a full turn, and a receipt deferred by backoff stays queued. A `public_only` refusal stops sync for the page. Foreground readers take priority between turns. Settled revision-aware passes use one small response; new relevant data reopens recovery. A recorded submitting key is a verification hint, not proof of the original encrypted signer; bounded fallback preserves other approved signers and existing send acceptance.
+Sources: [coordinator](../../public/assets/private_message_history_sync.js), [service](../../src/ForumRewrite/Messaging/PrivateMessageHistorySyncService.php), [acceptance](../plans/message_sync_activity/acceptance.txt), [pacing](../plans/history_sync_pacing/history_sync_pacing_one_shot.md).
 
 Name: Saved message copies
 Purpose: Let a conversation this browser has already read open without decrypting it again.
