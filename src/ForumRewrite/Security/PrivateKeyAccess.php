@@ -73,6 +73,22 @@ final class PrivateKeyAccess
             ->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PRIVATE_KEY_ACCESS_ENFORCED);
     }
 
+    /** A short code both devices show, from the last 12 hex digits of the fingerprint: "A1B2 C3D4 E5F6". */
+    public static function shortCode(string $identityId): string
+    {
+        if (preg_match('/^openpgp:([a-f0-9]{40})$/D', $identityId, $m) !== 1) {
+            return '';
+        }
+
+        return implode(' ', str_split(strtoupper(substr($m[1], -12)), 4));
+    }
+
+    /** The confirm page for a key, as its QR and the owner's card link to it. */
+    public static function confirmPath(string $identityId): string
+    {
+        return preg_match('/^openpgp:([a-f0-9]{40})$/D', $identityId, $m) === 1 ? '/account/confirm/' . $m[1] : '';
+    }
+
     public function hasAccess(string $identityId): bool
     {
         return $this->reason($identityId) !== self::PUBLIC_ONLY;

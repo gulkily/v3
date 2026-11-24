@@ -157,6 +157,41 @@ final class PrivateAccessConfirmationTest
         });
     }
 
+    public function testMessagesShowsAPublicOnlyDeviceItsCodeAndConfirmLink(): void
+    {
+        $this->withAccounts(function (string $root, string $db, LocalWriteService $writer, array $keys): void {
+            $page = function (string $name, string $path = '/messages') use ($root, $db, $keys): string {
+                TestViewerSession::signIn($keys[$name]['identity_id']);
+                $_SERVER['REQUEST_METHOD'] = 'GET';
+                ob_start();
+                (new Application(dirname(__DIR__), $root, $db, dirname($db) . '/public'))->handle('GET', $path);
+                return (string) ob_get_clean();
+            };
+            try {
+                $fingerprint = substr($keys['mira2']['identity_id'], 8);
+                $html = $page('mira2');
+                assertSame(true, str_contains($html, "This device can't read messages yet"));
+                assertSame(true, str_contains($html, PrivateKeyAccess::shortCode($keys['mira2']['identity_id'])));
+                assertSame(true, str_contains($html, 'data-confirm-path="/account/confirm/' . $fingerprint . '"'));
+                assertSame(false, str_contains($html, 'are for approved members'));
+                assertSame(true, str_contains($page('mira2', '/messages/conversation/bob'), "This device can't read messages yet"));
+
+                $own = $page('mira1');
+                assertSame(false, str_contains($own, "This device can't read messages yet"));
+                assertSame(true, str_contains($own, 'message-list-title'));
+            } finally {
+                TestViewerSession::reset();
+            }
+        });
+    }
+
+    public function testShortCodeIsTheFingerprintTailInGroups(): void
+    {
+        assertSame('89AB CDEF 0123', PrivateKeyAccess::shortCode('openpgp:' . str_repeat('0', 28) . '89abcdef0123'));
+        assertSame('', PrivateKeyAccess::shortCode('guest'));
+        assertSame('/account/confirm/' . str_repeat('a', 40), PrivateKeyAccess::confirmPath('openpgp:' . str_repeat('a', 40)));
+    }
+
     private function mailbox(string $root, string $db, PDO $pdo): PrivateMessageMailboxService
     {
         return new PrivateMessageMailboxService(new PrivateMessageStore(new PDO('sqlite::memory:')), $pdo, new ApprovedUserKeyResolver($root), $root);

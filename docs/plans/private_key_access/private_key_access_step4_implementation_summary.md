@@ -93,3 +93,28 @@ Effort study: `railspike-effort` / `v3/private_key_access`; [host ledger](../eff
 - Estimate details: original scope as planned; no revision.
 
 *— Claude · 2026-11-24 UTC · Model: Claude Opus 5.5*
+
+## Stage 4 - The public-only device line
+
+**Original estimate: 0.10**
+**Retrospective: 0.12**
+
+- Changes:
+  - `PrivateMessagePageController`: the Messages list and conversation pages catch `PublicOnlyKeyException` and render the access page in a public-only state. The server already knows the viewer on these no-store pages, so the state is final on first paint, with or without scripts.
+  - `templates/pages/private_message_access.php`: a public-only branch with the heading "Messages", one line ("This device can't read messages yet. Confirm it from another of your devices, or ask an operator."), the short code, Show QR, and the confirm link as selectable text. It has none of the guest or waiting copy.
+  - `PrivateKeyAccess::shortCode` (last 12 hex digits in groups of four, the same on every device) and `confirmPath` (`/account/confirm/<fingerprint>`, which Stage 5 serves).
+  - `public/assets/private_access_device.js`: turns the path into an absolute URL and shows Show QR only when the QR scripts are present.
+  - `public/assets/qr_canvas.js`: invitation QR drawing moved out of `invite_issuance.js` so both places use one helper. `invite_issuance.js` and its browser test now load it, and the lobby script list includes it. Invite behaviour is unchanged.
+  - CSS in `private_message_list.css`: monospace code, a QR that shrinks with the screen, and a wrapping URL.
+- Verification:
+  - `PrivateAccessConfirmationTest`: the public-only key sees the line, code and confirm path on `/messages` and on a conversation URL; its own first key sees the normal list. The short code format is checked too.
+  - `./v3 test --smoke PrivateAccessConfirmationTest PrivateKeyAccessTest PrivateMessagePageControllerTest InvitationIssuanceTest PrivateMessageFeatureFlagTest`: 531 of 531 passed. The full suite was not run.
+  - Chrome (Playwright 1.63, outside the repository) against the local zenmemes.com import, signed in through a real session as the public-only `ilyag` key `openpgp:19c75f6a…`:
+    - Gloss, Word97, Bubblegum and Dark at 375 and 1280 px, scripts on, with the QR shown: no horizontal overflow anywhere, and the line and QR are visible.
+    - Gloss at both widths with scripts off: the line, code and relative path show, with no QR button.
+    - One defect found and fixed: in Word97, hiding only the button left an empty boxed paragraph, so the script now hides the whole row.
+- Notes:
+  - Not checked: scanning the QR with a real phone, which belongs to Stage 8. The QR opens `/account/confirm/…`, which returns 404 until Stage 5.
+- Estimate details: original 0.10. Retrospective 0.12, from moving the QR helper out of invites and the screenshot pass. New understanding, not changed scope.
+
+*— Claude · 2026-11-24 UTC · Model: Claude Opus 5.5*

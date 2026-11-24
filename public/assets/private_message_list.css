@@ -109,6 +109,10 @@
   .private-message-access [data-access-for="guest"] { display: block; }
 }
 .private-message-access [data-access-for="guest"] button { width: auto; }
+.private-message-access--public-only button { width: auto; }
+.private-access-code strong { font-family: monospace; letter-spacing: 0.05em; }
+.private-access-qr { display: block; max-width: 100%; height: auto; }
+.private-access-link code { overflow-wrap: anywhere; }
 
 /* With saved message copies on, loading previews stay blank until saved copies are checked, so read
    conversations go straight from blank to text. The delayed reveal is only a safety net if scripts fail. */

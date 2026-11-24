@@ -41,6 +41,9 @@ final class PrivateMessagePageController
         }
         try {
             $page = $this->service()->conversations($viewer);
+        } catch (\ForumRewrite\Security\PublicOnlyKeyException) {
+            $this->accessPage($viewer, true);
+            return;
         } catch (RuntimeException $exception) {
             $this->messageError('Messages Unavailable', $exception->getMessage(), 403);
             return;
@@ -70,6 +73,9 @@ final class PrivateMessagePageController
         }
         try {
             $page = $this->service()->conversationPage($viewer, $counterpartUsernameToken);
+        } catch (\ForumRewrite\Security\PublicOnlyKeyException) {
+            $this->accessPage($viewer, true);
+            return;
         } catch (InvalidArgumentException|RuntimeException $exception) {
             $this->messageError('Conversation Unavailable', $exception->getMessage(), 404);
             return;
@@ -84,13 +90,18 @@ final class PrivateMessagePageController
      *
      * @param array<string, mixed>|null $viewer
      */
-    private function accessPage(?array $viewer): void
+    private function accessPage(?array $viewer, bool $publicOnly = false): void
     {
+        $identityId = (string) ($viewer['identity_id'] ?? '');
         $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('private_message_access.php', [
-            'viewerIdentityId' => (string) ($viewer['identity_id'] ?? ''),
-        ], 'Messages', 'messages', [
-            '/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_site_auth.js', '/assets/private_message_access.js',
-        ]), $viewer === null ? 401 : 403, $this->routeServices->noStoreHeaders());
+            'viewerIdentityId' => $identityId,
+            'publicOnly' => $publicOnly,
+            'shortCode' => \ForumRewrite\Security\PrivateKeyAccess::shortCode($identityId),
+            'confirmPath' => \ForumRewrite\Security\PrivateKeyAccess::confirmPath($identityId),
+        ], 'Messages', 'messages', $publicOnly
+            ? ['/assets/qrcode-generator.js', '/assets/qr_canvas.js', '/assets/private_access_device.js']
+            : ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_site_auth.js', '/assets/private_message_access.js'],
+        ), $viewer === null ? 401 : 403, $this->routeServices->noStoreHeaders());
     }
 
     private function redirectMailbox(string $method): void

@@ -64,7 +64,7 @@ final class LobbyController
             ],
             'Generate invite',
             'invite',
-            $this->identityScripts(['/assets/private_site_auth.js', '/assets/qrcode-generator.js', '/assets/private_message_history_crypto.js', '/assets/invite_issuance.js']),
+            $this->identityScripts(['/assets/private_site_auth.js', '/assets/qrcode-generator.js', '/assets/qr_canvas.js', '/assets/private_message_history_crypto.js', '/assets/invite_issuance.js']),
         );
     }
 
