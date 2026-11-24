@@ -20,6 +20,8 @@ The maintainer approved Step 1 on 2026-11-24 with Option A: a pending notice is 
 - Agent replies a reader asked for (`reply-agent`) notify the post's author like any reply.
 - The host's PHP is detected at run time. Both after-response routes are built.
 
+Confirmed by the maintainer, 2026-11-24 (after Step 4): five minutes and 6 per 10 minutes are right to start with, and `reply-agent` replies notify the post's author.
+
 The guest-reply, read-state and lock-screen answers from Step 1 stand. Guests show as "guest replied" with the first line. Read state is checked just before each send. Hiding who wrote waits for cycle 7.
 
 Concepts touched: [push subscription](../../concepts/push_subscription.md), changed (notices for DMs and replies, the pending list, the burst rule; its "Proposed, not built yet" line shrinks to cycle 5); [internal task queue](../../concepts/internal_task_queue.md), changed (task type `push_notify` added to the list); [caught-up mark](../../concepts/caught_up_mark.md), used unchanged; [ported thread](../../concepts/ported_thread.md) and [thread activity](../../concepts/thread_activity.md), used unchanged. Feedback: no matching item in `docs/feedback/items/`.
