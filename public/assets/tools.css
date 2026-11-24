@@ -242,12 +242,14 @@
    as many to a row as fit with whole labels (bold theme fonts give phones
    one column), so every tool is in view in a desktop window without
    scrolling. */
+/* Five groups: the gaps are kept small so the default themes still show every
+   tool at 1280x720 (tests/browser/tools_launcher.mjs measures it). */
 .tools-launcher-page .tool-launcher-group + .tool-launcher-group {
-  margin-top: 1.1rem;
+  margin-top: 0.7rem;
 }
 
 .tools-launcher-page .tool-launcher-group-heading {
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.3rem;
   font-family: var(--ui-font);
   font-size: 0.85rem;
   font-weight: 600;
