@@ -48,6 +48,7 @@ A key gets private access only if it is the username's first key, was approved b
 - [x] Stage 6: "Waiting for private access" in Tools → User Access, Confirm for operators only
 - [x] Stage 7: concept entry, agent API, CLI reference, runbook, release-gate progress
 - [x] PR opened: https://github.com/gulkily/v3/pull/403 (2026-11-24)
+- [x] Merged (#403) and deployed (production `caab1dad`, 2026-11-24) with enforcement on. Production status for the 77 locally listed keys: 69 public only, 9 of them `ilyag`. Handoff: [private_messaging_handoff_2026-11-24.md](./private_messaging_handoff_2026-11-24.md)
 - [ ] Stage 8 on zenmemes.com (maintainer): flag off, deploy, report, confirm own devices, flag on, replay a downgraded device by QR
 - [ ] Follow-up idea: list chain roots first on the card (10 confirms restore all 17 `ilyag` keys)
 - [ ] Before deploy: list the zenmemes.com keys the downgrade affects; maintainer confirms his own devices
@@ -79,6 +80,7 @@ Option A1: groups with fixed membership. The creator picks members once; any mem
 ## Later, not planned
 
 - Quill confirms a key's private access: [PF-20261124-F01](../feedback/items/PF-20261124-F01.txt), after cycle 1
+- Offer to confirm a new operator's earlier cross-account approvals: [PF-20261124-F02](../feedback/items/PF-20261124-F02.txt)
 - Quill and agent support for groups
 - Notifications for group messages (see [notifications checklist](./notifications_checklist.md))
 - Showing members each other's key lists, Signal-style

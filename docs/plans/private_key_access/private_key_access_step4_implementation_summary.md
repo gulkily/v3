@@ -200,13 +200,12 @@ Effort study: `railspike-effort` / `v3/private_key_access`; [host ledger](../eff
 **Retrospective: pending**
 
 - Status: **pending on the maintainer**. It needs merge, deploy and production access, which are Ilya's.
-- Steps, in order:
-  1. Before deploying, open Tools → Feature Flags and turn off "Private access needs the account's own key" (`FORUM_PRIVATE_KEY_ACCESS_ENFORCED`). The flag is new and on by default, so a deploy with no site setting would enforce at once.
-  2. Merge the PR and deploy.
-  3. Run `./v3 approval private-access-report --public-only` on the server, or open Tools → User Access, "Waiting for private access".
-  4. From the iPhone SE, confirm your own devices. Confirming a chain root also restores every key it approved; the local import found 10 such roots for 17 `ilyag` keys.
-  5. Turn the flag on.
-  6. Replay: on a device still public-only, Messages shows "This device can't read messages yet" and a code. Tap Show QR, scan it with the iPhone, and Confirm. That device then reads a recent DM, and older ones arrive through history sync.
+- Release as it happened: #403 was merged and deployed to zenmemes.com (`caab1dad`) with the flag **on**, its default. The planned flag-off-first order was impossible: Tools → Feature Flags lists only flags the running code knows, so a new flag can't be turned off there before the deploy that adds it. The off-first route for a new flag is the environment variable (`FORUM_PRIVATE_KEY_ACCESS_ENFORCED=false` in the server's environment before the deploy), since an environment value takes precedence over site settings.
+- Production check after deploy, `/api/private_access_status` on the 77 keys the local import listed as public only: 69 public only, 4 `own_account`, 3 `root`, 1 request errored. Public only by name: guest 21, claude 20, ilyag 9, chatgpt 6, Grok 4, test-user 2, one each for ak, guest2, lucas, manus-agent, nicenice, paul and win10. The stable `claude` key `BA132E21…` is `operator`. This covered only the local list; the server report below is the full answer.
+- Remaining steps, on production (Ilya's):
+  1. Run `./v3 approval private-access-report --public-only` on the server, or open Tools → User Access, "Waiting for private access".
+  2. Confirm your own public-only `ilyag` keys there; as an operator you see Confirm. Confirming a chain root also restores every key it approved.
+  3. Replay on one downgraded device: Messages shows "This device can't read messages yet" and a code. Tap Show QR, scan it with the iPhone, and Confirm. That device then opens a DM, and older ones arrive through history sync.
 - Evidence to record here afterwards: the report's counts, which keys were confirmed, and the replay result on the two devices.
 
 ## Cycle retrospective
