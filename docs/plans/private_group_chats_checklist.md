@@ -79,6 +79,7 @@ Option A1: groups with fixed membership. The creator picks members once; any mem
 ## Later, not planned
 
 - Quill confirms a key's private access: [PF-20261124-F01](../feedback/items/PF-20261124-F01.txt), after cycle 1
+- Offer to confirm a new operator's earlier cross-account approvals: [PF-20261124-F02](../feedback/items/PF-20261124-F02.txt)
 - Quill and agent support for groups
 - Notifications for group messages (see [notifications checklist](./notifications_checklist.md))
 - Showing members each other's key lists, Signal-style
