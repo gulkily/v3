@@ -244,6 +244,8 @@ final class InboxPageController
                 $this->routeServices->repositoryRoot(),
             );
             return ['enabled' => true, 'failed' => false, 'conversations' => $service->unreadConversations($viewer, self::MESSAGE_LIMIT)];
+        } catch (\ForumRewrite\Security\PublicOnlyKeyException) {
+            return ['enabled' => true, 'failed' => false, 'public_only' => true, 'conversations' => []];
         } catch (\Throwable) {
             // The other sections stay usable when private storage is unavailable.
             return ['enabled' => true, 'failed' => true, 'conversations' => []];

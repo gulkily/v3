@@ -147,6 +147,10 @@ final class PrivateMessageMailboxService
             || trim((string) ($viewer['username_token'] ?? '')) === '') {
             throw new RuntimeException('An approved authenticated identity is required.');
         }
+        if (\ForumRewrite\Security\PrivateKeyAccess::enforced($this->repositoryRoot)
+            && !(new \ForumRewrite\Security\PrivateKeyAccess($this->readPdo, $this->repositoryRoot))->hasAccess((string) $viewer['identity_id'])) {
+            throw new \ForumRewrite\Security\PublicOnlyKeyException();
+        }
 
         return $viewer;
     }

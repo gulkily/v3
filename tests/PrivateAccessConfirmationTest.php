@@ -13,6 +13,11 @@ use ForumRewrite\Security\GpgHomeCleaner;
 use ForumRewrite\Security\PrivateAccessConfirmation;
 use ForumRewrite\Security\PrivateKeyAccess;
 use ForumRewrite\Write\LocalWriteService;
+use ForumRewrite\Messaging\ApprovedUserKeyResolver;
+use ForumRewrite\Messaging\PrivateMessageHistorySyncService;
+use ForumRewrite\Messaging\PrivateMessageHistorySyncStore;
+use ForumRewrite\Messaging\PrivateMessageMailboxService;
+use ForumRewrite\Messaging\PrivateMessageStore;
 
 if (!function_exists('assertSame')) {
     function assertSame(mixed $expected, mixed $actual, string $message = ''): void
@@ -23,7 +28,7 @@ if (!function_exists('assertSame')) {
     }
 }
 
-/** Signed confirm records for private access (docs/plans/private_key_access/). */
+/** Signed confirm records for private access, and their enforcement in messaging (docs/plans/private_key_access/). */
 final class PrivateAccessConfirmationTest
 {
     private const ROOT_IDENTITY = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
@@ -99,6 +104,79 @@ final class PrivateAccessConfirmationTest
         assertSame(true, \ForumRewrite\Import\ArchiveRecordCatalog::isRecordPath($path));
         assertSame(true, \ForumRewrite\Import\ArchiveRecordCatalog::isRecordPath(str_replace('confirmations/', 'confirmation-acceptances/', $path)));
         assertSame(true, \ForumRewrite\Import\ArchiveRecordCatalog::isSignaturePath($path . '.asc'));
+    }
+
+    public function testEnforcementLeavesPublicOnlyKeysOutOfNewMessagesUntilConfirmed(): void
+    {
+        $this->withAccounts(function (string $root, string $db, LocalWriteService $writer, array $keys): void {
+            $pdo = (new ReadModelConnection($db))->open();
+            $resolver = new ApprovedUserKeyResolver($root);
+            $ids = fn (bool $historical): array => array_column($resolver->keysForUsernameToken($pdo, 'mira', $historical), 'identity_id');
+            assertSame([$keys['mira1']['identity_id']], $ids(false));
+            assertSame(3, count($ids(true)));
+
+            $this->confirm($writer, $keys['mira1'], $keys['mira2']);
+            assertSame(2, count($ids(false)));
+        });
+    }
+
+    public function testPublicOnlyViewerHasNoMailboxOrHistory(): void
+    {
+        $this->withAccounts(function (string $root, string $db, LocalWriteService $writer, array $keys): void {
+            $pdo = (new ReadModelConnection($db))->open();
+            $mailbox = $this->mailbox($root, $db, $pdo);
+            $history = $this->history($root, $db, $pdo);
+            $viewer = fn (string $name): array => \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($pdo, $keys[$name]['identity_id']);
+
+            assertSame([], $mailbox->unreadConversations($viewer('mira1')));
+            $this->rejectsWith(\ForumRewrite\Security\PublicOnlyKeyException::class, fn () => $mailbox->unreadConversations($viewer('mira2')));
+            $this->rejectsWith(\ForumRewrite\Security\PublicOnlyKeyException::class, fn () => $mailbox->recipientKeys($viewer('mira2'), 'bob'));
+            $this->rejectsWith(\ForumRewrite\Security\PublicOnlyKeyException::class, fn () => $history->work($viewer('mira2')));
+
+            // History never chooses a public-only key as a target.
+            $key = new ReflectionMethod($history, 'key');
+            $fingerprint = substr($keys['mira2']['identity_id'], 8);
+            assertSame(null, $key->invoke($history, 'mira', $fingerprint, false));
+            assertSame(true, $key->invoke($history, 'mira', $fingerprint, true) !== null);
+            $hasKey = new ReflectionMethod($history, 'hasKey');
+            assertSame(false, $hasKey->invoke($history, 'mira', $fingerprint));
+            assertSame(true, $hasKey->invoke($history, 'mira', substr($keys['mira1']['identity_id'], 8)));
+        });
+    }
+
+    public function testFlagOffRestoresPlainApproval(): void
+    {
+        $this->withAccounts(function (string $root, string $db, LocalWriteService $writer, array $keys): void {
+            file_put_contents($root . '/records/instance/feature-flags.txt', "Schema: site-feature-flags-v1\n\nFORUM_PRIVATE_KEY_ACCESS_ENFORCED: false\n");
+            $pdo = (new ReadModelConnection($db))->open();
+            assertSame(3, count((new ApprovedUserKeyResolver($root))->keysForUsernameToken($pdo, 'mira')));
+            $viewer = \ForumRewrite\ReadModel\ProfileRepository::byIdentityId($pdo, $keys['mira2']['identity_id']);
+            assertSame([], $this->mailbox($root, $db, $pdo)->unreadConversations($viewer));
+            $hasKey = new ReflectionMethod($history = $this->history($root, $db, $pdo), 'hasKey');
+            assertSame(true, $hasKey->invoke($history, 'mira', substr($keys['mira2']['identity_id'], 8)));
+        });
+    }
+
+    private function mailbox(string $root, string $db, PDO $pdo): PrivateMessageMailboxService
+    {
+        return new PrivateMessageMailboxService(new PrivateMessageStore(new PDO('sqlite::memory:')), $pdo, new ApprovedUserKeyResolver($root), $root);
+    }
+
+    private function history(string $root, string $db, PDO $pdo): PrivateMessageHistorySyncService
+    {
+        $private = new PDO('sqlite::memory:');
+        return new PrivateMessageHistorySyncService(new PrivateMessageStore($private), new PrivateMessageHistorySyncStore($private), $pdo, $root);
+    }
+
+    private function rejectsWith(string $class, callable $call): void
+    {
+        try {
+            $call();
+        } catch (Throwable $error) {
+            if ($error instanceof $class) return;
+            throw new RuntimeException('Expected ' . $class . ' but got ' . $error::class . ': ' . $error->getMessage());
+        }
+        throw new RuntimeException('Expected ' . $class . '.');
     }
 
     private function access(string $root, string $db): PrivateKeyAccess

@@ -66,3 +66,30 @@ Effort study: `railspike-effort` / `v3/private_key_access`; [host ledger](../eff
 - Estimate details: original scope as planned, plus the Stage 1 rule 3 fix (ordinary correction); no revision.
 
 *— Claude · 2026-11-24 UTC · Model: Claude Opus 5.5*
+
+## Stage 3 - Enforcement behind the flag
+
+**Original estimate: 0.15**
+**Retrospective: 0.15**
+
+- Changes:
+  - New site flag `FORUM_PRIVATE_KEY_ACCESS_ENFORCED`, "Private access needs the account's own key". It is in the ACCESS group, on by default, requires `FORUM_PRIVATE_MESSAGES_ENABLED`, and was released 2026-11-24. `PrivateKeyAccess::enforced(root)` reads it.
+  - `ApprovedUserKeyResolver`: non-historical lookups (who new messages are encrypted to) return only keys with private access. Historical lookups, used for verifying old signatures, are unchanged.
+  - `PrivateMessageMailboxService::approvedViewer`: a public-only viewer gets `PublicOnlyKeyException`. That covers listing, conversations, unread state, read receipts, recipient keys and send.
+  - `PrivateMessageHistorySyncService`: `active()` now also requires private access, which covers every current-key check (`key`, `nextKey`, `hasKey`, `context`). Historical verification is unchanged. A public-only viewer gets `PublicOnlyKeyException` from `context`.
+  - Errors: `RouteServices::errorPayload` adds `reason: public_only`. `PrivateMessageApiController` and `PrivateMessageHistorySyncController` return it as 403 rather than "retry later" (503). `InboxPageController::messages` returns a `public_only` state, which Stage 5 renders.
+- Inventory of approval checks in the history sync service (the Step 3 risk): `key`, `nextKey` and `hasKey` (non-historical, through `active`), and `context` (through `hasKey`). `eligibleSource` uses historical keys by design: a donor's source must already pass `context`.
+- Verification:
+  - `PrivateAccessConfirmationTest`: three new tests.
+    - The recipient keys hold only mira1 until mira2 is confirmed, while historical lookups keep all three.
+    - A public-only viewer has no mailbox, recipient keys or history work, and history never picks it as a target.
+    - With the flag off, the result matches plain approval.
+  - Existing tests adjusted:
+    - `FeatureFlagEvaluatorTest` lists the new flag.
+    - `PrivateMessagePageControllerTest` now gives its `eve-key` viewer a profile row. A real viewer always has one; an unknown key is public only.
+  - `./v3 test --smoke` with the 21 test classes that touch private messages, recipient keys or history sync: 801 of 801 passed. The full suite was not run.
+- Notes:
+  - Until Stage 4, Messages shows a public-only key "Messages Unavailable" with the exception's text.
+- Estimate details: original scope as planned; no revision.
+
+*— Claude · 2026-11-24 UTC · Model: Claude Opus 5.5*

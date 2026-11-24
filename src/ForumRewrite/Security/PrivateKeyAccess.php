@@ -66,6 +66,13 @@ final class PrivateKeyAccess
             : fn (string $id): array => $this->repositoryRoot === null ? [] : PrivateAccessConfirmation::confirmersFor($this->repositoryRoot, $id);
     }
 
+    /** Whether messaging enforces private access on this instance (FORUM_PRIVATE_KEY_ACCESS_ENFORCED). */
+    public static function enforced(?string $repositoryRoot): bool
+    {
+        return $repositoryRoot !== null && \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator::forRepository($repositoryRoot)
+            ->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PRIVATE_KEY_ACCESS_ENFORCED);
+    }
+
     public function hasAccess(string $identityId): bool
     {
         return $this->reason($identityId) !== self::PUBLIC_ONLY;

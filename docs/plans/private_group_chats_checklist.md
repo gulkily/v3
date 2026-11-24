@@ -42,7 +42,8 @@ A key gets private access only if it is the username's first key, was approved b
 - [x] Step 3 approved; plans moved to `docs/plans/private_key_access/` and committed on `feat/private-key-access`, 2026-11-24
 - [x] Stage 1: the check and `./v3 approval private-access-report`. A local import shows 28 `ilyag` keys public only, restored by confirming 10 chain roots ([summary](./private_key_access/private_key_access_step4_implementation_summary.md#stage-1---the-private-access-check))
 - [x] Stage 2: signed confirm record and API; rule 3 now trusts receipts. Import report: 77 public only, 17 of them `ilyag`
-- [ ] Stages 3–7, then Stage 8 on zenmemes.com
+- [x] Stage 3: enforcement in recipient keys, mailbox and history sync, behind `FORUM_PRIVATE_KEY_ACCESS_ENFORCED`
+- [ ] Stages 4–7, then Stage 8 on zenmemes.com
 - [ ] Before deploy: list the zenmemes.com keys the downgrade affects; maintainer confirms his own devices
 - [ ] PR opened, merged, deployed
 - [ ] Maintainer accepts: a new same-name key approved by someone else shows Public only and gets no DMs; confirming it from his phone brings new messages and history
