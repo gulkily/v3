@@ -35,6 +35,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Calendar iCal feed](calendar_ics_feed/calendar_ics_feed_step3_development_plan.md) — `/calendar.ics`, tag feeds, a Subscribe panel and per-event "Add to Google Calendar" links, behind `FORUM_CALENDAR_FEED_ENABLED`; Stages 1–6 done ([summary](calendar_ics_feed/calendar_ics_feed_step4_implementation_summary.md)), the production phone check pending.
 
+[Private key access](private_key_access/private_key_access_step3_development_plan.md) — approval lets a key post; reading an account's private messages needs the first key, a same-username key or an operator, or a signed confirm; behind `FORUM_PRIVATE_KEY_ACCESS_ENFORCED`. Steps 1–3 approved; first cycle of the [private group chats checklist](private_group_chats_checklist.md).
+
 [Key approval agent API](key_approval_api/key_approval_api_step3_development_plan.md) — `GET /api/pending_keys`, `Author-Identity-ID` on post reads, and `quill.py pending` / `quill.py approve` so agents approve the right key; Stages 1–5 done ([summary](key_approval_api/key_approval_api_step4_implementation_summary.md)), the post-deploy check pending.
 
 [State button verbs](state_button_verbs/state_button_verbs_one_shot.md) — one-shot: state buttons read Claim, Resolve, Close, Unclaim, Reopen; stored tags unchanged.
