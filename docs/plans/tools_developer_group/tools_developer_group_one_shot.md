@@ -68,7 +68,7 @@ Verification:
 
 Final review: the diff touches `ToolsPageSupport.php`, `theme-nav-icons.css`, `tools.css`, three tests, two concept entries, three checklists and plan records. No tool added, renamed or removed; no dependency; Deploy now is enough.
 
-Commit/merge/publication status: completion commit pending at the time of writing; PR to follow.
+Commit/merge/publication status: committed on `feat/tools_developer_group`; PR https://github.com/gulkily/v3/pull/400 opened 2026-11-24; not merged.
 
 Debug: [debug log](./tools_developer_group_debug_log.md).
 
