@@ -7,7 +7,7 @@ Extended estimates: enabled (no separate work units in this one-shot)
 
 **Cycle estimate: 0.55** (execution entry; Step 1 handoff was 0.45)
 
-Status: planning written; next permitted action: planning commit, then implementation.
+Status: implementation in progress (handed off 2026-11-24 17:50Z); next permitted action: continue the remaining work listed under Handoff.
 
 ## Original request
 
@@ -58,12 +58,31 @@ Exclusions: the LLM phrase reader (returns no end time; it still fills start); b
 Smoke set plus the event, phrase, iCal, read-model schema and composer tests touched (`./v3 test --smoke ...`); full suite not run, per `AGENTS.md`. New tests for the header, directive authority and range reading. Recovery for the reported thread: after deploy, its author (claude) posts `event-time: 13:00-16:00`; replaying the reported failure needs production and stays unverified here.
 
 Starting revision and branch: `2d7805c8b6d63b0f2ff6ecdd264ec257eaece23b`, branch `feat/event-end-time`.
-Planning commit: pending.
+Planning commit: `6b9828a06` (confirmed).
 
 ## Dated execution history
 
 - 2026-11-24 16:55Z: Step 1 written (staged).
 - 2026-11-24 17:45Z: maintainer asked to one-shot Option C; transitioned. Step 1's open questions take their proposed defaults.
+- 2026-11-24 17:50Z: maintainer asked to stop and hand off to another agent. Work-in-progress commit on `feat/event-end-time` (record layer and read model only; untested).
+
+## Handoff (2026-11-24 17:50Z)
+
+Done (WIP commit, `php -l` clean, no tests run):
+- `Event-End-Time` header: `PostRecord::$eventEndTime`, parser (requires `Event-Time`), `LocalWriteService` reads `event_end_time` on both thread paths (direct and prepared), writes the header after `Event-Time`, and the events-off guard lists it.
+- Read model schema 57: `threads.event_end_time` in schema, full builder, incremental insert, root retraction clear, `PublicationPostFilter`, `ThreadRepository` (both selects), `Application::fetchThread`, `CalendarQuery`.
+
+Remaining:
+1. Schema docs: `docs/specs/read_model_schema_v1.md` (contract line, `threads` table row, Version 57 section); `docs/specs/canonical_post_record_v1.md` event headers and writer order; regression test starting at schema 56 (model: `tests/EventWhenRecordTest.php`, registered in `tests/run.php`).
+2. `PublicOfflineSnapshotBuilder::insertThread` does not copy event columns at all; check whether the offline snapshot shows events before deciding it is out of scope.
+3. Exports: `CalendarIcs::timedDates` takes the end time (end at or before start on a one-day event = next day; no end = 60 minutes), for `document()` and `googleEventUrl()`.
+4. Directive: `EventTimeDirective` (sibling of `Support/EventStatusDirective.php`, `event-time: HH:MM` or `HH:MM-HH:MM`, quoted lines skipped, first match per post) and `Calendar/EventTimes::forThreads()` (sibling of `EventStatus::forThreads`: unretracted, attribution verified, author is the root's author or `RetractionAuthority::currentOperator`; latest wins). Overlay its result on rows in every `CalendarPageController` path that calls `EventStatus::forThreads` and in the thread page (`Application::fetchThread`).
+5. Display: `templates/partials/event_block.php` shows `at 13:00–16:00`; `templates/pages/calendar_day.php` shows the range.
+6. Composer: "Ends" time input beside Time in `templates/partials/composer.php`; `ComposeAndAccountKeyController` threads `event_end_time` through `composeThread`, the error re-render, `renderEventWhenFill` and `renderComposeThreadPage`; `public/assets/browser_signing.js` (~line 738) sends `event_end_time`; `public/assets/compose_disclosure.js` summary shows the range.
+7. Phrase reader: `EventPhraseReader::takeTime` keeps a range's end ("1-4pm" → 13:00, 16:00); `EventPhraseReading` gains `endTime`; `EventPhraseFill`, `EventPhraseApiController` and `public/assets/event_when.js` fill `event_end_time`. LLM reader stays start-only.
+8. Docs: `docs/reference/agent_api.md` (~line 721) documents `event_end_time` and the `event-time:` reply; concepts `post_event_metadata.md` and `date_phrase.md` updated.
+9. Tests: smoke set plus new/changed tests (`./v3 test --smoke ...`); do not run the full suite. Fix any test that fails on the base commit too.
+10. Closeout: complete this record (Outcome, Verification, Final review, closeout estimate), update `docs/plans/effort_ledger/event_end_time.md`, append a closeout entry to the debug log, completion commit, push, open the PR (with a checkout snippet). After merge and deploy, post `event-time: 13:00-16:00` as claude in thread-20261116102241-f0e948f6.
 
 ## Study history
 
