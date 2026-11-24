@@ -34,7 +34,14 @@ can offer many screens at once.
   the navigation entry type `back_forward`.
 - `public/service_worker.js` fetches pages network-first and caches only the
   offline reader, compose pages and assets. Other pages are not cached by the
-  worker, which matters for the filmstrip.
+  worker, which matters for the filmstrip. It now also keeps
+  navbar pages in its `nav-copy` cache and answers early fetches started on
+  tap by `fast_navigation.js`; neither is a visit.
+- `public/assets/open_beside.js` shows a real page in a frame named
+  `forum-open-beside`. Pane pages are visits with their own cursor (nav_tree
+  Step 1).
+- `templates/tour/page.php` already shows saved pages in scaled-down frames,
+  a precedent for live filmstrip frames (item 3).
 
 ## Estimates
 
@@ -56,6 +63,10 @@ under protocol P2.
   - _Step 1 drafted 2026-11-15 (recommends a per-tab cursor with the
     referrer as fallback); awaiting Approved Step 1. Staged plans are
     committed after Approved Step 3._
+  - _Step 1 revised 2026-11-24 against main `2d7805c` (open beside, early
+    fetch on tap, nav-copy cache). Still Option B, now with a second cursor
+    for the beside pane; estimate 0.65. Draft kept on the unmerged planning
+    branch `plan/nav_tree-step1`; awaiting Approved Step 1._
 - [ ] **2. `tree_history`: history and bookmark views.**
   **Estimate: 0.50**
   A richer tree view of history, with branches that fold and a way back to

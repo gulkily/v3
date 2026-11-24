@@ -23,3 +23,27 @@ Debug mode: enabled (project default: `.railspike_debug_on` present at the v3 ro
 
 - Step 1 file location. `RAILSPIKE.md` says to organize plans into `docs/plans/{feature_name}/` only after Approved Step 3, but most recent v3 cycles create the folder at Step 1. This draft follows the written rule (flat file). A one-line clarification of which convention is intended would help.
 - "Concepts touched" for a proposed concept with no entry. The concept guidance was not reopened, so it is unclear whether *visit tree* needs an inventory entry now or at Step 4.
+
+## 2026-11-24T17:55Z — Step 1 (revision)
+
+Revision of the 2026-11-15T02:44:42Z entry's step: the draft was rechecked against main `2d7805c`. Debug mode: enabled (inherited from the Step 1 artifact).
+
+### Necessary/useful instructions
+
+- `RAILSPIKE.md`, Instruction Summaries, "On resumption, reread applicable instructions and restore workflow state". Rereading the draft's state fields exposed a stale host-ledger link. Retain.
+- `step1_solution_assessment.md`, "Re-estimate combined/revised options with stable identities and append scope/score changes". It kept Options A–C under their letters with both scores visible. Retain.
+- `RAILSPIKE.md`, Agent attribution, "Preserve prior attribution when revising". Each revised option keeps its 2026-11-15 line and gains a revised line. Retain.
+- Host `AGENTS.md`, Continuing Railspike effort study: "do not append to `effort_estimation_trial.md`". The request named that file; this rule redirected the entry to `effort_ledger/nav_tree.md`. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- The /new or /clear reminder in `step1_solution_assessment.md`, Next. It is once per cycle and does not repeat on revisions.
+
+### Uncertain assessments
+
+- Scope versioning when only understanding changes. The rules say to "distinguish new understanding from changed scope" but give no label for it. This revision used "scope v2 (new understanding, same outcome)"; a fixed label would help.
+- Planning branches. `RAILSPIKE.md` keeps Steps 1–3 uncommitted, yet this cycle keeps its draft on an unmerged planning branch to survive a new session. The workflow says nothing about such branches.
