@@ -541,6 +541,76 @@ NODE;
         }
     }
 
+    /** @return array{fetched: list<string>, stored: list<string>, skipped: bool} */
+    private function installWithExistingCaches(array $cacheNames): array
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const cacheNames = JSON.parse(process.argv[2]);
+const listeners = {};
+const fetched = [];
+const stored = [];
+let skipped = false;
+const context = {
+  URL, Request, Response, Promise, TextEncoder, crypto: require('crypto').webcrypto, console: { info() {}, error() {} },
+  self: {
+    location: { href: 'https://forum.test/service_worker.js', origin: 'https://forum.test' },
+    navigator: { onLine: true },
+    addEventListener(type, listener) { listeners[type] = listener; },
+    skipWaiting() { skipped = true; return Promise.resolve(); },
+    clients: { claim() { return Promise.resolve(); } }
+  },
+  caches: {
+    open() { return Promise.resolve({ put(request) { stored.push(new URL(request.url || request).pathname); return Promise.resolve(); }, match() { return Promise.resolve(undefined); } }); },
+    keys() { return Promise.resolve(cacheNames); }, delete() { return Promise.resolve(true); }
+  },
+  fetch: async function (request) {
+    const pathname = new URL(request.url).pathname;
+    fetched.push(pathname);
+    return new Response(pathname === '/offline/reader/' ? '<script src="/assets/offline_reader.js"></script>' : 'asset', { status: 200 });
+  }
+};
+vm.runInNewContext(source, context);
+let completion;
+listeners.install({ waitUntil(promise) { completion = promise; } });
+completion.then(() => process.stdout.write(JSON.stringify({ fetched, stored, skipped })));
+NODE;
+        $command = sprintf(
+            'node -e %s %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/service_worker.js'),
+            escapeshellarg(json_encode($cacheNames, JSON_THROW_ON_ERROR)),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Worker install contract failed: ' . implode("\n", $output));
+        }
+
+        return json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    public function testFirstInstallCachesOnlyTheReaderShellSoTheWorkerActivatesAtOnce(): void
+    {
+        // Another site's cache on the same origin does not count as this site's install.
+        $outcome = $this->installWithExistingCaches(['someone-elses-cache']);
+
+        assertSame(['/offline/reader/'], $outcome['fetched']);
+        assertSame(['/offline/reader/'], $outcome['stored']);
+        assertTrue($outcome['skipped'], 'A first install should activate without waiting.');
+    }
+
+    public function testUpdateInstallKeepsTheFullRefreshSoTheSnapshotIsNeverLost(): void
+    {
+        $outcome = $this->installWithExistingCaches(['zenmemes-offline-reader-v15']);
+
+        assertTrue(in_array('/offline/snapshot.sqlite3', $outcome['fetched'], true), 'An update should refetch the snapshot.');
+        assertTrue(in_array('/compose/reply', $outcome['stored'], true), 'An update should recache the compose pages.');
+        assertTrue(in_array('/assets/offline_reader.js', $outcome['stored'], true), 'An update should recache reader assets.');
+        assertTrue($outcome['skipped'], 'An update should activate without waiting.');
+    }
+
     public function testFourthProfileFixtureUsesTheSameWorkerMatrix(): void
     {
         ProfileRegressionFixture::withFourthProfile(function (): void {

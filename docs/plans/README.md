@@ -105,7 +105,11 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Installed app start page](owa_start_url/owa_start_url_one_shot.md) — the installed app opens the home page (offline: the cached reader) and is named "ZenMemes"; cycle 1 of the notifications checklist.
 
+[Quick first install of the offline worker](owa_quick_install/owa_quick_install_one_shot.md) — a first visit caches only the reader shell so the worker activates at once and Chrome can offer Install; the full offline cache fills in the background.
+
 [Push subscription](push_subscribe/push_subscribe_step1_solution_assessment.md) — staged: a member turns notifications on for a device in Preferences and gets a test notification; cycle 2 of the notifications checklist.
+
+[Push on events](push_on_events/push_on_events_step1_solution_assessment.md) — staged: a DM or a reply to your post notifies each of your devices, with held follow-ups and a per-member cap; cycle 4 of the notifications checklist.
 
 [Guestbook](guestbook/guestbook_step3_development_plan.md) — a `/guestbook/` page shows the guestbook thread's top-level replies as a paper book with numbered pages and a "Sign the book" form; the thread stays available as an ordinary thread.
 
@@ -721,3 +725,5 @@ and repair its navigation and affected references. See the
 - [Feedback completion sweep, 2026-11-24](feedback_completion_20261124/feedback_completion_20261124_one_shot.md)
 
 - [Apply feedback completion reconciliation](feedback_completion_apply/feedback_completion_apply_one_shot.md)
+
+- [Save the completion reconciliation prompt](feedback_completion_prompt/feedback_completion_prompt_one_shot.md)

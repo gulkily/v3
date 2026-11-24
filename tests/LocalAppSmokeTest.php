@@ -4054,6 +4054,8 @@ PHP;
         assertStringContains('<link rel="apple-touch-icon" href="/assets/app-icon-180.png">', $board);
         assertStringNotContains('href="/offline/"', $board);
         assertStringContains('refresh-offline-reader', $serviceWorker);
+        // A first visit's worker becomes active only after register() returns, so wait for it.
+        assertStringContains('return navigator.serviceWorker.ready;', $registration);
         assertStringContains('status: "unchanged"', $serviceWorker);
         assertStringContains('event.data.force', $serviceWorker);
         assertStringContains('await refreshSnapshot();', $serviceWorker);

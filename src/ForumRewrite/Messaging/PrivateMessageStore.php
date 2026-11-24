@@ -51,6 +51,11 @@ final class PrivateMessageStore
         return $this->readState->token(strtolower(trim($viewer)), strtolower(trim($counterpart)), $position['snapshot']);
     }
 
+    public function isSeenBy(string $viewer, string $counterpart, string $messageId): bool
+    {
+        return $this->readState->isSeen($viewer, $counterpart, $messageId);
+    }
+
     public function acknowledgeRead(string $viewer, string $counterpart, string $readToken): void
     {
         $this->readState->acknowledge($viewer, $counterpart, $readToken);

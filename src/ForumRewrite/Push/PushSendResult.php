@@ -29,6 +29,12 @@ final class PushSendResult
         return new self($outcome, $status, $outcome === self::SENT ? '' : self::reason($body));
     }
 
+    /** Not sent, and the device should go (for example its session signed out). */
+    public static function gone(string $reason): self
+    {
+        return new self(self::GONE, 0, $reason);
+    }
+
     public static function refused(string $reason): self
     {
         return new self(self::REFUSED, 0, $reason);

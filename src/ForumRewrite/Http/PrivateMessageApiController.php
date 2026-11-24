@@ -225,6 +225,10 @@ final class PrivateMessageApiController
             $this->routeServices->pdo(),
             new ApprovedUserKeyResolver($this->routeServices->repositoryRoot()),
             $this->routeServices->repositoryRoot(),
+            $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PUSH_ENABLED)
+                ? fn (string $messageId, string $sender, string $recipient): int => $this->routeServices->recordPushNotices(
+                    static fn (\ForumRewrite\Push\PushNotices $notices): int => $notices->recordMessage($messageId, $sender, $recipient))
+                : null,
         );
     }
 

@@ -39,7 +39,17 @@ final class DetachedTaskQueueLauncher
         return $this->launch();
     }
 
-    private function launch(): string
+    /**
+     * Start a one-task worker for this queued task only (push notices on a host without
+     * fastcgi_finish_request()). Not gated by FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED: the task's
+     * deduplication key keeps it to one outstanding task, and the worker runs nothing else.
+     */
+    public function launchForTask(int $taskId): string
+    {
+        return $taskId > 0 ? $this->launch($taskId) : 'unavailable';
+    }
+
+    private function launch(?int $taskId = null): string
     {
         $workerScript = $this->projectRoot . '/scripts/task_queue.php';
         if (!is_file($workerScript) || !function_exists('proc_open')) {
@@ -50,7 +60,7 @@ final class DetachedTaskQueueLauncher
         $command = 'nohup '
             . escapeshellarg(\ForumRewrite\Support\PhpCli::binary())
             . ' ' . escapeshellarg($workerScript)
-            . ' run --quiet --limit=1 --queue-database-path=' . escapeshellarg($this->queuePath)
+            . ' run --quiet ' . ($taskId !== null ? '--task-id=' . $taskId : '--limit=1') . ' --queue-database-path=' . escapeshellarg($this->queuePath)
             . ' > /dev/null 2>&1 &';
         $startProcess = $this->startProcess ?? $this->startDetachedProcess(...);
 

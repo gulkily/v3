@@ -41,6 +41,8 @@ final class TaskQueueWorker
         private readonly mixed $runLocalMetaTrain = null,
         /** @var (callable(array<string, mixed>):array{exit_code:int,message:string})|null runs InstanceImportTask */
         private readonly mixed $runInstanceImport = null,
+        /** @var (callable():array<string, mixed>)|null runs PushNotifier::sendDue(); `remaining` true while notices are held */
+        private readonly mixed $runPushNotify = null,
     ) {
         $this->rebuildReadModel = $rebuildReadModel;
         $this->runFastScoreSweep = $runFastScoreSweep;
@@ -109,8 +111,34 @@ final class TaskQueueWorker
             SqliteTaskQueueStore::AGENT_REPLY => $this->runAgentReply($id, $task),
             SqliteTaskQueueStore::APP_UPDATE => $this->runAppUpdateTask($id),
             SqliteTaskQueueStore::INSTANCE_IMPORT => $this->runInstanceImportTask($id, $task),
+            SqliteTaskQueueStore::PUSH_NOTIFY => $this->runPushNotifyTask($id),
             default => $this->store->markFailed($id, 'unsupported_task_type', 'The worker does not support this task type.', false),
         };
+    }
+
+    /** @return array<string, mixed> */
+    private function runPushNotifyTask(int $id): array
+    {
+        if ($this->runPushNotify === null) {
+            return $this->store->markFailed($id, 'push_notify_unavailable', 'Push notices are not configured for this worker.', false);
+        }
+        try {
+            $result = ($this->runPushNotify)();
+            $this->store->recordTaskProgress($id, 'Push notices: ' . implode(', ', array_map(
+                static fn (string $key, mixed $value): string => $key . '=' . (is_bool($value) ? ($value ? 'yes' : 'no') : (string) $value),
+                array_keys($result),
+                $result,
+            )));
+            // Held follow-ups wait for their window; the next run sends them.
+            if (($result['remaining'] ?? false) === true) {
+                return [...$this->store->requeueClaimed($id), 'continued' => true];
+            }
+
+            return $this->store->markCompleted($id);
+        } catch (Throwable $throwable) {
+            $this->reportThrowable($id, $throwable);
+            return $this->store->markFailed($id, 'push_notify_failed', $throwable->getMessage(), true);
+        }
     }
 
     private function runRetractionSweepTask(int $id): array

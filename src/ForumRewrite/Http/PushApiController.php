@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ForumRewrite\Http;
 
 use Closure;
+use ForumRewrite\Push\PushDelivery;
 use ForumRewrite\Push\PushEndpointPolicy;
 use ForumRewrite\Push\PushSender;
 use ForumRewrite\Push\PushSendResult;
@@ -131,18 +132,11 @@ final class PushApiController
                 $this->ok(['outcome' => PushSendResult::GONE, 'reason' => 'not turned on']);
                 return;
             }
-            // The device belongs to the session that subscribed it; once that session is signed
-            // out or replaced, nothing is sent and the row goes.
-            if ($this->routeServices->viewerSessions()->signedInIdentityForKey($row['session_key']) !== $row['identity_id']) {
-                $store->delete($endpoint);
+            $delivery = new PushDelivery($store, ($this->sender)(), $this->routeServices->viewerSessions()->signedInIdentityForKey(...));
+            $result = $delivery->toDevice($row, self::TEST_PAYLOAD, $this->now());
+            if ($result->reason === 'signed out' && $result->status === 0) {
                 $this->ok(['outcome' => PushSendResult::GONE, 'reason' => 'signed out']);
                 return;
-            }
-            $result = ($this->sender)()->send($row['subscription'], self::TEST_PAYLOAD, 'high');
-            if ($result->outcome === PushSendResult::GONE) {
-                $store->delete($endpoint);
-            } elseif ($result->outcome === PushSendResult::SENT) {
-                $store->markSent($endpoint, $this->now());
             }
         } catch (\Throwable) {
             $this->error(503, 'The test could not be sent; try again.');
