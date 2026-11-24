@@ -52,3 +52,26 @@ Dependency delta so far: zero. No package, manifest or lock is added; the sender
 - Estimate details: original scope as in Step 3; no revisions.
 
 *— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Store, flag, routes and the session check
+
+**Original estimate: 0.20**
+**Retrospective: 0.25**
+
+- Changes:
+  - `PushSubscriptionStore` in `state/private/push.sqlite3` (or `PUSH_DATABASE_PATH`, added to `PrivateConfigSchema`): one row per endpoint with username, key, session key and browser keys. Named-column inserts. A second member on the same device takes the row over; past 10 devices per username, the least recently refreshed go.
+  - Flag `FORUM_PUSH_ENABLED` ("Notifications"), off by default, in the Forum experience group after Backlog.
+  - `PushApiController`: `GET /api/push/key`, `POST /api/push/subscribe`, `POST /api/push/unsubscribe`, `POST /api/push/test`. Any signed-in member; POSTs need JSON with `X-Requested-With: ForumPush` and are refused cross-site, as `/api/inbox/catch_up` is. Unknown push services get 422. The test checks that the row's session is still signed in as its key, and deletes the row when it is not or when the push service answers 404 or 410.
+  - `ViewerSessionStore::sessionKey()` and `signedInIdentityForKey()`, with `ViewerSessions` wrappers. `/api/clear_identity` deletes the session's rows after signing out.
+  - `ApiRouteCatalog` entries and a "Notifications (browser push)" section in `docs/reference/agent_api.md`.
+- Verification:
+  - Passed: `./v3 test PushApiTest`, 7 of 7: store add, take-over, cap and delete; on, test, off; 401, 405, 403 (missing header, cross-site), 400 and 422; sign-out then a new sign-in drops the device; 403 from Apple is reported and kept, 410 deletes; all four routes 404 with the flag off; the store and key are Git-ignored and absent from a backup archive and an offline snapshot.
+  - Passed: `./v3 test --smoke PushApiTest PushSenderTest WebPushCryptoTest ApiRouteCatalogTest FeatureFlagEvaluatorTest ViewerSessionStoreTest`, 504 of 504; `PrivateConfigCommandTest PrivateConfigSchemaTest DeploymentSettingsTest`, 25 of 25.
+  - Not covered by a test: the `/api/clear_identity` delete runs through `Application` against the checkout's own state, which tests avoid. The send-time session check, which is tested, still stops delivery if that delete is missed.
+- Notes:
+  - In-scope refinement: a fourth route, `GET /api/push/key`, because the page needs the site key before the browser can subscribe.
+  - Change from Step 3: no forward chain is followed. A same-key sign-in keeps its session, and any other sign-in or sign-out clears the old one, so checking the row's own session is enough.
+  - Pre-existing failure fixed (maintainer rule): `PrivateConfigCommandTest::testEverySchemaKeyIsInTheTemplate…` failed on `9f73088e` too, because `FORUM_PUBLISHED_IMAGE_ROOT` (from the image-serving cycle) had no template example. Added one beside `FORUM_IMAGE_ROOT`.
+- Estimate details: original scope as in Step 3; retrospective higher for the extra route and the pre-existing test fix.
+
+*— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*
