@@ -45,3 +45,19 @@
 
 ### Uncertain assessments
 - Stage sizing "<=50 lines": Stage 1's pass with hold and cap rules may exceed 50 lines of code; it stays one stage because splitting the rules from the pass leaves neither testable alone.
+
+## 2026-11-24 UTC — Step 4 (implementation)
+
+### Necessary/useful instructions
+- `implementation_standards.md` → "Check affected shared consumers and applicable roles": checking who can hold a push device found that any key, approved or not, can carry any username, so a device filter was added before the first notice could leak a DM sender's name. Retain.
+- `step4_implementation_do.md` → Stage Boundary Protocol: one commit per stage kept the device-check refactor (Stage 1) reviewable apart from the hooks. Retain.
+- `RAILSPIKE.md` → Planning Artifacts, "Do not add the ledger or summary to the planning commit": kept the planning commit to approved plans only. Retain.
+
+### Redundant/unnecessary instructions
+- `step4_implementation_do.md` → per-stage "Estimate details" bullet when nothing was revised: each stage repeats "original scope as in Step 3; no revisions". Suggest allowing one shared line in the closeout when no stage was revised.
+
+### Inapplicable instructions
+- `RAILSPIKE.md` → Follow-up Cycles Before Merge: new branch from `origin/main`.
+
+### Uncertain assessments
+- The Step 3 plan was approved against `6b66069d`; the branch started at `3dc254a` (two docs-only merges later). Railspike has no rule for a moved base between Step 3 and Step 4; the summary records both.

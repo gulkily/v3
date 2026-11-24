@@ -97,3 +97,32 @@ Dependency delta so far: zero.
 - Estimate details: original scope as in Step 3; no revisions.
 
 *— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Docs and the iPhone replay
+
+**Original estimate: 0.07**
+**Retrospective: 0.07**
+
+- Changes:
+  - `docs/concepts/push_subscription.md`: what notifies and what is skipped, the device rule, how notices are sent, the hold and the cap; the "proposed" line now names cycles 5 and 7.
+  - `docs/concepts/internal_task_queue.md`: the `push_notify` task type.
+  - `docs/reference/agent_api.md`: agents' replies and DMs can notify people.
+  - `docs/plans/notifications_checklist.md`: cycle 4 status, the approved choices, and the release checks.
+- Verification:
+  - Passed: `git diff --check`; every relative link in the touched docs and this cycle's plans resolves.
+  - Passed: `./v3 test --smoke PushAfterResponseTest PushNotifierTest PushReplyNoticeTest PushMessageNoticeTest PushApiTest ApiRouteCatalogTest`, 516 of 516. Full suite not run.
+  - **Pending (maintainer):** the iPhone SE replay from Step 2, after merge and deploy with the flag on and cron running. With the app closed: (1) a second account replies to one of your posts: "<name> replied" with its first line within about 10 seconds; (2) a second reply in that thread within 5 minutes: no buzz, then one replacement "2 replies" when the window ends (needs the cron minute); (3) a DM: "<name>" with "New message", no text; (4) another DM from them, read on the laptop before the window ends: no follow-up. If nothing arrives, Send a test first. A desktop or Android pass does not count.
+- Notes: if iPhone ignores `tag` (notices pile up instead of replacing), record it here and open it as a cycle 5 follow-up.
+- Estimate details: original scope as in Step 3; no revisions.
+
+*— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*
+
+## Closeout
+
+- Delivered: Steps 1–3 scope, plus two in-scope findings: the approved-key device rule (security) and the remembered site address for the worker.
+- Commits: planning `bebea6e`; stages 1–4 `2ee6a20`, `85bd332`, `3dba9da`, `6334475`; stage 5 is the commit carrying this section.
+- Dependency delta: zero. Read-model schema: unchanged. `push.sqlite3` gains `push_pending`, `push_sends`, `push_meta` and `push_lease` on first open.
+- Unverified: a real php-fpm request on zenmemes.com, delivery to Apple from the worker, and iPhone's handling of `tag`; all are in the pending replay.
+- Effort study: stage retrospectives 0.20, 0.15, 0.08, 0.15, 0.07 (not summed). **Cycle retrospective 0.75** (projected 0.70): the device rule and the worker's site address were new understanding, not new scope. Maintainer comfortable-fit judgment pending.
+
+*— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*
