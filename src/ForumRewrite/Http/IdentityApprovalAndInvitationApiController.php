@@ -60,6 +60,27 @@ final class IdentityApprovalAndInvitationApiController
         }
     }
 
+    public function privateAccessConfirmation(string $method, array $query, string $action): void
+    {
+        $headers = $this->routeServices->noStoreHeaders();
+        if ($method !== ($action === 'status' ? 'GET' : 'POST')) {
+            $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $headers);
+            return;
+        }
+        try {
+            $input = $this->routeServices->requestData($query);
+            $writer = $this->routeServices->writer();
+            $result = match ($action) {
+                'prepare' => $writer->preparePrivateAccessConfirmation($input),
+                'finalize' => $writer->finalizePrivateAccessConfirmation($input),
+                'status' => $writer->privateAccessStatus((string) ($input['target_identity_id'] ?? '')),
+            };
+            $this->routeServices->sendJson($result, 200, $headers);
+        } catch (RuntimeException $error) {
+            $this->routeServices->sendJson($this->routeServices->errorPayload($error), 400, $headers);
+        }
+    }
+
     public function approveUser(string $method): void
     {
         if ($method !== 'POST') {

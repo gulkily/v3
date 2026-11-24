@@ -38,14 +38,33 @@ final class UserAccessController
         return $this->services->renderPageTemplate('user_access.php', [
             'users' => ProfileRepository::approvedDirectoryUsers($this->services->pdo()),
             'replacedKeys' => \ForumRewrite\ReadModel\ReplacedKeys::all($this->services->pdo()),
+            'privateAccessWaiting' => $this->privateAccessWaiting(),
+            'operatorFingerprints' => \ForumRewrite\Security\ApprovalPolicy::activeOperatorFingerprints($this->services->repositoryRoot()),
             'canSecurityReview' => $allowed,
             'canResumeHistory' => $canResume,
             'historyItems' => $items,
             'historyHasMore' => $history['has_more'],
             'toolNavOptions' => ToolsPageSupport::navOptions('user-access'),
-        ], 'User Access', 'tools', $canResume ? [
+        ], 'User Access', 'tools', array_values(array_unique(array_merge($canResume ? [
             '/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_site_auth.js', '/assets/access_history_auth.js',
-        ] : [], !$canResume);
+        ] : [], ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_access_confirm.js']))), !$canResume);
+    }
+
+    /**
+     * Approved keys without private access, for operators to confirm. Listed whether or not
+     * FORUM_PRIVATE_KEY_ACCESS_ENFORCED is on, so they can be confirmed before enforcement.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function privateAccessWaiting(): array
+    {
+        try {
+            $rows = (new \ForumRewrite\Security\PrivateKeyAccess($this->services->pdo(), $this->services->repositoryRoot()))->report();
+        } catch (\Throwable) {
+            return [];
+        }
+
+        return array_values(array_filter($rows, static fn (array $row): bool => $row['reason'] === \ForumRewrite\Security\PrivateKeyAccess::PUBLIC_ONLY));
     }
 
     public function account(string $username, array $query): ?string

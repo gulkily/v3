@@ -454,6 +454,11 @@ final class Application
             return;
         }
 
+        if (preg_match('#^/account/confirm/([a-f0-9]{40})/?$#D', $path, $matches) === 1) {
+            $this->privateMessagePageController()->confirmPage($method, $matches[1]);
+            return;
+        }
+
         if ($path === '/api/create_thread') {
             $this->writePostAndIdentityApiController()->createThread($method, $query);
             return;
@@ -636,6 +641,11 @@ final class Application
             return;
         }
 
+        if (in_array($path,['/api/prepare_private_access_confirmation','/api/confirm_private_access','/api/private_access_status'],true)) {
+            $action = $path === '/api/private_access_status' ? 'status' : ($path === '/api/prepare_private_access_confirmation' ? 'prepare' : 'finalize');
+            $this->identityApprovalAndInvitationApiController()->privateAccessConfirmation($method,$query,$action);
+            return;
+        }
         if (in_array($path,['/api/prepare_key_retirement','/api/finalize_key_retirement','/api/key_retirement_status'],true)) {
             $action = $path === '/api/key_retirement_status' ? 'status' : ($path === '/api/prepare_key_retirement' ? 'prepare' : 'finalize');
             $this->identityApprovalAndInvitationApiController()->keyRetirement($method,$query,$action);
@@ -2689,6 +2699,7 @@ final class Application
             || $path === '/api/auth_challenge' || $path === '/api/authenticate_identity' || $path === '/api/auth_status'
             || $path === '/api/set_identity_hint' || $path === '/api/clear_identity'
             || in_array($path,['/api/prepare_key_retirement','/api/finalize_key_retirement','/api/key_retirement_status'],true)
+            || in_array($path,['/api/prepare_private_access_confirmation','/api/confirm_private_access','/api/private_access_status'],true)
             || $path === '/api/link_identity'
             || $path === '/api/prepare_identity' || $path === '/api/create_identity'
             || $path === '/api/prepare_profile_name' || $path === '/api/finalize_profile_name'
@@ -2720,7 +2731,7 @@ final class Application
 
     private function isApplicationRoute(string $path): bool
     {
-        if (str_starts_with($path, '/images/') || str_starts_with($path, '/messages/conversation/') || str_starts_with($path, '/port/') || $path === '/port') {
+        if (str_starts_with($path, '/images/') || str_starts_with($path, '/messages/conversation/') || str_starts_with($path, '/account/confirm/') || str_starts_with($path, '/port/') || $path === '/port') {
             return true;
         }
 
@@ -2768,7 +2779,7 @@ final class Application
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/scripture_reply_status', '/api/expand_agent_reply', '/api/agent_expansion_status',
             '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_profile_name', '/api/finalize_profile_name',
-            '/api/prepare_key_retirement', '/api/finalize_key_retirement', '/api/key_retirement_status',
+            '/api/prepare_key_retirement', '/api/finalize_key_retirement', '/api/key_retirement_status', '/api/prepare_private_access_confirmation', '/api/confirm_private_access', '/api/private_access_status',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/preview_tagsets', '/api/prepare_tagsets_change', '/api/finalize_tagsets_change',
             '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/read_event_phrase', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/prepare_attribution_cutoff', '/api/finalize_attribution_cutoff', '/api/prepare_operator_grant', '/api/finalize_operator_grant', '/api/link_identity', '/api/approve_user',

@@ -69,6 +69,7 @@ function invitationPage() {
     code.addData = value => { payloads.push(value); add(value); };
     return code;
   };
+  vm.runInContext(fs.readFileSync(path.join(assets, 'qr_canvas.js'), 'utf8'), sandbox);
   vm.runInContext(fs.readFileSync(path.join(assets, 'invite_issuance.js'), 'utf8'), sandbox);
   document.listeners.DOMContentLoaded();
   return { state, window, form, submit, feedback, result, link, copy, qr, canvas, calls, payloads, rectangles,

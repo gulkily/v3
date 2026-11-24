@@ -1,7 +1,7 @@
 # Private-message history
 
 Name: History recovery
-Purpose: Let approved devices read older originals using retained encrypted access from eligible devices.
+Purpose: Let approved devices with [private access](private_key_access.md) read older originals using retained encrypted access from eligible devices.
 Scenario: A newly approved device visits Messages, validates a donor transfer and the original signature, and can still read after a reload. Private keys and plaintext stay browser-side.
 Sources: [service](../../src/ForumRewrite/Messaging/PrivateMessageHistorySyncService.php), [browser crypto](../../public/assets/private_message_history_crypto.js), [operations and API](../plans/private_message_history_sync/private_message_history_sync_rollout.md).
 

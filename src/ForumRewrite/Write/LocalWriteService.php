@@ -59,6 +59,9 @@ use RuntimeException;
 use ForumRewrite\Security\KeyRetirement;
 use ForumRewrite\Security\KeyBootstrapReplay;
 use ForumRewrite\Security\KeyRetirementPolicy;
+use ForumRewrite\Security\PrivateAccessConfirmation;
+use ForumRewrite\Security\PrivateAccessConfirmationPolicy;
+use ForumRewrite\Security\PrivateKeyAccess;
 use ForumRewrite\Images\ImageReference;
 use ForumRewrite\Images\ImageStore;
 
@@ -2619,6 +2622,90 @@ class LocalWriteService
                 // The accepted signature is authoritative even when presentation repair fails.
                 return $result+['refresh'=>'pending','warning'=>'Retirement accepted. Refresh failed; retry the same signed request or rebuild the read model.'];
             }
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function preparePrivateAccessConfirmation(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $actor = $this->requireOpenPgpIdentityId((string) ($input['actor_identity_id'] ?? ''), 'actor_identity_id');
+            $target = $this->requireOpenPgpIdentityId((string) ($input['target_identity_id'] ?? ''), 'target_identity_id');
+            $context = (new PrivateAccessConfirmationPolicy($this->readModelPdo(), $this->repositoryRoot))->evaluate($actor, $target);
+            $id = 'private-access-confirmation-' . bin2hex(random_bytes(16));
+            $created = $this->canonicalTimestampNow();
+            $hash = PrivateAccessConfirmationPolicy::hash($context);
+            $record = "Version: 1\nAction-ID: {$id}\nCreated-At: {$created}\nActor-Identity-ID: {$actor}\nTarget-Identity-ID: {$target}\n"
+                . "Account: {$context['account']}\nAuthority: {$context['authority']}\nContext-SHA256: {$hash}\n\n";
+            PrivateAccessConfirmation::parse($record);
+            $path = PrivateAccessConfirmation::path($target);
+
+            return $this->storePreparedPost($path, $record, ['kind' => 'private-access-confirmation', 'confirmation_context' => $context])
+                + ['status' => 'ok', 'canonical_record' => $record, 'record_path' => $path, 'confirmation_context' => $context];
+        });
+    }
+
+    /** @return array<string, mixed> */
+    public function privateAccessStatus(string $target): array
+    {
+        $target = $this->requireOpenPgpIdentityId($target, 'target_identity_id');
+        $access = new PrivateKeyAccess($this->readModelPdo(), $this->repositoryRoot);
+        $record = PrivateAccessConfirmation::read($this->repositoryRoot, $target);
+
+        return ['status' => 'ok', 'target_identity_id' => $target, 'reason' => $access->reason($target), 'has_access' => $access->hasAccess($target)]
+            + ($record === null ? [] : ['confirmed_at' => $record['Accepted-At'], 'actor_identity_id' => $record['Actor-Identity-ID'], 'record_path' => $record['source_path']]);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function finalizePrivateAccessConfirmation(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $bytes = (string) ($input['canonical_record'] ?? '');
+            $record = PrivateAccessConfirmation::parse($bytes);
+            $target = $record['Target-Identity-ID'];
+            $signature = (string) ($input['detached_signature'] ?? '');
+            if (strlen($signature) > 65536 || $signature === '') {
+                throw new RuntimeException('Invalid confirmation signature.');
+            }
+            $existing = PrivateAccessConfirmation::read($this->repositoryRoot, $target);
+            if ($existing !== null) {
+                // A repeat of the accepted request is a no-op; any other confirm for the target is refused.
+                if (!hash_equals($existing['canonical_record'], $bytes)
+                    || !hash_equals((string) file_get_contents($this->repositoryRoot . '/' . $existing['source_path'] . '.asc'), $signature)) {
+                    throw new RuntimeException('This key already has a different accepted confirmation.');
+                }
+                $sha = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+            } else {
+                $token = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+                $prepared = $this->loadPreparedPost($token);
+                if (($prepared['kind'] ?? '') !== 'private-access-confirmation' || strtotime($prepared['expires_at']) < time()
+                    || !hash_equals($prepared['canonical_sha256'], hash('sha256', $bytes))) {
+                    throw new RuntimeException('Confirmation review changed or expired. Prepare it again.');
+                }
+                $context = (new PrivateAccessConfirmationPolicy($this->readModelPdo(), $this->repositoryRoot))->evaluate($record['Actor-Identity-ID'], $target);
+                if (!hash_equals(PrivateAccessConfirmationPolicy::hash($context), $record['Context-SHA256'])
+                    || $context !== $prepared['confirmation_context']) {
+                    throw new RuntimeException('Confirmation authority changed. Prepare it again.');
+                }
+                [$key, $fingerprint] = $this->publicKeyForIdentity($record['Actor-Identity-ID']);
+                if (!$this->signatureVerifier->verifyDetached($key, $bytes, $signature, $fingerprint)['ok']) {
+                    throw new RuntimeException('Confirmation signature verification failed.');
+                }
+                $path = PrivateAccessConfirmation::path($target);
+                $sha = (new SignedPostTransaction($this->repositoryRoot))->accept([$path => $bytes, $path . '.asc' => $signature,
+                    PrivateAccessConfirmation::acceptancePath($target) => PrivateAccessConfirmation::acceptance($bytes, $signature, $this->canonicalTimestampNow())]);
+                $this->deletePreparedPost($token);
+            }
+
+            return $this->privateAccessStatus($target) + ['commit_sha' => $sha, 'recovered' => $existing !== null];
         });
     }
 

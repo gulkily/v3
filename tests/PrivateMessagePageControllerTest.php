@@ -100,6 +100,7 @@ final class PrivateMessagePageControllerTest
             }
             $this->addProfile($readPdo, 'alice-key', 'alice');
             $this->addProfile($readPdo, 'bob-key', 'bob');
+            $this->addProfile($readPdo, 'eve-key', 'eve');
             $store = new PrivateMessageStore(new \PDO('sqlite::memory:'));
             $store->storeEnvelope('list-1', '2026-10-09T12:00:00Z', 'alice', 'bob', 'sender', 'secret envelope');
             $store->storeEnvelope('list-2', '2026-10-09T13:00:00Z', 'bob', 'alice', 'sender', 'secret envelope');
