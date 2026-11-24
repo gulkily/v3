@@ -9,6 +9,7 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
+- [Read model rebuild memory](read_model_post_memory/read_model_post_memory_one_shot.md) — a full rebuild holds the post corpus once, so qdb rebuilds fit in 128 MB.
 - [LinkedIn Contacts CRM](linkedin_contacts_crm/linkedin_contacts_crm_step3_development_plan.md) — a local companion imports a LinkedIn archive into a private address book.
 - [Publish local public keys](publish_local_public_keys/publish_local_public_keys_step4_implementation_summary.md) — original publisher verified locally; saved-plan flow superseded by the direct-publication follow-up.
 - [Publisher CLI conventions](publish_keys_cli_conventions/publish_keys_cli_conventions_one_shot.md) — hostname handling, visible source repository and help consistency follow-up.
