@@ -27,7 +27,7 @@ Concepts touched: read model (changed internally, no contract change); no invent
 Verification and recovery plan: replay the reported failure with a synthetic qdb-shaped corpus under `memory_limit=128M`; smoke set plus read-model tests; parity dump. Production replay on qdb is the maintainer's: deploy, then `./v3 rebuild`. Until deployed, `php -d memory_limit=512M scripts/rebuild_read_model.php` from `~/v3` works around it.
 
 Starting revisions and branch: `75c7210` (main), branch `fix/read-model-post-memory`.
-Planning commit: pending at time of writing.
+Planning commit: `6179d0c` (after the implementation edits were already in the working tree; see the chronology note).
 
 ## Dated execution history
 

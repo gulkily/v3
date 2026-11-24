@@ -282,12 +282,16 @@ final class ReadModelBuilder
             });
         });
 
+        // Peak memory is the post corpus, so keep one copy of it: move each post out of
+        // $parsedPosts before changing it, keep only the fields later phases read, and
+        // write each thread summary as soon as its thread ends (posts are sorted by
+        // thread). qdb's tens of thousands of single-post threads exhausted 128 MB.
         $posts = [];
-        $threadSummaries = [];
-        foreach ($this->progressItems('writing_post_records', $parsedPosts) as $index => $post) {
+        $summary = null;
+        foreach ($this->progressItems('writing_post_records', array_keys($parsedPosts)) as $index) {
+            $post = $parsedPosts[$index];
+            unset($parsedPosts[$index]);
             $post['sequence_number'] = $index + 1;
-            unset($post['source_order']);
-            $posts[] = $post;
             $insertPost->execute([
                 'post_id' => $post['post_id'],
                 'created_at' => $post['created_at'],
@@ -312,8 +316,12 @@ final class ReadModelBuilder
                 'sequence_number' => $post['sequence_number'],
             ]);
 
-            if (!isset($threadSummaries[$post['thread_id']])) {
-                $threadSummaries[$post['thread_id']] = [
+            if ($summary !== null && $summary['root_post_id'] !== $post['thread_id']) {
+                $insertThread->execute($summary);
+                $summary = null;
+            }
+            if ($summary === null) {
+                $summary = [
                     'root_post_id' => $post['thread_id'],
                     'root_post_created_at' => $post['created_at'],
                     'last_activity_at' => $post['created_at'],
@@ -337,8 +345,6 @@ final class ReadModelBuilder
                     'retraction_attribution' => $post['retraction_attribution'],
                 ];
             }
-
-            $summary = &$threadSummaries[$post['thread_id']];
             if ($post['post_id'] !== $post['thread_id']) {
                 $summary['reply_count']++;
             }
@@ -346,10 +352,26 @@ final class ReadModelBuilder
                 $summary['last_activity_at'] = $post['created_at'];
             }
             $summary['last_post_id'] = $post['post_id'];
-            unset($summary);
-        }
 
-        foreach ($this->progressItems('writing_thread_summaries', $threadSummaries) as $summary) {
+            $posts[] = [
+                'post_id' => $post['post_id'],
+                'created_at' => $post['created_at'],
+                'thread_id' => $post['thread_id'],
+                'parent_id' => $post['parent_id'],
+                'subject' => $post['subject'],
+                'body' => $post['body'],
+                'body_format' => $post['body_format'],
+                'board_tags_json' => $post['board_tags_json'],
+                'thread_type' => $post['thread_type'],
+                'author_identity_id' => $post['author_identity_id'],
+                'author_label' => $post['author_label'] ?? 'guest',
+                'retracted_at' => $post['retracted_at'],
+                'source_path' => $post['source_path'],
+                'source_commit_sha' => $post['source_commit_sha'],
+                'sequence_number' => $post['sequence_number'],
+            ];
+        }
+        if ($summary !== null) {
             $insertThread->execute($summary);
         }
 
@@ -382,11 +404,10 @@ final class ReadModelBuilder
      */
     private function indexThreadLabels(PDO $pdo, array $approvalState): void
     {
-        $rootThreadRows = $pdo->query('SELECT root_post_id, score_total, vote_count FROM threads')->fetchAll();
         $knownRootThreads = [];
         $seedScoreByThread = [];
         $seedVoteCountByThread = [];
-        foreach ($rootThreadRows as $row) {
+        foreach ($pdo->query('SELECT root_post_id, score_total, vote_count FROM threads') as $row) {
             $rootPostId = (string) $row['root_post_id'];
             $knownRootThreads[$rootPostId] = true;
             $seedScoreByThread[$rootPostId] = (int) $row['score_total'];
@@ -608,9 +629,8 @@ final class ReadModelBuilder
      */
     private function indexPostReactions(PDO $pdo, array $approvalState): void
     {
-        $postRows = $pdo->query('SELECT post_id, thread_id, author_label, board_tags_json FROM posts')->fetchAll();
         $knownPosts = [];
-        foreach ($postRows as $row) {
+        foreach ($pdo->query('SELECT post_id, thread_id, author_label, board_tags_json FROM posts') as $row) {
             $knownPosts[(string) $row['post_id']] = [
                 'thread_id' => (string) $row['thread_id'],
                 'author_label' => (string) $row['author_label'],
