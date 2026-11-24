@@ -6,7 +6,7 @@ Debug mode: enabled
 
 Effort study: `railspike-effort` / `v3/private_key_access`; [host ledger](./effort_ledger/private_key_access.md). Standing P2 enrollment; extended estimates enabled.
 
-Cycle estimate: 0.80
+Cycle estimate: 0.90 (Revision 1; was 0.80)
 
 ## Original Query
 
@@ -94,9 +94,27 @@ Enhancement requests: none beyond the conversation above.
 
 *— Claude · 2026-11-24 UTC · Model: Claude Opus 5.5*
 
+## Revision 1 — how the owner finds out
+
+Maintainer, 2026-11-24: "for private_key_access, how will the user know to approve their key if their account is already approved for public access?" Then "yes please" to recording the answer here.
+
+Revised direction: both ends of the account show the waiting key, so nobody has to know to look. This adds to Option A; the rule and the other options are unchanged.
+
+- **On the public-only device:** Messages shows one line, "This device can't read messages yet", and a short code drawn from the key's fingerprint. A Show QR button puts a confirm link on screen.
+- **On the account's private devices:** Unread and Messages show a card: "A new key for ilyag wants to read your messages", with the same short code and Confirm and Not me buttons. Scanning the QR opens the same card. Confirm writes the signed confirm record.
+- **Not me:** the card doubles as the alarm that someone got a key approved under this username. Not me marks the key for operator review. Whether it also retires the key is a Step 2 question.
+- **No private device left:** the public-only device's line points to an operator, who sees the same waiting keys in Tools → User Access.
+- **After deploy:** every downgraded key gets the same line and card.
+- **Later:** when notifications ship, the card also arrives as a notification. Until then, a rarely opened private device can leave the card unseen.
+
+Estimate: 0.80 → 0.90 for Option A, for the QR link and the card on two pages.
+
+*— Revised by Claude · 2026-11-24 UTC · Model: Claude Opus 5.5*
+
 ## Study snapshots
 
 - Intake (after code inspection; no pristine intake): 0.80 projected total for the recommended scope. Baseline `2d7805c8b6d63b0f2ff6ecdd264ec257eaece23b`, scope v1, R1, P2; Claude single exposed rater, 2026-11-24 UTC. R1 hashes not re-verified this session.
 - Step 1 handoff: 0.80 for Option A. Options A 0.80, B 0.90, C 0.50, D 0.05; not summed.
+- Revision 1 (2026-11-24 UTC, scope v2: owner discovery, QR link, Not me): 0.90 for Option A. Changed scope, not new understanding; original values retained above.
 
 *— Claude · 2026-11-24 UTC · Model: Claude Opus 5.5*

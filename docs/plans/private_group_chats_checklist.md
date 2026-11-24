@@ -29,11 +29,12 @@ Found on a first read at `2d7805c8`. Each cycle re-checks its own part before pl
 
 - [ ] Maintainer decides whether to turn `FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL` off on zenmemes.com until cycle 1 ships. It stops new cross-account keys; existing ones keep access until cycle 1.
 
-## Cycle 1 — `private_key_access` (staged; estimate 0.80)
+## Cycle 1 — `private_key_access` (staged; estimate 0.90)
 
 A key gets private access only if it is the username's first key, was approved by a same-username key with private access, was approved by an operator, or was later confirmed by one of those. Ships before any group work; fixes today's DM exposure on its own.
 
 - [x] Step 1 written, Option A recommended (receipts plus a signed confirm record), 2026-11-24
+- [x] Step 1 Revision 1: how the owner finds out (device line with short code, QR confirm link, Confirm / Not me card on Unread and Messages, operator path); estimate 0.90, 2026-11-24
 - [ ] Step 1 approved
 - [ ] Step 2 approved
 - [ ] Step 3 approved; plans moved to `docs/plans/private_key_access/` and committed

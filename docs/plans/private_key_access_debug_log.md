@@ -15,3 +15,14 @@
 **Uncertain assessments**
 - The number of zenmemes.com grants without receipts is unknown; it decides how many keys the downgrade affects.
 - The Step 1 "/new or /clear" reminder applies, since discussion preceded this Step 1; given once here.
+
+## 2026-11-24T17:20Z — Step 1 Revision 1
+
+**Necessary/useful instructions**
+- `step1_solution_assessment.md` "Review and revision": recording the discovery flow as a revision kept the Original Query intact and made the scope change visible; retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Step 1 "/new or /clear" reminder: once per cycle; not repeated on revision.
