@@ -56,3 +56,22 @@ Dependency delta so far: zero.
 - Estimate details: original scope as in Step 3, plus the device filter (new understanding, not new scope); no revision.
 
 *— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - DMs record notices
+
+**Original estimate: 0.08**
+**Retrospective: 0.08**
+
+- Changes:
+  - `PrivateMessageMailboxService`: optional `onMessageAccepted` closure (message ID, sender, recipient), called after the publication lock and only when `acceptEnvelope()` stored a new message, not when `acceptedEnvelope()` returned an earlier one. A throw is logged and the message still returns. History sync writes through `PrivateMessageStore` directly and never reaches it.
+  - `PushNotices::recordMessage()`: one notice for the recipient (not to self, not to "guest"), title the sender's username token, no body, tag `dm:<sender>`, url `/messages/conversation/<sender>`.
+  - `PrivateMessageReadState::isSeen()` and `PrivateMessageStore::isSeenBy()`: read on any device of the recipient (seen row), or older than read tracking (baseline).
+  - `PrivateMessageApiController::service()` passes the closure through `RouteServices::recordPushNotices()` when `FORUM_PUSH_ENABLED` is on.
+  - `tests/PushMessageNoticeTest.php`, listed in `tests/run.php`.
+- Verification:
+  - Passed: `./v3 test PushMessageNoticeTest PrivateMessageMailboxServiceTest`, 12 of 12. A new DM records one notice with no envelope text; a retried send records no second one; a synced message and a recipient with no device record none; `isSeenBy()` turns true only after the recipient acknowledges; a throwing hook still sends.
+  - Passed: `./v3 test --smoke PushMessageNoticeTest PrivateMessageMailboxServiceTest PrivateMessagePageControllerTest InboxPageTest`, 511 of 511, after naming the columns in the test's own profile insert (`SqlInsertColumnsTest` caught it). Full suite not run.
+- Notes: the read check itself is wired with the sender in Stage 4.
+- Estimate details: original scope as in Step 3; no revisions.
+
+*— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*

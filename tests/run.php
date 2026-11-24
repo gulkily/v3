@@ -251,6 +251,7 @@ $testFiles = [
     __DIR__ . '/PushApiTest.php',
     __DIR__ . '/PushNotifierTest.php',
     __DIR__ . '/PushReplyNoticeTest.php',
+    __DIR__ . '/PushMessageNoticeTest.php',
     __DIR__ . '/VisitorStatisticsObserverTest.php',
     __DIR__ . '/VisitorStatisticsPageTest.php',
     __DIR__ . '/OpenPgpLoaderTest.php',

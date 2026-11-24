@@ -103,6 +103,25 @@ final class PrivateMessageReadState
         }
     }
 
+    /**
+     * True when the viewer has read this message from the counterpart (on any device), or it
+     * predates read tracking. False for an unknown message.
+     */
+    public function isSeen(string $viewer, string $counterpart, string $messageId): bool
+    {
+        $viewer = strtolower(trim($viewer));
+        $counterpart = strtolower(trim($counterpart));
+        $stmt = $this->pdo->prepare('SELECT m.rowid AS position, COALESCE(s.seen_row, 0) AS seen_row,
+                COALESCE((SELECT baseline_row FROM private_message_tracking WHERE singleton = 1), 0) AS baseline_row
+            FROM private_messages m
+            LEFT JOIN private_message_seen s ON s.viewer = :viewer AND s.counterpart = :counterpart
+            WHERE m.message_id = :id AND m.recipient_username_token = :viewer AND m.sender_username_token = :counterpart');
+        $stmt->execute(['viewer' => $viewer, 'counterpart' => $counterpart, 'id' => $messageId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return is_array($row) && ((int) $row['position'] <= (int) $row['seen_row'] || (int) $row['position'] <= (int) $row['baseline_row']);
+    }
+
     public function mark(string $viewer, string $counterpart, string $messageId): void
     {
         $viewer = strtolower(trim($viewer));
