@@ -4,6 +4,8 @@ Working checklist for one story told in three Railspike cycles. It is not a
 Railspike artifact and approves no implementation. Each item runs as its own
 cycle, following AGENTS.md. Record progress, checks and limitations here.
 
+Checklist merged in [PR #265](https://github.com/gulkily/v3/pull/265); updated 2026-11-23.
+
 Requested by the maintainer on 2026-11-14: a ZenMemes reader gets tree
 history and tree bookmarks, as in the Mosaic browser, and a filmstrip of
 recent screens. Cached HTML pages cost almost nothing to show again, so v3
@@ -32,9 +34,16 @@ can offer many screens at once.
   change the address with `history.pushState` and listen for `popstate`.
 - `public/assets/browser_signing.js` already detects back and forward through
   the navigation entry type `back_forward`.
-- `public/service_worker.js` fetches pages network-first and caches only the
-  offline reader, compose pages and assets. Other pages are not cached by the
-  worker, which matters for the filmstrip.
+- `public/service_worker.js` fetches pages network-first. Since
+  [nav cached copy](nav_cached_copy/nav_cached_copy_one_shot.md), it also
+  keeps a last copy of each navbar page (cache `nav-copy`, behind its flag).
+  Thread and other content pages are still not cached by the worker, which
+  matters for the filmstrip. [Nav quick wins](nav_quick_wins/nav_quick_wins_one_shot.md)
+  added an early fetch when a finger goes down on a navbar link.
+- `public/assets/open_beside.js` (the [open beside](open_beside/open_beside_step3_development_plan.md)
+  mode) already shows a same-origin page in a frame beside the column and
+  tracks its title and address. It is the precedent for live frames in the
+  filmstrip, and its pane pages are a case `nav_tree` must decide.
 
 ## Estimates
 
@@ -53,9 +62,11 @@ under protocol P2.
   to the referrer. Back and forward move to an existing visit instead of
   adding one. A plain Tools → History page lists the tree, with a Clear
   button, so the cycle is usable on its own.
-  - _Step 1 drafted 2026-11-15 (recommends a per-tab cursor with the
-    referrer as fallback); awaiting Approved Step 1. Staged plans are
-    committed after Approved Step 3._
+  - _Step 1 drafted 2026-11-15 against `8bec1f7d` (recommends a per-tab
+    cursor with the referrer as fallback); awaiting Approved Step 1. It
+    lives on the planning branch `plan/nav_tree-step1`, not on `main`.
+    Before approval, recheck it against current `main`: open beside,
+    nav cached copy and nav quick wins landed since._
 - [ ] **2. `tree_history`: history and bookmark views.**
   **Estimate: 0.50**
   A richer tree view of history, with branches that fold and a way back to
@@ -76,6 +87,8 @@ under protocol P2.
 - Whether a tab opened from a link inherits its opener's current visit in
   Safari, Chrome and Firefox (item 1).
 - Later: sync across devices, and in-page changes as visits.
+- Whether a page opened in the open beside pane is a visit, and if so
+  whether its parent is the page in the column (item 1).
 - Whether the filmstrip and the pane list in the
   [open beside design notes](open_beside_design_notes.md) are one control:
   a strip of open panes is also the reader's recent path (item 3).
