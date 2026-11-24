@@ -17,7 +17,7 @@ $row = static function (array $key) use ($e): string {
     return '<li class="private-access-row" data-private-access-row data-target-identity-id="' . $e($id) . '">'
         . '<strong class="private-access-code">' . $e(\ForumRewrite\Security\PrivateKeyAccess::shortCode($id)) . '</strong> '
         . '<button type="button" data-action="confirm-private-access">Confirm</button> '
-        . '<a href="/tools/user-access/profiles/' . $e(rawurlencode((string) $key['profile_slug'])) . '/">Not me</a>'
+        . '<a href="/tools/user-access/profiles/' . $e(rawurlencode((string) $key['profile_slug'])) . '/" data-role="not-me">Not me</a>'
         . '<span class="meta" data-role="private-access-feedback" role="status" hidden></span></li>';
 };
 ?>

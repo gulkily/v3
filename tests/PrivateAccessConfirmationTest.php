@@ -196,7 +196,7 @@ final class PrivateAccessConfirmationTest
                     $html = $page('mira1', $path);
                     assertSame(true, str_contains($html, '2 keys for mira want to read your messages'), $path);
                     foreach ($codes as $code) assertSame(true, str_contains($html, $code), $path . ' ' . $code);
-                    assertSame(true, str_contains($html, 'href="/tools/user-access/profiles/' . $keys['mira2']['profile_slug'] . '/">Not me</a>'), $path);
+                    assertSame(true, str_contains($html, 'href="/tools/user-access/profiles/' . $keys['mira2']['profile_slug'] . '/" data-role="not-me">Not me</a>'), $path);
                     assertSame(true, str_contains($html, '/assets/private_access_confirm'), $path);
                 }
                 // A public-only key sees no card, and Unread points it to Messages.
@@ -236,6 +236,33 @@ final class PrivateAccessConfirmationTest
             (new Application(dirname(__DIR__), $root, $db, dirname($db) . '/public'))->handle('GET', $path);
             return (string) ob_get_clean();
         };
+    }
+
+    public function testUserAccessListsWaitingKeysWithOperatorOnlyConfirm(): void
+    {
+        $this->withAccounts(function (string $root, string $db, LocalWriteService $writer, array $keys): void {
+            // Enforcement off: the list still shows, so keys can be confirmed before turning it on.
+            file_put_contents($root . '/records/instance/feature-flags.txt', "Schema: site-feature-flags-v1\n\nFORUM_PRIVATE_KEY_ACCESS_ENFORCED: false\n");
+            $page = $this->pageAs($root, $db, $keys);
+            try {
+                $html = $page('bob', '/tools/user-access/');
+                assertSame(true, str_contains($html, 'Waiting for private access'));
+                foreach (['mira2', 'mira3'] as $name) {
+                    assertSame(true, str_contains($html, 'data-target-identity-id="' . $keys[$name]['identity_id'] . '"'));
+                    assertSame(true, str_contains($html, PrivateKeyAccess::shortCode($keys[$name]['identity_id'])));
+                }
+                assertSame(false, str_contains($html, 'data-target-identity-id="' . $keys['mira1']['identity_id'] . '"'));
+                assertSame(true, str_contains($html, 'data-private-access-operator-only'));
+                // The page is the same for every viewer; the operator list decides Confirm in the browser.
+                assertSame(true, str_contains($html, json_encode([substr(self::ROOT_IDENTITY, 8)])));
+
+                $this->confirm($writer, $keys['mira1'], $keys['mira2']);
+                $this->confirm($writer, $keys['mira1'], $keys['mira3']);
+                assertSame(false, str_contains($page('bob', '/tools/user-access/'), 'Waiting for private access'));
+            } finally {
+                TestViewerSession::reset();
+            }
+        });
     }
 
     public function testShortCodeIsTheFingerprintTailInGroups(): void

@@ -149,3 +149,21 @@ Effort study: `railspike-effort` / `v3/private_key_access`; [host ledger](../eff
 - Estimate details: original 0.12. Retrospective 0.15, for the confirm page's four states and the end-to-end browser check. New understanding, not changed scope.
 
 *— Claude · 2026-11-24 UTC · Model: Claude Opus 5.5*
+
+## Stage 6 - Operator list in User Access
+
+**Original estimate: 0.08**
+**Retrospective: 0.08**
+
+- Changes:
+  - Tools → User Access (`user_access.php`, `UserAccessController::index`) gains "Waiting for private access". It lists every public-only key: account, short slug, code and Confirm, ten at a time plus a "N more" disclosure. It is listed whether or not `FORUM_PRIVATE_KEY_ACCESS_ENFORCED` is on, for the flag-off release order.
+  - The page HTML stays the same for every viewer, so Confirm is decided before paint in the browser, against `ApprovalPolicy::activeOperatorFingerprints`. That is the same pattern as the key-retirement partial. The list itself is public, since approval data already is.
+  - Confirm reuses `private_access_confirm.js`. Not me now carries `data-role="not-me"`, so a confirm hides only that link and leaves the account link on User Access alone.
+  - `private_access.css` is merged into the existing `user_access.php` stylesheet entry. A first attempt added a second entry for that page, which PHP silently dropped; caught and fixed before commit.
+- Verification:
+  - `PrivateAccessConfirmationTest`, new test, with enforcement off. It checks the list shows mira2 and mira3 but not mira1, the operator-only Confirm marker, and the operator list in the page. After both confirms, the section disappears.
+  - `./v3 test --smoke PrivateAccessConfirmationTest UserAccessTest KeyBootstrapTest`: 509 of 509 passed. The full suite was not run.
+  - Chrome, on a fixture with real gpg keys and bob seeded as an operator. Non-operator mira1 sees no Confirm. Operator bob sees it, clicks it and gets "Confirmed", and `/api/private_access_status` goes from `public_only` to `confirmed`. No horizontal overflow at 375 px.
+- Estimate details: original scope; no revision.
+
+*— Claude · 2026-11-24 UTC · Model: Claude Opus 5.5*

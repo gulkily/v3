@@ -4,3 +4,6 @@
 .private-access-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
 .private-access-row button { width: auto; }
 .private-access-code { font-family: monospace; letter-spacing: 0.05em; }
+/* User Access: Confirm shows only when this browser holds an active operator's key (decided before paint). */
+[data-private-access-operator-only] { display: none; }
+html[data-private-access-operator] .private-access-row [data-private-access-operator-only]:not([hidden]) { display: inline-block; width: auto; }

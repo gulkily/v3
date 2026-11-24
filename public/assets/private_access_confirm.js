@@ -29,7 +29,7 @@
         const result = await post("/api/confirm_private_access", signed);
         if (!result.has_access) throw new Error("The confirm was saved but this key still can't read messages. Ask an operator.");
         button.hidden = true;
-        const notMe = row.querySelector("a");
+        const notMe = row.querySelector('[data-role="not-me"]');
         if (notMe) notMe.hidden = true;
         say("Confirmed");
       } catch (error) {
