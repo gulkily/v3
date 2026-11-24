@@ -33,3 +33,26 @@ Dependency delta so far: zero.
 - Estimate details: original scope as in Step 3; no revisions; driver was the hold and cap rules.
 
 *— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - Replies record notices
+
+**Original estimate: 0.15**
+**Retrospective: 0.15**
+
+- Changes:
+  - `LocalWriteService`: optional `onPostPublished` callable beside the existing enqueue callables. `withTimedWriteLock()` calls it after the lock, next to the high-traffic refresh, for every post-creating write (`$refreshThreadPage`: `createReply()`, `createPreparedPost()`, `createSignedPost()`, thread creation and the format change), when the result has a `post_id` and is not an `already_posted`, `already_applied` or `existing` replay. A throw is logged and the post still returns ok. `createPortedThread()` returns no `post_id`, so ported threads never reach it.
+  - `PushNotices::recordReply()`: reads the new post from the read model; notifies the parent's author when that key is approved, its username is not "guest", and the replier is not an approved key of the same username; skips ported, hidden, retracted, Scripture expansion, tag-only and `title:`-only (`ThreadLabels::isTagOrTitleOnly()`, the rule behind `TagOnlyLeafFilter`), bare claim and release lines in the claims thread (`ClaimDirective::isBare()`, `ReleaseDirective::isBare()`), and replies more than an hour old; records nothing for a member with no device. `firstPlainLine()` drops Markdown markers and cuts at 100 characters.
+  - `PushNotices::deviceMayReceive()` and `PushNotifier`'s new optional `mayReceive` filter: a device gets its username's notices only if the key that turned it on is an approved key of that username.
+  - `RouteServices::writer()` passes the callable when `FORUM_PUSH_ENABLED` is on; `recordPushNotices()` opens the store, remembers the site's address from `HTTP_HOST` (`PushSubscriptionStore::rememberSite()`, new `push_meta` table) and falls back to the remembered one in the task worker.
+  - `InboxMarkStore::isCaughtUp()`: read-only; with no mark nothing counts as read.
+  - `tests/PushReplyNoticeTest.php`, listed in `tests/run.php`.
+- Verification:
+  - Passed: `./v3 test PushReplyNoticeTest`, 6 of 6. A guest reply to a member's thread records one notice with the cleaned first line and the site; a new thread, the member's own reply, a tag-only reply and a reply to a guest record none; no device, an unapproved parent key and an hour-old reply record none; the same reply twice is one notice; a throwing hook still saves the post; `isCaughtUp()` leaves no mark behind.
+  - Passed: `./v3 test --smoke PushReplyNoticeTest PushNotifierTest PushApiTest InboxFeedTest InboxPageTest HighTrafficPostRefreshTest ThreadPortWriteTest`, 527 of 527. Full suite not run.
+  - Not covered by a test: `createSignedPost()` and `createPreparedPost()` (they need a signing key in the fixture). They reach the same post-lock call as `createReply()`; the agent reply path uses `createReply()`.
+- Notes:
+  - Security finding, fixed in scope: cycle 2 stores a device under the viewer's username, and any key, approved or not, can carry any username. Without `deviceMayReceive()`, an unapproved key named "ilyag" could have received ilyag's DM sender names.
+  - The task worker has no `HTTP_HOST`, so the site address comes from the last web request that recorded a notice. A worker-only reply before any web request records nothing.
+- Estimate details: original scope as in Step 3, plus the device filter (new understanding, not new scope); no revision.
+
+*— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*

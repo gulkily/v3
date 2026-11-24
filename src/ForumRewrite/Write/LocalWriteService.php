@@ -75,6 +75,8 @@ class LocalWriteService
 
     /** @var (callable():void)|null */
     private $enqueueOfflineSnapshotPublication;
+    /** @var (callable(string): void)|null called with a new post's ID after its write lock is released */
+    private $onPostPublished;
     private $enqueueRetractionSweep;
     /** @var array<string,int|string> */
     private array $identityUpdateMetrics = [];
@@ -90,9 +92,11 @@ class LocalWriteService
         private readonly array $additionalArtifactRoots = [],
         ?callable $enqueueOfflineSnapshotPublication = null,
         ?callable $enqueueRetractionSweep = null,
+        ?callable $onPostPublished = null,
     ) {
         $this->enqueueOfflineSnapshotPublication = $enqueueOfflineSnapshotPublication;
         $this->enqueueRetractionSweep = $enqueueRetractionSweep;
+        $this->onPostPublished = $onPostPublished;
         Tagsets::useRepository($repositoryRoot);
     }
 
@@ -4902,6 +4906,15 @@ class LocalWriteService
             $outcome = \ForumRewrite\Host\HighTrafficSafety::afterPost($this->repositoryRoot, $this->databasePath, $result['thread_id']);
             if ($outcome !== 'inactive') {
                 $timings['high_traffic_refresh'] = $this->elapsedMilliseconds($refreshStartedAt);
+            }
+        }
+        if ($refreshThreadPage && $this->onPostPublished !== null && ($result['status'] ?? null) === 'ok' && is_string($result['post_id'] ?? null)
+            && empty($result['already_posted']) && empty($result['already_applied']) && empty($result['existing'])) {
+            // After the lock, like the refresh above: push notices for the new post (PushNotices).
+            try {
+                ($this->onPostPublished)($result['post_id']);
+            } catch (\Throwable $error) {
+                error_log('Push notice after a successful write failed: ' . $error->getMessage());
             }
         }
         $result['timings'] = array_merge($locked['timings'], $timings);

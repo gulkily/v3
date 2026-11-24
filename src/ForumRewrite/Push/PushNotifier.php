@@ -27,11 +27,13 @@ final class PushNotifier
     /**
      * @param Closure(string): PushDelivery $deliveryForSite site address => delivery signed for it
      * @param Closure(array<string, mixed>): bool $isRead pending row => already read on the server
+     * @param (Closure(array<string, mixed>): bool)|null $mayReceive device => may get its username's notices
      */
     public function __construct(
         private readonly PushSubscriptionStore $store,
         private readonly Closure $deliveryForSite,
         private readonly Closure $isRead,
+        private readonly ?Closure $mayReceive = null,
     ) {
     }
 
@@ -77,6 +79,9 @@ final class PushNotifier
     private function sendForRecipient(string $recipient, array $tags, int $now, string $route, array &$counts): void
     {
         $devices = $this->store->devicesFor($recipient);
+        if ($this->mayReceive !== null) {
+            $devices = array_values(array_filter($devices, $this->mayReceive));
+        }
         $overflow = [];
         foreach ($tags as $tag => $rows) {
             if ($devices === []) {

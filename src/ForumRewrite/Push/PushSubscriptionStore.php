@@ -61,6 +61,7 @@ final class PushSubscriptionStore
             sent_at INTEGER NOT NULL
         )');
         $pdo->exec('CREATE INDEX IF NOT EXISTS push_sends_recent ON push_sends (recipient, sent_at)');
+        $pdo->exec('CREATE TABLE IF NOT EXISTS push_meta (name TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS push_lease (
             id INTEGER PRIMARY KEY CHECK (id = 1),
             owner TEXT NOT NULL,
@@ -297,5 +298,20 @@ final class PushSubscriptionStore
     public function releaseLease(string $owner): void
     {
         $this->pdo->prepare('DELETE FROM push_lease WHERE id = 1 AND owner = ?')->execute([$owner]);
+    }
+
+    /** The site's https address, remembered from web requests so the task worker can sign for it. */
+    public function rememberSite(string $site): void
+    {
+        $this->pdo->prepare("INSERT INTO push_meta (name, value) VALUES ('site', :value)
+            ON CONFLICT(name) DO UPDATE SET value = excluded.value WHERE push_meta.value != excluded.value")
+            ->execute(['value' => $site]);
+    }
+
+    public function site(): ?string
+    {
+        $value = $this->pdo->query("SELECT value FROM push_meta WHERE name = 'site'")->fetchColumn();
+
+        return is_string($value) && $value !== '' ? $value : null;
     }
 }
