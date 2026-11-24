@@ -7,7 +7,7 @@ Extended estimates: enabled (no alternatives or work units, so only the cycle es
 
 **Cycle estimate: 0.06**
 
-Status: planned; next permitted action: implement on `fix/owa-quick-install`.
+Status: implemented and committed on `fix/owa-quick-install`; PR pending. Next action: open the PR, merge, deploy, then the maintainer's Android check.
 
 ## Request and authorization
 
@@ -52,14 +52,32 @@ Offline reading (worker install timing), changed; no inventory entry names the i
 - The reported failure (Chrome's install dialog on the maintainer's phone) cannot be replayed here; reported as unverified.
 
 Starting revision and branch: `3dc254a` on `main`; branch `fix/owa-quick-install`.
-Planning commit: pending.
+Planning commit: `d13fe71` (confirmed with Git before implementation).
 
 ## Execution history
 
-- 2026-11-24: plan written.
+- 2026-11-24: plan written and committed (`d13fe71`).
+- 2026-11-24: `install` in `public/service_worker.js` now checks `caches.keys()` for this site's cache family: none → fetch and cache `/offline/reader/` only; some → `refreshOfflineReader([])` as before. `pwa_registration.js` waits for `navigator.serviceWorker.ready` before its existing refresh check. No cache-name bump: deployed devices already hold `zenmemes-offline-reader-v16`, so their next worker takes the update path. As planned; no corrections or additions.
+
+## Verification
+
+- `./v3 test --smoke OfflineNavigationWorkerTest LocalAppSmokeTest::testPublicLayoutRegistersTheNormalNavigationOfflineWorker`: 501 run, 501 passed. New: `OfflineNavigationWorkerTest::testFirstInstallCachesOnlyTheReaderShellSoTheWorkerActivatesAtOnce` (fails on the old worker, checked by stashing it) and `testUpdateInstallKeepsTheFullRefreshSoTheSnapshotIsNeverLost`; `LocalAppSmokeTest` gained a check that registration waits for `ready`. The full suite was not run.
+- Local replay (a disposable Playwright script outside the repository, `./v3 start` on the clone's data, Chromium at 375 by 667 px, fresh profile): worker ready 0.5 s after navigation (old worker 1.7 s on the same setup; a phone on mobile data waits far longer for ~50 requests and the 1.7 MB snapshot); at that moment the cache held only `/offline/reader/`; Chrome's `Page.getInstallabilityErrors` returned none; the background refresh then cached 54 entries including the snapshot and the stored revision; offline, `/` showed the offline reader; no page errors.
+- Not verified: the reported failure itself (Chrome's install dialog on the maintainer's Android phone, opened in a Custom Tab), and whether slow worker activation was its cause. If Install is still refused after deploy, `chrome://inspect` → Application → Manifest on that phone names the reason.
+
+## Outcome
+
+Delivered as planned. Limitation: a phone that goes offline in the seconds between its first visit and the end of the background refresh has the reader shell without the snapshot until its next online visit; previously it had no worker at all.
+
+## Final review
+
+Diff checked: four files plus this record, debug log, ledger and index; no duplicated helpers (install reuses `fetchOfflineResource`, `cacheKey`, `isOwnedCacheName`, `refreshOfflineReader`); no UI copy; no manifest change.
+
+Commit/merge/publication status: implementation commit pending at writing; not pushed, merged or deployed.
 
 ## Study history
 
 2026-11-24T21:40Z; scope v1; starting revision `3dc254a`; reference R1, hashes not re-verified. Claude, single exposed rater. Intake **0.06**.
+- Closeout: retrospective scope assessment **0.05**; maintainer comfortable-fit judgment pending.
 
 *— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*

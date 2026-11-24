@@ -16,9 +16,17 @@ const COMPOSE_REPLY_URL = "/compose/reply";
 const BOOTSTRAP_QUERY_PARAMETER = "__offline_bootstrap";
 const REVISION_KEY = "/__offline_reader_revision__";
 
+// A first install caches only the reader shell so the worker activates at once (Chrome's
+// install offer waits for it); the page then asks for the full refresh. An update keeps
+// the full refresh here so an installed copy never loses its snapshot.
 self.addEventListener("install", (event) => event.waitUntil((async () => {
   try {
-    await refreshOfflineReader([]);
+    if ((await caches.keys()).some(isOwnedCacheName)) {
+      await refreshOfflineReader([]);
+    } else {
+      const shell = await fetchOfflineResource(OFFLINE_READER_URL, "offline reader shell");
+      await (await caches.open(CACHE_NAME)).put(cacheKey(OFFLINE_READER_URL), shell);
+    }
     await self.skipWaiting();
   } catch (error) {
     console.error("[offline reading] worker install failed", Object.assign(workerDetails(), errorDetails(error)));

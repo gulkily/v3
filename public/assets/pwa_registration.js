@@ -59,6 +59,8 @@
         if (!navigator.onLine) return registration;
         return registration.update().then(function () { return registration; });
       })
+      // A first visit has no active worker until its quick install finishes.
+      .then(function () { return navigator.serviceWorker.ready; })
       .then(function (registration) {
         clearRegistrationError();
         if (navigator.onLine && registration.active && !registration.installing && !registration.waiting) {
