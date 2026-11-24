@@ -112,6 +112,7 @@ Dependency delta so far: zero.
   - Passed: `git diff --check`; every relative link in the touched docs and this cycle's plans resolves.
   - Passed: `./v3 test --smoke PushAfterResponseTest PushNotifierTest PushReplyNoticeTest PushMessageNoticeTest PushApiTest ApiRouteCatalogTest`, 516 of 516. Full suite not run.
   - **Pending (maintainer):** the iPhone SE replay from Step 2, after merge and deploy with the flag on and cron running. With the app closed: (1) a second account replies to one of your posts: "<name> replied" with its first line within about 10 seconds; (2) a second reply in that thread within 5 minutes: no buzz, then one replacement "2 replies" when the window ends (needs the cron minute); (3) a DM: "<name>" with "New message", no text; (4) another DM from them, read on the laptop before the window ends: no follow-up. If nothing arrives, Send a test first. A desktop or Android pass does not count.
+- Host: the maintainer reports DreamHost runs PHP as FastCGI (mod_fcgid), not php-fpm (2026-11-24). `fastcgi_finish_request()` is php-fpm only, so on zenmemes.com each notice goes through the detached one-task worker, and notices show route `queue`. A delay near one minute means the detached start failed and cron sent it.
 - Notes: if iPhone ignores `tag` (notices pile up instead of replacing), record it here and open it as a cycle 5 follow-up.
 - Estimate details: original scope as in Step 3; no revisions.
 
