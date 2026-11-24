@@ -367,6 +367,51 @@ final class BacklogPageTest
         });
     }
 
+    public function testClaimsAddressSaysWhoHoldsTheNamedItems(): void
+    {
+        $this->withClaims(function (callable $application, LocalWriteService $service, string $thread, array $ids): void {
+            [$held, $guest, $free] = $ids;
+            $claim = $this->reply($service, $thread, "claim: {$held}", self::MEMBER);
+            $this->reply($service, $thread, "claim: {$guest}", null);
+            $text = $this->raw($application(), "/backlog/claims.txt?items={$held},{$guest},{$free},PF-20990101-F99");
+
+            assertStringContains("Claims-Thread: {$thread}\nStale-After-Days: 3\nClaim: reply to the thread with the first line \"claim: <ID>, <ID>\"\n", $text);
+            assertSame(1, preg_match('/\n\nID: ' . preg_quote($held, '/') . '\nClaim-State: held\nClaimed-By: [^\n]+\nClaimed-Since: [^\n]+\nClaim-Post: ' . preg_quote($claim, '/') . '\n\n/', $text), $text);
+            assertStringContains("\n\nID: {$guest}\nClaim-State: none\nGuest-Claims: 1\n\n", $text);
+            assertStringContains("\n\nID: {$free}\nClaim-State: free\n", $text);
+            assertStringNotContains('PF-20990101-F99', $text, 'An unknown item is left out (and named in X-Left-Out).');
+            assertStringContains('Name at least one item', $this->raw($application(), '/backlog/claims.txt'));
+        });
+        $this->withSite(true, function (Application $application): void {
+            assertStringContains('This site keeps no backlog claims.', $this->raw($application, '/backlog/claims.txt?items=PF-20261104-B10'));
+        });
+    }
+
+    public function testASiteWithClaimsNamesItsClaimsAddressInThePrompt(): void
+    {
+        $oldHost = $_SERVER['HTTP_HOST'] ?? null;
+        $_SERVER['HTTP_HOST'] = 'backlog.example';
+        try {
+            $this->withClaims(function (callable $application, LocalWriteService $service, string $thread, array $ids): void {
+                [$a, $b] = $ids;
+                $prompt = $this->raw($application(), "/backlog/start.txt?items={$a},{$b}");
+                assertStringContains("\n\nRepository: ", $prompt);
+                assertSame(1, preg_match('/\nRepository: [^\n]+\nClaims: http:\/\/backlog\.example\/backlog\/claims\.txt\?items=' . preg_quote($a, '/') . ',' . preg_quote($b, '/') . '\n\nWork in a clone/', $prompt), $prompt);
+                assertTrue(substr_count($prompt, "\n") < 15, 'Still a short prompt.');
+                assertStringContains('Claims: http://backlog.example/backlog/claims.txt?items=' . $a . ',' . $b, $this->render($application(), "/backlog/start?items={$a},{$b}"));
+            });
+            $this->withSite(true, function (Application $application): void {
+                assertStringNotContains('Claims:', $this->raw($application, '/backlog/start.txt?items=PF-20261104-B10'), 'No claims thread, no line.');
+            });
+        } finally {
+            if ($oldHost === null) {
+                unset($_SERVER['HTTP_HOST']);
+            } else {
+                $_SERVER['HTTP_HOST'] = $oldHost;
+            }
+        }
+    }
+
     public function testANamedThreadThatDoesNotExistShowsNoClaimsAndNoError(): void
     {
         $this->withClaims(function (callable $application): void {

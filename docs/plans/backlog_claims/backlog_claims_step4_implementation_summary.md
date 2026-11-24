@@ -113,3 +113,32 @@ Decisions in force (Step 3 approved with every default): the claims thread may r
 - Estimate details: original scope as Step 3 Stage 4; uncertainty low; no revisions.
 
 *— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
+
+## Stage 5 - Agents
+
+**Original estimate: 0.08**
+
+**Retrospective stage-work assessment: 0.09**
+
+- Changes:
+  - `/backlog/claims.txt?items=<ID>,<ID>`: a header block (the claims thread, the stale period, how to claim and release) and one block per open item with `Claim-State` (`held`, `stale`, `none` or `free`) and its claim lines. 404 on a site with no claims thread; 400 with no ID; items left out are named in `X-Left-Out`.
+  - `/backlog/start.txt` names held items in an `X-Claimed` header and returns the prompt all the same.
+  - The three text routes send `Cache-Control: no-cache`.
+  - `BacklogPrompt::build()` takes an optional claims address. A site with a claims thread adds one line under `Repository:`, `Claims: <origin>/backlog/claims.txt?items=<the items>`, on the start page and in `/backlog/start.txt`. A checkout, and a site with no thread, print the prompt as before.
+  - `./v3 feedback claim --site=<address> <ID>... [--note=] [--anyway]` and `./v3 feedback release --site=<address> <ID>... [--post=]` in `scripts/feedback.php`: read the claims address, print it, and post the line with Quill. `claim` refuses with exit 1 when a counted, unstale claim holds an item.
+  - `docs/agents/backlog_to_pr.md` §2: read claims first; what each `Claim-State` means; claim before building; release when stopping short of a PR. `docs/reference/agent_api.md`, `docs/reference/v3_cli.md`, the `./v3` usage text and the `/llms.txt` backlog line follow.
+- Verification:
+  - `./v3 test --smoke BacklogPageTest BacklogClaimsTest FeedbackBacklogTest LlmsTxtRendererTest`: 540 run, 540 passed. Also `PlatformDocsCatalogTest ScriptsIndexTest UsageNamesTest`: passed. Full suite not run.
+  - `FeedbackBacklogTest::testClaimAndReleaseCommandsReadTheSiteAndPostThroughQuill`: against a stand-in site and a stand-in Quill that records what it is asked to post: free items are claimed with one line and the note; a held item is named, nothing is posted, exit 1; `--anyway` posts; `release` answers the claim post and names the item; `--post` names another claim; a site with no claims, a missing site and missing arguments fail with a reason.
+  - `node tests/browser/backlog.mjs`: passed. Over HTTP: the claims address and its `X-Left-Out`; `X-Claimed` on `/backlog/start.txt` with a 200; the `Claims:` line with the site's own address; `Cache-Control: no-cache` on all three; 404 from a site with no claims thread.
+  - No thread named: the six routes' bodies are still identical to the planning commit except the `app-version` meta.
+- Notes:
+  - The commands were tested with a stand-in Quill. The real `public/quill.py` against a real local site is part of Stage 7's two-session check.
+  - `claim` refuses on any `held` item, including one the caller already holds: the command cannot know who the caller is before Quill signs. Claiming again is never needed while a claim is fresh.
+  - `release` answers the holder's claim by default. From anyone but that claim's author or an operator it has no effect, and the command cannot tell; `--post` names your own claim when someone else holds the item.
+  - `V3_QUILL` names another client (`php public/quill.php`, `perl public/quill.pl`). The ports needed no change: a claim is an ordinary reply.
+  - The cache header is the application's. Whether the host's own setting still overrides it on zenmemes.com can only be seen on the live site after deploy.
+  - Approved with Step 3: the `Claims:` line changes Step 2's sentence that the prompt's wording does not change.
+- Estimate details: original scope as Step 3 Stage 5; uncertainty was Quill inside `./v3`, handled by shelling out to the client; no revisions.
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*

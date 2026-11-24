@@ -970,18 +970,20 @@ final class Application
             return;
         }
 
-        if ($path === '/backlog.txt' || $path === '/backlog/start.txt') {
+        if ($path === '/backlog.txt' || $path === '/backlog/start.txt' || $path === '/backlog/claims.txt') {
             if (!$this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::BACKLOG_ENABLED)) {
                 $this->routeServices()->notFound();
                 return;
             }
             $backlog = new \ForumRewrite\Http\BacklogPageController($this->routeServices(), $this->projectRoot);
+            // These answers change as claims are posted, so a browser or proxy must ask again each time.
+            $fresh = ['Cache-Control: no-cache'];
             if ($path === '/backlog.txt') {
-                $this->sendText($backlog->listText($query), 200);
+                $this->sendText($backlog->listText($query), 200, $fresh);
                 return;
             }
-            $prompt = $backlog->startText($query);
-            $this->sendText($prompt['text'], $prompt['status'], $prompt['headers']);
+            $answer = $path === '/backlog/claims.txt' ? $backlog->claimsText($query) : $backlog->startText($query);
+            $this->sendText($answer['text'], $answer['status'], [...$fresh, ...$answer['headers']]);
             return;
         }
 

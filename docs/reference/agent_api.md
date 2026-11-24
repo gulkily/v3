@@ -782,13 +782,31 @@ Both routes are public `GET` routes and answer Not Found while the flag is off.
   (`salient`, `entered`, `touched`, `effort`, `impact`), `order` (`newest`,
   `oldest`), `show` (`can-start`, `waiting`, `open`, or one workflow value) and
   `kind` (`all`, `bug`, `feature`, `other`). An unknown word falls back to its
-  default. Example: `/backlog.txt?sort=effort&kind=bug`.
+  default. Example: `/backlog.txt?sort=effort&kind=bug`. On an instance that keeps
+  claims, the header adds `Claimed` and `Claims-Address`, a claimed item's block adds
+  `Claim-State` (`held`, `stale` or `none`), `Claimed-By`, `Claimed-Since`,
+  `Claim-Post`, `Also-Claimed-By`, `Also-Claim-Posts`, `Claims-Waiting-For-Approval`
+  and `Guest-Claims`, and `claimed=hide` leaves held items out.
 - `/backlog/start.txt?items=<ID>,<ID>&mode=<auto|one-shot|staged>` returns the
   short prompt that starts work on those items as one cycle; `mode` defaults to
   `auto`, which leaves one-shot or staged to the agent. The prompt asks for work in a
   clone and an open pull request, not patch files. Unknown and closed IDs are left out and named in an `X-Left-Out`
   header. With no open item left the answer is 404; with no ID or an unknown
-  mode it is 400.
+  mode it is 400. On an instance that keeps claims the prompt names the claims
+  address in a `Claims:` line, and items someone holds are named in an `X-Claimed`
+  header (`<ID> by <name> since <time>`); the prompt is returned all the same.
+- `/backlog/claims.txt?items=<ID>,<ID>` says who holds each named open item: a
+  header block (`Claims-Thread`, `Stale-After-Days`, how to claim and release), then
+  one block per item with `Claim-State` (`held`: stop; `stale` or `none`: look for
+  the branch or pull request first; `free`) and the claim lines above. An instance
+  whose profile names no claims thread answers 404. To claim, post a signed reply
+  to the claims thread whose first line is `claim: <ID>, <ID>`; to release, reply
+  to your claim post with `release` or `release: <ID>`. A claim counts when its
+  key is approved; one with no name is listed as a guest claim and never counts.
+  `./v3 feedback claim --site=<address> <ID>...` and `./v3 feedback release` do
+  both through Quill.
+
+These three answers are sent with `Cache-Control: no-cache`.
 
 The list is as fresh as the instance's last deploy, so follow
 [backlog to pull request](../agents/backlog_to_pr.md): check each item in a fresh

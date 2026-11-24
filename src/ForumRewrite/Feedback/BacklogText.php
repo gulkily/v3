@@ -52,6 +52,30 @@ final class BacklogText
     }
 
     /**
+     * /backlog/claims.txt: who holds the named items, and how to claim or release.
+     *
+     * @param list<string> $ids open items, in the order asked
+     * @param array<string, array<string, mixed>> $claims
+     */
+    public static function claims(array $ids, array $claims, string $threadId): string
+    {
+        $blocks = [implode("\n", [
+            'Claims-Thread: ' . $threadId,
+            'Stale-After-Days: ' . BacklogClaims::STALE_DAYS,
+            'Claim: reply to the thread with the first line "claim: <ID>, <ID>"',
+            'Release: reply to your claim post with the first line "release" or "release: <ID>"',
+            'Claim-Command: ./v3 feedback claim --site=<this site> <ID>...',
+            'Release-Command: ./v3 feedback release --site=<this site> <ID>...',
+        ])];
+        foreach ($ids as $id) {
+            $lines = self::claimLines($claims[$id] ?? null);
+            $blocks[] = implode("\n", ['ID: ' . $id, ...($lines === [] ? ['Claim-State: free'] : $lines)]);
+        }
+
+        return implode("\n\n", $blocks) . "\n";
+    }
+
+    /**
      * One item's claims as Key: value lines. Claim-State is `held` (a counted claim
      * no older than the stale period: stop), `stale` or `none` (only guest or
      * waiting claims: look for the branch or pull request before deciding).
@@ -72,6 +96,7 @@ final class BacklogText
         }
         if ($entry['also'] !== []) {
             $lines[] = 'Also-Claimed-By: ' . implode(', ', array_column($entry['also'], 'name'));
+            $lines[] = 'Also-Claim-Posts: ' . implode(', ', array_column($entry['also'], 'post_id'));
         }
         if ($entry['waiting'] !== []) {
             $lines[] = 'Claims-Waiting-For-Approval: ' . implode(', ', array_column($entry['waiting'], 'name'));

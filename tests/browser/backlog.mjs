@@ -190,6 +190,20 @@ try {
   const claimedText = await (await fetch(claimsBase + '/backlog.txt')).text();
   assert.match(claimedText, /ID: PF-20261101-F01\n[^]*?File: docs\/feedback\/items\/PF-20261101-F01\.txt\nClaim-State: held\nClaimed-By: \S+\nClaimed-Since: \S+\nClaim-Post: \S+\n/);
   assert.match(claimedText, /ID: PF-20261101-B02\n[^]*?Claim-State: none\nGuest-Claims: 1\n/);
+  // The claims address, the X-Claimed header, and no stored copies of answers that change with every claim.
+  const claimsAnswer = await fetch(claimsBase + '/backlog/claims.txt?items=PF-20261101-F01,PF-20261101-B02,PF-20261101-F05');
+  assert.equal(claimsAnswer.status, 200);
+  assert.equal(claimsAnswer.headers.get('cache-control'), 'no-cache');
+  assert.equal(claimsAnswer.headers.get('x-left-out'), 'PF-20261101-F05');
+  assert.match(await claimsAnswer.text(), /^Claims-Thread: root-001\n[^]*\n\nID: PF-20261101-F01\nClaim-State: held\nClaimed-By: seed\n[^]*\n\nID: PF-20261101-B02\nClaim-State: none\nGuest-Claims: 1\n$/);
+  const heldStart = await fetch(claimsBase + '/backlog/start.txt?items=PF-20261101-F01,PF-20261101-B02');
+  assert.equal(heldStart.status, 200, 'a held item does not stop the prompt');
+  assert.match(heldStart.headers.get('x-claimed'), /^PF-20261101-F01 by seed since \S+$/);
+  assert.equal(heldStart.headers.get('cache-control'), 'no-cache');
+  assert.match(await heldStart.text(), new RegExp(`\\nRepository: [^\\n]+\\nClaims: ${claimsBase}/backlog/claims\\.txt\\?items=PF-20261101-F01,PF-20261101-B02\\n\\nWork in a clone`));
+  assert.equal((await fetch(claimsBase + '/backlog.txt')).headers.get('cache-control'), 'no-cache');
+  assert.equal((await fetch(base + '/backlog/claims.txt?items=PF-20261101-F01')).status, 404, 'a site with no claims thread keeps no claims');
+  assert.equal(started.headers.get('x-claimed'), null);
 
   // Start claims. A member first: posting once gives this browser a key the server recognises; then it is approved.
   const claimPosts = () => Number(site(`echo $db->query("SELECT COUNT(*) FROM posts WHERE body LIKE 'claim:%' AND retracted_at IS NULL")->fetchColumn();`));

@@ -144,7 +144,7 @@ final class BacklogPageController
             'backlogStartPrompt' => $picked['items'] === [] ? null : [
                 'id' => 'backlog-start',
                 'label' => 'Prompt',
-                'text' => BacklogPrompt::build($picked['items'], $mode, SourceRepository::fromProjectRoot($this->projectRoot)),
+                'text' => BacklogPrompt::build($picked['items'], $mode, SourceRepository::fromProjectRoot($this->projectRoot), $this->claimsAddress($claims, $openIds)),
             ],
             'backlogStartTextHref' => $openIds === [] ? null : self::startHref($openIds, $mode, '/backlog/start.txt'),
         ], 'Start', 'tools', $claims === null ? [] : self::CLAIM_SCRIPTS);
@@ -179,13 +179,65 @@ final class BacklogPageController
         if ($ids === [] || !is_string($mode) || !in_array($mode, BacklogPrompt::MODES, true)) {
             return ['status' => 400, 'text' => "Name at least one item and, to set it, the mode (auto, one-shot or staged; auto lets the agent choose):\n/backlog/start.txt?items=PF-YYYYMMDD-F01,PF-YYYYMMDD-B02&mode=staged\nThe list is at /backlog.txt.\n", 'headers' => []];
         }
-        $picked = BacklogPrompt::pick($this->items(), $ids);
+        $all = $this->items();
+        $picked = BacklogPrompt::pick($all, $ids);
         $leftOut = array_merge($picked['unknown'], $picked['closed']);
         $headers = $leftOut === [] ? [] : ['X-Left-Out: ' . implode(',', $leftOut)];
         if ($picked['items'] === []) {
             return ['status' => 404, 'text' => "Nothing to start: no open item among " . implode(', ', $ids) . ".\nThe list is at /backlog.txt.\n", 'headers' => $headers];
         }
-        return ['status' => 200, 'text' => BacklogPrompt::build($picked['items'], $mode, SourceRepository::fromProjectRoot($this->projectRoot)), 'headers' => $headers];
+        // Held items are named, as left-out ones are, and the prompt is returned all the same.
+        $claims = $this->claims($all);
+        $openIds = array_map(static fn (FeedbackItem $item): string => $item->id(), $picked['items']);
+        $held = [];
+        foreach ($openIds as $id) {
+            if (BacklogClaims::isHeld($claims[$id] ?? null)) {
+                $held[] = $id . ' by ' . preg_replace('/[^\x20-\x7E]|[,;]/', '?', $claims[$id]['holder']['name']) . ' since ' . $claims[$id]['holder']['since'];
+            }
+        }
+        if ($held !== []) {
+            $headers[] = 'X-Claimed: ' . implode(', ', $held);
+        }
+        return ['status' => 200, 'text' => BacklogPrompt::build($picked['items'], $mode, SourceRepository::fromProjectRoot($this->projectRoot), $this->claimsAddress($claims, $openIds)), 'headers' => $headers];
+    }
+
+    /**
+     * /backlog/claims.txt?items=A,B: who holds the named open items.
+     *
+     * @param array<string, mixed> $query
+     * @return array{status: int, text: string, headers: list<string>}
+     */
+    public function claimsText(array $query): array
+    {
+        $all = $this->items();
+        $claims = $this->claims($all);
+        $threadId = SiteProfileRegistry::backlogClaimsThread();
+        if ($claims === null || $threadId === null) {
+            return ['status' => 404, 'text' => "This site keeps no backlog claims. Look for a branch or pull request that names the item instead.\nThe list is at /backlog.txt.\n", 'headers' => []];
+        }
+        $ids = BacklogPrompt::ids($query['items'] ?? null);
+        if ($ids === []) {
+            return ['status' => 400, 'text' => "Name at least one item:\n/backlog/claims.txt?items=PF-YYYYMMDD-F01,PF-YYYYMMDD-B02\nThe list, with every item's claim, is at /backlog.txt.\n", 'headers' => []];
+        }
+        $picked = BacklogPrompt::pick($all, $ids);
+        $leftOut = array_merge($picked['unknown'], $picked['closed']);
+
+        return [
+            'status' => 200,
+            'text' => BacklogText::claims(array_map(static fn (FeedbackItem $item): string => $item->id(), $picked['items']), $claims, $threadId),
+            'headers' => $leftOut === [] ? [] : ['X-Left-Out: ' . implode(',', $leftOut)],
+        ];
+    }
+
+    /**
+     * The address a prompt names for these items' claims, or null where there is none to name.
+     *
+     * @param array<string, array<string, mixed>>|null $claims
+     * @param list<string> $ids
+     */
+    private function claimsAddress(?array $claims, array $ids): ?string
+    {
+        return $claims === null || $ids === [] ? null : \ForumRewrite\View\TemplateRenderer::requestOrigin() . '/backlog/claims.txt?items=' . implode(',', $ids);
     }
 
     /**
