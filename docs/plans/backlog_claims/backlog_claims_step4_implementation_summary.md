@@ -209,6 +209,7 @@ Decisions in force (Step 3 approved with every default): the claims thread may r
 - Larger than projected in three places: recognising the viewer for Claim and Release, the scripts-off case, and Release forms that cannot nest in the Start form.
 - Completion Contract: normal entry and end-to-end outcome are met on a local site with real signed posts. Recovery cases are met locally. Deployment needs no schema or flag change. Release conditions are pending as listed in Stage 7.
 - Decisions taken as defaults, all recorded in Step 3's approval line. One is still open in practice: the thread's ID.
+- Published: PR https://github.com/gulkily/v3/pull/395, opened 2026-11-23; not merged.
 - Maintainer comfortable-fit judgment: pending. Measured time: unknown.
 
 Debug: [debug log](./backlog_claims_debug_log.md).

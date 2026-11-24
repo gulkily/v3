@@ -57,7 +57,7 @@ Start claims the items, so the page and other agents see who holds them. Plans: 
 - [x] Agents claim and release: `/backlog/claims.txt`, `./v3 feedback claim` and `release`, a `Claims:` line in a site-made prompt, and §2 of `backlog_to_pr.md`
 - [x] Bare claim and release replies stay out of Unread
 - [x] Two-session test on a local site, with two keys and the real Quill client: the second session is told who holds the item and posts nothing
-- [ ] PR opened
+- [x] PR opened: https://github.com/gulkily/v3/pull/395 (2026-11-23)
 - [ ] The maintainer posts a thread titled "Backlog claims" on zenmemes.com and gives its ID; a one-line follow-up puts it in the zenmemes profile (`backlogClaimsThread`). Until then claims are off and the site behaves as before.
 - [ ] Merged, deployed, thread named
 - [ ] Two-session test against zenmemes.com
