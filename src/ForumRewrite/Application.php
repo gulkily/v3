@@ -289,7 +289,9 @@ final class Application
         }
 
         if ($path === '/api/clear_identity') {
+            $sessionKey = $method === 'POST' ? $this->viewerSessions()->sessionKey() : '';
             $this->identityHintController()->clearIdentity($method);
+            $this->forgetPushDevicesForSession($sessionKey);
             return;
         }
 
@@ -376,6 +378,21 @@ final class Application
                 return;
             }
             $this->inboxPageController()->apiCatchUp($method, $query);
+            return;
+        }
+
+        if (in_array($path, ['/api/push/key', '/api/push/subscribe', '/api/push/unsubscribe', '/api/push/test'], true)) {
+            if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::PUSH_ENABLED)) {
+                $this->sendJson(['status' => 'error', 'code' => 'push_disabled', 'error' => 'Notifications are off on this server.'], 404, $this->routeServices()->noStoreHeaders());
+                return;
+            }
+            $controller = $this->pushApiController();
+            match ($path) {
+                '/api/push/key' => $controller->key($method),
+                '/api/push/subscribe' => $controller->subscribe($method, $query),
+                '/api/push/unsubscribe' => $controller->unsubscribe($method, $query),
+                default => $controller->test($method, $query),
+            };
             return;
         }
 
@@ -1930,6 +1947,39 @@ final class Application
             },
             fn (): bool => $this->routeServices()->profileIsActiveOperator($this->authenticatedViewerProfile()),
         );
+    }
+
+    private function pushApiController(): \ForumRewrite\Http\PushApiController
+    {
+        $config = PrivateConfig::load($this->projectRoot);
+        $keys = new \ForumRewrite\Push\PushVapidKeys(\ForumRewrite\Push\PushStorageConfig::vapidKeyPath($this->projectRoot, $config));
+        $host = strtolower((string) preg_replace('/[^A-Za-z0-9.\-:\[\]]/', '', (string) ($_SERVER['HTTP_HOST'] ?? 'localhost')));
+
+        return new \ForumRewrite\Http\PushApiController(
+            $this->routeServices(),
+            $this->authenticatedViewerProfile(...),
+            fn (): \ForumRewrite\Push\PushSubscriptionStore => \ForumRewrite\Push\PushSubscriptionStore::open(\ForumRewrite\Push\PushStorageConfig::databasePath($this->projectRoot, $config)),
+            $keys,
+            // The VAPID contact is the site's own https address (Step 1, question 3).
+            fn (): \ForumRewrite\Push\PushSender => new \ForumRewrite\Push\PushSender($keys, 'https://' . ($host !== '' ? $host : 'localhost')),
+        );
+    }
+
+    /** Signing out turns off notifications on every device this session subscribed. Best effort. */
+    private function forgetPushDevicesForSession(string $sessionKey): void
+    {
+        if ($sessionKey === '') {
+            return;
+        }
+        $path = \ForumRewrite\Push\PushStorageConfig::databasePath($this->projectRoot, PrivateConfig::load($this->projectRoot));
+        if (!is_file($path)) {
+            return;
+        }
+        try {
+            \ForumRewrite\Push\PushSubscriptionStore::open($path)->deleteForSession($sessionKey);
+        } catch (\Throwable) {
+            // A send still checks the session, so a missed delete never delivers.
+        }
     }
 
     private function usageReportStore(): \ForumRewrite\UsageReports\UsageReportStore
