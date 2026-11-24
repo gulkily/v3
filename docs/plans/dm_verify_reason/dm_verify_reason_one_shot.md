@@ -8,7 +8,7 @@ Extended estimates: disabled (no alternatives or work units in this cycle)
 
 **Cycle estimate: 0.15**
 
-Status: planned; next permitted action: implement.
+Status: implemented and committed on `fix/dm-verify-reason`; next permitted action: push and PR for maintainer review.
 
 Original request (2026-11-24): "can you please make two one-shot fixes for the things we've uncovered so far? (the unclear message, and the history sync spam)". This cycle is the unclear message; history sync is separate and waits for the maintainer's go-ahead on the approach.
 
@@ -31,9 +31,23 @@ Verification and recovery plan: extend `PrivateMessageReaderTest` with a future-
 
 Starting revision and branch: `fix/dm-verify-reason` from `origin/main` `2d7805c`.
 
-Planning commit: pending.
+Planning commit: `35f35ff` (plan and index only; confirmed with `git log`).
+
+Dated execution history:
+- 2026-11-24: `signatureProblem` added to `private_message_reader.js`; `problemLabel` takes the reason. Verification now settles every signature with `Promise.allSettled` before choosing the first failure (the old `Promise.all` gave the same pass/fail, but a sequential loop would have left later rejections unhandled).
+- 2026-11-24: the clock check uses the signature packet's `created` time against `Date.now()`, with OpenPGP's "in the future" wording as a fallback.
+
+Outcome: delivered as planned. A future-dated signature shows "Dated ahead of this device’s clock" with both times in Details; a signature from a key outside the sender's approved set names that key; other failures keep the old sentence plus OpenPGP's error text. Nothing verifies that didn't before.
+
+Verification: `./v3 test --smoke PrivateMessageReaderTest`: 492 run, 492 passed (full suite not run). New assertions cover the clock case (signature dated an hour ahead, key dated a day back) and the unknown-key reason on the existing wrong-key case. `node tests/browser/private_message_history_reader.cjs` and `node tests/browser/private_message_list.cjs` pass, so the history reader and list preview still treat these as `bad-signature`. The maintainer's own browser case was not replayed here; the test reproduces the same OpenPGP error ("Signature creation time is in the future") that his console showed.
+
+Final review: diff is the reader, its test, this record, the index line and the ledger; no duplicated helper (the reader had no time formatter or key-ID matcher to reuse).
+
+Commit/merge/publication status: completion commit pending at time of writing; not pushed or merged.
 
 Study history:
 - 2026-11-24 UTC, intake: **0.15** whole cycle. Claude, single exposed rater (reader code read before the estimate). Measured time unknown.
+- 2026-11-24 UTC, execution entry: reaffirmed **0.15**.
+- 2026-11-24 UTC, closeout: delivered scope v1 in full; retrospective **0.15**.
 
 *Claude · 2026-11-24 UTC · Model: claude-opus-5-5*
