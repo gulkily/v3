@@ -57,3 +57,19 @@
 **Uncertain assessments**
 - "Keep Step 1-3 planning docs uncommitted": not followed; the maintainer asked to track this work across chats, so the drafts are pushed to `plans/private-group-chats`. Step 4 still makes its own planning commit on the feature branch.
 - The plan runs slightly over one page because of eight stages.
+
+## 2026-11-24T19:40Z — Step 4
+
+**Necessary/useful instructions**
+- `step4_implementation_do.md` "Stage Boundary Protocol": one verified commit per stage kept the cycle resumable across a parallel-session handoff and a merge from `main`; retain.
+- `implementation_standards.md` "Replay each reported failure in the relevant user/environment": led to the local zenmemes.com import and a real-session Chrome run as a downgraded `ilyag` key, which turned up the 28→17 public-only finding and two UI defects; retain.
+- `step3_development_plan_do.md` "include a stage that replays each reported failure": Stage 8 holds the production replay as pending instead of claiming it; retain.
+
+**Redundant/unnecessary instructions**
+- `step4_implementation_after.md` items 2–3 restate the commit-cadence checks already enforced at each stage boundary.
+
+**Inapplicable instructions**
+- Documentation-only scope rules.
+
+**Uncertain assessments**
+- Stage 8 depends on production access the agent does not have; whether a stage the agent cannot perform belongs in the agent's Step 3 is worth a Railspike note.

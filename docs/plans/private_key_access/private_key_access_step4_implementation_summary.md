@@ -187,3 +187,45 @@ Effort study: `railspike-effort` / `v3/private_key_access`; [host ledger](../eff
 - Estimate details: original scope; no revision.
 
 *— Claude · 2026-11-24 UTC · Model: Claude Opus 5.5*
+
+## Merge from main
+
+- `377ea17ff` merges `origin/main` at `c4205ea43`, which includes PR #402 (history sync pacing). Conflicts were only in two index files: `docs/plans/README.md` kept both entries, and `docs/feedback/README.md` was regenerated with `./v3 feedback index`. No stage commit was rebased or amended.
+- The combined code now has the pacing client's `public_only` stop and this cycle's server-side 403 `public_only`.
+- After the merge, `./v3 test --smoke PrivateKeyAccessTest PrivateAccessConfirmationTest PrivateMessageHistoryCryptoTest PrivateMessageFeatureFlagTest PrivateMessagePageControllerTest FeatureFlagEvaluatorTest InvitationIssuanceTest UserAccessTest`: 541 of 541 passed. Bare `./v3 test` (smoke) before the merge: 487 of 487.
+
+## Stage 8 - Release and replay on zenmemes.com
+
+**Original estimate: 0.05**
+**Retrospective: pending**
+
+- Status: **pending on the maintainer**. It needs merge, deploy and production access, which are Ilya's.
+- Steps, in order:
+  1. Before deploying, open Tools → Feature Flags and turn off "Private access needs the account's own key" (`FORUM_PRIVATE_KEY_ACCESS_ENFORCED`). The flag is new and on by default, so a deploy with no site setting would enforce at once.
+  2. Merge the PR and deploy.
+  3. Run `./v3 approval private-access-report --public-only` on the server, or open Tools → User Access, "Waiting for private access".
+  4. From the iPhone SE, confirm your own devices. Confirming a chain root also restores every key it approved; the local import found 10 such roots for 17 `ilyag` keys.
+  5. Turn the flag on.
+  6. Replay: on a device still public-only, Messages shows "This device can't read messages yet" and a code. Tap Show QR, scan it with the iPhone, and Confirm. That device then reads a recent DM, and older ones arrive through history sync.
+- Evidence to record here afterwards: the report's counts, which keys were confirmed, and the replay result on the two devices.
+
+## Cycle retrospective
+
+- Delivered (Stages 1–7):
+  - The private-access check and report.
+  - The signed confirm record and API.
+  - Enforcement in recipient keys, mailbox and history sync behind a site flag.
+  - The public-only device line with code and QR.
+  - The Confirm / Not me card and confirm page.
+  - The operator list in User Access.
+  - Docs and the concept entry.
+- Corrections inside the cycle: rule 3 now trusts the receipt's `actor_is_operator` rather than current operator status (Stage 2), a root seed stands as its account's first key, a Word97 empty-box glitch, and a duplicate stylesheet map entry.
+- Not done, recorded:
+  - The Quill confirm command (PF-20261124-F01).
+  - Confirmations are left out of imports, so a local clone shows confirmed keys as public only.
+  - Listing chain roots first on the card.
+  - Showing correspondents their recipients' devices (the release gate's last item).
+- Verification limits: the full suite was not run. Nothing was checked in production. The QR was not scanned with a real phone camera; the confirm flow was exercised through its URL in Chrome.
+- Effort: original stage estimates 0.15, 0.15, 0.15, 0.10, 0.12, 0.08, 0.05, 0.05. Retrospectives: 0.15, 0.15, 0.15, 0.12, 0.15, 0.08, 0.05, and Stage 8 pending; not summed. Cycle projection 0.95; cycle retrospective **1.00** for Stages 1–7, with Stage 8 pending. Maintainer comfortable-fit judgment pending.
+
+*— Claude · 2026-11-24 UTC · Model: Claude Opus 5.5*
