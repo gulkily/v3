@@ -167,3 +167,23 @@ Effort study: `railspike-effort` / `v3/private_key_access`; [host ledger](../eff
 - Estimate details: original scope; no revision.
 
 *— Claude · 2026-11-24 UTC · Model: Claude Opus 5.5*
+
+## Stage 7 - Docs and concepts
+
+**Original estimate: 0.05**
+**Retrospective: 0.05**
+
+- Changes:
+  - New concept entry `docs/concepts/private_key_access.md`, with three entries: Private access, Confirm record, and Finding a waiting key. Its Boundary names the missing Quill command (PF-20261124-F01) and that imports don't carry confirmations.
+  - `private_message_history.md` (only keys with private access take part) and `key_retirement.md` (new recipients and donors are also limited to keys with private access when enforced).
+  - `docs/reference/agent_api.md`: a "Private access" section under "Approving keys", covering status, confirm, the 403 `public_only`, and the record spec.
+  - `docs/reference/v3_cli.md`: `./v3 approval private-access-report`.
+  - `docs/runbooks/account_key_approval_safety.md`: the flag-off release order.
+  - `docs/product/v3_feature_priorities.md`: a progress note on the release gate. It meets the gate's "cannot silently add" and "removing prevents future delivery"; showing correspondents their recipients' devices remains.
+- Verification:
+  - `git diff --check`: clean.
+  - Every relative link in the changed and new Markdown files resolves.
+  - `./v3 feedback check`: 0 problems.
+- Estimate details: original scope; no revision.
+
+*— Claude · 2026-11-24 UTC · Model: Claude Opus 5.5*

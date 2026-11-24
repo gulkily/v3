@@ -1075,6 +1075,19 @@ is resolved.
 - `database_path` — SQLite file to rebuild after approving
 - `artifact_root` — static HTML output directory to rebuild after approving
 
+## Private access report
+
+```
+./v3 approval private-access-report [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--public-only] [--json]
+```
+
+Read-only. Lists every approved key with why it may read its account's private
+messages: `root`, `first`, `own_account`, `operator`, `confirmed` or
+`public_only` ([private access](../concepts/private_key_access.md)). Use
+`--public-only` before turning on `FORUM_PRIVATE_KEY_ACCESS_ENFORCED` to see
+which keys would lose access; confirm them from Tools → User Access or the
+account's own devices.
+
 ## Standalone scripts (not wired into `./v3`)
 
 These live in `scripts/` but have no `./v3` dispatcher entry — invoke them

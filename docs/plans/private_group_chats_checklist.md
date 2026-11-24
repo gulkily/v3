@@ -46,7 +46,9 @@ A key gets private access only if it is the username's first key, was approved b
 - [x] Stage 4: "This device can't read messages yet" with code and QR on Messages
 - [x] Stage 5: Confirm / Not me card on Unread and Messages, and `/account/confirm/<fingerprint>` for the QR; confirmed end to end in Chrome
 - [x] Stage 6: "Waiting for private access" in Tools → User Access, Confirm for operators only
-- [ ] Stage 7 (docs), then Stage 8 on zenmemes.com
+- [x] Stage 7: concept entry, agent API, CLI reference, runbook, release-gate progress
+- [ ] PR opened
+- [ ] Stage 8 on zenmemes.com (maintainer): flag off, deploy, report, confirm own devices, flag on, replay a downgraded device by QR
 - [ ] Follow-up idea: list chain roots first on the card (10 confirms restore all 17 `ilyag` keys)
 - [ ] Before deploy: list the zenmemes.com keys the downgrade affects; maintainer confirms his own devices
 - [ ] PR opened, merged, deployed

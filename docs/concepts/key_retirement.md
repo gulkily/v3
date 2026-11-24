@@ -19,5 +19,5 @@ Sources: `src/ForumRewrite/Security/KeyRetirementPolicy.php`, `src/ForumRewrite/
 
 Name: Historical message verification
 Purpose: Keep retained encrypted messages readable after their signing or donating keys retire.
-Scenario: Active devices use retired keys to verify existing signatures and trusted retained transfers. New encryption recipients and new donors remain active-only; acceptance is serialized with retirement.
+Scenario: Active devices use retired keys to verify existing signatures and trusted retained transfers. New encryption recipients and new donors remain active-only, and with [private access](private_key_access.md) enforced, also limited to keys with private access; acceptance is serialized with retirement.
 Sources: `src/ForumRewrite/Messaging/PrivateMessageHistorySyncService.php`, `src/ForumRewrite/Messaging/ApprovedUserKeyResolver.php`, `public/assets/private_message_reader.js`.

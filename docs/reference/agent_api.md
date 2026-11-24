@@ -503,6 +503,27 @@ The same steps without Quill:
 Approving an unsigned guest key adds it to the shared guest account; there is no
 way yet to approve it as itself (feedback item PF-20261111-F49).
 
+### Private access
+
+Approval lets a key post. Reading its account's private messages needs
+[private access](../concepts/private_key_access.md). A key has it if it is the
+username's first key, was approved by another of the account's keys with access
+or by an operator, or was confirmed. With `FORUM_PRIVATE_KEY_ACCESS_ENFORCED`
+on, a key without it gets 403 with `reason: public_only` from the message and
+history APIs, and new messages are not encrypted to it.
+
+- `GET /api/private_access_status?target_identity_id=openpgp:<fingerprint>`
+  answers `has_access` and `reason` (`root`, `first`, `own_account`, `operator`,
+  `confirmed` or `public_only`).
+- To confirm a key, sign in as a key of the same account that has access, or as
+  an active operator. Then `POST /api/prepare_private_access_confirmation` with
+  `actor_identity_id` and `target_identity_id`, sign `canonical_record` exactly,
+  and `POST /api/confirm_private_access` with `prepare_token`, `canonical_record`
+  and `detached_signature`. Repeating the same signed request is safe. Record
+  format: [private access confirmation](../specs/private_access_confirmation_record_v1.md).
+
+Quill has no confirm command yet (PF-20261124-F01).
+
 ## Text file publisher scripts
 
 Publish a UTF-8 text file anonymously with Python 3 (standard library only):
