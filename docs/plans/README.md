@@ -705,3 +705,4 @@ and repair its navigation and affected references. See the
 - [Midnight action fonts](midnight_action_fonts/midnight_action_fonts_one_shot.md) — one-shot: Midnight post actions get Word 97’s UI font, no underline and Like/Flag bevel (PF-20261111-F19).
 - [Zen hero fits the screen](zen_hero_fit/zen_hero_fit_one_shot.md) — one-shot: the featured Zen meme on the home page fits the viewport on wide screens, with thumbnails beside upright images.
 - [Zen hero square on phones](zen_hero_square/zen_hero_square_one_shot.md) — one-shot: on phones the featured Zen meme sits whole in a square box so it fits the first screen.
+- [History sync: active keys only](history_sync_active_keys/history_sync_active_keys_step1_solution_assessment.md) — Step 1: history sync copies old DM keys only to keys used recently, ending the 429 loop across 78 keys.
