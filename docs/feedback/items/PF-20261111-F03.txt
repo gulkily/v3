@@ -3,7 +3,7 @@ Title: Gloss and Gloss Dark are the ZenMemes defaults
 Kind: feature
 Workflow: blocked
 Created: 2026-11-11
-Evidence: locally-verified
+Evidence: deployed
 Estimate: 0.10
 
 Request:
@@ -20,3 +20,4 @@ Notes:
 2026-11-11: one-shot on feat/gloss-default (record docs/plans/gloss_default/gloss_default_one_shot.md); verified locally in headless Chrome at 390px, light and dark, Auto matching explicit Gloss and Gloss Dark, plus a live light-to-dark flip. PR open, awaiting review and deployment.
 2026-11-14: Triage 2026-11-11 (docs/feedback/triage/2026-11-11_proposals.txt): PR #174 (6037a9b4) merged 2026-11-11; deployment and acceptance not checked.
 2026-11-14: The request came from a Claude session with no site post; Claude recorded it as thread-20261114191546-399777af so Sources has a site URL.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 0ab50e508d is on audited main and deployed ancestry (live c4205ea43d). Current profile and inline first-paint code map Auto to Gloss/Gloss Dark. Live fresh Chrome starts Gloss. A CDP scheme toggle changed matchMedia.matches but emitted no change event, even to an independent listener; retaining Gloss in that harness is not evidence of an application regression. Full live-system-change acceptance remains unverified. Current next action: Maintainer: with Auto/System selected, change the actual device light/dark setting while the page is open and confirm Gloss follows it; retain an explicit choice to check it stays put. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

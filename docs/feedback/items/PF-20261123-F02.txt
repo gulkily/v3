@@ -3,7 +3,7 @@ Title: Backlog claims: Start claims the picked items and the page shows who hold
 Kind: feature
 Workflow: blocked
 Created: 2026-11-23
-Evidence: locally-verified
+Evidence: deployed
 Estimate: 0.45
 
 Request:
@@ -18,3 +18,4 @@ With a claims thread named in the zenmemes profile, the maintainer ticks two ite
 Notes:
 2026-11-23: staged cycle on feat/backlog_claims (docs/plans/backlog_claims/), the second of three tracked in docs/plans/backlog_checklist.md; concept docs/concepts/work_claim.md. Built: the claim and release lines and their reader, holder lines and Hide claimed on the page and in /backlog.txt, Start claiming in the background, Release, /backlog/claims.txt, ./v3 feedback claim and release, a Claims line in a site-made prompt, and bare claim lines kept out of Unread. Verified locally with reader, page and command tests, and a browser check with real signed posts in every permitted theme at 375 and 1280 px, including two agent sessions with their own keys and the real Quill client. Blocked on: the claims thread being posted on zenmemes.com and named in the profile (the profile names none yet, so claims are off after this deploy), then the two-session test on the live site and the maintainer's own Start from his iPhone.
 2026-11-23: PR https://github.com/gulkily/v3/pull/395 opened.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation da0513f1d3 is on audited main and deployed ancestry (live c4205ea43d). PR #395 is deployed at the live version itself. A read-only GET /backlog/claims.txt returns 404, consistent with no configured claims thread, not proof of the two-session flow. Retained local two-session evidence is not live acceptance. Current next action: Operator: configure the claims thread and perform the recorded phone/two-session Start, hold, release and post-merge-clear acceptance session. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

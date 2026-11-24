@@ -1,9 +1,9 @@
 ID: PF-20261111-B11
 Title: Post stays disabled after Back
 Kind: bug
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-11
-Evidence: unknown
+Evidence: deployed
 
 Request:
 The Post button is still disabled when I use Back to return to a page to compose a new message.
@@ -14,3 +14,4 @@ Sources:
 Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 Possibly covered by the PF-20261030-B03 fix (PR #145, merged 0cc23a5a); kept separate until checked.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 24f6f10ba6 is on audited main and deployed ancestry (live c4205ea43d). The current anonymous-submit pageshow/Back recovery is in the rebased merged implementation; server replay/refusal tests pass. Same phone Back flow as B03, not a separate rebuild. Current next action: Maintainer: during the B03 phone Back check, confirm Post becomes enabled and can send a new draft. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

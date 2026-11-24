@@ -3,7 +3,7 @@ Title: Beside button does not show clearly when it is on
 Kind: feature
 Workflow: blocked
 Created: 2026-11-18
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 "i think we just need a better indicator of when beside button is activated, because i could not tell." The maintainer, after trying open beside on the gallery and Recent pages.
@@ -16,3 +16,4 @@ On the reading-margins ruler, the Beside button looks plainly different when the
 
 Notes:
 2026-11-18: one-shot on feat/beside_toggle_state (record docs/plans/beside_toggle_state/beside_toggle_state_one_shot.md). On is now a filled pill with a check mark and a bold label; off stays outlined. Verified locally in Chrome and Firefox in all 18 themes (tests/browser/open_beside.mjs). Blocked on review, merge and deployment.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 7124875fe4 is on audited main and deployed ancestry (live c4205ea43d). The actual Beside indicator commit is 7124875fe4. f033c6bb56 used the colliding historical ID for Recently released and is not this fix. Current indicator adds filled checked on-state. Fresh live Gallery at 2048px exposes neither the Beside root attribute nor toggle, and a thread click navigates normally. Deployed code is not proof that its feature flag is enabled. Current next action: Operator: enable/configure Open beside if wanted; then an agent can run the wide-screen/toggle/offline acceptance appropriate to this item. No new build is required. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

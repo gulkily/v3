@@ -1,7 +1,7 @@
 ID: PF-20261123-F01
 Title: Backlog page: sort the open items and start work on one or several
 Kind: feature
-Workflow: blocked
+Workflow: done
 Created: 2026-11-23
 Evidence: deployed
 Estimate: 0.60
@@ -22,3 +22,4 @@ Notes:
 2026-11-23: follow-up PR https://github.com/gulkily/v3/pull/379 opened.
 2026-11-23: PR #379 merged and deployed (version cdc8abf4683c). The maintainer started PF-20261104-B18 and PF-20261104-B12 together by hand with that prompt; outcome pending, so still blocked on the Done when start. From his notes while doing it, a second follow-up one-shot (docs/plans/backlog_prompt_access/): the prompt asks for a clone and a pull request instead of patch files, and for a word before building items that do not belong together.
 2026-11-23: follow-up PR https://github.com/gulkily/v3/pull/381 opened.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 7289d86c97 is on audited main and deployed ancestry (live c4205ea43d). The exact two-item Start request is preserved in word97_action_fonts_one_shot.md and its resulting PR #380 exists and is merged. Item notes already record the maintainer phone Start/Copy acceptance. Live text backlog and current feedback CLI tests pass. #381 preserves clone/PR wording. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

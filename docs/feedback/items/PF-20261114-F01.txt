@@ -3,7 +3,7 @@ Title: Client-side preferences page
 Kind: feature
 Workflow: blocked
 Created: 2026-11-14
-Evidence: locally-verified
+Evidence: deployed
 Estimate: 0.15
 
 Request:
@@ -20,3 +20,4 @@ Notes:
 Related, separate outcomes: PF-20261104-F18 (localStorage browser/editor), PF-20261104-F16 (remember expanded sections), PF-20261104-F22 (sign-in debug display).
 2026-11-14: one-shot started on feat/preferences_page (record docs/plans/preferences_page/preferences_page_one_shot.md).
 2026-11-14: implemented on feat/preferences_page: Tools → Preferences (/tools/preferences/). Verified locally (PreferencesPageTest, tests/browser/preferences.mjs, tools_launcher.mjs in four themes). Blocked on review, merge and deployment.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 4e14d687d5 is on audited main and deployed ancestry (live c4205ea43d). The core Preferences page is deployed and its PHP tests pass. A newly available real browser runner repeatedly times out clicking the Beside ruler toggle at preferences.mjs:152 with that feature enabled. This run does not establish that extended setting path; keep the task open rather than claim a completely passing browser flow. Current next action: Agent: replay the Preferences/Beside shared-toggle case with the feature enabled and determine why the toggle is not actionable. This is an agent verification step, not a request for maintainer review. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

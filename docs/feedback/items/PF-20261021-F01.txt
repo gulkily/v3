@@ -3,7 +3,7 @@ Title: Reply focus
 Kind: feature
 Workflow: blocked
 Created: 2026-10-21
-Evidence: locally-verified
+Evidence: deployed
 Estimate: 0.15
 Aliases: 2026-10-21/F01, 2026-10-30/F17
 
@@ -31,3 +31,4 @@ History and 2026-10-23 investigation: docs/plans/production_feedback_register.md
 October 30 summary row F17: Focus the reply field after posting, including after redirect, so a one-line post can be continued immediately. Status there: See PF-20261021-F01 (docs/plans/production_feedback_register.md#pf-20261021-f01); broader reports not freshly verified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)
 Related: PF-20261104-F71 asks for optimistic UI across all posting; kept separate because this item's completion checks are about replies.
 2026-11-14: Triage 2026-11-11 attached 1 source(s): Contrary report (Nov 10): the reply form no longer focuses after writing a reply; "regression? or is it because of image uploads?"
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation b438fe9d91 is on audited main and deployed ancestry (live c4205ea43d). Reply continuation exists, but the item retains a Nov 10 contrary report. Later reply_bare_card fixes card hydration; reply_composer_focus_layout explicitly excludes changing post-send navigation. No fresh physical Safari/Firefox failure/retry replay establishes recovery. Current next action: Agent: reconcile the contrary focus report against the current continuation path in an isolated write replay; then use the retained physical-phone checklist. Do not rebuild the entire feature. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

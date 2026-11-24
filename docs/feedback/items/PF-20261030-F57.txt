@@ -3,7 +3,7 @@ Title: Author and signature in get_thread
 Kind: feature
 Workflow: blocked
 Created: 2026-10-30
-Evidence: locally-verified
+Evidence: deployed
 Aliases: 2026-10-30/F57
 
 Request:
@@ -19,3 +19,4 @@ Status in the October 30 summary: October 30 source reports author still absent;
 Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row F57; that summary is a local snapshot review and its request wording is preserved here.
 
 2026-11-21: Optional include_authors=1 view implemented with display labels and get_post-compatible signed-source identity headers. Indexed source lookup is folded into the thread query; legacy fallbacks remain. Focused route/attribution checks and local HTTP compatibility verified. Review, deployment and production acceptance pending. Cryptographic signature-status reporting remains outside this author-details slice. See docs/plans/thread_author_details/thread_author_details_one_shot.md.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation e15886d032 is on audited main and deployed ancestry (live c4205ea43d). Live include_authors=1 returns Author and Author-Identity-ID; ThreadAuthorDetailsTest passes. Its source-presence test explicitly does not verify cryptographic signatures. The implementation record excludes signature-status reporting. This proves the author slice, not the entire author-and-signature request. Current next action: Maintainer: decide whether the identity headers satisfy the original signature-information request; otherwise scope the missing signature information. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

@@ -1,9 +1,9 @@
 ID: PF-20261111-B17
 Title: Thread links redirect to a trailing slash
 Kind: bug
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-11
-Evidence: unknown
+Evidence: deployed
 
 Request:
 A wget -r stress test showed every /threads/<id> link answered with a 301 to /threads/<id>/.
@@ -15,3 +15,4 @@ Sources:
 Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 Claude found high-traffic mode treated the slashed URL as canonical; PR #115 (merged 15190d19) flips it and needs ./v3 high-traffic enable after deploy.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 15190d196e is on audited main and deployed ancestry (live c4205ea43d). The slashless canonical-route implementation and later 0f7461944 high-traffic refresh correction are on main/live. However this run received HTTP 503 for both forms of thread-20261121093059-ab28d30a; the browser successfully opened a different current thread. That does not establish recovery for this tested route, so no done proposal. Current next action: Agent/operator: investigate or replay the 503 route and then verify slashless 200 plus slash-to-slashless redirect; do not infer success from another thread. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

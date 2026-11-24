@@ -1,9 +1,9 @@
 ID: PF-20261104-F48
 Title: Word97 Like and Flag bevel spacing
 Kind: feature
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-04
-Evidence: unknown
+Evidence: deployed
 
 Request:
 Add padding, especially left/right, and remove the black edge while keeping the 3D appearance — only Like and Flag; Post reply and other buttons look fine.
@@ -16,3 +16,4 @@ Sources:
 Notes:
 Agent reports PR #9 and a swapped-stylesheet headless check. Do not infer deployment or production acceptance.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation f24b38f3ee is on audited main and deployed ancestry (live c4205ea43d). Word97 padding/bevel commit is on main/live; later 7289d86c97 extends typography without undoing the bevel. Current PostActionThemeTest passes. Current next action: Maintainer: include Word97 Like/Flag spacing and pressed bevel in the same phone action-style session as B12. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

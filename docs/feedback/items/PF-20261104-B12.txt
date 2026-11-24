@@ -3,7 +3,7 @@ Title: Word97 action fonts and underlines
 Kind: bug
 Workflow: blocked
 Created: 2026-11-04
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 Like and Flag in Word97 should be sans-serif and not underlined; agent follow-up includes Reply and other post actions.
@@ -21,3 +21,4 @@ Notes:
 Agent reports PR #8 and headless computed-style checks. Merge/deployment/phone acceptance not established here.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
 2026-11-23: triaged as real and partly open. PR #8 (merged 2026-11-03) already covered Reply and every .thread-reaction-button; the More, "…", Post analysis and retraction Details toggles added since were still serif. Added them to the same Word 97 rule. One-shot word97_action_fonts on fix/word97_action_fonts (record docs/plans/word97_action_fonts/word97_action_fonts_one_shot.md); computed-style checked in headless Chrome; awaiting review, deployment and a look on the phone. Not covered: Midnight, which shares Word 97's serif body font, still has serif underlined post actions (not named by this item).
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 7289d86c97 is on audited main and deployed ancestry (live c4205ea43d). PostActionThemeTest passes the expanded Word97 summary selectors; live Like/Flag compute to Tahoma with no underline. This run cannot authenticate as the reporter to expose every author/operator-only toggle. Current next action: Maintainer: on the phone in Word97, open a post you own and check Reply, Like, Flag, More, …, analysis and retraction Details typography. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

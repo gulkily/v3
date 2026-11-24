@@ -1,9 +1,9 @@
 ID: PF-20261104-F05
 Title: Console color selector
 Kind: feature
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-04
-Evidence: unknown
+Evidence: deployed
 
 Request:
 Make the LCD-style color selector available on Console, with appropriate colors.
@@ -15,3 +15,4 @@ Sources:
 Notes:
 Reply reports “done in 8b72318a”; retain as reported implementation only. No local or production verification here; new item still untriaged/unknown.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 8b72318afd is on audited main and deployed ancestry (live c4205ea43d). Console palette selector shipped before this intake; later selector work retains its phosphor palettes. This is not an unstarted theme-control build. Current next action: Maintainer: try the Console palette selector on the phone and judge the offered colors/readability. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

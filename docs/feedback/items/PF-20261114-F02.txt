@@ -3,7 +3,7 @@ Title: Gallery zoom
 Kind: feature
 Workflow: blocked
 Created: 2026-11-14
-Evidence: locally-verified
+Evidence: deployed
 Estimate: 0.12
 
 Request:
@@ -21,3 +21,4 @@ Related: PF-20261105-F01 (the Gallery page itself); PF-20261030-F20 (browser zoo
 2026-11-14: follow-up one-shot feat/gallery_compact_captions (docs/plans/gallery_compact_captions/gallery_compact_captions_one_shot.md): captions hide when zoomed below 0.7. Verified locally; blocked on review, merge and deployment.
 2026-11-14: bug fix one-shot fix/gallery_zoom_buttons_in_view (docs/plans/gallery_zoom_buttons_in_view/gallery_zoom_buttons_in_view_one_shot.md): Smaller / Larger keep the buttons on screen. Verified locally; blocked on review, merge and deployment.
 2026-11-14: follow-up one-shot feat/gallery_caption_zoom (docs/plans/gallery_caption_zoom/gallery_caption_zoom_one_shot.md): caption text scales with the zoom. Verified locally; blocked on review, merge and deployment.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation babec93bb8 is on audited main and deployed ancestry (live c4205ea43d). Gallery zoom and all three later caption/scroll corrections are on main/live. The pinch requirement needs actual touch acceptance, not just the existence of Smaller/Larger. Current next action: Maintainer: pinch Gallery tiles on the phone, reload, then reset Gallery size in Preferences. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

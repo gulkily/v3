@@ -1,9 +1,9 @@
 ID: PF-20261111-F18
 Title: Friendly 404 page
 Kind: feature
-Workflow: untriaged
+Workflow: done
 Created: 2026-11-11
-Evidence: unknown
+Evidence: deployed
 
 Request:
 This is not a friendly message for a 404: "Not Found. The requested route does not exist in the local test slice."
@@ -14,3 +14,4 @@ Sources:
 Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 PR #36 (merged a0fa5b9b) rewrites the 404 and 405 pages and adds recent threads and a report link; not verified here.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation a0fa5b9b10 is on audited main and deployed ancestry (live c4205ea43d). Live unknown-route browser page says there is no page at this address, offers recovery and recent threads, and omits local test slice wording. Current core-route smoke passes. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

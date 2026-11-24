@@ -1,9 +1,9 @@
 ID: PF-20261117-F02
 Title: Offer known public instances as import sources
 Kind: feature
-Workflow: blocked
+Workflow: done
 Created: 2026-11-17
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 we should also offer some existing instance choices. Only list zenmemes.com for now, but anticipate adding more; an instance should hide its own address (generally for localhost); the list ships with the code for now.
@@ -16,3 +16,4 @@ Tools → Import and the local start page offer zenmemes.com from a shipped list
 
 Notes:
 2026-11-17: one-shot on feat/known_instances (record docs/plans/known_instances/known_instances_one_shot.md); verified locally; awaiting PR review.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation c9c2dde239 is on audited main and deployed ancestry (live c4205ea43d). KnownInstancesTest passes named-host resolution, expandable block list and self exclusion. Current shipped resources/known_instances.txt lists ZenMemes; both import entry points use KnownInstances. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

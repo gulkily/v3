@@ -1,9 +1,9 @@
 ID: PF-20261103-F01
 Title: Retitle thread by reply; visible likes and flags
 Kind: feature
-Workflow: blocked
+Workflow: done
 Created: 2026-11-03
-Evidence: locally-verified
+Evidence: deployed
 Estimate: 0.80
 
 Request:
@@ -23,3 +23,4 @@ Estimate 0.80 is the source-informed Step 1 projection for Option B (docs/plans/
 Implementation: docs/plans/reply_title_directive/reply_title_directive_step4_implementation_summary.md
 History: docs/plans/production_feedback_register.md#pf-20261103-f01
 2026-11-04 catch-up: merge and push are recorded in the implementation summary, with merged-tree checks. Remove merge from the outstanding next action. Deployment and the maintainer's production retry remain unverified; retain blocked and locally-verified. Continue with deploy/production verification only within existing authorization. Commit: 48ab2906 (merged-tree verification); plan records merge 699ebd26. Evidence: docs/plans/reply_title_directive/reply_title_directive_step4_implementation_summary.md#merge-verification--2026-11-03t193724z. Proposal: docs/feedback/triage/2026-11-04_proposals.txt
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation f87b302b73 is on audited main and deployed ancestry (live c4205ea43d). Title directive authorization, retitle propagation, withdrawal and downstream consumers pass LocalWriteServiceTitleDirectiveTest, ReadModelThreadTitleRebuildTest and ThreadTitleWithdrawalAndConsumersTest. Later consumer/withdrawal checks are retained, rather than relying on the original merge alone. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

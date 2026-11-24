@@ -3,7 +3,7 @@ Title: Apply Word97 repairs to Chicago
 Kind: feature
 Workflow: blocked
 Created: 2026-11-04
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 Apply the same fixes made for Word97 to Chicago.
@@ -15,3 +15,4 @@ Notes:
 Exact repair set requires scope confirmation; do not assume every Word97 change transfers.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
 2026-11-04: Implemented the two referenced Word97 post-action repairs for Chicago on fix/chicago-post-actions. The actual thread route passed the all-theme phone/desktop style matrix, including Chicago typography, padding and raised/pressed bevels; representative Chicago screenshots were inspected. Review/deployment and Linux signed-save acceptance remain pending.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation defa308f47 is on audited main and deployed ancestry (live c4205ea43d). Canonical Chicago post-action repair is on main/live; 1132defd6b is remote-only broader styling, not evidence to substitute for this scope. Live Like/Flag use Chicago UI font, no underline; PostActionThemeTest passes. Current next action: Maintainer: check the repaired Chicago post-action controls and a signed save on Linux, as retained in this item. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

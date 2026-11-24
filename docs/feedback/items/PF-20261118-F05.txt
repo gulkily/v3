@@ -3,7 +3,7 @@ Title: Post file links open in small themed windows
 Kind: feature
 Workflow: blocked
 Created: 2026-11-18
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 for this dialog, it would be amazing to have adorable little popup windows for the file contents (which have a link to raw file). adjust level of adorable for theme
@@ -16,3 +16,4 @@ On a post's details page, Source, Commit, Signature and Public key open their te
 
 Notes:
 2026-11-18: one-shot on feat/post_file_windows (record docs/plans/post_file_windows/post_file_windows_one_shot.md); verified locally in headless Chrome; awaiting review and deployment.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation fd361ad060 is on audited main and deployed ancestry (live c4205ea43d). Current post details have file-window data hooks and file_windows.js preserves modified/raw/no-JS links. The live root thread used for font inspection did not expose these post-details links, so that observation is not claimed as a pass. Current next action: Maintainer: open a post details page and try Source, Commit, Signature and Public key; judge the small themed windows and follow Raw. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

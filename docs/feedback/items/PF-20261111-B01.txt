@@ -1,9 +1,9 @@
 ID: PF-20261111-B01
 Title: Compose menu cut off near viewport top
 Kind: bug
-Workflow: untriaged
+Workflow: done
 Created: 2026-11-11
-Evidence: unknown
+Evidence: deployed
 
 Request:
 The ... menu in the compose form gets cut off when the form is displayed near the top of the viewport (screenshot).
@@ -14,3 +14,4 @@ Sources:
 Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 A 2026-11-09 agent reply (reply-20261109180752-2b6da3a09adc1c354370015832280e84) says PR #103 makes the menu open downward when there is no room above; not verified here.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 09a94e8437 is on audited main and deployed ancestry (live c4205ea43d). Current compose menu placement uses available space and downward opening at the viewport top. Later settings move to Options removes those entries from the menu without removing placement recovery. Live shared composer remains usable. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

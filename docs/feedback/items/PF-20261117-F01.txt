@@ -3,7 +3,7 @@ Title: Useful local first page and browser import
 Kind: feature
 Workflow: blocked
 Created: 2026-11-17
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 After git clone and ./v3 start, the first browser page should offer something useful to explore and a 1–3-click path to import production content. Build an MVP.
@@ -21,3 +21,4 @@ Notes:
 2026-11-17: Distinct intake after a concurrent ID collision: the unmerged local-start branch used PF-20261116-F01, which main independently assigned to import cancellation. Main retains its cancellation item unchanged. Earlier local-start text and commit trailers remain in PR #284 Git history; this intake identifies the local-start outcome going forward. Integration repair: docs/plans/local_start_import_pr_fix/local_start_import_pr_fix_one_shot.md.
 2026-11-17: PR #284 integrated with origin/main 936c6357. Both importer interfaces, resume/retry and tour checks passed; smoke 522/526 with all four failures reproduced unchanged on current main. Fresh-start browser check passed. Review, merge and production acceptance remain pending; full suite not run.
 2026-11-22: PR #284 is merged. The import card's progress display is tracked separately as PF-20261122-F01 (PR #357). Maintainer acceptance of the start page itself is not recorded here.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 817332dadb is on audited main and deployed ancestry (live c4205ea43d). Local page/import shipped in #284 and later worker/progress integration. Existing local browser recovery record and current import-progress tests support the implementation, not the maintainer environment. No new site import was run. Current next action: Maintainer: launch the fetched code on your own machine, explore the local page, and open imported threads through ordinary navigation. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

@@ -1,9 +1,9 @@
 ID: PF-20261104-F14
 Title: Agent retraction recipe and readback
 Kind: feature
-Workflow: untriaged
+Workflow: done
 Created: 2026-11-04
-Evidence: unknown
+Evidence: deployed
 
 Request:
 Agent first-hand retraction worked but requests a short llms.txt example, an explanation of cleanup_status pending and whether any author action remains, plus explicit Retracted headers in get_thread/get_post.
@@ -15,3 +15,4 @@ Sources:
 Notes:
 Reply reports these shipped November 2. Retain reported evidence without declaring verification or closure. Follow docs/plans/retraction_simplification_handoff.md; no revival of sweep diagnostics.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 63dd2d4182 is on audited main and deployed ancestry (live c4205ea43d). Live llms.txt has prepare/create retraction recipe, exact retry, cleanup_status pending explanation and get_post Retracted confirmation. Current get_thread output includes Retracted. Later simplification/Target-ID changes preserve the recipe and durable-record behavior. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

@@ -3,7 +3,7 @@ Title: Local start page reports the last import and offers one re-import
 Kind: feature
 Workflow: blocked
 Created: 2026-11-22
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 "I think maybe update the local dev page after this is done? At some point we probably want to do a reimport until sync is available, but it doesn't make sense to just have the same form again with no recorded status?" The maintainer then approved the idea that the card should change from "do an import" to "here is the state of our copy".
@@ -17,3 +17,4 @@ On a copy that has imported, the local start page's card states where the conten
 Notes:
 2026-11-22: staged cycle on feat/local_import_status (docs/plans/local_import_status/). Verified locally on a copy holding a real zenmemes.com import: after a page import made by the earlier code, a terminal import, Check for new content and a failed re-import. Not in this cycle: the board as the home page after an import, automatic re-import, import history. Blocked on review, merge and the maintainer's own run.
 2026-11-22: PR https://github.com/gulkily/v3/pull/370 opened.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 3d8aa7a770 is on audited main and deployed ancestry (live c4205ea43d). PR #370 and current local status/re-import card are on main/live. Earlier progress work alone was not taken as proof of this follow-up. Current next action: Maintainer: on your existing local copy, check source/age/counts and run its one re-import action. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

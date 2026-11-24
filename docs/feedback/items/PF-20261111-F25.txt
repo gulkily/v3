@@ -1,9 +1,9 @@
 ID: PF-20261111-F25
 Title: More color variants for the glass theme
 Kind: feature
-Workflow: untriaged
+Workflow: done
 Created: 2026-11-11
-Evidence: unknown
+Evidence: deployed
 
 Request:
 More different vibe color schemes for the glass theme would be nice.
@@ -15,3 +15,4 @@ Sources:
 Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 "glass" as written; probably Gloss.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 0f35274fbd is on audited main and deployed ancestry (live c4205ea43d). 0f35274fb adds Violet, Blue, Teal and Rose palettes to Gloss and Gloss Dark, with persistence and independent LCD choices. ThemeRegistryTest and theme_cycle.cjs pass freshly. Later theme-menu layout preserves the palette menu. This supplies the requested extra glass/Gloss color variants. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.
