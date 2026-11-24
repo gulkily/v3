@@ -31,3 +31,24 @@ Dependency delta so far: zero. No package, manifest or lock is added; the sender
 - Estimate details: original scope as in Step 3; no revisions; driver was the DER handling.
 
 *— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - VAPID key and sender
+
+**Original estimate: 0.10**
+**Retrospective: 0.10**
+
+- Changes:
+  - `PushStorageConfig`: `state/private/push.sqlite3` (or `PUSH_DATABASE_PATH`) and `push_vapid.pem` beside it.
+  - `PushVapidKeys`: makes the key pair on first use under a file lock, writes it 0600 through a temporary file, and gives the raw public key.
+  - `PushSubscription` (endpoint plus the two browser keys, checked), `PushEndpointPolicy` (https on the Apple, Google, Mozilla and Microsoft push hosts only), `PushSendResult` (sent, gone for 404 and 410, refused with a short reason such as Apple's `BadJwtToken`).
+  - `PushSender::send()`: token for the endpoint's origin, valid 12 hours; `TTL` 24 hours; `Urgency`; payload capped at 3000 bytes of JSON.
+  - `tests/PushSenderTest.php`, listed in `tests/run.php`.
+- Verification:
+  - Passed: `./v3 test PushSenderTest WebPushCryptoTest`, 10 of 10. The request's token verifies with the site key and names the right audience; the body decrypts as a browser would; unknown hosts, plain http, look-alike hosts, credentials in the URL and bare addresses are refused without a request; the key survives a reload with mode 0600.
+  - Passed: the stream transport posted to a local `php -S` server and read its 410 and body.
+- Notes:
+  - Deviation from Step 2's inventory: the plan named `curl`, but no code under `src/` uses `curl`. The sender follows `PublicKeyPublishDestination`'s PHP stream request instead (TLS verified, no redirects), so the host needs no `curl` extension.
+  - The local stub stands in for a push service; Apple itself is checked only in Stage 5's iPhone replay.
+- Estimate details: original scope as in Step 3; no revisions.
+
+*— Claude · 2026-11-24 UTC · Model: claude-opus-5-5*
