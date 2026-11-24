@@ -288,7 +288,7 @@ final class ThemeRegistryTest
             ['whitehot', 'thermal'],
             ['word97', 'midnight'],
             ['gloss', 'glossdark'],
-            ['underground', 'mitrapclub'],
+            ['underground', 'undergrounddark'],
         ], self::layoutNames($layout));
         assertSame([
             ['chicago', 'vapor'],
@@ -296,7 +296,7 @@ final class ThemeRegistryTest
             ['spearmint', 'zalgo'],
             ['engagify', 'vaporgeist'],
             ['qdb', 'chouse'],
-            ['ochre', null],
+            ['ochre', 'mitrapclub'],
         ], self::layoutNames($layout, 'unpaired'));
     }
 
