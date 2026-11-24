@@ -22,7 +22,7 @@ The page, the sorts, the filters, Start with a short prompt, and the agent inter
 - [x] Tools entry with an icon in every icon set
 - [x] Works with scripts off; no sideways overflow at 375 and 1280 px in every theme
 - [x] Feedback item allocated; concept entries written
-- [ ] One real start by a fresh agent on a thin item. The item first proposed, PF-20261111-B02 (favicon), was built in the meantime (PR #378). The maintainer started PF-20261104-B18 and PF-20261104-B12 together by hand on 2026-11-23 with the prompt as deployed in #379; outcome pending.
+- [x] One real start by a fresh agent on thin items. The item first proposed, PF-20261111-B02 (favicon), was built in the meantime (PR #378). The maintainer started PF-20261104-B18 and PF-20261104-B12 together by hand on 2026-11-23 with the prompt as deployed in #379; the agent chose one-shot, built both as cycle `word97_action_fonts` and opened PR #380, which he merged the same day. That is the start PF-20261123-F01's Done when asks for; whether F01 is now done is his call, so the item is not changed here.
 - [x] PR opened: https://github.com/gulkily/v3/pull/377 (2026-11-23)
 - [x] Merged (#377, 2026-11-23) and deployed with the flag on
 - [x] Maintainer tried it on desktop and iPhone: sorts, Start and Copy work (2026-11-23)
@@ -39,24 +39,32 @@ The page, the sorts, the filters, Start with a short prompt, and the agent inter
   - [x] A prompt for several items asks the agent to say so first when they do not belong in one pull request
   - [x] `backlog_to_pr.md`: access first (§1), grouping check (§4)
   - [x] PR opened: https://github.com/gulkily/v3/pull/381 (2026-11-23)
-  - [ ] Merged and deployed
+  - [x] Merged (#381), 2026-11-23
   - [ ] Asked, not answered: the same access line in the thread to pull request prompt
 - Seen live, no change asked: the five lines of link rows at 375 px, Salient not putting ready items first, Effort and Impact sorting one way. Also seen, 2026-11-23: `/backlog/start.txt` is served with a two-day `Cache-Control: max-age`, so a browser can show a prompt from before a deploy.
 
-## Cycle 2 — `backlog_claims` (staged; rough estimate 0.40)
+## Cycle 2 — `backlog_claims` (staged; estimate 0.45, first rough figure 0.40)
 
-Start claims the items, so the page and other agents see who holds them.
+Start claims the items, so the page and other agents see who holds them. Plans: [Step 1](./backlog_claims/backlog_claims_step1_solution_assessment.md), [Step 2](./backlog_claims/backlog_claims_step2_feature_description.md), [Step 3](./backlog_claims/backlog_claims_step3_development_plan.md), [Step 4](./backlog_claims/backlog_claims_step4_implementation_summary.md). Concept: [work claim](../concepts/work_claim.md). Feedback: PF-20261123-F02.
 
-- [ ] Step 1: where a claim lives. Our lean: a `claim:` line in a signed post, as pledges use `pledge:` lines. Compare with a mark on the item's cited post and with a new signed record. The `claimed` reply state that `#issue` threads already offer (`docs/reference/agent_api.md`, Reply resolution) is the existing form of a mark on the cited post; compare it by name.
-- [ ] Decide when a claim ends: released by hand, ended by the item closing, stale after a set time
-- [ ] Decide what a guest's unsigned claim counts for
-- [ ] Steps 2 and 3 approved
-- [ ] Start on the page claims the picked items
-- [ ] The page and `/backlog.txt` show the holder; a "Hide claimed" filter
-- [ ] Agents claim and release: an address, `./v3 feedback claim`, and a step in `backlog_to_pr.md`
-- [ ] Two-session test: the second session sees the claim and stops
-- [ ] PR opened, merged, deployed
+- [x] Step 1: where a claim lives. Chosen: a `claim:` line in a signed reply in one claims thread (Option A), over a mark on the item's cited post and a new signed record. (2026-11-23)
+- [x] When a claim ends: a release by its author or an operator, a retraction, or the item becoming blocked or closed; stale after 3 days as a label
+- [x] A guest's unsigned claim: shown, never counted; a claim from an unapproved key waits for approval
+- [x] Steps 2 and 3 approved (2026-11-23)
+- [x] Start on the page claims the picked items, in the background, only after pressing Start
+- [x] The page and `/backlog.txt` show the holder; a "Hide claimed" filter (`claimed=hide`)
+- [x] Release from a row, for the holder and operators
+- [x] Agents claim and release: `/backlog/claims.txt`, `./v3 feedback claim` and `release`, a `Claims:` line in a site-made prompt, and §2 of `backlog_to_pr.md`
+- [x] Bare claim and release replies stay out of Unread
+- [x] Two-session test on a local site, with two keys and the real Quill client: the second session is told who holds the item and posts nothing
+- [x] PR opened: https://github.com/gulkily/v3/pull/395 (2026-11-23)
+- [ ] The maintainer posts a thread titled "Backlog claims" on zenmemes.com and gives its ID; a one-line follow-up puts it in the zenmemes profile (`backlogClaimsThread`). Until then claims are off and the site behaves as before.
+- [ ] Merged, deployed, thread named
+- [ ] Two-session test against zenmemes.com
+- [ ] The live `Cache-Control` on `/backlog.txt` and `/backlog/start.txt` checked after deploy (the two-day header came from the host, not the repository)
+- [ ] Maintainer's own Start from his iPhone, with and without a stored key
 - [ ] Maintainer accepts
+- Seen while building, no change made: "Hide claimed" puts the link rows on a sixth line at 375 px; a browser key with no chosen name is labelled "guest", close to the wording for a claim with no name; Recent still lists every claim.
 
 ## Cycle 3 — `backlog_parked` (one-shot unless it grows; rough estimate 0.15)
 
@@ -88,5 +96,8 @@ The plans in `docs/plans/backlog/` as their own list.
 - Several picked items become one cycle. (2026-11-23)
 - The prompt asks for a clone and a pull request, never patch files; an agent without access stops and says what to connect. (2026-11-23)
 - An agent given several items says so before building when they do not belong in one pull request. (2026-11-23)
+- A claim is a `claim:` line in a signed reply in the site's claims thread, read when the backlog is shown; nothing else is stored. (2026-11-23)
+- Start warns about a held item and never refuses. Only approved keys' claims count; guest claims are shown. (2026-11-23)
+- A site with no claims thread named behaves exactly as before claims existed. (2026-11-23)
 - Start means prompt plus claim; the claim arrives in cycle 2. (2026-11-23)
 - Parked plans are shown separately. (2026-11-23)

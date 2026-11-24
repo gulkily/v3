@@ -74,8 +74,10 @@ final class BacklogPrompt
 
     /**
      * @param list<FeedbackItem> $items open items to start; at least one
+     * @param string|null $claimsAddress where a site with a claims thread answers who holds these items;
+     *     null in a checkout and on a site with no claims thread, which adds no line
      */
-    public static function build(array $items, string $mode, ?string $repositoryUrl): string
+    public static function build(array $items, string $mode, ?string $repositoryUrl, ?string $claimsAddress = null): string
     {
         $count = count($items);
         $mode = self::mode($mode);
@@ -86,8 +88,12 @@ final class BacklogPrompt
             default => 'one Railspike cycle, one-shot or staged as AGENTS.md says',
         };
         $lines = ['Please work on ' . $what . ' as ' . $cycle . '.', ''];
-        if ($repositoryUrl !== null) {
-            array_push($lines, 'Repository: ' . $repositoryUrl, '');
+        $where = [
+            ...($repositoryUrl !== null ? ['Repository: ' . $repositoryUrl] : []),
+            ...($claimsAddress !== null ? ['Claims: ' . $claimsAddress] : []),
+        ];
+        if ($where !== []) {
+            array_push($lines, ...$where, ...['']);
         }
         // Above "Read first": reading the named files already needs the clone.
         array_push($lines, self::ACCESS, '');

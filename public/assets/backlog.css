@@ -66,6 +66,44 @@
   column-gap: 0.6rem;
 }
 
+/* The Claim button under the picked items on the start page, and Release beside a holder line. */
+.backlog-claim-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  margin-top: 0.6rem;
+}
+
+/* The forms need a signing script: without scripting they would post a reply with no name.
+   site.css hides .requires-script too; this repeats it because the display above comes later. */
+@media (scripting: none) {
+  .backlog-claim-form {
+    display: none;
+  }
+}
+
+.backlog-claim-form > button {
+  width: auto;
+  margin: 0;
+}
+
+.backlog-release {
+  width: auto;
+  margin: 0 0 0 0.35rem;
+  padding: 0.1rem 0.6rem;
+  font-size: inherit;
+}
+
+/* Who holds the item: a third line under the details, beside the checkbox column. */
+.backlog-row__claim {
+  overflow-wrap: anywhere;
+}
+
+.backlog-form .backlog-row__claim {
+  grid-column: 2;
+}
+
 .backlog-row__pick {
   grid-row: 1 / span 2;
   width: 1.25rem;
