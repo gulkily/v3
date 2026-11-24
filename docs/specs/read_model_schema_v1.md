@@ -20,6 +20,9 @@ behind this layer.
 
 ## Schema-change contract
 
+Version 57 adds nullable `threads.event_end_time` from the root's `Event-End-Time`;
+prior-version startup rebuild is required.
+
 Version 56 adds `posts.ported_from`, `ported_author`, `ported_created_at` and
 `ported_by`, from a ported post's `Ported-*` headers ([ported thread](../concepts/ported_thread.md));
 prior-version startup rebuild is required.
@@ -189,6 +192,7 @@ One row per thread (keyed by its root post).
 | `event_end_date` | TEXT NULL | root `Event-End-Date`, the inclusive last day; null for a one-day event (schema 49) |
 | `event_time` | TEXT NULL | root `Event-Time`, `HH:MM` |
 | `event_when` | TEXT NULL | root `Event-When`, the poster's own words for when the event happens; null without the header or when the root is retracted (schema 54) |
+| `event_end_time` | TEXT NULL | root `Event-End-Time` in HH:MM; null without the header or when the root is retracted (schema 57) |
 | `event_location` | TEXT NULL | root `Event-Location` |
 | `event_link` | TEXT NULL | root `Event-Link` |
 | `retracted_at` | TEXT NULL | root retraction timestamp |
@@ -781,3 +785,10 @@ A post's state comes from its reactions in an exclusive group of
 wins, ordered by Action-At, then Created-At and record ID; `open` stores null.
 The full rebuild and every incremental post-reaction update (writes and approval
 changes) fill them. Normal startup rebuilds version 54 and older models.
+
+## Version 57 — Event end time
+
+Both rebuilds and incremental writes project the root's optional `Event-End-Time`
+into `threads.event_end_time`. A retracted root clears this column with the other
+event fields. Reply corrections are resolved on read. Startup rebuilds version 56
+and older models before querying the new column.

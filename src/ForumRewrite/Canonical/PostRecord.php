@@ -47,6 +47,8 @@ final class PostRecord
         public readonly ?string $eventWhen = null,
         /** Set when the post was copied from another site (Ported-* headers). */
         public readonly ?PortedSource $ported = null,
+        /** When a timed event ends, 24-hour `HH:MM`; requires a start time. At or before the start means the next day. */
+        public readonly ?string $eventEndTime = null,
     ) {
     }
 

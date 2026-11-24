@@ -19,7 +19,7 @@ final class ArchiveRecordCatalog
             || $relativePath === 'records/instance/feature-flags.txt'
             || $relativePath === 'records/instance/tagsets.txt'
             || preg_match('#^records/posts/(?:\d{4}/\d{2}/\d{2}/)?[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
-            || preg_match('#^records/(?:key-retirements|key-retirement-acceptances)/openpgp-[a-f0-9]{40}\.txt$#D', $relativePath) === 1
+            || preg_match('#^records/(?:key-retirements|key-retirement-acceptances|private-access-confirmations|private-access-confirmation-acceptances)/openpgp-[a-f0-9]{40}\.txt$#D', $relativePath) === 1
             || preg_match('#^records/approval-acceptances/[A-Za-z0-9][A-Za-z0-9._-]*\.(?:txt|json)$#', $relativePath) === 1
             || preg_match('#^records/post-removals/[A-Za-z0-9][A-Za-z0-9._-]*\.txt$#', $relativePath) === 1
             || preg_match('#^records/post-timestamps/[A-Za-z0-9][A-Za-z0-9._-]*\.json$#', $relativePath) === 1
@@ -57,6 +57,8 @@ final class ArchiveRecordCatalog
         return match ($family) {
             'key-retirements' => 'key-retirement:' . $name,
             'key-retirement-acceptances' => 'key-retirement-acceptance:' . $name,
+            'private-access-confirmations' => 'private-access-confirmation:' . $name,
+            'private-access-confirmation-acceptances' => 'private-access-confirmation-acceptance:' . $name,
             'posts' => 'post:' . $name,
             'post-removals' => 'post-removal:' . $name,
             'post-retraction-acceptances' => 'post-retraction-acceptance:' . $name,
@@ -93,7 +95,11 @@ final class ArchiveRecordCatalog
                 $record = \ForumRewrite\Security\KeyRetirement::parse((string) file_get_contents($repositoryRoot . '/' . $relativePath));
                 return 'key-retirement:' . str_replace(':', '-', $record['Target-Identity-ID']);
             }
-            if (str_starts_with($relativePath, 'records/key-retirement-acceptances/')) {
+            if (str_starts_with($relativePath, 'records/private-access-confirmations/')) {
+                $record = \ForumRewrite\Security\PrivateAccessConfirmation::parse((string) file_get_contents($repositoryRoot . '/' . $relativePath));
+                return 'private-access-confirmation:' . str_replace(':', '-', $record['Target-Identity-ID']);
+            }
+            if (str_starts_with($relativePath, 'records/key-retirement-acceptances/') || str_starts_with($relativePath, 'records/private-access-confirmation-acceptances/')) {
                 (new \ForumRewrite\Canonical\GenericTextRecordParser())->parse((string) file_get_contents($repositoryRoot . '/' . $relativePath));
                 return self::pathIdentityKey($relativePath);
             }

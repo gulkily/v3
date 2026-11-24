@@ -15,7 +15,9 @@
     } else if (kind === 'event') {
       var date = value(form, 'event_date');
       var endDate = value(form, 'event_end_date');
-      parts = [date !== '' && endDate !== '' ? date + ' \u2013 ' + endDate : date, value(form, 'event_time'), value(form, 'event_location')];
+      var time = value(form, 'event_time');
+      var endTime = value(form, 'event_end_time');
+      parts = [date !== '' && endDate !== '' ? date + ' \u2013 ' + endDate : date, time !== '' && endTime !== '' ? time + '\u2013' + endTime : time, value(form, 'event_location')];
     } else if (kind === 'photo') {
       parts = Array.prototype.map.call(form.querySelectorAll('[data-photo-detail]:checked'), function (box) { return box.getAttribute('data-label'); });
     } else if (kind === 'options') {

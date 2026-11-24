@@ -299,7 +299,7 @@ final class ContentImportPlanner
                 return [...$entry, 'state' => 'invalid', 'reason' => self::reason($error)];
             }
         }
-        if (preg_match('#^records/(instance|approval-seeds|approval-acceptances|key-retirements|key-retirement-acceptances|feature-flag-changes|operator-grants|attribution-cutoffs|private-messages|invitations)/#', $path)) {
+        if (preg_match('#^records/(instance|approval-seeds|approval-acceptances|key-retirements|key-retirement-acceptances|private-access-confirmations|private-access-confirmation-acceptances|feature-flag-changes|operator-grants|attribution-cutoffs|private-messages|invitations)/#', $path)) {
             return [...$entry, 'state' => 'excluded', 'reason' => 'Instance authority, settings, or private data'];
         }
         if (!ArchiveRecordCatalog::isRecordPath($path)) {

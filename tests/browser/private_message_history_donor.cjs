@@ -7,7 +7,8 @@ vm.runInThisContext(fs.readFileSync('public/assets/openpgp.min.js','utf8'));
  const [donor,target,sender]=await Promise.all(['donor','target','sender'].map(gen));
  const envelope=await openpgp.encrypt({message:await openpgp.createMessage({text:'private historical text'}),encryptionKeys:await openpgp.readKey({armoredKey:donor.publicKey}),signingKeys:await openpgp.readPrivateKey({armoredKey:sender.privateKey}),format:'armored'});
  const values={forum_pki_username:'alice',forum_pki_public_key:donor.publicKey,forum_pki_private_key:donor.privateKey};
- let storageWrites=0;global.localStorage={getItem:k=>values[k]||'',setItem:()=>storageWrites++};
+ // Only the shared pacing record (timestamps) may be written; no plaintext, key or cache.
+ let storageWrites=0;global.localStorage={getItem:k=>values[k]||'',setItem:(k,v)=>{if(k.startsWith('forum_history_pacing:alice:') && /^\{"retryAt":\d+,"log":\[[\d,]*\]\}$/.test(v)){values[k]=v;return;}storageWrites++;}};
  const events={};global.CustomEvent=class {constructor(type,options){this.type=type;this.detail=options.detail;}};
  global.document={hidden:false,querySelector:()=>({dataset:{viewer:'alice'}}),addEventListener:(name,fn)=>{events[name]=fn},dispatchEvent:()=>{}};
  global.window={localStorage,addEventListener:()=>{},__forumBrowserIdentity:{ensureOpenPgpApi:async()=>openpgp}};

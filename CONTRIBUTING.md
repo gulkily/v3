@@ -107,6 +107,13 @@ keep top-level help current, and follow existing subcommand meanings: `cron`
 prints installation instructions; `run` executes the scheduled worker. Verify
 help, output modes and required next steps in the relevant implementation plan.
 
+`./v3` instance arguments accept known names, bare hostnames (HTTPS by default)
+and explicit HTTP(S) URLs through `InstanceSourceResolver`; use an explicit
+`http://` URL for HTTP. Show the resolved repository path when a command reads
+or changes canonical records. In the implementation record, name the comparable
+command and explain intentional differences. Verify its real usage examples and
+the reported checkout and data source before handoff.
+
 ## Private runtime configuration
 
 Register new private-config/environment settings in `PrivateConfigSchema`, with

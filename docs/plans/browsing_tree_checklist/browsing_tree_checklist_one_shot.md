@@ -7,7 +7,7 @@ Extended estimates: enabled (no alternatives or stages, so only the cycle estima
 
 **Cycle estimate: 0.03**
 
-Status: checklist written and committed; PR pending. Not merged.
+Status: complete. Merged to `main` in [PR #265](https://github.com/gulkily/v3/pull/265).
 Debug report: [log](browsing_tree_checklist_debug_log.md)
 
 ## Original request
@@ -74,7 +74,7 @@ The checklist lists the three cycles in order with estimates, status, decisions 
 
 The diff adds no duplicate checklist; the read-model and board search checklists cover other stories. No concept inventory edits.
 
-Commit/merge status: completion commit pending at the time of writing; see the PR.
+Commit/merge status: planning `04b2d8c`, completion `0e105d6`, merged in PR #265.
 
 ## Study history
 

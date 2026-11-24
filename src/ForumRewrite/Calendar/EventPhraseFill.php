@@ -7,7 +7,7 @@ namespace ForumRewrite\Calendar;
 /**
  * What Fill puts into the composer's Event fields for a phrase. The built-in reader goes
  * first; a phrase it cannot read goes to the fallback (the LLM) when there is one. A
- * fixed Date (the calendar day page) is never changed: only Until and Time are filled,
+ * fixed Date (the calendar day page) is never changed: only Until, Time and Ends are filled,
  * and only when they fit that day. An unread phrase leaves every field as it was.
  */
 final class EventPhraseFill
@@ -20,8 +20,8 @@ final class EventPhraseFill
     }
 
     /**
-     * @param array{event_date?:string, event_end_date?:string, event_time?:string} $fields
-     * @return array{fields: array{event_date:string, event_end_date:string, event_time:string}, status:string, filled:bool}
+     * @param array{event_date?:string, event_end_date?:string, event_time?:string, event_end_time?:string} $fields
+     * @return array{fields: array{event_date:string, event_end_date:string, event_time:string, event_end_time:string}, status:string, filled:bool}
      */
     public function fill(string $phrase, string $today, array $fields, bool $dateFixed): array
     {
@@ -29,6 +29,7 @@ final class EventPhraseFill
             'event_date' => (string) ($fields['event_date'] ?? ''),
             'event_end_date' => (string) ($fields['event_end_date'] ?? ''),
             'event_time' => (string) ($fields['event_time'] ?? ''),
+            'event_end_time' => (string) ($fields['event_end_time'] ?? ''),
         ];
         $reading = $this->reader->read($phrase, $today);
         if (!$reading->isRead() && $this->fallback !== null && $reading->reason === EventPhraseReader::UNREAD_DATE) {
@@ -42,8 +43,8 @@ final class EventPhraseFill
     }
 
     /**
-     * @param array{event_date:string, event_end_date:string, event_time:string} $current
-     * @return array{fields: array{event_date:string, event_end_date:string, event_time:string}, status:string, filled:bool}
+     * @param array{event_date:string, event_end_date:string, event_time:string, event_end_time:string} $current
+     * @return array{fields: array{event_date:string, event_end_date:string, event_time:string, event_end_time:string}, status:string, filled:bool}
      */
     public function apply(EventPhraseReading $reading, array $current, bool $dateFixed): array
     {
@@ -53,6 +54,7 @@ final class EventPhraseFill
                     'event_date' => (string) $reading->date,
                     'event_end_date' => (string) ($reading->endDate ?? ''),
                     'event_time' => (string) ($reading->time ?? ''),
+                    'event_end_time' => (string) ($reading->endTime ?? ''),
                 ],
                 'status' => '',
                 'filled' => true,
@@ -68,6 +70,7 @@ final class EventPhraseFill
                 'event_date' => $fixed,
                 'event_end_date' => $endDate !== '' ? $endDate : $current['event_end_date'],
                 'event_time' => $reading->time ?? $current['event_time'],
+                'event_end_time' => $reading->time !== null ? ($reading->endTime ?? '') : ($current['event_end_time'] ?? ''),
             ],
             'status' => $sameDay ? '' : 'The date stays ' . $fixed . ' on this page.',
             'filled' => true,

@@ -1572,7 +1572,15 @@ pre {
 }
 
 /* Zen memes on the home page: one featured meme as wide as the column, then one row of tiny thumbnails that opens them all. */
+.zen-strip {
+  container: zen-strip / inline-size;
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.4rem;
+}
+
 .zen-strip__card {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1632,12 +1640,56 @@ pre {
 /* One line, one link: what doesn't fit is cut off, never scrolled or wrapped. */
 .zen-strip__row {
   display: flex;
+  flex: 1 0 100%;
   gap: 0.4rem;
   height: 3rem;
   margin-top: 0.4rem;
   overflow: hidden;
   color: inherit;
   text-decoration: none;
+}
+
+/* On a narrow column (phones) the featured meme sits in a square, so a tall one
+   doesn't fill the first screen. The whole picture shows inside it, never
+   cropped, so its caption still reads; the blurred stand-in fills the sides. */
+@container zen-strip (max-width: 35.99rem) {
+  .zen-strip > .zen-strip__card--image {
+    aspect-ratio: 1;
+  }
+
+  .zen-strip > .zen-strip__card--image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+
+/* On a wide column the featured meme fits the screen whole: its width comes from
+   its stored shape, so the box is final before the picture loads. An upright meme
+   leaves room at its side, which the thumbnails fill down to its height.
+   --zen-chrome is the screen height kept for the header; themes with taller
+   chrome or a status bar raise it. */
+@container zen-strip (min-width: 36rem) {
+  .zen-strip > .zen-strip__card--image {
+    --zen-fit: calc((100svh - var(--zen-chrome, 10rem)) * var(--zen-ratio, 1));
+    width: min(100%, var(--zen-fit));
+    margin-inline: auto;
+  }
+
+  .zen-strip > .zen-strip__card--upright {
+    width: min(100% - 3.4rem, var(--zen-fit));
+    margin-inline: 0;
+  }
+
+  .zen-strip:has(> .zen-strip__card--upright) > .zen-strip__row {
+    flex: 1 1 0;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    min-width: 3rem;
+    height: auto;
+    margin-top: 0;
+    contain: size;
+  }
 }
 
 .zen-strip__thumb {

@@ -53,6 +53,7 @@ final class FeatureFlagRegistry
     public const LLM_CONVERSATION_UI_ENABLED = 'LLM_CONVERSATION_UI_ENABLED';
     public const APPROVED_MEMBERS_ONLY = 'FORUM_APPROVED_MEMBERS_ONLY';
     public const ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL = 'FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL';
+    public const PRIVATE_KEY_ACCESS_ENFORCED = 'FORUM_PRIVATE_KEY_ACCESS_ENFORCED';
     public const AUTOMATIC_GUEST_KEYPAIR_ENABLED = 'FORUM_AUTOMATIC_GUEST_KEYPAIR_ENABLED';
     public const USERNAME_CHANGES_ENABLED = 'FORUM_USERNAME_CHANGES_ENABLED';
     public const VERIFIED_ATTRIBUTION = 'FORUM_VERIFIED_ATTRIBUTION';
@@ -62,6 +63,7 @@ final class FeatureFlagRegistry
     public const POST_RECORDS_ENABLED = 'FORUM_POST_RECORDS_ENABLED';
     public const PENDING_CHIP_APPROVAL_ENABLED = 'FORUM_PENDING_CHIP_APPROVAL_ENABLED';
     public const USAGE_REPORTS_ENABLED = 'FORUM_USAGE_REPORTS_ENABLED';
+    public const PUSH_ENABLED = 'FORUM_PUSH_ENABLED';
     public const THREAD_ACTIVITY_DRAWER_ENABLED = 'FORUM_THREAD_ACTIVITY_DRAWER_ENABLED';
     public const PLEDGES_ENABLED = 'FORUM_PLEDGES_ENABLED';
     public const THREAD_PORT_ENABLED = 'FORUM_THREAD_PORT_ENABLED';
@@ -73,7 +75,7 @@ final class FeatureFlagRegistry
 
     /** Stable UI order, independent of definition insertion order. See CONTRIBUTING.md. */
     public const PRESENTATION_ORDER = [
-        'ACCESS' => [self::PRIVATE_MESSAGES_ENABLED, self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
+        'ACCESS' => [self::PRIVATE_MESSAGES_ENABLED, self::PRIVATE_KEY_ACCESS_ENFORCED, self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
             self::APPROVED_MEMBERS_ONLY, self::AUTOMATIC_GUEST_KEYPAIR_ENABLED, self::USERNAME_CHANGES_ENABLED,
             self::VERIFIED_ATTRIBUTION, self::SESSION_KEY_BOOTSTRAP_ENABLED, self::SESSION_KEY_BOOTSTRAP_HTTP_ENABLED],
         'AUTHORING' => [self::IMAGE_CONTENT_ENABLED, self::IMAGE_DIRECT_SERVING_ENABLED, self::LIST_THUMBNAILS_ENABLED, self::IMAGE_GALLERY_ENABLED, self::UNICODE_AUTHORED_TEXT,
@@ -86,7 +88,7 @@ final class FeatureFlagRegistry
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED, self::AGENT_CHECKIN_ENABLED,
             self::READING_MARGINS_ENABLED, self::DRAGGABLE_WINDOWS_ENABLED, self::OPEN_BESIDE_ENABLED, self::GUESTBOOK_ENABLED, self::ZEN_STRIP_ENABLED, self::POST_RECORDS_ENABLED,
             self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::PLEDGES_ENABLED, self::THREAD_PORT_ENABLED, self::THREAD_PORT_GUESTS_ENABLED,
-            self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED, self::QDB_QUEUE_ENABLED, self::BACKLOG_ENABLED],
+            self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED, self::QDB_QUEUE_ENABLED, self::BACKLOG_ENABLED, self::PUSH_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
             self::THREAD_ACTIVITY_DRAWER_ENABLED],
@@ -234,6 +236,17 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 group: 'ACCESS',
                 releasedOn: '2026-10-13',
+            ),
+            new FeatureFlagDefinition(
+                self::PRIVATE_KEY_ACCESS_ENFORCED,
+                'Private access needs the account\'s own key',
+                'A key reads its account\'s private messages only if it is the account\'s first key, was approved by another of the account\'s keys or by an operator, or was confirmed. Other approved keys still post, but get no messages or message history. Turn off to let every approved key read again; confirmations are kept.',
+                true,
+                self::PRIVATE_KEY_ACCESS_ENFORCED,
+                siteMutable: true,
+                requiresEnabledFlag: self::PRIVATE_MESSAGES_ENABLED,
+                group: 'ACCESS',
+                releasedOn: '2026-11-24',
             ),
             new FeatureFlagDefinition(
                 self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
@@ -620,6 +633,16 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 group: 'EXPERIENCE',
                 releasedOn: '2026-11-23',
+            ),
+            new FeatureFlagDefinition(
+                self::PUSH_ENABLED,
+                'Notifications',
+                'Offer Preferences → Notifications, where a signed-in member turns notifications on for one device and sends a test. Subscriptions and the site\'s push key are kept in private files outside exports. On iPhone this works only in the app added to the Home Screen.',
+                false,
+                self::PUSH_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+                releasedOn: '2026-11-24',
             ),
             new FeatureFlagDefinition(
                 self::PLEDGES_ENABLED,

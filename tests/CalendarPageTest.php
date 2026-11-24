@@ -422,6 +422,49 @@ final class CalendarPageTest
         calendarAssertContains("dates={$start}%2F{$end}", $this->render($application, '/threads/' . $thread));
     }
 
+    public function testVerifiedReplyCorrectsTheReportedThreeHourLectureAcrossExports(): void
+    {
+        [$root, $service, $application] = $this->environment();
+        $zone = new DateTimeZone('America/New_York');
+        $local = new DateTimeImmutable('+3 days', $zone);
+        $date = $local->format('Y-m-d');
+        $thread = $this->event($service, 'couches', 'Lecture', 'Lecture, 1-4pm', $date, time: '13:00');
+        $path = '/threads/' . $thread;
+        $utc = new DateTimeZone('UTC');
+        $start = $local->setTime(13, 0)->setTimezone($utc)->format('Ymd\THis\Z');
+        $defaultEnd = $local->setTime(14, 0)->setTimezone($utc)->format('Ymd\THis\Z');
+        $end = $local->setTime(16, 0)->setTimezone($utc)->format('Ymd\THis\Z');
+        calendarAssertContains("DTSTART:$start\r\nDTEND:$defaultEnd\r\n", $this->render($application, $path . '.ics'));
+
+        $reply = ['thread_id' => $thread, 'parent_id' => $thread, 'author_identity_id' => self::OPERATOR];
+        $correction = $service->createReply($reply + ['body' => "> event-time: 02:00-03:00\nevent-time: 13:00-16:00\nevent-time: 13:00-17:00"]);
+        $other = $service->createReply($reply + ['body' => 'event-time: 13:00-19:00']);
+        $unverified = $service->createReply($reply + ['body' => 'event-time: 13:00-20:00']);
+        // Exercise resolver authority against the same attribution fields populated by the read model.
+        $pdo = new PDO('sqlite:' . $root . '.sqlite3');
+        $pdo->prepare("UPDATE posts SET author_identity_id = 'openpgp:unrelated' WHERE post_id = ?")->execute([$other['post_id']]);
+        $pdo->prepare('UPDATE posts SET attribution_verified = 0 WHERE post_id = ?')->execute([$unverified['post_id']]);
+
+        foreach (['/calendar.ics', '/calendar/couches.ics', $path . '.ics'] as $export) {
+            calendarAssertContains("DTSTART:$start\r\nDTEND:$end\r\n", $this->render($application, $export));
+        }
+        $page = $this->render($application, $path);
+        calendarAssertContains("dates={$start}%2F{$end}", $page);
+        calendarAssertContains('at 13:00–16:00</span>', $page);
+        calendarAssertContains('13:00–16:00', $this->render($application, '/calendar/' . $date));
+
+        $pdo->prepare("UPDATE posts SET retracted_at = '2026-11-25T15:00:00Z' WHERE post_id = ?")->execute([$correction['post_id']]);
+        calendarAssertContains("DTEND:$defaultEnd\r\n", $this->render($application, $path . '.ics'));
+
+        $guest = $this->event($service, 'couches', 'Guest lecture', 'Lecture, 1-4pm', $date, author: '', time: '13:00');
+        $guestPath = '/threads/' . $guest . '.ics';
+        $reply = ['thread_id' => $guest, 'parent_id' => $guest, 'author_identity_id' => self::OPERATOR];
+        $service->createReply($reply + ['body' => 'event-time: 13:00-16:00']);
+        calendarAssertContains("DTEND:$end\r\n", $this->render($application, $guestPath));
+        $service->createReply($reply + ['body' => 'event-time: 13:00']);
+        calendarAssertContains("DTEND:$defaultEnd\r\n", $this->render($application, $guestPath));
+    }
+
     public function testEventLinksAndFileAreGoneWhileTheFeedIsOff(): void
     {
         [, $service, $application] = $this->environment(true, "FORUM_CALENDAR_FEED_ENABLED: false\n");

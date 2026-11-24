@@ -827,7 +827,8 @@ final class RouteServices
 
     public function errorPayload(\Throwable $error): array
     {
-        return ['status' => 'error', 'error' => $error->getMessage()] + ($error instanceof \ForumRewrite\Support\TextValidationException ? $error->details() : []);
+        return ['status' => 'error', 'error' => $error->getMessage()] + ($error instanceof \ForumRewrite\Support\TextValidationException ? $error->details() : [])
+            + ($error instanceof \ForumRewrite\Security\PublicOnlyKeyException ? ['reason' => 'public_only'] : []);
     }
 
     /** @param array<string, mixed> $payload

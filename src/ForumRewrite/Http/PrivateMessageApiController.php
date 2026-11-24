@@ -189,7 +189,7 @@ final class PrivateMessageApiController
         } catch (InvalidArgumentException $error) {
             $this->routeServices->sendJson(['status' => 'error', 'error' => $error->getMessage()], 400, $this->routeServices->noStoreHeaders());
         } catch (RuntimeException $error) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $error->getMessage()], 403, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($error), 403, $this->routeServices->noStoreHeaders());
         }
     }
 
@@ -214,7 +214,7 @@ final class PrivateMessageApiController
         } catch (InvalidArgumentException $error) {
             $this->routeServices->sendJson(['status' => 'error', 'error' => $error->getMessage(), 'reopen' => true], 400, $this->routeServices->noStoreHeaders());
         } catch (RuntimeException $error) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $error->getMessage()], 403, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($error), 403, $this->routeServices->noStoreHeaders());
         }
     }
 

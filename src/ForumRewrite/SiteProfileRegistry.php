@@ -14,7 +14,7 @@ final class SiteProfileRegistry
     private static ?array $profilesForTesting = null;
 
     /**
-     * @return array<string, array{name: string, displayName: string, defaultTheme: string, permittedThemes: list<string>, browserNamespace: string, editorialContentKey: string, enabledExperienceKeys: list<string>, composerPrompt: string, calendarTimeZone?: string}>
+     * @return array<string, array{name: string, displayName: string, defaultTheme: string, permittedThemes: list<string>, browserNamespace: string, editorialContentKey: string, enabledExperienceKeys: list<string>, composerPrompt: string, appName?: string, calendarTimeZone?: string}>
      */
     public static function all(): array
     {
@@ -22,11 +22,13 @@ final class SiteProfileRegistry
             'zenmemes' => [
                 'name' => 'zenmemes',
                 'displayName' => 'zenmemes',
+                // The installed app's name on a home screen (BrowserRuntimeProfile); defaults to displayName.
+                'appName' => 'ZenMemes',
                 'calendarTimeZone' => 'America/New_York',
                 'defaultTheme' => 'auto',
                 // What Auto/System shows for a light or dark device setting.
                 'autoThemes' => ['light' => 'gloss', 'dark' => 'glossdark'],
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'spearmint', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'vaporgeist', 'gloss', 'glossdark', 'engagify', 'ochre', 'underground'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'spearmint', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'vaporgeist', 'gloss', 'glossdark', 'engagify', 'ochre', 'underground', 'undergrounddark'],
                 'browserNamespace' => 'zenmemes',
                 'editorialContentKey' => 'zenmemes',
                 'enabledExperienceKeys' => ['forum'],
@@ -38,6 +40,8 @@ final class SiteProfileRegistry
                 ],
                 // The thread whose top-level replies /guestbook/ shows as a book; null until it exists.
                 'guestbookThread' => null,
+                // The thread whose replies carry backlog claims (`claim:` lines); null until it exists, and then the backlog shows no holders.
+                'backlogClaimsThread' => null,
                 // Threads an approved member tagged with every one of these open the board as Zen memes.
                 'zenStripTags' => ['zen', 'meme'],
                 'presentationSlots' => ['navigation' => 'app', 'boardCard' => 'list', 'compose' => 'thread', 'about' => 'default', 'editorial' => 'zenmemes', 'brandedStylesheet' => 'site'],
@@ -56,6 +60,7 @@ final class SiteProfileRegistry
             'qdb' => [
                 'name' => 'qdb',
                 'displayName' => 'qdb',
+                'appName' => 'QDB',
                 'defaultTheme' => 'qdb',
                 'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'vaporgeist', 'qdb'],
                 'browserNamespace' => 'qdb',
@@ -68,12 +73,12 @@ final class SiteProfileRegistry
                 'name' => 'mitrapclub',
                 'displayName' => 'MIT Rap Club',
                 'defaultTheme' => 'underground',
-                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'vaporgeist', 'mitrapclub', 'underground'],
+                'permittedThemes' => ['auto', 'light', 'dark', 'console', 'lcd', 'chicago', 'vapor', 'forge', 'sticker', 'bubblegum', 'arena', 'thermal', 'whitehot', 'word97', 'midnight', 'zalgo', 'vaporgeist', 'mitrapclub', 'underground', 'undergrounddark'],
                 'browserNamespace' => 'mitrapclub',
                 'editorialContentKey' => 'mitrapclub',
                 'enabledExperienceKeys' => ['forum'],
                 'composerPrompt' => 'Drop a verse, a cypher clip, or an announcement...',
-                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'default', 'editorial' => 'mitrapclub', 'brandedStylesheet' => 'underground', 'toolsNav' => 'hidden', 'favicon' => 'mitrapclub'],
+                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'socials', 'editorial' => 'mitrapclub', 'brandedStylesheet' => 'underground', 'toolsNav' => 'hidden', 'favicon' => 'mitrapclub'],
             ],
         ];
 
@@ -96,7 +101,7 @@ final class SiteProfileRegistry
     }
 
     /**
-     * @return array{name: string, displayName: string, defaultTheme: string, permittedThemes: list<string>, browserNamespace: string, editorialContentKey: string, enabledExperienceKeys: list<string>, composerPrompt: string, calendarTimeZone?: string}
+     * @return array{name: string, displayName: string, defaultTheme: string, permittedThemes: list<string>, browserNamespace: string, editorialContentKey: string, enabledExperienceKeys: list<string>, composerPrompt: string, appName?: string, calendarTimeZone?: string}
      */
     public static function active(): array
     {
@@ -136,6 +141,14 @@ final class SiteProfileRegistry
         $zone = self::active()['calendarTimeZone'] ?? null;
 
         return $zone === null ? null : new \DateTimeZone($zone);
+    }
+
+    /** The active site's backlog claims thread ID, or null when the site has none. */
+    public static function backlogClaimsThread(): ?string
+    {
+        $threadId = self::active()['backlogClaimsThread'] ?? null;
+
+        return is_string($threadId) && $threadId !== '' ? $threadId : null;
     }
 
     /** The active site's guestbook thread ID, or null when the site has none. */
@@ -195,6 +208,10 @@ final class SiteProfileRegistry
                 }
             }
 
+            if (array_key_exists('appName', $profile) && (!is_string($profile['appName']) || trim($profile['appName']) === '')) {
+                throw new \RuntimeException("Site profile {$siteId} has an empty appName.");
+            }
+
             foreach (['permittedThemes', 'enabledExperienceKeys'] as $field) {
                 if (!isset($profile[$field]) || !is_array($profile[$field]) || $profile[$field] === []) {
                     throw new \RuntimeException("Site profile {$siteId} requires non-empty {$field}.");
@@ -241,6 +258,9 @@ final class SiteProfileRegistry
 
             if (isset($profile['guestbookThread']) && (!is_string($profile['guestbookThread']) || preg_match('/^[A-Za-z0-9._-]+$/', $profile['guestbookThread']) !== 1)) {
                 throw new \RuntimeException("Site profile {$siteId} has an invalid guestbook thread ID.");
+            }
+            if (isset($profile['backlogClaimsThread']) && (!is_string($profile['backlogClaimsThread']) || preg_match('/^[A-Za-z0-9._-]+$/', $profile['backlogClaimsThread']) !== 1)) {
+                throw new \RuntimeException("Site profile {$siteId} has an invalid backlog claims thread ID.");
             }
 
             if (isset($profile['zenStripTags'])) {

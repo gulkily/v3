@@ -47,6 +47,7 @@ final class PrivateMessageHistorySyncController
             $this->respond(['status'=>'ok']+$result,200);
         }
         catch (InvalidArgumentException $e) { $this->respond(['status'=>'error','error'=>$e->getMessage()],400); }
+        catch (\ForumRewrite\Security\PublicOnlyKeyException $e) { $this->respond($this->routes->errorPayload($e),403); }
         catch (RuntimeException $e) { $this->respond(['status'=>'error','error'=>'History synchronization unavailable. Retry later.'],503); }
         catch (Throwable $e) { $this->respond(['status'=>'error','error'=>'History synchronization unavailable. Retry later.'],503); }
     }

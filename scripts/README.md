@@ -15,6 +15,7 @@ Run by: a `./v3` command, another script or class, or "you" (run it by hand).
 | `approval_receipts.php` | `./v3 approval receipts` | Inspect or convert approval receipts |
 | `audit_approvals.php` | `./v3 approval audit` | Audit who approved whom |
 | `suggest_approval_roots.php` | `./v3 approval suggest-roots` | Suggest which keys to seed as roots after an import without seeds |
+| `private_access_report.php` | `./v3 approval private-access-report` | List approved keys and whether each may read its account's private messages |
 | `archive_thread.php` | `./v3 archive-thread` | Archive one thread out of the live repository |
 | `bake_legacy_timestamps.php` | `./v3 bake-timestamps` | Write explicit timestamps into legacy records |
 | `build_static_artifacts.php` | `./v3 build-static` | Build static HTML pages |
@@ -38,6 +39,7 @@ Run by: a `./v3` command, another script or class, or "you" (run it by hand).
 | `local_server_start.sh` | `./v3 start` | Start the local development server |
 | `diagnose_offline_reading.php` | `./v3 offline diagnose` | Check the offline snapshot |
 | `publish_offline_snapshot.php` | `./v3 offline publish` | Publish the offline reading snapshot |
+| `publish_public_keys.php` | `./v3 publish-keys` | Publish missing public identities; --dry-run previews ([CLI](../docs/reference/v3_cli.md#publish-local-public-keys)) |
 | `openpgp_smoke.php` | `./v3 openpgp smoke` | Read-only check of the served OpenPGP bundles ([OpenPGP](../docs/reference/openpgp.md)) |
 | `openpgp_production_canary.mjs` | `./v3 openpgp canary` | **Writes to production**: browser signing canary over HTTP |
 | `purge_history.php` | `./v3 purge-history` | Purge history ([history purge](../docs/concepts/history_purge.md)) |

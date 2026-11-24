@@ -17,12 +17,42 @@
   const foregroundReads=new Set();
   function clearShares(){clearTimeout(shareTimer);shareTimer=null;candidateShares.clear();}
   function budgetError(){const error=Error('History turn exhausted.');error.budget=true;return error;}
+  // Pacing shared by every tab of this key (the server admits 16 requests per key in 10 s):
+  // one record of backoff and recent sends, so a tab never spends what another tab already used.
+  const pacingWindow=10000, pacingLimit=14, turnBudget=12;
+  let localPacing={retryAt:0,log:[]}, publicOnly=false;
+  function pacingKey(){
+    try {return 'forum_history_pacing:'+account+':'+window.ForumPrivateMessageHistoryCrypto.digest(localStorage.getItem('forum_pki_public_key')||'');}
+    catch (_) {return '';}
+  }
+  function readPacing(){
+    const now=Date.now();let state=localPacing;
+    try {
+      const raw=localStorage.getItem(pacingKey()),saved=raw?JSON.parse(raw):null;
+      if(saved && Array.isArray(saved.log))state={retryAt:Number(saved.retryAt)||0,log:saved.log.filter(Number.isFinite)};
+    } catch (_) { /* Without storage, pace this tab alone. */ }
+    // A clock jump or bad header must not stall sync: ignore backoff more than a minute away.
+    return {retryAt:state.retryAt>now && state.retryAt<=now+60000?state.retryAt:0,log:state.log.filter(at=>at>now-pacingWindow && at<=now+1000).slice(-64)};
+  }
+  function writePacing(state){
+    localPacing=state;
+    try {localStorage.setItem(pacingKey(),JSON.stringify(state));} catch (_) { /* Kept in memory. */ }
+  }
+  // When this key may send again: the shared backoff, or when the window has room.
+  function pacedUntil(room=1){
+    const state=readPacing(),now=Date.now();
+    let until=Math.max(state.retryAt,retryAt>now?retryAt:0);
+    const keep=pacingLimit-room;
+    if(state.log.length>keep)until=Math.max(until,state.log[state.log.length-keep-1]+pacingWindow);
+    return until>now?until:0;
+  }
   function cancelContinuation(){clearTimeout(continuationTimer);continuationTimer=null;stats.pending=false;}
   function continueLater(run){
     cancelContinuation();
     if(!valid(run))return;
     stats.pending=true;
-    continuationTimer=setTimeout(()=>{continuationTimer=null;if(valid(run))refresh(true,true);},Math.max(1000,retryAt-Date.now()));
+    const roomAt=pacedUntil(turnBudget);
+    continuationTimer=setTimeout(()=>{continuationTimer=null;if(valid(run))refresh(true,true);},Math.max(1000,retryAt-Date.now(),roomAt?roomAt-Date.now():0));
   }
 
   function identity() {
@@ -41,7 +71,10 @@
     try {
       for(let attempt=0;attempt<2;attempt++) {
         if(!valid(run) || !aborter || aborter.signal.aborted) throw Error('History identity changed.');
-        if(budget && (budget!==turn || budget.attempts>=16 || Date.now()>=budget.deadline))throw budgetError();
+        if(budget && (budget!==turn || budget.attempts>=turnBudget || Date.now()>=budget.deadline))throw budgetError();
+        const paced=pacedUntil();
+        if(paced){retryAt=Math.max(retryAt,paced);const error=Error('History requests are paced.');error.status=429;error.paced=true;throw error;}
+        const pacing=readPacing();pacing.log.push(Date.now());writePacing(pacing);
         if(budget)budget.attempts++;
         const lifecycle=aborter, controller=new AbortController();
         const cancel=()=>controller.abort();lifecycle.signal.addEventListener('abort',cancel,{once:true});
@@ -59,7 +92,10 @@
             if(response.status===429){
               const header=response.headers?.get('Retry-After'), seconds=Number(header);
               retryAt=Date.now()+(header && Number.isFinite(seconds)?Math.max(1,seconds)*1000:10000);
+              const shared=readPacing();shared.retryAt=Math.max(shared.retryAt,retryAt);writePacing(shared);
             }
+            // A key without private access (reason public_only) has no history to sync on this page.
+            if(response.status===403 && result.reason==='public_only')publicOnly=true;
             throw error;
           }
           return result;
@@ -158,6 +194,7 @@
     confirmationTimer=null;
     const run=generation,batch=Array.from(confirmationQueue).slice(0,10);
     for(const [key] of batch)confirmationQueue.delete(key);
+    let kept=false;
     try {
       if(!valid(run))return;
       if(!aborter || (aborter.signal.aborted && !active))aborter=new AbortController();
@@ -165,10 +202,13 @@
       if(!valid(run))return;
       for(const [key] of batch){remember(confirmed,key);if(!verifiedIds.has(key)){remember(verifiedIds,key);stats.verified++;}}
       publish(stats.state);
-    } catch (_) { /* A subsequent verified read can retry a lost receipt. */ }
+    } catch (error) {
+      // Backoff delays a receipt; it does not lose it. Other failures wait for a later verified read.
+      if((error.status===429 || error.budget) && valid(run)){kept=true;for(const [key,item] of batch)if(!confirmationQueue.has(key))confirmationQueue.set(key,item);}
+    }
     finally {
-      for(const [key] of batch)confirming.delete(key);
-      if(confirmationQueue.size && valid(run) && confirmationTimer===null)confirmationTimer=setTimeout(flushConfirmations,50);
+      if(!kept)for(const [key] of batch)confirming.delete(key);
+      if(confirmationQueue.size && valid(run) && confirmationTimer===null)confirmationTimer=setTimeout(flushConfirmations,Math.max(50,retryAt-Date.now()));
     }
   }
   async function ownKeys(row, privateKey, run) {
@@ -215,7 +255,7 @@
       const finished={account:false,sender:false};
       let processed=0;
       workLoop: for(let batch=0;batch<8 && processed<8 && Date.now()<deadline;batch++) {
-        if(currentTurn.attempts>=14){pending=true;break;}
+        if(currentTurn.attempts>=turnBudget-2){pending=true;break;}
         let works;
         if(combinedSupported) {
           let result;
@@ -299,6 +339,7 @@
     if(window.ForumPrivateMessageAvailability.isDisabled() || !nav || document.hidden) return Promise.resolve();
     if(original!==identity()) { invalidate();return Promise.resolve(); }
     if(window.ForumPrivateMessageUnread?.historyEligibility() !== true) return Promise.resolve();
+    if(publicOnly) return Promise.resolve();
     if(active) return active;
     // A continuation must not take the next budget away from visible readers.
     if(foregroundReads.size){continueLater(generation);return Promise.resolve();}
@@ -313,7 +354,7 @@
     active=Promise.resolve(task).finally(()=>{active=null;if(continuationTimer===null && turn===null)stats.pending=false;});
     return active;
   }
-  function invalidate() { foregroundReads.clear();cancelContinuation();completedWork.clear();candidateCursors.clear();clearShares();retryAt=0;generation++; if(aborter) aborter.abort();verifiedIds.clear();confirmed.clear();clearConfirmations();clearRecovery();stats.verified=0;publish('identity-changed'); }
+  function invalidate() { publicOnly=false;foregroundReads.clear();cancelContinuation();completedWork.clear();candidateCursors.clear();clearShares();retryAt=0;generation++; if(aborter) aborter.abort();verifiedIds.clear();confirmed.clear();clearConfirmations();clearRecovery();stats.verified=0;publish('identity-changed'); }
   function stop() {
     foregroundReads.clear();cancelContinuation();completedWork.clear();candidateCursors.clear();clearShares();retryAt=0;generation++;
     if(aborter)aborter.abort();
@@ -334,6 +375,7 @@
     const previousAccount=account, previousIdentity=original;
     account=nav.dataset.viewer;original=identity();lastRun=0;
     if(previousAccount!==account || previousIdentity!==original) {
+      publicOnly=false;localPacing={retryAt:0,log:[]};
       verifiedIds.clear();stats.verified=0;stats.contributed=0;stats.unavailable=0;
     }
     nextMode='account';

@@ -55,12 +55,17 @@ final class InboxPageController
             if ($failedCatchUp === null) return;
         }
 
+        $waiting = $this->privateMessageStore === null ? [] : $this->waitingKeys($viewer);
         $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('inbox.php', [
             'viewerProfile' => $viewer,
             'stagedCount' => $this->stagedCount($viewer),
             'messages' => $this->messages($viewer),
             'sections' => $this->sections($viewer, $failedCatchUp),
-        ], 'Unread', 'inbox', ['/assets/inbox_catch_up.js']), $failedCatchUp === null ? 200 : 409, $this->routeServices->noStoreHeaders());
+            'waitingKeys' => $waiting,
+            'accountName' => (string) ($viewer['username'] ?? $viewer['username_token'] ?? ''),
+        ], 'Unread', 'inbox', array_merge(['/assets/inbox_catch_up.js'], $waiting === [] ? []
+            : ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_access_confirm.js'])),
+            $failedCatchUp === null ? 200 : 409, $this->routeServices->noStoreHeaders());
     }
 
     /**
@@ -218,13 +223,28 @@ final class InboxPageController
         }
     }
 
+    /**
+     * Keys of the viewer's account waiting for private access; empty when the viewer cannot confirm.
+     *
+     * @param array<string, mixed> $viewer
+     * @return list<array<string, mixed>>
+     */
+    private function waitingKeys(array $viewer): array
+    {
+        try {
+            return (new \ForumRewrite\Security\PrivateKeyAccess($this->routeServices->pdo(), $this->routeServices->repositoryRoot()))->waitingForViewer($viewer);
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
     /** @param array<string, mixed> $viewer */
     private function feed(array $viewer): InboxFeed
     {
         $pdo = $this->routeServices->pdo();
         $keys = (new ApprovedUserKeyResolver($this->routeServices->repositoryRoot()))->keysForUsernameToken($pdo, (string) $viewer['username_token'], true);
         $identityIds = array_values(array_unique([(string) $viewer['identity_id'], ...array_column($keys, 'identity_id')]));
-        return new InboxFeed($pdo, ($this->markStore)(), (string) $viewer['username_token'], $identityIds);
+        return new InboxFeed($pdo, ($this->markStore)(), (string) $viewer['username_token'], $identityIds, \ForumRewrite\SiteProfileRegistry::backlogClaimsThread());
     }
 
     /**
@@ -244,6 +264,8 @@ final class InboxPageController
                 $this->routeServices->repositoryRoot(),
             );
             return ['enabled' => true, 'failed' => false, 'conversations' => $service->unreadConversations($viewer, self::MESSAGE_LIMIT)];
+        } catch (\ForumRewrite\Security\PublicOnlyKeyException) {
+            return ['enabled' => true, 'failed' => false, 'public_only' => true, 'conversations' => []];
         } catch (\Throwable) {
             // The other sections stay usable when private storage is unavailable.
             return ['enabled' => true, 'failed' => true, 'conversations' => []];

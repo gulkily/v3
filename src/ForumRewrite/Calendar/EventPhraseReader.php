@@ -18,7 +18,7 @@ use DateTimeZone;
  * - "next Friday" is the Friday of next week (weeks start on Monday).
  * - A month and day with no year is the next time that day comes round.
  * - A bare hour from 1 to 11 ("at 7") is afternoon or evening unless "am" or
- *   "morning" says otherwise; a range like "7-9pm" keeps its start.
+ *   "morning" says otherwise; a range like "7-9pm" keeps both times.
  */
 final class EventPhraseReader
 {
@@ -53,7 +53,7 @@ final class EventPhraseReader
         }
 
         $text = $this->normalize($phrase);
-        [$text, $time] = $this->takeTime($text);
+        [$text, $time, $endTime] = $this->takeTime($text);
         if ($time === false) {
             return EventPhraseReading::unread('Could not read a time from that.');
         }
@@ -66,31 +66,44 @@ final class EventPhraseReader
             return EventPhraseReading::unread(self::UNREAD_DATE);
         }
 
-        return EventPhraseReading::read($span[0]->format('Y-m-d'), $span[1]?->format('Y-m-d'), $time, 'built-in');
+        return EventPhraseReading::read($span[0]->format('Y-m-d'), $span[1]?->format('Y-m-d'), $time, 'built-in', $endTime);
     }
 
     /**
-     * Finds one start time anywhere in the text and removes it.
+     * Finds a time or time range anywhere in the text and removes it.
      *
-     * @return array{string, string|null|false} the rest of the text, and HH:MM, null for none, or false when a time is malformed
+     * @return array{string, string|null|false, ?string} remaining text, start time (false if malformed), end time
      */
     private function takeTime(string $text): array
     {
         $pm = (bool) preg_match('/\b(evening|night|tonight|afternoon)\b/u', $text);
         $am = (bool) preg_match('/\bmorning\b/u', $text);
         if (preg_match('/\b(noon|midday)\b/u', $text) === 1) {
-            return [$this->without($text, '/\b(at )?(noon|midday)\b/u'), '12:00'];
+            return [$this->without($text, '/\b(at )?(noon|midday)\b/u'), '12:00', null];
         }
         if (preg_match('/\bmidnight\b/u', $text) === 1) {
-            return [$this->without($text, '/\b(at )?midnight\b/u'), '00:00'];
+            return [$this->without($text, '/\b(at )?midnight\b/u'), '00:00', null];
         }
-        // "7pm", "7:30 pm", "7-9pm", "7 to 9 pm": the start, with am/pm taken from the end if needed.
-        $pattern = '/\b(?:at |from |around |about )?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?(?:\s*(?:-|–|to|until|till)\s*\d{1,2}(?::\d{2})?)?\s*(am|pm)(?=\s|$)/u';
+        // An omitted start suffix inherits the range's end suffix, as in "1-4pm".
+        $pattern = '/\b(?:at |from |around |about )?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|–|to|until|till)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)(?=\s|$)/u';
         if (preg_match($pattern, $text, $m) === 1) {
-            $suffix = ($m[3] ?? '') !== '' ? $m[3] : $m[4];
-            $time = $this->clock((int) $m[1], (int) (($m[2] ?? '') !== '' ? $m[2] : 0), str_starts_with($suffix, 'p') ? 'pm' : 'am');
+            $start = $this->clock((int) $m[1], (int) $m[2], $m[3] !== '' ? $m[3] : $m[6]);
+            $end = $this->clock((int) $m[4], (int) $m[5], $m[6]);
 
-            return [$this->without($text, $pattern), $time ?? false];
+            return [$this->without($text, $pattern), $end === null ? false : ($start ?? false), $end];
+        }
+        $pattern = '/\b(?:at |from |around |about )?(\d{1,2}):(\d{2})\s*(?:-|–|to|until|till)\s*(\d{1,2}):(\d{2})(?=\s|$)/u';
+        if (preg_match($pattern, $text, $m) === 1) {
+            $start = $this->clock24((int) $m[1], (int) $m[2]);
+            $end = $this->clock24((int) $m[3], (int) $m[4]);
+
+            return [$this->without($text, $pattern), $end === null ? false : ($start ?? false), $end];
+        }
+        $pattern = '/\b(?:at |from |around |about )?(\d{1,2})(?::(\d{2}))?\s*(am|pm)(?=\s|$)/u';
+        if (preg_match($pattern, $text, $m) === 1) {
+            $time = $this->clock((int) $m[1], (int) $m[2], $m[3]);
+
+            return [$this->without($text, $pattern), $time ?? false, null];
         }
         // "19:00", "at 7:30", "at 7": 24-hour with minutes, or a bare hour after "at".
         $pattern = '/\b(?:at |from |around |about )?(\d{1,2}):(\d{2})\b/u';
@@ -99,17 +112,20 @@ final class EventPhraseReader
             $half = $hour >= 13 || $hour === 0 ? null : ($am ? 'am' : ($pm || $hour < 12 ? 'pm' : 'am'));
             $time = $half === null ? $this->clock24($hour, (int) $m[2]) : $this->clock($hour, (int) $m[2], $half);
 
-            return [$this->without($text, $pattern), $time ?? false];
+            return [$this->without($text, $pattern), $time ?? false, null];
         }
-        $pattern = '/\b(?:at|around|about) (\d{1,2})(?:\s*(?:-|–|to) ?\d{1,2})?(?=\s|$)/u';
+        $pattern = '/\b(?:at|around|about) (\d{1,2})(?:\s*(?:-|–|to) ?(\d{1,2}))?(?=\s|$)/u';
         if (preg_match($pattern, $text, $m) === 1) {
             $hour = (int) $m[1];
             $time = $hour >= 13 ? $this->clock24($hour, 0) : $this->clock($hour, 0, $am ? 'am' : 'pm');
 
-            return [$this->without($text, $pattern), $time ?? false];
+            $endHour = isset($m[2]) ? (int) $m[2] : null;
+            $end = $endHour === null ? null : ($endHour >= 13 ? $this->clock24($endHour, 0) : $this->clock($endHour, 0, $am ? 'am' : 'pm'));
+
+            return [$this->without($text, $pattern), $endHour !== null && $end === null ? false : ($time ?? false), $end];
         }
 
-        return [$text, null];
+        return [$text, null, null];
     }
 
     private function clock(int $hour, int $minute, string $half): ?string

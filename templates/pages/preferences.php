@@ -82,6 +82,16 @@ $tableZoomKeys = array_values(\ForumRewrite\View\ZoomTable::KINDS);
         <span class="account-row__value" data-preference-value="welcome-note">Shown</span>
         <button type="button" class="account-row__action" data-preference-reset="welcome-note" hidden>Show again</button>
       </div>
+<?php if ($pushEnabled ?? false): ?>
+      <div class="account-row" data-tone="neutral" data-preference-row="notifications" hidden>
+        <span class="account-row__title">Notifications</span>
+        <span class="account-row__value" data-preference-value="notifications" aria-live="polite">Off</span>
+        <span class="preferences-page__actions">
+          <button type="button" class="account-row__action" data-push-test hidden>Send a test</button>
+          <button type="button" class="account-row__action" data-push-toggle>Turn on</button>
+        </span>
+      </div>
+<?php endif; ?>
 <?php if ($usageLogEnabled): ?>
       <a class="account-row account-row--link" data-tone="neutral" href="/tools/usage-log/"><span class="account-row__title">Usage log</span><span class="account-row__value" data-preference-value="usage-log">Off</span></a>
 <?php endif; ?>
@@ -115,7 +125,8 @@ $tableZoomKeys = array_values(\ForumRewrite\View\ZoomTable::KINDS);
       gallerySize: 'gallery-zoom',
       navSlots: 'forum_nav_slots',
       welcome: 'forum_visitor_intro_hidden',
-      usageLog: 'forum_usage_log'
+      usageLog: 'forum_usage_log',
+      push: 'forum_push_state'
     };
 
     function get(key) {
@@ -177,9 +188,35 @@ $tableZoomKeys = array_values(\ForumRewrite\View\ZoomTable::KINDS);
       var recording = false;
       try { recording = JSON.parse(get(keys.usageLog) || 'null').recording === true; } catch (error) {}
       show('usage-log', recording ? 'Recording' : 'Off', false);
+      renderNotifications();
+    }
+
+    // Notifications (push_preferences.js): shown only to a browser with a saved key that
+    // supports push. The last known state is drawn before paint; the script then checks it.
+    function renderNotifications() {
+      var row = page.querySelector('[data-preference-row="notifications"]');
+      if (!row) return;
+      var supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+      var hasKey = !!(get('forum_pki_fingerprint') && get('forum_pki_private_key'));
+      row.hidden = !(supported && hasKey);
+      if (row.hidden) return;
+      var state = Notification.permission === 'denied' ? 'blocked' : get(keys.push) === 'on' ? 'on' : 'off';
+      showNotifications(state);
+    }
+    function showNotifications(state, note) {
+      var row = page.querySelector('[data-preference-row="notifications"]');
+      if (!row) return;
+      var labels = { on: 'On', off: 'Off', blocked: 'Blocked', working: 'Working…' };
+      show('notifications', note || labels[state] || 'Off', false);
+      row.setAttribute('data-push-state', state);
+      var toggle = row.querySelector('[data-push-toggle]');
+      var test = row.querySelector('[data-push-test]');
+      toggle.textContent = state === 'on' ? 'Turn off' : 'Turn on';
+      toggle.disabled = state === 'working';
+      test.hidden = state !== 'on';
     }
 
     render();
-    return { render: render, keys: keys, pageExits: pageExits, storedKeys: storedKeys };
+    return { render: render, keys: keys, pageExits: pageExits, storedKeys: storedKeys, showNotifications: showNotifications };
   })();
 </script>

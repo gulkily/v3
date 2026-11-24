@@ -1,0 +1,21 @@
+ID: PF-20261123-B02
+Title: Publisher CLI conventions and direct execution
+Kind: bug
+Workflow: blocked
+Created: 2026-11-23
+Evidence: locally-verified
+
+Request:
+Make publish-keys follow import-instance: accept names/hostnames/URLs, publish eligible missing public identities by default and preview with --dry-run. Show the selected source repository, use clear help and errors, keep fingerprints optional, and remove mandatory saved review files. Record the missing hostname guideline and verify actual usage/recovery.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261123010519-0ef90ca45c2f3939b60720450f26ef65
+
+Done when:
+Ordinary CLI publication, no-write dry-run, safe optional selection and duplicate-free retry pass. Unsafe source/name/retirement/destination states remain refused. Help and repository visibility are verified. Maintainer review/deployment acceptance is recorded separately from registration or message access.
+
+Notes:
+2026-11-23: Reconciled unpublished local intake colliding with main's canonical PF-20261122-B04 (Ochre Pending summary). Main's ID/record is preserved unchanged. The original publisher intake is archived byte-for-byte at docs/plans/publisher_pr_handoff/publisher_feedback_intake_before_collision.txt; older local commit trailers and cycle records using B04 refer to that archived intake, not the unrelated Ochre issue. This new canonical intake avoids reassigning main's permanent ID or rewriting completed history.
+2026-11-23: Original publisher, conventions and direct-execution cycles are locally implemented. Latest checks before main integration: smoke 507/511 with four reproduced Unicode/PCRE baseline failures; focused 25/25 plus final affected 16/16 pass. Actual named-checkout replay against isolated HTTP verified zero dry-run writes, one eligible registration and unchanged rerun count. Records: docs/plans/publish_local_public_keys/, docs/plans/publish_keys_cli_conventions/, docs/plans/publish_keys_direct/.
+2026-11-23: User reports completing the production command; individual key outcomes/output were not supplied. Do not infer all keys registered, production approval or encrypted-history recovery. PR handoff on feat/publish-public-keys: docs/plans/publisher_pr_handoff/publisher_pr_handoff_one_shot.md. Blocked for maintainer review/deployment/acceptance; no merge or deployment authorized.
+2026-11-23: Publisher PR opened: https://github.com/gulkily/v3/pull/387 . Head feat/publish-public-keys, base main. Review/deployment and production per-key/approval/history acceptance remain pending.

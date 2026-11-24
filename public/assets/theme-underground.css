@@ -1,8 +1,22 @@
 /* Theme: underground */
+/* Theme: undergrounddark (shares this stylesheet; see the dark colours below) */
 /* MIT Rap Club, from "the underground concert" flyer: lavender paper,
    ultramarine ink, heavy rounded lowercase type, blue and grey halftone
    smudges, film grain and scratch streaks. Chrome text (wordmark, nav,
    buttons, labels) is lowercased; what people write is left as written. */
+/* Type shared by both. */
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]),
+.theme-menu__option:is([data-theme-option="underground"], [data-theme-option="undergrounddark"]) {
+  --ug-display-font: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold",
+                     "Nunito", "Varela Round", "Quicksand", system-ui,
+                     -apple-system, "Segoe UI", sans-serif;
+  --body-font: ui-rounded, "SF Pro Rounded", "Nunito", "Varela Round",
+               system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ui-font: var(--ug-display-font);
+  --code-font: ui-monospace, "Cascadia Code", "SF Mono", "Consolas",
+               "Liberation Mono", monospace;
+}
+
 :root[data-theme="underground"],
 .theme-menu__option[data-theme-option="underground"] {
   color-scheme: light;
@@ -11,9 +25,12 @@
   --ug-blue: #2b2fd6;
   --ug-blue-deep: #1e21a8;
   --ug-graphite: #4a4959;
-  --ug-display-font: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold",
-                     "Nunito", "Varela Round", "Quicksand", system-ui,
-                     -apple-system, "Segoe UI", sans-serif;
+  --ug-card-edge: rgba(43, 47, 214, 0.16);
+  --ug-card-shadow: rgba(31, 31, 85, 0.45);
+  --ug-pill-edge: rgba(43, 47, 214, 0.35);
+  --ug-pill-bg: rgba(231, 229, 244, 0.75);
+  --ug-bleed: rgba(43, 47, 214, 0.55);
+  --ug-bleed-soft: rgba(43, 47, 214, 0.35);
   /* Film grain, tinted toward the ink so it reads as print, not dust. */
   --ug-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .16 0 0 0 0 .16 0 0 0 0 .32 0 0 0 -1.6 0.95'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
   --page-bg: var(--ug-paper);
@@ -44,11 +61,6 @@
   --active-ink: #f3f2fd;
   --active-line: var(--ug-blue);
   --active-ring: rgba(43, 47, 214, 0.35);
-  --body-font: ui-rounded, "SF Pro Rounded", "Nunito", "Varela Round",
-               system-ui, -apple-system, "Segoe UI", sans-serif;
-  --ui-font: var(--ug-display-font);
-  --code-font: ui-monospace, "Cascadia Code", "SF Mono", "Consolas",
-               "Liberation Mono", monospace;
 }
 
 .theme-swatch[data-theme="underground"] {
@@ -66,8 +78,72 @@
   color: #2b2fd6;
 }
 
+/* Underground Dark: the same print on a night-ink page. Ultramarine is
+   lifted to periwinkle so it reads on the dark; filled controls flip to
+   dark text on that periwinkle. Everything else comes from the shared
+   rules below. */
+:root[data-theme="undergrounddark"],
+.theme-menu__option[data-theme-option="undergrounddark"] {
+  color-scheme: dark;
+  --ug-paper: #121334;
+  --ug-paper-light: #1b1c45;
+  --ug-blue: #9a9dff;
+  --ug-blue-deep: #c3c5ff;
+  --ug-graphite: #aeacc8;
+  --ug-card-edge: rgba(154, 157, 255, 0.22);
+  --ug-card-shadow: rgba(0, 0, 0, 0.7);
+  --ug-pill-edge: rgba(154, 157, 255, 0.4);
+  --ug-pill-bg: rgba(27, 28, 69, 0.8);
+  --ug-bleed: rgba(154, 157, 255, 0.45);
+  --ug-bleed-soft: rgba(154, 157, 255, 0.25);
+  /* Pale grain: dust on black paper. */
+  --ug-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .82 0 0 0 0 .82 0 0 0 0 .95 0 0 0 -1.6 0.92'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  --page-bg: var(--ug-paper);
+  --body-background:
+    var(--ug-grain),
+    linear-gradient(90deg,
+      transparent 0 86.2%, rgba(200, 198, 225, 0.14) 86.2% 86.35%,
+      transparent 86.35% 91.6%, rgba(200, 198, 225, 0.2) 91.6% 91.72%,
+      transparent 91.72% 96.4%, rgba(154, 157, 255, 0.2) 96.4% 96.5%,
+      transparent 96.5%),
+    linear-gradient(90deg,
+      transparent 0 3.1%, rgba(200, 198, 225, 0.12) 3.1% 3.2%, transparent 3.2%),
+    radial-gradient(ellipse 120% 80% at 50% 40%, #191a42 0%, var(--ug-paper) 60%, #0b0c24 100%);
+  --ink: #e2e0f5;
+  --ink-soft: var(--ug-graphite);
+  --line: #3d3e7c;
+  --panel: rgba(27, 28, 69, 0.95);
+  --input-bg: #0e0f2b;
+  --button-bg: var(--ug-paper-light);
+  --button-alt-bg: #23245a;
+  --feedback-ok-bg: #143326;
+  --feedback-error-bg: #3d1424;
+  --status-error: #ff8fa8;
+  --status-ok: #7fdca6;
+  --status-warning: #f0c060;
+  --active-bg: var(--ug-blue);
+  --active-ink: #0d0e2b;
+  --active-line: var(--ug-blue);
+  --active-ring: rgba(154, 157, 255, 0.4);
+}
+
+.theme-swatch[data-theme="undergrounddark"] {
+  background:
+    radial-gradient(circle at 34% 34%, #9a9dff 0 26%, transparent 27%),
+    radial-gradient(circle, #9a9dff 0.9px, transparent 1.2px) 0 0 / 3.5px 3.5px,
+    #121334;
+  border-color: #9a9dff;
+}
+
+.theme-menu__option[data-theme-option="undergrounddark"] {
+  font-family: var(--ug-display-font);
+  font-weight: 800;
+  text-transform: lowercase;
+  color: #9a9dff;
+}
+
 /* Page: grain and streaks tile at their own sizes over the paper fade. */
-:root[data-theme="underground"] body::before {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) body::before {
   background-repeat: repeat, no-repeat, no-repeat, no-repeat;
   background-size: 200px 200px, cover, cover, cover;
 }
@@ -78,7 +154,7 @@
    at the edge). Blue spots stay blue because their blue channel never drops
    below the threshold; grey blobs pull every channel down and print dark.
    Multiplied onto the paper, white disappears and only the dots remain. */
-:root[data-theme="underground"] body::after {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) body::after {
   content: "";
   position: fixed;
   inset: 0;
@@ -104,7 +180,7 @@
 /* Phones have no margins: one smaller moon tucked into the top-right
    corner, clear of the wordmark, and a faint fleck at the bottom. */
 @media (max-width: 760px) {
-  :root[data-theme="underground"] body::after {
+  :root:is([data-theme="underground"], [data-theme="undergrounddark"]) body::after {
     background:
       radial-gradient(closest-side, rgb(150, 150, 255), #ffffff) 0 0 / 6px 6px,
       radial-gradient(circle at 104% -2%, rgb(30, 34, 235) 0 1rem, #ffffff 6rem) no-repeat,
@@ -116,12 +192,12 @@
 
 /* Wordmark: the site name in the flyer's heavy blue lowercase, with a
    speckled, slightly bled ink. */
-:root[data-theme="underground"] .site-header {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .site-header {
   padding-top: 1.1rem;
 }
 
-:root[data-theme="underground"] .site-header > .eyebrow,
-:root[data-theme="underground"] .site-brand .eyebrow {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .site-header > .eyebrow,
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .site-brand .eyebrow {
   margin: 0 0 0.6rem;
   font-family: var(--ug-display-font);
   font-size: clamp(2.3rem, 8vw, 3.8rem);
@@ -135,10 +211,10 @@
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0.6px 0.4px 0 rgba(43, 47, 214, 0.55)) drop-shadow(-0.4px 0 0.8px rgba(43, 47, 214, 0.35));
+  filter: drop-shadow(0.6px 0.4px 0 var(--ug-bleed)) drop-shadow(-0.4px 0 0.8px var(--ug-bleed-soft));
 }
 
-:root[data-theme="underground"] .eyebrow {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .eyebrow {
   font-family: var(--ug-display-font);
   font-weight: 800;
   letter-spacing: 0.01em;
@@ -147,124 +223,133 @@
 }
 
 /* Headings and links in ultramarine. */
-:root[data-theme="underground"] h1,
-:root[data-theme="underground"] h2,
-:root[data-theme="underground"] h3 {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) h1,
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) h2,
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) h3 {
   font-family: var(--ug-display-font);
   font-weight: 800;
   letter-spacing: -0.015em;
   color: var(--ug-blue);
 }
 
-:root[data-theme="underground"] a {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) a {
   color: var(--ug-blue);
   text-decoration-thickness: 0.1em;
   text-underline-offset: 0.15em;
 }
 
-:root[data-theme="underground"] a:hover {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) a:hover {
   color: var(--ug-blue-deep);
 }
 
-:root[data-theme="underground"] h2 a,
-:root[data-theme="underground"] h1 a {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) h2 a,
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) h1 a {
   text-decoration: none;
 }
 
-:root[data-theme="underground"] h2 a:hover,
-:root[data-theme="underground"] h1 a:hover {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) h2 a:hover,
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) h1 a:hover {
   text-decoration: underline;
 }
 
-:root[data-theme="underground"] .meta,
-:root[data-theme="underground"] time {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .meta,
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) time {
   color: var(--ug-graphite);
 }
 
 /* Cards: paper slips, nearly solid so text sits on calm ground. */
-:root[data-theme="underground"] .card {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .card {
   position: relative;
   border: none;
   border-radius: 14px;
   background: var(--panel);
-  box-shadow: 0 0 0 1.5px rgba(43, 47, 214, 0.16), 0 6px 18px -12px rgba(31, 31, 85, 0.45);
+  box-shadow: 0 0 0 1.5px var(--ug-card-edge), 0 6px 18px -12px var(--ug-card-shadow);
 }
 
-:root[data-theme="underground"] .post-card:target {
-  box-shadow: 0 0 0 2.5px var(--ug-blue), 0 6px 18px -12px rgba(31, 31, 85, 0.45);
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .post-card:target {
+  box-shadow: 0 0 0 2.5px var(--ug-blue), 0 6px 18px -12px var(--ug-card-shadow);
 }
 
 /* Nav: lowercase rounded pills. */
-:root[data-theme="underground"] .nav-link {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .nav-link {
   font-family: var(--ug-display-font);
   font-weight: 800;
   text-transform: lowercase;
   letter-spacing: 0.01em;
   color: var(--ug-blue);
-  border: 1.5px solid rgba(43, 47, 214, 0.35);
+  border: 1.5px solid var(--ug-pill-edge);
   border-radius: 999px;
-  background: rgba(231, 229, 244, 0.75);
+  background: var(--ug-pill-bg);
 }
 
-:root[data-theme="underground"] .nav-link:hover {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .nav-link:hover {
   border-color: var(--ug-blue);
 }
 
-:root[data-theme="underground"] .nav-link.is-active {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .nav-link.is-active {
   color: var(--active-ink);
   background: var(--ug-blue);
   border-color: var(--ug-blue);
 }
 
 /* Buttons: blue ink pills. Theme-menu controls keep their own look. */
-:root[data-theme="underground"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.lcd-palette__trigger),
-:root[data-theme="underground"] .button {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.lcd-palette__trigger),
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .button {
   font-family: var(--ug-display-font);
   font-weight: 800;
   text-transform: lowercase;
   border-radius: 999px;
 }
 
-:root[data-theme="underground"] button[type="submit"]:not(.theme-menu__option):not([data-action]) {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) button[type="submit"]:not(.theme-menu__option):not([data-action]) {
   color: var(--active-ink);
   background: var(--ug-blue);
   border-color: var(--ug-blue);
 }
 
-:root[data-theme="underground"] button[type="submit"]:not(.theme-menu__option):not([data-action]):hover {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) button[type="submit"]:not(.theme-menu__option):not([data-action]):hover {
   background: var(--ug-blue-deep);
 }
 
-:root[data-theme="underground"] label,
-:root[data-theme="underground"] summary {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) label,
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) summary {
   font-family: var(--ug-display-font);
 }
 
 /* Inputs: light paper, blue focus. */
-:root[data-theme="underground"] input,
-:root[data-theme="underground"] textarea,
-:root[data-theme="underground"] select {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) input,
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) textarea,
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) select {
   border-color: var(--line);
   border-radius: 10px;
 }
 
-:root[data-theme="underground"] input:focus-visible,
-:root[data-theme="underground"] textarea:focus-visible,
-:root[data-theme="underground"] select:focus-visible,
-:root[data-theme="underground"] a:focus-visible,
-:root[data-theme="underground"] button:focus-visible {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) input:focus-visible,
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) textarea:focus-visible,
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) select:focus-visible,
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) a:focus-visible,
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) button:focus-visible {
   outline: 2.5px solid var(--ug-blue);
   outline-offset: 2px;
 }
 
-:root[data-theme="underground"] ::selection {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) ::selection {
   background: var(--ug-blue);
-  color: #f3f2fd;
+  color: var(--active-ink);
+}
+
+/* Dark halftone: the same dot layer, flipped. Inverting turns the white
+   ground black (gone under screen) and the dots light; the hue turn brings
+   the moon back to blue, and grey smudges print pale. */
+:root[data-theme="undergrounddark"] body::after {
+  filter: contrast(24) invert(1) hue-rotate(180deg);
+  mix-blend-mode: screen;
+  opacity: 0.6;
 }
 
 /* Print and forced colours: drop the texture. */
 @media print, (forced-colors: active) {
-  :root[data-theme="underground"] body::after {
+  :root:is([data-theme="underground"], [data-theme="undergrounddark"]) body::after {
     display: none;
   }
 }

@@ -88,22 +88,55 @@ final class InboxFeedTest
         }
     }
 
+    public function testLineOnlyClaimsAndReleasesInTheClaimsThreadStayOutOfOtherNewPosts(): void
+    {
+        [$read, $feed] = $this->setUp('claims');
+        $this->post($read, 'claims', '2026-11-07T10:00:00Z', 'other');
+        $this->post($read, 'elsewhere', '2026-11-07T10:01:00Z', 'other');
+        $this->post($read, 'mine', '2026-11-07T10:02:00Z', 'k1', 'claims', 'claim: PF-20261104-B18');
+        $this->now = '2026-11-07T11:00:00Z';
+        $feed->items('replies');
+        $feed->items('new');
+        $before = $feed->unreadCount('new');
+        $this->post($read, 'bare-claim', '2026-11-07T11:10:00Z', 'other', 'claims', "claim: PF-20261104-B18, PF-20261104-B12\n");
+        $this->post($read, 'bare-release', '2026-11-07T11:11:00Z', 'other', 'bare-claim', '  Release  ');
+        $this->post($read, 'release-one', '2026-11-07T11:12:00Z', 'other', 'bare-claim', 'release: PF-20261104-B12');
+        $this->post($read, 'guest-claim', '2026-11-07T11:13:00Z', null, 'claims', 'CLAIM: PF-20261104-B10');
+        // These still show: a claim with a note, ordinary talk in the claims thread, and the same lines in any other thread.
+        $this->post($read, 'claim-with-note', '2026-11-07T11:14:00Z', 'other', 'claims', "claim: PF-20261104-B10\n\nBranch fix/collapse.");
+        $this->post($read, 'talk', '2026-11-07T11:15:00Z', 'other', 'claims', 'Is anyone still on the favicon one?');
+        $this->post($read, 'elsewhere-claim', '2026-11-07T11:16:00Z', 'other', 'elsewhere', 'claim: PF-20261104-B18');
+        // A release of my own claim is a reply to me, so it reaches me whatever its body.
+        $this->post($read, 'released-mine', '2026-11-07T11:17:00Z', 'other', 'mine', 'release');
+
+        assertSame(['claim-with-note', 'talk', 'elsewhere-claim'], array_column($feed->items('new'), 'post_id'));
+        assertSame($before + 3, $feed->unreadCount('new'));
+        assertSame(['released-mine'], array_column($feed->items('replies'), 'post_id'));
+
+        // A site with no claims thread shows them all, as before.
+        [$plainRead, $plain] = $this->setUp();
+        $this->post($plainRead, 'claims', '2026-11-07T10:00:00Z', 'other');
+        $plain->items('new');
+        $this->post($plainRead, 'bare-claim', '2026-11-07T12:10:00Z', 'other', 'claims', 'claim: PF-20261104-B18');
+        assertSame(['bare-claim'], array_column($plain->items('new'), 'post_id'));
+    }
+
     /** @return array{0:PDO,1:InboxFeed} */
-    private function setUp(): array
+    private function setUp(?string $claimsThread = null): array
     {
         $this->now = '2026-11-07T12:00:00Z';
         $read = new PDO('sqlite::memory:');
         $read->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         foreach (ReadModelSchema::statements() as $statement) $read->exec($statement);
         $marks = new InboxMarkStore(new PDO('sqlite::memory:'), fn (): string => $this->now);
-        return [$read, new InboxFeed($read, $marks, 'alice', ['k1', 'k2'])];
+        return [$read, new InboxFeed($read, $marks, 'alice', ['k1', 'k2'], $claimsThread)];
     }
 
-    private function post(PDO $read, string $postId, string $createdAt, ?string $author, ?string $parentId = null): void
+    private function post(PDO $read, string $postId, string $createdAt, ?string $author, ?string $parentId = null, ?string $body = null): void
     {
         $threadId = $parentId === null ? $postId : (string) $read->query('SELECT thread_id FROM posts WHERE post_id = ' . $read->quote($parentId))->fetchColumn();
         $read->prepare("INSERT INTO posts (post_id, created_at, thread_id, parent_id, subject, body, board_tags_json, author_identity_id, sequence_number)
             VALUES (?, ?, ?, ?, ?, ?, '[\"general\"]', ?, 0)")
-            ->execute([$postId, $createdAt, $threadId, $parentId, $parentId === null ? 'Subject ' . $postId : null, 'Body ' . $postId, $author]);
+            ->execute([$postId, $createdAt, $threadId, $parentId, $parentId === null ? 'Subject ' . $postId : null, $body ?? 'Body ' . $postId, $author]);
     }
 }
