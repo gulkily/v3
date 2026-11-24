@@ -42,6 +42,53 @@
     return cache.get(armor);
   }
 
+  function utcTime(date) {
+    return date.toISOString().replace("T", " ").replace(/\.\d+Z$/, " UTC");
+  }
+
+  // Why a signature failed, in words a reader can act on. The kind stays "bad-signature" so
+  // previews and caching treat it as before; `reason` picks the short line.
+  async function signatureProblem(signature, error, verificationKeys) {
+    const detail = String(error && error.message || "").trim();
+    let created = null;
+    let keyId = "";
+    try {
+      const packet = (await signature.signature).packets[0];
+      created = packet && packet.created instanceof Date ? packet.created : null;
+    } catch (_) { /* fall back to the error text */ }
+    try { keyId = signature.keyID && signature.keyID.toHex ? signature.keyID.toHex().toUpperCase() : ""; } catch (_) { keyId = ""; }
+
+    const now = new Date();
+    if ((created && created.getTime() > now.getTime()) || /in the future/i.test(detail)) {
+      return {
+        kind: "bad-signature",
+        reason: "clock",
+        message: "This message was signed" + (created ? " at " + utcTime(created) : "")
+          + ", but this device’s clock says it is " + utcTime(now)
+          + ". Check this device’s date, time and time zone, then retry. It will also verify once the clock passes the signing time.",
+      };
+    }
+
+    const known = keyId !== "" && verificationKeys.some(function (key) {
+      try {
+        return key.getKeyIDs().some(function (id) { return id.toHex().toUpperCase() === keyId; });
+      } catch (_) { return false; }
+    });
+    if (keyId !== "" && !known) {
+      return {
+        kind: "bad-signature",
+        reason: "unknown-key",
+        message: "This message was signed with key " + keyId + ", which is not one of the sender’s approved keys.",
+      };
+    }
+
+    return {
+      kind: "bad-signature",
+      reason: "invalid",
+      message: "The sender signature could not be verified." + (detail ? " (" + detail + ")" : ""),
+    };
+  }
+
   async function decryptEnvelope(input) {
     const options = input || {};
     const privateKeyArmor = armoredPrivateKey();
@@ -105,12 +152,12 @@
       return { kind: "bad-signature", message: "This message has no verifiable sender signature." };
     }
 
-    try {
-      await Promise.all(decrypted.signatures.map(function (signature) {
-        return signature.verified;
-      }));
-    } catch (error) {
-      return { kind: "bad-signature", message: "The sender signature could not be verified." };
+    const checks = await Promise.allSettled(decrypted.signatures.map(function (signature) {
+      return signature.verified;
+    }));
+    const failed = checks.findIndex(function (check) { return check.status === "rejected"; });
+    if (failed !== -1) {
+      return await signatureProblem(decrypted.signatures[failed], checks[failed].reason, verificationKeys);
     }
 
     if (privateKeyArmor !== armoredPrivateKey()) return {kind:'read-failed',message:'Browser identity changed. Reload Messages.'};
@@ -164,7 +211,8 @@
   }
 
   // The short line shown on a message that can't be read; the reader's full message goes under Details.
-  function problemLabel(kind) {
+  function problemLabel(kind, reason) {
+    if (kind === "bad-signature" && reason === "clock") return "Dated ahead of this device’s clock";
     if (kind === "bad-signature") return "Couldn’t verify this message";
     if (kind === "unavailable" || kind === "decryption-failed") return "Couldn’t decrypt this message";
     return "Couldn’t load this message";
@@ -178,7 +226,7 @@
     plaintextNode.hidden = true;
 
     if (result.kind !== "verified") {
-      errorNode.textContent = problemLabel(result.kind);
+      errorNode.textContent = problemLabel(result.kind, result.reason);
       errorNode.className = "private-message-problem feedback-" + result.kind;
       errorNode.hidden = false;
       return;

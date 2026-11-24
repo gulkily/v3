@@ -154,7 +154,16 @@ vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
   const badSignature = await read({ encryptedEnvelope: envelope, senderPublicKeyArmors: [mallory.publicKey] });
   const unsignedEnvelope = await openpgp.encrypt({ message: await openpgp.createMessage({ text: 'unsigned' }), encryptionKeys: [alicePublic], format: 'armored' });
   const unsigned = await read({ encryptedEnvelope: unsignedEnvelope, senderPublicKeyArmors: [bob.publicKey] });
-  process.stdout.write(JSON.stringify({ aliceCopy, bobCopy, unavailable, undecryptable, tampered, badSignature, unsigned }));
+  const bobDated = await openpgp.generateKey({ type: 'ecc', curve: 'ed25519', userIDs: [{ name: 'bob' }], date: new Date(Date.now() - 86400000), format: 'armored' });
+  const futureEnvelope = await openpgp.encrypt({
+    message: await openpgp.createMessage({ text: 'from tomorrow' }),
+    encryptionKeys: [alicePublic],
+    signingKeys: await openpgp.readPrivateKey({ armoredKey: bobDated.privateKey }),
+    date: new Date(Date.now() + 3600000),
+    format: 'armored'
+  });
+  const future = await read({ encryptedEnvelope: futureEnvelope, senderPublicKeyArmors: [bobDated.publicKey] });
+  process.stdout.write(JSON.stringify({ aliceCopy, bobCopy, unavailable, undecryptable, tampered, badSignature, unsigned, future }));
 })().catch((error) => { process.stderr.write(error.stack || String(error)); process.exit(1); });
 NODE;
 
@@ -170,6 +179,12 @@ NODE;
         assertSame('decryption-failed', $result['tampered']['kind']);
         assertSame('bad-signature', $result['badSignature']['kind']);
         assertSame('bad-signature', $result['unsigned']['kind']);
+        assertSame('unknown-key', $result['badSignature']['reason']);
+        assertSame(true, str_contains($result['badSignature']['message'], 'not one of the sender’s approved keys'));
+        assertSame('bad-signature', $result['future']['kind']);
+        assertSame('clock', $result['future']['reason']);
+        assertSame(true, str_contains($result['future']['message'], 'this device’s clock says it is'));
+        assertSame(false, array_key_exists('plaintext', $result['future']));
         assertSame(false, array_key_exists('plaintext', $result['unavailable']));
         assertSame(false, array_key_exists('plaintext', $result['undecryptable']));
         assertSame(false, array_key_exists('plaintext', $result['tampered']));
