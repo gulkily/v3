@@ -29,7 +29,7 @@ Found on a first read at `2d7805c8`. Each cycle re-checks its own part before pl
 
 - [ ] Maintainer decides whether to turn `FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL` off on zenmemes.com until cycle 1 ships. It stops new cross-account keys; existing ones keep access until cycle 1.
 
-## Cycle 1 — `private_key_access` (staged; estimate 0.90)
+## Cycle 1 — `private_key_access` (staged; estimate 0.95)
 
 A key gets private access only if it is the username's first key, was approved by a same-username key with private access, was approved by an operator, or was later confirmed by one of those. Ships before any group work; fixes today's DM exposure on its own.
 
@@ -37,7 +37,8 @@ A key gets private access only if it is the username's first key, was approved b
 - [x] Step 1 Revision 1: how the owner finds out (device line with short code, QR confirm link, Confirm / Not me card on Unread and Messages, operator path); estimate 0.90, 2026-11-24
 - [x] Step 1 approved, 2026-11-24
 - [x] Step 2 written, 2026-11-24: Not me reuses key retirement; release order is flag off, deploy, confirm own devices from User Access, flag on
-- [ ] Step 2 approved
+- [x] Step 2 approved, 2026-11-24
+- [x] Step 3 written: eight stages, estimate 0.95, 2026-11-24
 - [ ] Step 3 approved; plans moved to `docs/plans/private_key_access/` and committed
 - [ ] Before deploy: list the zenmemes.com keys the downgrade affects; maintainer confirms his own devices
 - [ ] PR opened, merged, deployed
@@ -67,6 +68,7 @@ Option A1: groups with fixed membership. The creator picks members once; any mem
 
 ## Later, not planned
 
+- Quill confirms a key's private access: [PF-20261124-F01](../feedback/items/PF-20261124-F01.txt), after cycle 1
 - Quill and agent support for groups
 - Notifications for group messages (see [notifications checklist](./notifications_checklist.md))
 - Showing members each other's key lists, Signal-style

@@ -41,3 +41,19 @@
 
 **Uncertain assessments**
 - Whether the read model's `approved_by_identity_id` is complete for legacy grants; Step 3 should check it against receipts on an import before relying on it.
+
+## 2026-11-24T17:55Z — Step 3
+
+**Necessary/useful instructions**
+- `step3_development_plan_do.md` "include a stage that replays each reported failure": produced Stage 8, the only place Ilya's zenmemes.com case is accepted; retain.
+- `CONTRIBUTING.md` "Read-model schema changes": prompted following `KeyRetirement`'s repository-read pattern, so the cycle needs no schema change; retain.
+
+**Redundant/unnecessary instructions**
+- `step3_development_plan_after.md` checklist item 6 repeats the commit rule already in `RAILSPIKE.md` and the Before file.
+
+**Inapplicable instructions**
+- Documentation-only scope rules: application change.
+
+**Uncertain assessments**
+- "Keep Step 1-3 planning docs uncommitted": not followed; the maintainer asked to track this work across chats, so the drafts are pushed to `plans/private-group-chats`. Step 4 still makes its own planning commit on the feature branch.
+- The plan runs slightly over one page because of eight stages.

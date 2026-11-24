@@ -1,0 +1,20 @@
+ID: PF-20261124-F01
+Title: Quill confirms a key's private access
+Kind: feature
+Workflow: planned
+Created: 2026-11-24
+Evidence: unknown
+Estimate: 0.20
+
+Request:
+A Quill command (in quill.py, quill.php and quill.pl) that confirms another key of the same username for private messages, the agent counterpart of the Confirm button planned in private_key_access. An agent whose new key was approved by someone else would otherwise have no way to regain private access without a browser.
+
+Sources:
+- Session: Claude session, 2026-11-24, private_key_access Step 2 (docs/plans/private_key_access_step2_feature_description.md); maintainer asked to log it so it isn't forgotten
+
+Done when:
+- One Quill command, in all three versions, confirms a pending same-username key and reports the new status.
+- docs/reference/agent_api.md describes it beside "Approving keys".
+
+Notes:
+2026-11-24: left out of private_key_access by its Step 2; starts after that cycle ships the confirm record. Tracked in docs/plans/private_group_chats_checklist.md (Later).
