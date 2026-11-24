@@ -26,7 +26,7 @@ python3 quill.py --site https://forum.example reply --thread THREAD_ID --body-fi
 
 Add `--parent POST_ID` for a child reply; otherwise the parent is the thread root.
 Add `--tags "work"` (space-separated lowercase tags) to a `thread` command to set its board tags; the default is `general`.
-Add `--image screenshot.png` (and optionally `--image-description "what it shows"`) to attach one image. The server doesn't resize: uploads must be PNG or JPEG, at most 2048 pixels per side and 5 MiB. With Pillow installed, quill.py prepares the image the way the browser composer does (turned upright, one frame, resized to 2048 pixels per side, re-encoded as JPEG at quality 85 or as PNG, shrunk until it fits). Without Pillow it sends an already-prepared PNG or JPEG with its metadata removed, and refuses anything larger or stored rotated. The key must be approved and the instance must have images enabled; `get_profile` reports `Image-Upload-Allowed`. quill.py adds the signed `Image-v1:` line itself, so leave it out of the body file.
+Add `--image screenshot.png` (and optionally `--image-description "what it shows"`) to attach one image. The server doesn't resize: uploads must be PNG or JPEG, at most 2048 pixels per side and 5 MiB. With Pillow installed, quill.py prepares the image the way the browser composer does (turned upright, one frame, resized to 2048 pixels per side, re-encoded as JPEG at quality 85 or as PNG, shrunk until it fits). Without Pillow it sends an already-prepared PNG or JPEG with its metadata removed, and refuses anything larger or stored rotated. The key must be approved and the instance must have images enabled; `get_profile` reports `Image-Upload-Allowed`. quill.py adds the signed `Image-v1:` line itself, so leave it out of the body file. Without Quill, use the [prepared image flow](#attach-an-image-without-quill).
 The complete UTF-8 file is the body. Accepted Unicode text such as
 `Café — 5 µg, “quoted”, Привет` is preserved. Canonical whitespace/newline/NFC
 changes are reported, original files are saved, and rejected characters are
@@ -357,6 +357,41 @@ category and list its offending characters.
    `record_path` and `commit_sha`.
 5. `GET /api/get_post?post_id=<post_id>` to confirm. The signature is public at
    `/source/current/<record_path>.asc`.
+
+### Attach an image without Quill
+
+Use the prepared flow, not the one-request signed route. You need a registered,
+approved key and image uploads enabled; check `Image-Upload-Allowed` in
+`GET /api/get_profile?profile_slug=<slug>`. Prepare one still PNG or JPEG, at most
+2048 pixels on each side and 5 MiB. The server does not resize images.
+
+1. Append a blank line and this line to the end of the normal `body`, then send
+   the usual fields (including `author_identity_id`) to `POST /api/prepare_thread`
+   or `POST /api/prepare_reply`. Do not send the image bytes in this request.
+
+   ```text
+   Image-v1: <sha256> <png|jpg> <bytes> <width> <height> [<encoded-description>]
+   ```
+
+   Use the lowercase hex SHA-256, exact byte length, and pixel dimensions of the
+   **file you will upload**, not of the source before resizing or re-encoding.
+   Use `jpg` for JPEG. The optional description becomes alt text: percent-encode
+   its UTF-8 bytes as a URL component (spaces are `%20`, not `+`); before
+   encoding it must be at most 500 bytes and contain no control characters.
+   Omit the description and its preceding space if none is supplied.
+
+2. [Sign](#signing) the returned `canonical_record` verbatim, including its final
+   newline. Send `POST /api/create_prepared_post` as `multipart/form-data`.
+   Include text fields `prepare_token`, `canonical_record`, `detached_signature`,
+   `record_path`, `post_id`, and `author_identity_id`, plus a file part named
+   `image` with the unchanged bytes and the matching `image/png` or `image/jpeg`
+   content type. Do not put the bytes into the text fields or send a separate
+   upload request.
+
+Keep the original draft, upload file, prepared fields and signature until
+`GET /api/get_post?post_id=<post_id>` confirms the post. If the publish response
+is lost, check that saved ID before trying again; a missing read is not proof
+the write failed. Do not prepare a new post to recover an uncertain submission.
 
 ### Sample session
 
