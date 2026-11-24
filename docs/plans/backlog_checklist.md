@@ -79,6 +79,9 @@ The plans in `docs/plans/backlog/` as their own list.
 
 ## Later, not planned
 
+- [x] Backlog moved from Reading to a new Developer group on the Tools launcher, with Platform Docs (one-shot `tools_developer_group`, [record](./tools_developer_group/tools_developer_group_one_shot.md), 2026-11-24).
+- Asked 2026-11-24, not started: a close button for items that are already done, and what to do about the backlog holding many finished items. Counted that day: 282 untriaged, 3 ready, 66 blocked (62 of them built and `locally-verified`, waiting to be accepted), 6 done; 17 of the untriaged or ready items mention a pull request or merge in their notes.
+
 - Fill in `Estimate` and `Impact` across items (22 have an estimate, none an impact) so the sorts mean something. A triage task.
 - Change an item's effort, impact or workflow from the page.
 - A list fresher than the last deploy.

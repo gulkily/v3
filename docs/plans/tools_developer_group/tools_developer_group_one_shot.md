@@ -8,7 +8,7 @@ Extended estimates: enabled. No alternatives or work units, so no unit estimates
 
 **Cycle estimate: 0.10**
 
-Status: planned; next permitted action: implementation.
+Status: implemented and committed; next permitted action: maintainer review (PR).
 
 Feedback item: none matches (searched `docs/feedback/items/` for the launcher's groups and a developer section). Not allocating one for a one-shot the maintainer asked for directly.
 
@@ -39,10 +39,38 @@ Verification and recovery plan: `./v3 test --smoke ToolsRegistryTest NavIconSets
 
 Starting revisions and branch: `feat/tools_developer_group` from `origin/main` `b4a4eec4e` (the #395 merge).
 
-Planning commit: pending.
+Planning commit: `a47e06bd9` (plan and index entry only, before any implementation).
 
 Study history:
 - 2026-11-24 UTC, intake and execution entry: **0.10**. Recorded after reading the registry, the template, the icon stylesheet and the tests, so not a clean intake. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified.
+
+Dated execution history:
+- 2026-11-24: `ToolsPageSupport`: `developer` ("Developer") added to `groups()` between Community and Operator; Platform Docs and Backlog moved to it, Platform Docs first. Addition and two moves.
+- 2026-11-24: `public/assets/theme-nav-icons.css`: a Developer heading glyph in each of the three icon sets, angle brackets around a slash.
+- 2026-11-24, scope growth: the fifth heading made the launcher taller, and the live site lists all 23 tools, so the last row (Usage Reports) fell 25 px below a 1280×720 window in Gloss and the other default themes. `public/assets/tools.css`: the gap between groups goes from 1.1rem to 0.7rem and the heading's bottom margin from 0.4rem to 0.3rem. That puts the default themes back at exactly the height they had (last tool at 712 px). Change to existing spacing, in every theme.
+- 2026-11-24, discovery: the plan named `tests/browser/tools_launcher.mjs` as the check for the 720 px fit, but it did not measure it. Added the measurement at 1280 px on zenmemes, with the themes that do not fit named in the test: Bubblegum, Engagify, Spearmint, Arena, Zalgo and Underground did not fit before this change; Word97 (727) and Midnight (730) do not since. The concept entry said every theme fits; it now says which do.
+- 2026-11-24, failing on the base commit and fixed here: `FORUM_SITE_ID=chouse node tests/browser/tools_launcher.mjs` failed on `origin/main`. It expected Agent Prompts in the Tools bar, but that tool is listed only on a site whose profile has prompts, and chouse has none. The check now drops Agent Prompts from what it expects on such a site.
+- 2026-11-24: tests: `ToolsRegistryTest` (the five groups in order; what Reading and Developer hold), `LocalAppSmokeTest` (Developer between Community and Operator with Platform Docs; four dividers in the bar).
+- 2026-11-24: docs: the Tools launcher and theme navigation icons concept entries, the UI copy checklist, the backlog checklist.
+
+Study history, closeout:
+- 2026-11-24 UTC: retrospective scope assessment **0.14**. The grouping itself was as planned; the spacing change, the fit measurement and the chouse fix were not foreseen. Claude, single exposed rater. Maintainer judgment pending; measured time unknown.
+
+Outcome: delivered, with two themes newly a few pixels over the 720 px fit.
+
+Verification:
+- Passed: `./v3 test --smoke ToolsRegistryTest NavIconSetsTest UsageNamesTest LocalAppSmokeTest`: 491 run, 491 passed. Full suite not run.
+- Passed: `node tests/browser/tools_launcher.mjs` on zenmemes (46 theme and width cases) and with `FORUM_SITE_ID=chouse` (36 cases): groups and hooks in order, each tool once, the bar's dividers, whole labels, no sideways overflow, a glyph on every heading in the seven icon themes, and the 720 px fit on zenmemes.
+- Looked at: the Gloss launcher at 1280 px.
+- Measured, last tool's bottom edge at 1280 px with all 23 tools, before → after: default themes 712 → 712; Word97 675 → 727; Midnight 678 → 730; Bubblegum 775 → 871; LCD 612 → 665; Chicago 604 → 657; Engagify 847, Spearmint 764, Zalgo 742 unchanged; Arena 751 → 753; Underground 721 → 720.
+- Not checked: the live site; a phone beyond the check's 390 px cases.
+- Inapplicable: schema, read model, flags, new destinations.
+
+Final review: the diff touches `ToolsPageSupport.php`, `theme-nav-icons.css`, `tools.css`, three tests, two concept entries, three checklists and plan records. No tool added, renamed or removed; no dependency; Deploy now is enough.
+
+Commit/merge/publication status: completion commit pending at the time of writing; PR to follow.
+
+Debug: [debug log](./tools_developer_group_debug_log.md).
 
 Enhancement requests:
 - A close button for finished backlog items (maintainer, same message). Not in this cycle; its own cycle, pending his choice of approach.

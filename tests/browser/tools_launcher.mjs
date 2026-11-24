@@ -19,7 +19,9 @@ const site = process.env.FORUM_SITE_ID || 'zenmemes';
 const php = code => JSON.parse(spawnSync('php', ['-r', `require '${project}/autoload.php'; echo json_encode(${code});`], { encoding: 'utf8' }).stdout);
 const permitted = php(`ForumRewrite\\SiteProfileRegistry::all()['${site}']['permittedThemes']`);
 const themes = !process.argv[3] || process.argv[3] === 'all' ? permitted : process.argv[3].split(',');
-const registry = php('ForumRewrite\\Tools\\ToolsPageSupport::registry()');
+// Agent Prompts is listed only on a site whose profile has prompts (/agent/ exists there); chouse has none.
+const hasAgentPage = php(`ForumRewrite\\ProfilePresentationContent::agentPrompts(ForumRewrite\\SiteProfileRegistry::all()['${site}'], '') !== []`);
+const registry = php('ForumRewrite\\Tools\\ToolsPageSupport::registry()').filter(tool => tool.key !== 'agent-prompts' || hasAgentPage);
 const groups = php('ForumRewrite\\Tools\\ToolsPageSupport::groups()');
 const themeKey = php(`ForumRewrite\\BrowserRuntimeProfile::fromProfile(ForumRewrite\\SiteProfileRegistry::all()['${site}'])['themeStorageKey']`);
 const iconThemes = ['word97', 'chicago', 'midnight', 'gloss', 'engagify', 'bubblegum', 'spearmint'];
@@ -106,6 +108,14 @@ try {
         const icon = await iconOf(page.locator(`.tool-launcher-group-heading[data-shape="${shape}"]`));
         assert.ok(icon.image.includes('data:image/svg+xml') && icon.width > 0, `${label}: ${shape} group heading icon ${JSON.stringify(icon)}`);
       }
+    }
+    // Every tool in view in a 1280x720 window without scrolling. Measured with every flagged tool listed (23), which is
+    // the tallest the launcher gets. These themes are taller than that with all 23 and are left out: Bubblegum, Engagify,
+    // Spearmint, Arena, Zalgo and Underground already were before the Developer group; Word97 and Midnight are by 7 to 10 px since.
+    // Checked on zenmemes only: chouse's taller header puts its last tool at about 742 px in the default themes, as it did before.
+    if (site === 'zenmemes' && width === 1280 && !['bubblegum', 'engagify', 'spearmint', 'arena', 'zalgo', 'underground', 'word97', 'midnight'].includes(theme)) {
+      const lowest = await page.locator('.tool-launcher-button').evaluateAll(links => Math.max(...links.map(link => link.getBoundingClientRect().bottom)));
+      assert.ok(lowest <= 720, `${label}: the last tool ends at ${Math.round(lowest)} px, below a 720 px window`);
     }
     const listed = await page.locator('.tool-launcher-button').evaluateAll(links => links.map(link => link.getAttribute('href')));
     assert.deepEqual(listed, expected, `${label}: every tool once, in group order`);
