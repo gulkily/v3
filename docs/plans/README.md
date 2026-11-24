@@ -422,6 +422,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Compact unavailable private messages](private_message_unavailable/)
 - [Event feature gating](event_feature_gating/)
 - [Event time](event_time/)
+- [Event end time](event_end_time/event_end_time_one_shot.md) — one-shot: events get an end time (`Event-End-Time`, composer Ends, ranges like "1-4pm") and an `event-time:` reply to correct an event's times; calendar exports stop assuming one hour.
 - [Extension improvement cookbook](extension_improvement_cookbook/)
 - [Fast LLM post scoring](fast_llm_post_scoring/)
 - [Fast post scoring batch runner](fast_post_scoring_batch_runner/)

@@ -720,18 +720,28 @@ Ordinary members require username changes disabled, matching unchanged bootstrap
 With event support on (`FORUM_EVENT_SUPPORT_ENABLED`), `prepare_thread` and
 `create_thread` take optional `event_date` (`YYYY-MM-DD`), `event_end_date` (the
 inclusive last day; needs `event_date` and must not be before it; equal to the start
-means one day), `event_time` (`HH:MM`), `event_location` and `event_link`. The
-prepared record carries them as `Event-Date`, `Event-End-Date`, `Event-Time`,
-`Event-Location` and `Event-Link` after `Subject`. With event support off, any of
+means one day), `event_time` (`HH:MM`), `event_end_time` (`HH:MM`, requires
+`event_time`), `event_location` and `event_link`. The prepared record carries them
+as `Event-Date`, `Event-End-Date`, `Event-Time`, `Event-End-Time`, `Event-Location`
+and `Event-Link` after `Subject`. A timed event without an end keeps the 60-minute
+default on its last day. For a one-day event, an explicit end at or before the
+start falls on the following day. With event support off, any of
 them is refused. With Event phrases on (`FORUM_EVENT_WHEN_ENABLED`), `event_when`
 adds the poster's own words for when (1 to 120 characters, needs `event_date`) as
 `Event-When` after `Event-Link`; the dates stay the authority, and the server does
 not read the phrase into dates for you. `GET /api/read_event_phrase?phrase=...&today=YYYY-MM-DD`
-returns the fields the composer's Fill would set, and writes nothing. Client-built records for `create_signed_post` cannot carry event
+returns the fields the composer's Fill would set, including `event_end_time` for a
+range the built-in reader recognizes. It writes nothing. Client-built records for `create_signed_post` cannot carry event
 headers; use the prepared flow. A root-approved operator settles an event with a line
 `event: confirmed` or `event: declined` in any post of its thread; see the
 [calendar reference](calendar.md#confirming-or-declining). Read the calendar as iCal at `GET /calendar.ics`, `GET /calendar/<tag>.ics`
 or `GET /threads/<id>.ics` ([subscribing](calendar.md#subscribing)).
+
+The verified thread author or a current operator can correct an existing event
+with a reply line `event-time: 13:00-16:00`. A start-only line such as
+`event-time: 13:00` restores the default end. The latest eligible reply wins,
+using its first matching line. Quoted, retracted, hidden and unverified replies
+have no effect. The displayed event and exports use the corrected times.
 
 A thread's author or a root-approved operator can give the thread its own page
 theme, shown to every reader. Put a line `theme: <name>` in the opening post or any

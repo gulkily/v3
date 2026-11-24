@@ -59,6 +59,7 @@
       event_date: value(form, 'event_date'),
       event_end_date: value(form, 'event_end_date'),
       event_time: value(form, 'event_time'),
+      event_end_time: value(form, 'event_end_time'),
       event_date_fixed: (date && date.readOnly) || value(form, 'event_date_fixed') === '1' ? '1' : ''
     });
     button.disabled = true;
@@ -76,6 +77,7 @@
           setField(form, 'event_date', payload.event_date || '');
           setField(form, 'event_end_date', payload.event_end_date || '');
           setField(form, 'event_time', payload.event_time || '');
+          setField(form, 'event_end_time', payload.event_end_time || '');
         }
         showStatus(box, payload.message || '');
       })

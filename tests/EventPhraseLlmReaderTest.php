@@ -77,7 +77,7 @@ final class EventPhraseLlmReaderTest
         $fill->fill('Friday at 25:00', self::TODAY, [], false);
         $result = $fill->fill(' the day after Thanksgiving ', self::TODAY, [], false);
         eventPhraseLlmAssertSame(['the day after Thanksgiving'], $calls);
-        eventPhraseLlmAssertSame(['event_date' => '2026-11-27', 'event_end_date' => '', 'event_time' => '18:00'], $result['fields']);
+        eventPhraseLlmAssertSame(['event_date' => '2026-11-27', 'event_end_date' => '', 'event_time' => '18:00', 'event_end_time' => ''], $result['fields']);
     }
 
     /** @param array<string, mixed> $decoded */

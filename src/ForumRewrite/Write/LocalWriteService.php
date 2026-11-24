@@ -140,6 +140,7 @@ class LocalWriteService
             $eventTime = $this->normalizeEventTime((string) ($input['event_time'] ?? ''));
             $eventEndDate = $this->normalizeEventEndDate((string) ($input['event_end_date'] ?? ''), $eventDate);
             $eventWhen = $this->normalizeEventWhen($input, $eventDate);
+            $eventEndTime = $this->normalizeEventEndTime((string) ($input['event_end_time'] ?? ''), $eventTime);
 
             $bodyFormat = $this->normalizeBodyFormat($input, $isQdbQuote ? PostRecord::FORMAT_PLAIN : PostRecord::FORMAT_MARKDOWN);
             $attemptId = !$isQdbQuote && $authorIdentityId === null ? $this->composeAttemptPostId('thread', $input) : null;
@@ -147,7 +148,7 @@ class LocalWriteService
                 $postId = $attemptId;
                 $createdAt = $this->composeAttemptCreatedAt($postId) ?? $createdAt;
             }
-            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat, $eventEndDate, $this->normalizeTheme($input), $eventWhen);
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat, $eventEndDate, $this->normalizeTheme($input), $eventWhen, $eventEndTime);
 
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = $attemptId !== null ? CanonicalPathResolver::post($postId) : CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -488,8 +489,9 @@ class LocalWriteService
             $eventTime = $this->normalizeEventTime((string) ($input['event_time'] ?? ''));
             $eventEndDate = $this->normalizeEventEndDate((string) ($input['event_end_date'] ?? ''), $eventDate);
             $eventWhen = $this->normalizeEventWhen($input, $eventDate);
+            $eventEndTime = $this->normalizeEventEndTime((string) ($input['event_end_time'] ?? ''), $eventTime);
             $bodyFormat = $this->normalizeBodyFormat($input, $isQdbQuote ? PostRecord::FORMAT_PLAIN : PostRecord::FORMAT_MARKDOWN);
-            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat, $eventEndDate, $this->normalizeTheme($input), $eventWhen);
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat, $eventEndDate, $this->normalizeTheme($input), $eventWhen, $eventEndTime);
 
             (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -951,7 +953,8 @@ class LocalWriteService
         ?string $bodyFormat = null,
         string $eventEndDate = '',
         ?string $theme = null,
-        string $eventWhen = ''
+        string $eventWhen = '',
+        string $eventEndTime = ''
     ): string {
         return "Post-ID: {$postId}\n"
             . "Created-At: {$createdAt}\n"
@@ -961,6 +964,7 @@ class LocalWriteService
             . ($eventDate !== '' ? "Event-Date: {$eventDate}\n" : '')
             . ($eventEndDate !== '' ? "Event-End-Date: {$eventEndDate}\n" : '')
             . ($eventTime !== '' ? "Event-Time: {$eventTime}\n" : '')
+            . ($eventEndTime !== '' ? "Event-End-Time: {$eventEndTime}\n" : '')
             . ($eventLocation !== '' ? "Event-Location: {$eventLocation}\n" : '')
             . ($eventLink !== '' ? "Event-Link: {$eventLink}\n" : '')
             . ($eventWhen !== '' ? "Event-When: {$eventWhen}\n" : '')
@@ -1003,7 +1007,7 @@ class LocalWriteService
             return;
         }
 
-        foreach (['event_date', 'event_end_date', 'event_location', 'event_link', 'event_time'] as $field) {
+        foreach (['event_date', 'event_end_date', 'event_location', 'event_link', 'event_time', 'event_end_time'] as $field) {
             if (trim((string) ($input[$field] ?? '')) !== '') {
                 throw new RuntimeException('Event support is disabled for this site.');
             }
@@ -5698,7 +5702,7 @@ class LocalWriteService
         return $value === $eventDate ? '' : $value;
     }
 
-    private function normalizeEventTime(string $value): string
+    private function normalizeEventTime(string $value, string $field = 'event_time'): string
     {
         $value = trim($value);
         if ($value === '') {
@@ -5706,12 +5710,23 @@ class LocalWriteService
         }
 
         if (preg_match('/^\d{2}:\d{2}$/', $value) !== 1) {
-            throw new RuntimeException('event_time must use 24-hour HH:MM format like 19:00.');
+            throw new RuntimeException($field . ' must use 24-hour HH:MM format like 19:00.');
         }
 
         $time = \DateTimeImmutable::createFromFormat('!H:i', $value);
         if ($time === false || $time->format('H:i') !== $value) {
-            throw new RuntimeException('event_time must be a valid 24-hour time.');
+            throw new RuntimeException($field . ' must be a valid 24-hour time.');
+        }
+
+        return $value;
+    }
+
+    /** An end time needs a start time; one at or before the start means the next day. */
+    private function normalizeEventEndTime(string $value, string $eventTime): string
+    {
+        $value = $this->normalizeEventTime($value, 'event_end_time');
+        if ($value !== '' && $eventTime === '') {
+            throw new RuntimeException('event_end_time requires event_time.');
         }
 
         return $value;

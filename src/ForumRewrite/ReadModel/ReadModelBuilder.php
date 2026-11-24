@@ -192,8 +192,8 @@ final class ReadModelBuilder
              VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :agent_response_json, :body_format, :theme, :author_identity_id, :retracted_at, :retraction_class, :retraction_attribution, :ported_from, :ported_author, :ported_created_at, :ported_by, :author_label, :sequence_number)'
         );
         $insertThread = $pdo->prepare(
-            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link, event_time, event_end_date, event_when, retracted_at, retraction_class, retraction_attribution)
-             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link, :event_time, :event_end_date, :event_when, :retracted_at, :retraction_class, :retraction_attribution)'
+            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link, event_time, event_end_date, event_when, event_end_time, retracted_at, retraction_class, retraction_attribution)
+             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link, :event_time, :event_end_date, :event_when, :event_end_time, :retracted_at, :retraction_class, :retraction_attribution)'
         );
 
         $removals = \ForumRewrite\Canonical\AcceptedRemoval::all($this->repositoryRoot);
@@ -234,6 +234,7 @@ final class ReadModelBuilder
                 'event_time' => $isRetracted ? null : $record->eventTime,
                 'event_end_date' => $isRetracted ? null : $record->eventEndDate,
                 'event_when' => $isRetracted ? null : $record->eventWhen,
+                'event_end_time' => $isRetracted ? null : $record->eventEndTime,
                 'author_label' => (!$isRetracted ? $record->ported?->authorLabel() : null) ?? 'guest',
             ] + \ForumRewrite\Canonical\PortedSource::columns($isRetracted ? null : $record->ported) + [
                 'source_path' => $relativePath,
@@ -256,7 +257,7 @@ final class ReadModelBuilder
                 'retracted_at' => $removal['accepted_at'], 'retraction_class' => $removal['classification'] ?? 'operator', 'retraction_attribution' => $removal['attribution'] ?? 'operator',
                 'board_tags_json' => '[]', 'thread_type' => $meta['thread_type'] ?? null, 'agent_response_json' => null, 'body_format' => null, 'theme' => null,
                 'author_identity_id' => $meta['author_identity_id'], 'imported_score_seed' => 0, 'imported_vote_count_seed' => 0,
-                'event_date' => null, 'event_location' => null, 'event_link' => null, 'event_time' => null, 'event_end_date' => null, 'event_when' => null,
+                'event_date' => null, 'event_location' => null, 'event_link' => null, 'event_time' => null, 'event_end_date' => null, 'event_when' => null, 'event_end_time' => null,
                 'source_path' => isset($removal['signed_request']) ? \ForumRewrite\Canonical\AcceptedRetraction::path($id) : \ForumRewrite\Canonical\LabelRemoval::path($id), 'source_commit_sha' => null, 'source_order' => $low + 0.5,
             ];
         }
@@ -330,6 +331,7 @@ final class ReadModelBuilder
                     'event_time' => $post['event_time'],
                     'event_end_date' => $post['event_end_date'],
                     'event_when' => $post['event_when'],
+                    'event_end_time' => $post['event_end_time'],
                     'retracted_at' => $post['retracted_at'],
                     'retraction_class' => $post['retraction_class'],
                     'retraction_attribution' => $post['retraction_attribution'],

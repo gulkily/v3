@@ -30,6 +30,7 @@ final class PostRecordParser
         'Event-Time',
         'Event-End-Date',
         'Event-When',
+        'Event-End-Time',
     ];
 
     public function __construct(
@@ -152,6 +153,10 @@ final class PostRecordParser
                 throw new CanonicalRecordParseException('Event-End-Date must not be before Event-Date.');
             }
         }
+        $eventEndTime = isset($record->headers['Event-End-Time']) ? $this->parseEventTime($record->headers['Event-End-Time'], 'Event-End-Time') : null;
+        if ($eventEndTime !== null && $eventTime === null) {
+            throw new CanonicalRecordParseException('Event-End-Time requires Event-Time.');
+        }
         $eventWhen = $record->headers['Event-When'] ?? null;
         if ($eventWhen !== null) {
             if ($eventDate === null) {
@@ -189,6 +194,7 @@ final class PostRecordParser
             $theme,
             $eventWhen,
             PortedSource::fromHeaders($record->headers),
+            $eventEndTime,
         );
     }
 
@@ -259,15 +265,15 @@ final class PostRecordParser
         return $value;
     }
 
-    private function parseEventTime(string $value): string
+    private function parseEventTime(string $value, string $header = 'Event-Time'): string
     {
         if (preg_match('/^\d{2}:\d{2}$/', $value) !== 1) {
-            throw new CanonicalRecordParseException('Event-Time must use 24-hour HH:MM format like 19:00.');
+            throw new CanonicalRecordParseException($header . ' must use 24-hour HH:MM format like 19:00.');
         }
 
         $time = \DateTimeImmutable::createFromFormat('!H:i', $value);
         if ($time === false || $time->format('H:i') !== $value) {
-            throw new CanonicalRecordParseException('Event-Time must be a valid 24-hour time.');
+            throw new CanonicalRecordParseException($header . ' must be a valid 24-hour time.');
         }
 
         return $value;

@@ -75,7 +75,10 @@ final class EventPhraseReaderTest
         $this->assertReads('tomorrow morning at 9:30', '2026-11-11', null, '09:30');
         $this->assertReads('Nov 14 at 19:00', '2026-11-14', null, '19:00');
         $this->assertReads('Nov 14, 7:30 p.m.', '2026-11-14', null, '19:30');
-        $this->assertReads('Saturday 7-9pm', '2026-11-14', null, '19:00');
+        $this->assertReads('Saturday 7-9pm', '2026-11-14', null, '19:00', endTime: '21:00');
+        $this->assertReads('Friday 1-4pm', '2026-11-13', null, '13:00', endTime: '16:00');
+        $this->assertReads('Friday 11:30am to 1:15pm', '2026-11-13', null, '11:30', endTime: '13:15');
+        $this->assertReads('Friday 23:30-01:15', '2026-11-13', null, '23:30', endTime: '01:15');
         $this->assertReads('12pm Friday', '2026-11-13', null, '12:00');
         $this->assertReads('12am Friday', '2026-11-13', null, '00:00');
         $this->assertReads('Friday at noon', '2026-11-13', null, '12:00');
@@ -131,15 +134,15 @@ final class EventPhraseReaderTest
 
         $unread = $fill->fill('whenever', self::TODAY, ['event_date' => '2026-11-20', 'event_time' => '18:00'], false);
         eventPhraseAssertSame(false, $unread['filled']);
-        eventPhraseAssertSame(['event_date' => '2026-11-20', 'event_end_date' => '', 'event_time' => '18:00'], $unread['fields']);
+        eventPhraseAssertSame(['event_date' => '2026-11-20', 'event_end_date' => '', 'event_time' => '18:00', 'event_end_time' => ''], $unread['fields']);
     }
 
-    private function assertReads(string $phrase, string $date, ?string $endDate = null, ?string $time = null, string $today = self::TODAY): void
+    private function assertReads(string $phrase, string $date, ?string $endDate = null, ?string $time = null, string $today = self::TODAY, ?string $endTime = null): void
     {
         $reading = (new EventPhraseReader())->read($phrase, $today);
         eventPhraseAssertSame(
-            ['date' => $date, 'end' => $endDate, 'time' => $time, 'reason' => null],
-            ['date' => $reading->date, 'end' => $reading->endDate, 'time' => $reading->time, 'reason' => $reading->reason],
+            ['date' => $date, 'end' => $endDate, 'time' => $time, 'endTime' => $endTime, 'reason' => null],
+            ['date' => $reading->date, 'end' => $reading->endDate, 'time' => $reading->time, 'endTime' => $reading->endTime, 'reason' => $reading->reason],
             $phrase
         );
     }
