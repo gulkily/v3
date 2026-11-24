@@ -70,6 +70,7 @@ Usage:
   ./v3 approval receipts inspect|convert|readiness [--dry-run] [--repository-root=/path/repository] [--database-path=/path/cache.sqlite3] [--json]
   ./v3 approval audit [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--review-only] [--summary] [--json]
   ./v3 approval suggest-roots [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--json]
+  ./v3 approval private-access-report [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--public-only] [--json]
   ./v3 approval approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]
 
 Terminal startup can review missing dependencies on Ubuntu 22.04/PHP 8.1 or
@@ -425,6 +426,9 @@ EOF
     elif [[ "${1:-}" == "suggest-roots" ]]; then
       shift
       php "${ROOT}/scripts/suggest_approval_roots.php" "$@"
+    elif [[ "${1:-}" == "private-access-report" ]]; then
+      shift
+      php "${ROOT}/scripts/private_access_report.php" "$@"
     else
       php "${ROOT}/scripts/inject_approval.php" "$@"
     fi
