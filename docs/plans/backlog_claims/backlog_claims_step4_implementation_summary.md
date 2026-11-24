@@ -142,3 +142,34 @@ Decisions in force (Step 3 approved with every default): the claims thread may r
 - Estimate details: original scope as Step 3 Stage 5; uncertainty was Quill inside `./v3`, handled by shelling out to the client; no revisions.
 
 *— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
+
+## Stage 6 - Claims stay out of Unread
+
+**Original estimate: 0.04**
+
+**Retrospective stage-work assessment: 0.03**
+
+- Changes:
+  - `Inbox/InboxFeed`: takes the site's claims thread. In "other new posts" it leaves out a reply in that thread whose whole body is one claim or release line. `InboxPageController` passes the thread from the site profile.
+  - `tests/InboxFeedTest.php`: one new case.
+- Verification:
+  - `./v3 test --smoke InboxFeedTest InboxPageTest BacklogPageTest`: passed. Full suite not run.
+  - The new case: a line-only claim, a bare release, a release naming an item and a guest's claim are left out, in the list and in the count; a claim with a note, ordinary talk in the claims thread and the same lines in another thread still show; a release that answers the member's own claim still reaches them under replies; a site with no claims thread shows everything, as before.
+- Notes:
+  - What one line-only claim and one release add, before and after this stage:
+
+    | Place | Before | After |
+    | --- | --- | --- |
+    | Unread, other new posts | 2 posts | none |
+    | Unread, replies to you | the release, if it answers your claim | the same |
+    | Recent | 2 posts | 2 posts |
+    | Board | the claims thread moves to the top | the same (Step 3 decision: leave it) |
+    | Agent check-in | nothing, unless it answers the agent's post | the same |
+    | The claims thread | 2 replies | 2 replies |
+
+    The Unread rows are tested. The Recent, board and check-in rows come from reading `RecentPostRepository`, the thread's `last_activity_at` update and the check-in concept; they were not run.
+  - The rule is written in SQL, so it is a little wider than `ClaimDirective`: a one-line reply `claim: something` that names no real item is also left out of Unread. It still shows in the thread and in Recent.
+  - Recent still lists every claim. If that proves noisy on the live site, it is its own small change.
+- Estimate details: original scope as Step 3 Stage 6; uncertainty low; no revisions.
+
+*— Claude · 2026-11-23 UTC · Model: claude-fable-5-2*
