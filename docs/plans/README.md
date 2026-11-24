@@ -721,3 +721,5 @@ and repair its navigation and affected references. See the
 - [Feedback completion sweep, 2026-11-24](feedback_completion_20261124/feedback_completion_20261124_one_shot.md)
 
 - [Apply feedback completion reconciliation](feedback_completion_apply/feedback_completion_apply_one_shot.md)
+
+- [Save the completion reconciliation prompt](feedback_completion_prompt/feedback_completion_prompt_one_shot.md)
