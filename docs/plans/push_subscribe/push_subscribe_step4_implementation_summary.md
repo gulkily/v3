@@ -122,7 +122,8 @@ Dependency delta so far: zero. No package, manifest or lock is added; the sender
   5. Tap the notification: the app comes to the front.
   6. Turn off. The row shows Off, and Send a test disappears.
   - If step 4 shows "Refused: <reason>", that reason is Apple's (for example `BadJwtToken`); report it, and the fix is a follow-up cycle.
-- Notes: Safari outside the installed app shows the row too, but iPhone allows push only in the Home Screen app; the guide for that is cycle 3 (`push_ios_guide`).
+- Notes: in Safari outside the Home Screen app, iPhone offers no push, so the row stays hidden there; cycle 3 (`push_ios_guide`) shows a guide in its place.
+- Correction, 2026-11-24: the first version of this note said Safari outside the installed app shows the row. It does not, because the row needs `PushManager`, which iPhone gives only to the Home Screen app.
 
 **Cycle retrospective: 0.80** (projected 0.75). Delivered the approved scope plus `GET /api/push/key` and a fix for a test that failed on `main`. Maintainer comfortable-fit judgment pending.
 
