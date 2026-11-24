@@ -1,0 +1,90 @@
+<?php
+
+declare(strict_types=1);
+
+use ForumRewrite\Contacts\LinkedInConnectionsReader;
+use ForumRewrite\Contacts\ContactBook;
+
+require dirname(__DIR__) . '/autoload.php';
+
+header('Cache-Control: no-store');
+header("Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
+header('Referrer-Policy: no-referrer');
+header('X-Content-Type-Options: nosniff');
+
+$host = '127.0.0.1:' . ($_SERVER['SERVER_PORT'] ?? '');
+if (($_SERVER['REMOTE_ADDR'] ?? '') !== '127.0.0.1' || ($_SERVER['HTTP_HOST'] ?? '') !== $host
+    || isset($_SERVER['HTTP_FORWARDED']) || preg_grep('/^HTTP_X_FORWARDED_/', array_keys($_SERVER))) {
+    http_response_code(403);
+    return;
+}
+$method = $_SERVER['REQUEST_METHOD'];
+$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$assets = [
+    '/' => ['index.html', 'text/html'],
+    '/contacts.css' => ['contacts.css', 'text/css'],
+    '/contacts.js' => ['contacts.js', 'application/javascript'],
+];
+if ($method === 'GET' && isset($assets[$path])) {
+    [$filename, $type] = $assets[$path];
+    header('Content-Type: ' . $type . '; charset=utf-8');
+    readfile(__DIR__ . '/public/' . $filename);
+    return;
+}
+if (!is_string($path) || !str_starts_with($path, '/api/')) {
+    http_response_code(404);
+    return;
+}
+header('Content-Type: application/json; charset=utf-8');
+$secret = getenv('V3_CONTACTS_SECRET');
+if (!is_string($secret) || $secret === '' || !hash_equals('Bearer ' . $secret, $_SERVER['HTTP_AUTHORIZATION'] ?? '')) {
+    http_response_code(401);
+    echo '{"error":"Open the URL printed by ./v3 contacts."}';
+    return;
+}
+if ($method !== 'GET' && ($_SERVER['HTTP_ORIGIN'] ?? '') !== 'http://' . $host) {
+    http_response_code(403);
+    echo '{"error":"Open Contacts from its local address and retry."}';
+    return;
+}
+try {
+    if ((int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 65 * 1024 * 1024) {
+        throw new RuntimeException('This file is too large. Extract Connections.csv and try it directly.', 413);
+    }
+    $book = new ContactBook((string) getenv('V3_CONTACTS_DIRECTORY'), $secret);
+    if ($method === 'GET' && $path === '/api/contacts') {
+        $result = $book->read();
+        $result['contacts'] = array_values($result['contacts']);
+    } elseif ($method === 'POST' && $path === '/api/preview') {
+        $result = $book->preview((new LinkedInConnectionsReader())->readUpload($_FILES['file'] ?? []));
+    } elseif ($method === 'POST' && ($path === '/api/confirm' || $path === '/api/cancel')) {
+        $input = json_decode((string) file_get_contents('php://input', false, null, 0, 1024), true);
+        $id = $input['id'] ?? null;
+        if (!is_string($id)) {
+            throw new RuntimeException('Preview the file again before importing.', 409);
+        }
+        if ($path === '/api/confirm') {
+            $result = ['counts' => $book->confirm($id)];
+        } else {
+            $book->cancel($id);
+            $result = ['cancelled' => true];
+        }
+    } elseif ($method === 'POST' && $path === '/api/edit') {
+        $input = json_decode((string) file_get_contents('php://input', false, null, 0, 100000), true);
+        foreach (['id', 'revision', 'note', 'last_contacted'] as $field) {
+            if (!is_string($input[$field] ?? null)) {
+                throw new RuntimeException('Could not read the edited contact. Check the fields and try again.', 422);
+            }
+        }
+        $book->edit($input['id'], $input['revision'], $input['note'], $input['last_contacted']);
+        $result = ['saved' => true];
+    } else {
+        http_response_code(404);
+        $result = ['error' => 'Contacts page not found.'];
+    }
+    echo json_encode($result, JSON_THROW_ON_ERROR);
+} catch (Throwable $error) {
+    $knownError = $error instanceof RuntimeException && in_array($error->getCode(), [404, 409, 413, 422], true);
+    http_response_code($knownError ? $error->getCode() : 500);
+    echo json_encode(['error' => $knownError ? $error->getMessage() : 'Contacts could not complete that request. Check the private data directory and try again.']);
+}
