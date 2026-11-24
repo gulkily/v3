@@ -1649,6 +1649,21 @@ pre {
   text-decoration: none;
 }
 
+/* On a narrow column (phones) the featured meme sits in a square, so a tall one
+   doesn't fill the first screen. The whole picture shows inside it, never
+   cropped, so its caption still reads; the blurred stand-in fills the sides. */
+@container zen-strip (max-width: 35.99rem) {
+  .zen-strip > .zen-strip__card--image {
+    aspect-ratio: 1;
+  }
+
+  .zen-strip > .zen-strip__card--image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+
 /* On a wide column the featured meme fits the screen whole: its width comes from
    its stored shape, so the box is final before the picture loads. An upright meme
    leaves room at its side, which the thumbnails fill down to its height.
