@@ -13,6 +13,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Publisher CLI conventions](publish_keys_cli_conventions/publish_keys_cli_conventions_one_shot.md) — hostname handling, visible source repository and help consistency follow-up.
 - [Direct key publication](publish_keys_direct/publish_keys_direct_one_shot.md) — publish by default, preview with --dry-run; remove mandatory review files and fingerprint copying.
 - [Publisher PR handoff](publisher_pr_handoff/publisher_pr_handoff_one_shot.md) — epic checklist, main integration and public-key publisher PR.
+- [Raw agent image attachments](raw_agent_images/raw_agent_images_one_shot.md) — document prepared image requests without Quill.
 - [Post format defaults](post_format_default_docs/post_format_default_docs_one_shot.md) — clarify prepared, unsigned and direct-signed posting defaults.
 - [Zen gallery accessibility intake](zen_gallery_accessibility_intake/zen_gallery_accessibility_intake_one_shot.md) — record the generic names on two image-only links.
 - [Zen meme gallery](zen_meme_gallery/zen_meme_gallery_one_shot.md) — the homepage thumbnail row opens a gallery of the same collection.
