@@ -3,7 +3,7 @@ Title: Close the ... menu on outside click
 Kind: feature
 Workflow: blocked
 Created: 2026-11-11
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 Should the ... button's menu go away when I click elsewhere on the page?
@@ -15,3 +15,4 @@ Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 Asked as a question.
 2026-11-22: Yes. The post "…" (More actions) menu now closes when you click or tap anywhere else, including another post's "…". The composer's "…" already did. Record: docs/plans/post_menu_outside_close/post_menu_outside_close_one_shot.md. Blocked until deployed and checked on a phone in production.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation ed723babfe is on audited main and deployed ancestry (live c4205ea43d). Current post_retraction.js closes post More actions on outside activation, including another post menu; composer behavior stays separate. Production phone check is the retained next action. Current next action: Maintainer: open a post … menu, tap outside it, then open another post menu; the old one should close. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

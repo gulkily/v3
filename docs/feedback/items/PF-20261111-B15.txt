@@ -1,9 +1,9 @@
 ID: PF-20261111-B15
 Title: Offline compose for threads and replies
 Kind: bug
-Workflow: untriaged
+Workflow: done
 Created: 2026-11-11
-Evidence: unknown
+Evidence: deployed
 
 Request:
 Offline mode notes: only the board works; "I think we broke offline compose thread and reply." Later marked high priority after the maintainer could not write anything while offline.
@@ -20,3 +20,4 @@ Sources:
 Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 2026-11-11: Claude's replay found offline writing was never reachable rather than regressed; PR #173 (merged f1f62b93) adds offline composers and the Outbox path, and the maintainer posted "Yes it works offline" shortly after. Not yet independently checked; see status note in review.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation f1f62b9340 is on audited main and deployed ancestry (live c4205ea43d). Offline thread/reply composer and Outbox path are retained through later reconnect work. OfflineOutboxComposeTest passes in this run. The existing item additionally records maintainer offline acceptance; it is corroborating history, not a new device replay. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

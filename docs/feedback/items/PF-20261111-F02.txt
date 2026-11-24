@@ -1,9 +1,9 @@
 ID: PF-20261111-F02
 Title: The new post form is busy below Post
 Kind: feature
-Workflow: blocked
+Workflow: done
 Created: 2026-11-11
-Evidence: locally-verified
+Evidence: deployed
 Estimate: 0.20
 
 Request:
@@ -22,3 +22,4 @@ Notes:
 2026-11-11: one-shot on fix/quiet-composer-bottom (record docs/plans/quiet_composer_bottom/quiet_composer_bottom_one_shot.md); CSS-only change, verified locally in headless Chrome (Gloss Dark and Light at 375px, Gloss and Word 97 at 700px; tags open and closed). PR open, awaiting review and deployment.
 2026-11-14: Triage 2026-11-11 attached 3 source(s): Earlier reports: the new post form looks very busy; the title placeholder ("or we'll use your first line") looks like filled-in data; #general and Event expandos don't match and look like the Post button.
 2026-11-14: Triage 2026-11-11 (docs/feedback/triage/2026-11-11_proposals.txt): PR #167 (5fff4c17) merged 2026-11-11; deployment and acceptance not checked.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 1c10fe21ea is on audited main and deployed ancestry (live c4205ea43d). 1c10fe21ea remains in the live composer. At 390px, Tags/Event/Options and photo controls are collapsed, the title has no top border and a one-pixel underline, and the page has no horizontal overflow. Shared composer behavior tests passed in the predecessor run. This directly checks the requested quiet initial presentation. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

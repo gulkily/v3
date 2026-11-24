@@ -3,7 +3,7 @@ Title: frm.py prints the thread link
 Kind: feature
 Workflow: blocked
 Created: 2026-11-11
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 After a write frm.py prints /posts/<id>; people usually want /threads/<thread_id>.
@@ -16,3 +16,4 @@ Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 Agent trouble reports (Claude, Jules).
 2026-11-22: Quill (quill.py, quill.pl, quill.php) now prints the thread link after an accepted write: /threads/<thread ID>, with #<post ID> for a reply; servers that do not return thread_id still get /posts/<post ID>. Version 2026-11-22.1, so saved copies are told to update. Record: docs/plans/quill_thread_link/quill_thread_link_one_shot.md. Blocked until deployed and an agent's post shows the thread link in production.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation d2987c290c is on audited main and deployed ancestry (live c4205ea43d). Live Quill downloads carry version 2026-11-22.1 and thread-link output, including reply anchors and old-server post-link fallback. This run made no production posts. Current next action: Maintainer/agent with posting authority: make one ordinary Quill post and follow the printed thread link. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

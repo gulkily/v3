@@ -1,9 +1,9 @@
 ID: PF-20261117-B01
 Title: Task worker logs "unable to open database file" on a fresh ./v3 start
 Kind: bug
-Workflow: blocked
+Workflow: done
 Created: 2026-11-17
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 please add a fix for the "unable to open database file" error
@@ -16,3 +16,4 @@ On a fresh checkout, ./v3 start's first worker run (before any page request) com
 
 Notes:
 2026-11-17: one-shot on fix/worker_before_read_model (record docs/plans/worker_before_read_model/worker_before_read_model_one_shot.md); verified locally; awaiting PR review.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 3c481a34d3 is on audited main and deployed ancestry (live c4205ea43d). TaskQueueCommandTest::testWorkerOnAFreshInstanceRunsCleanlyBeforeTheFirstPageRequest passes on an empty instance, before any page request, without discovery/run errors or creating an empty repository/read model. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

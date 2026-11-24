@@ -3,7 +3,7 @@ Title: Second pane: open a link beside the current page on wide screens
 Kind: feature
 Workflow: blocked
 Created: 2026-11-17
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 "@claude this would be an amazing place to add another column, don't you think?" Screenshot: the Prompts page at 2048px wide with the reading margins at 5 and 41, leaving the right 60% of the page empty. Clarified in session: "i was talking about a second pane, from any other page". It is a special mode; with it on, a normal click opens the link in the second pane, and the pane stays while navigating in the first. Browsers without JavaScript are skipped for now.
@@ -17,3 +17,4 @@ On a wide screen with the mode on, clicking a link shows that page beside the cu
 Notes:
 2026-11-17: design notes with Pollyanna prior art, recommendations from two review rounds, and open questions are in docs/plans/open_beside_design_notes.md. Not decided: strip of panes or one extra pane; whether a click closes panes to its right; how Float (window controls) shares the space. No Step 1 yet.
 2026-11-18: built as one extra pane on feat/open_beside (Railspike cycle open_beside, summary docs/plans/open_beside/open_beside_step4_implementation_summary.md), behind FORUM_OPEN_BESIDE_ENABLED. Verified locally in Chrome and Firefox (tests/browser/open_beside.mjs), including the reported case at 2048px in Gloss Dark. Blocked on push, review, merge and deployment with the flag on.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 1c878b7612 is on audited main and deployed ancestry (live c4205ea43d). Open beside implementation is on main/live; later toggle-state and offline corrections are also deployed. Flag availability and retained wide-screen browser matrix are distinguished from physical acceptance. Fresh live Gallery at 2048px exposes neither the Beside root attribute nor toggle, and a thread click navigates normally. Deployed code is not proof that its feature flag is enabled. Current next action: Operator: enable/configure Open beside if wanted; then an agent can run the wide-screen/toggle/offline acceptance appropriate to this item. No new build is required. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

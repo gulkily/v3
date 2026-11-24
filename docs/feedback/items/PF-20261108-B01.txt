@@ -3,7 +3,7 @@ Title: Sent reply briefly shows without header and footer
 Kind: bug
 Workflow: blocked
 Created: 2026-11-08
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 After posting a reply in the browser, it shows "Posting...", then only its text without the header and footer, then the full post. The middle phase should not happen.
@@ -21,3 +21,4 @@ Notes:
 2026-11-08: one-shot on fix/reply-bare-card (record docs/plans/reply_bare_card/reply_bare_card_one_shot.md); built and verified locally in headless Chrome; awaiting review and deployment.
 2026-11-14: Triage 2026-11-11 attached 3 source(s): Earlier report of the same three-stage reply (Nov 5), submitted three times.
 2026-11-14: Triage 2026-11-11 (docs/feedback/triage/2026-11-11_proposals.txt): PR #72 (ef72ce2b) merged 2026-11-08; deployment and acceptance not checked.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 4c4ffc3b22 is on audited main and deployed ancestry (live c4205ea43d). reply_continuation.js retains the pending card until full canonical card hydration, including the later complete-card path. A public read cannot exercise the sending transition without a write. Current next action: Maintainer: send one reply from the thread and one from the reply page on the phone; check pending status changes directly to a bylined card. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

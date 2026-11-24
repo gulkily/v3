@@ -1,9 +1,9 @@
 ID: PF-20261111-F05
 Title: Formatting help outside the ... menu
 Kind: feature
-Workflow: untriaged
+Workflow: done
 Created: 2026-11-11
-Evidence: unknown
+Evidence: deployed
 
 Request:
 I don't think the ... menu is the right place for the Formatting help item (or probably the Markdown checkbox).
@@ -14,3 +14,4 @@ Sources:
 Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 PF-20261109-F01 later moved these into an Options section; check whether this is satisfied.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 5af404a12f is on audited main and deployed ancestry (live c4205ea43d). Live collapsed Options contains Markdown and Formatting help outside the … menu. Later settings-list layout retains the relocation. This is the same implementation as F01, not a second build. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

@@ -3,7 +3,7 @@ Title: Midnight Like and Flag match Word 97
 Kind: feature
 Workflow: blocked
 Created: 2026-11-11
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 Bring the button styling (Like/Flag) in Midnight in line with the Word 97 theme.
@@ -18,3 +18,4 @@ Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 Compare PF-20261104-F48 and PF-20261104-F66.
 2026-11-23: triaged as real (source post now 404; the maintainer asked for it directly after PR #380). Midnight got Word 97's post-action typography rule and Like/Flag bevel rule in its own greys. One-shot midnight_action_fonts on fix/midnight_action_fonts (record docs/plans/midnight_action_fonts/midnight_action_fonts_one_shot.md); computed-style and screenshot checked in headless Chrome; awaiting review, deployment and a look on the phone.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation a69a363221 is on audited main and deployed ancestry (live c4205ea43d). PostActionThemeTest passes Midnight font/bevel selectors; live Like/Flag are Tahoma with no underline. This report expressly asks for visual parity with Word97 on the phone. Current next action: Maintainer: check Midnight Like/Flag and other post actions on the phone against Word97. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

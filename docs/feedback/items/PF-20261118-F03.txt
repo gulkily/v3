@@ -3,7 +3,7 @@ Title: Home-screen app icons (apple-touch-icon and manifest PNGs)
 Kind: feature
 Workflow: blocked
 Created: 2026-11-18
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 Since we have already done a Web app install, can we start with an icon, please? Agents feel free to go all the way to a PR.
@@ -16,3 +16,4 @@ Adding ZenMemes to an iPhone home screen shows the Z icon instead of a page scre
 
 Notes:
 2026-11-18: one-shot on feat/app_icons (record docs/plans/app_icons/app_icons_one_shot.md); verified locally in headless Chrome; awaiting review, deployment and a real-device check. start_url (/offline/) unchanged; it belongs with the web push work.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation f8957f5d7b is on audited main and deployed ancestry (live c4205ea43d). Apple-touch and 192/512 PNG assets are in main/live, with manifest and layout links. Headless install evidence cannot prove the iPhone home-screen result. Current next action: Maintainer: add ZenMemes to the iPhone home screen and check that the icon is the Z. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

@@ -1,9 +1,9 @@
 ID: PF-20261118-B01
 Title: Offline reader browser tests print an undefined-variable warning
 Kind: bug
-Workflow: blocked
+Workflow: done
 Created: 2026-11-18
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 "Please fix it", after Claude reported that the offline reader page logs a PHP warning ("Undefined variable $tagLinksEnabled") on every render. On inspection the site does not log it: three browser tests include templates/pages/offline_reader.php outside the renderer without setting the variable, and the warning is printed in their output.
@@ -16,3 +16,4 @@ The offline reader browser tests run without the warning, and a test would catch
 
 Notes:
 2026-11-18: one-shot on fix/offline_reader_tag_links (record docs/plans/offline_reader_tag_links/offline_reader_tag_links_one_shot.md). Test-only change; no application code changed. Blocked on review and merge.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation f176bd0063 is on audited main and deployed ancestry (live c4205ea43d). f176bd0063 supplies tagLinksEnabled in all three affected browser fixtures and adds a real renderer flag regression. Replaying the old PHP include emits the exact undefined-variable warning; all three current includes use the tested warning-free declaration. Current LocalAppSmokeTest::testOfflineReaderFallbackRouteUsesLocalSnapshotShell passes flag-on and flag-off assertions. Actual runners: offline_card_extra_line passes; absent_retraction_snapshot times out taking its screenshot and offline_board_toolbar times out clicking sort, both without the reported PHP warning. Closure is limited to the repaired warning/flag regression, not a claim all browser checks pass. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

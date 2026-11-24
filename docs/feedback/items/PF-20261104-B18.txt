@@ -1,9 +1,9 @@
 ID: PF-20261104-B18
 Title: Draft-empty message font
 Kind: bug
-Workflow: blocked
+Workflow: done
 Created: 2026-11-04
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 “No local drafts or queued actions on this device.” should also be sans-serif.
@@ -18,3 +18,4 @@ Notes:
 Adjacent Word97 context suggests theme scope, but source itself does not name it; confirm before implementation.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
 2026-11-23: triaged as real. The source post is gone (404), so the theme scope could not be confirmed with the reporter; chose every theme, since the line is UI text and themes whose body and UI fonts match see no change. Rule in site.css on [data-role="outbox-status"]. One-shot word97_action_fonts on fix/word97_action_fonts; computed-style checked in Word 97, Light, Midnight, Gloss, Chicago, Bubblegum and Console; awaiting review and deployment. Narrow to Word 97 if the theme scope was meant.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 7289d86c97 is on audited main and deployed ancestry (live c4205ea43d). Live empty Outbox status computes to the theme UI font in Word97, Midnight, Light, Chicago, Bubblegum, Gloss and Console, with no horizontal overflow. The shared site.css rule also covers loading status. PostActionThemeTest passes. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

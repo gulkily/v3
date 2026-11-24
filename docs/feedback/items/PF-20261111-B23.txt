@@ -1,9 +1,9 @@
 ID: PF-20261111-B23
 Title: llms.txt ambiguous about Markdown default
 Kind: bug
-Workflow: blocked
+Workflow: done
 Created: 2026-11-11
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 llms.txt says new posts render as Markdown and also that a record without Body-Format is plain; say which default applies to which route.
@@ -15,3 +15,4 @@ Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 Agent-filed (Claude). Related to PF-20261030-B26.
 2026-11-23: fix/document-post-format-defaults clarifies endpoint defaults and direct-signed records in the agent guide and linked documentation; locally verified, awaiting review and deployment.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation f34699a18c is on audited main and deployed ancestry (live c4205ea43d). Live llms.txt states route-specific Markdown defaults and direct-signed Body-Format behavior. Current LlmsTxtRendererTest passes. This is documentation, not proof that Quill has a --format option. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

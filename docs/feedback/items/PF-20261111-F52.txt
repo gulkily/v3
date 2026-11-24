@@ -1,9 +1,9 @@
 ID: PF-20261111-F52
 Title: PHP and Perl versions of frm.py
 Kind: feature
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-11
-Evidence: unknown
+Evidence: deployed
 
 Request:
 frm.py exists only in Python although scripts are promised in Python, PHP and Perl; add frm.php and frm.pl.
@@ -14,3 +14,4 @@ Sources:
 Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 Agent-filed (Claude).
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 5bd11a2351 is on audited main and deployed ancestry (live c4205ea43d). PHP and Perl ports are downloadable under Quill names, with legacy frm aliases retained. Same production-post acceptance as PF-20261116-F04; no need to build two more clients under the old name. Current next action: Agent: diagnose the two failing Quill staging/redirect-replay checks on this environment before the retained PHP/Perl live-post acceptance. No new ports are needed. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

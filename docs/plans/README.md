@@ -719,3 +719,5 @@ and repair its navigation and affected references. See the
 - [DM verify reason](dm_verify_reason/dm_verify_reason_one_shot.md) — one-shot: a DM that fails signature verification says why (clock ahead, unknown key, or OpenPGP's error) instead of a bare "couldn't verify".
 
 - [Feedback completion sweep, 2026-11-24](feedback_completion_20261124/feedback_completion_20261124_one_shot.md)
+
+- [Apply feedback completion reconciliation](feedback_completion_apply/feedback_completion_apply_one_shot.md)

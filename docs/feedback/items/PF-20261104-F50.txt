@@ -3,7 +3,7 @@ Title: Import selected nested HN discussion
 Kind: feature
 Workflow: blocked
 Created: 2026-11-04
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 Dream feature: select part of a Hacker News thread, use a bookmarklet/extension/unspecified tool, and about one second later have the discussion on Zenmemes with nesting.
@@ -19,3 +19,4 @@ Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 20
 Evidence detail: v3/thread_port Step 4 (docs/plans/thread_port/thread_port_step4_implementation_summary.md); production iPhone replay pending.
 
 2026-11-23: Follow-up v3/port_hn_preview adds the Ochre default and expands the preview. Focused tests and fixture extraction passed. iPhone Safari production verification remains pending. See docs/plans/port_hn_preview/port_hn_preview_one_shot.md.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 5d009adf79 is on audited main and deployed ancestry (live c4205ea43d). Thread port implementation and later Ochre/expanded-preview correction are in main/live. The retained acceptance is an actual iPhone Safari HN selection/bookmarklet round trip. Current next action: Maintainer: use Port HN on one selected nested discussion in iPhone Safari and inspect the preview and posted nesting. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

@@ -1,9 +1,9 @@
 ID: PF-20261104-F72
 Title: Identities tab on user page
 Kind: feature
-Workflow: blocked
+Workflow: done
 Created: 2026-11-04
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 User page should have Threads, Replies and Identities tabs; move identities into its tab rather than leaving them at the bottom.
@@ -20,3 +20,4 @@ Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 20
 2026-11-09: one-shot on feat/user_identities_tab (record docs/plans/user_identities_tab/user_identities_tab_one_shot.md); maintainer added last-active date, latest post and newest-first order in session. Verified locally; awaiting review and deployment.
 2026-11-09: same branch, maintainer follow-up: taller identity rows with relative last-active time, and tabs switch without a page load.
 2026-11-14: Triage 2026-11-11 (docs/feedback/triage/2026-11-11_proposals.txt): PR #97 (88c312a3) merged 2026-11-09; deployment and acceptance not checked.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation f39074b7b6 is on audited main and deployed ancestry (live c4205ea43d). Live /user/ilyag?tab=identities exposes Threads/Replies/Identities and 78 key rows with Active time and latest-post text. Current username template sorts the key view by latest activity; keys are not placed in Threads/Replies. Later account grouping retains these tabs. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

@@ -3,7 +3,7 @@ Title: Keep the Arena header Deploy now button readable on hover
 Kind: bug
 Workflow: blocked
 Created: 2026-11-21
-Evidence: unknown
+Evidence: deployed
 
 Request:
 Fix the dark text on the Arena header Deploy now button in the screenshot.
@@ -16,3 +16,4 @@ In Arena the header button label remains readable while hovered and while deploy
 
 Notes:
 2026-11-21: Scoped CSS fix and browser regression check implemented. Browser verification, review and deployment pending.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation a2fcb9e94c is on audited main and deployed ancestry (live c4205ea43d). Arena hover rule now pins the light deployment-button background; browser regression case exists. Triggering the pending production-deploy state is an operator action. Current next action: Operator: during the next pending deployment in Arena, hover the header Deploy now button and check its label. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

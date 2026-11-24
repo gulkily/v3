@@ -1,9 +1,9 @@
 ID: PF-20261115-B01
 Title: Bubblegum: open More tab label invisible on phones
 Kind: bug
-Workflow: blocked
+Workflow: done
 Created: 2026-11-15
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 Small bug display on iPhone (screenshot): in the Bubblegum theme, with the More panel open, the More tab label in the bottom tab bar turns white on the pale tab bar and can't be read.
@@ -17,3 +17,4 @@ In Bubblegum on a phone, opening More shows the More tab in the same selected lo
 Notes:
 2026-11-15: one-shot started on fix/bubblegum-more-tab-open (record docs/plans/bubblegum_more_tab_open/bubblegum_more_tab_open_one_shot.md).
 2026-11-15: fixed and verified locally in headless Chrome on fix/bubblegum-more-tab-open; awaiting PR review and deployment.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 4c170dd8a3 is on audited main and deployed ancestry (live c4205ea43d). 4c170dd8a3 is deployed. Fresh live Bubblegum phone-width check opened the actual More menu: the selected trigger computes to rgb(184,40,108) berry background and rgb(255,255,255) white text. That is the exact retained Done when, so no additional phone judgement is being manufactured. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

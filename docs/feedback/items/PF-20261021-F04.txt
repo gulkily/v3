@@ -1,9 +1,9 @@
 ID: PF-20261021-F04
 Title: Simple recent activity
 Kind: feature
-Workflow: blocked
+Workflow: done
 Created: 2026-10-21
-Evidence: locally-verified
+Evidence: deployed
 Estimate: 0.5
 Aliases: 2026-10-21/F04, 2026-10-30/F01
 
@@ -22,3 +22,4 @@ Estimate 0.5 is inherited from October 21 feedback-only triage.
 Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
 History: docs/plans/production_feedback_register.md#pf-20261021-f04
 October 30 summary row F01: Provide a simple, nontechnical recent activity page. Later agent-authored elaboration asks for one main-navigation link and newest-first individual threads/replies, including replies to old threads; author, time, thread title, preview, exact-post link, mobile usability, pagination, Updated at, and clearable filters. See focused review below. Status there: Untriaged — PF-20261021-F04 (docs/plans/production_feedback_register.md#pf-20261021-f04); expanded scope not estimated (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 11e76faeca is on audited main and deployed ancestry (live c4205ea43d). Live navigation opens /recent/ with individual new-thread/reply previews, author/time and exact-post links. RecentPostTest and current route smoke pass. Later navigation and preview work retains this basic requested outcome. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

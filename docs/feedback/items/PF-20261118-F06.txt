@@ -1,9 +1,9 @@
 ID: PF-20261118-F06
 Title: Recently released section on the Feature Flags page
 Kind: feature
-Workflow: blocked
+Workflow: done
 Created: 2026-11-18
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 feature request: for the feature flags page to have a recently released features section that's easy to find. Follow-up from the maintainer: recent is probably 1-2 days; yes to release dates.
@@ -17,3 +17,4 @@ Tools, Feature Flags opens with a Recently released list of the newest flags, ea
 Notes:
 2026-11-18: one-shot on feat/recent_feature_flags (record docs/plans/recent_feature_flags/recent_feature_flags_one_shot.md); verified locally; awaiting review and deployment. Window counted from the newest release, not today (open question in the thread).
 2026-11-18: renumbered from PF-20261118-F04 when merging main (main had already used F04); commit f033c6bb's Feedback: PF-20261118-F04 trailer refers to this item.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation f033c6bb56 is on audited main and deployed ancestry (live c4205ea43d). Live Feature Flags opens with RECENTLY RELEASED, dated Backlog and Direct image serving links. Current registry carries release dates; later 1560279207 fixes landing below the sticky toolbar rather than reverting the feature. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

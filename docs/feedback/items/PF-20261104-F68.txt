@@ -1,9 +1,9 @@
 ID: PF-20261104-F68
 Title: Ctrl+Enter submits from tags
 Kind: feature
-Workflow: blocked
+Workflow: done
 Created: 2026-11-04
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 When the tags field has focus, Ctrl+Enter should submit as it does from the other fields.
@@ -14,3 +14,4 @@ Sources:
 Notes:
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
 2026-11-07: Fixed in fix/ctrl-enter-from-tags. Ctrl+Enter now submits from Title, tags and the event fields as well as the body (Title did not submit on main either). Replayed in Chromium against the local composer at 390px and 1280px. Blocked until deployed and checked on zenmemes.com.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 665aaccc5b is on audited main and deployed ancestry (live c4205ea43d). Current browser_signing.js handles Ctrl+Enter on title, tags and event inputs through the existing form submit path, retaining body handling. BrowserSigningNormalizationTest passes in smoke. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

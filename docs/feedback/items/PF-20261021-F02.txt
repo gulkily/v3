@@ -1,9 +1,9 @@
 ID: PF-20261021-F02
 Title: Identity-ready notice
 Kind: feature
-Workflow: blocked
+Workflow: done
 Created: 2026-10-21
-Evidence: locally-verified
+Evidence: deployed
 Estimate: 0.03
 Aliases: 2026-10-21/F02, 2026-10-30/F32
 
@@ -24,3 +24,4 @@ Estimate 0.03 is inherited from October 21 feedback-only triage; a separate sour
 Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
 History: docs/plans/production_feedback_register.md#pf-20261021-f02
 October 30 summary row F32: Remove browser identity ready. Status there: Locally verified in existing record; see PF-20261021-F02 (docs/plans/production_feedback_register.md#pf-20261021-f02), no new production check (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation d1e523de4b is on audited main and deployed ancestry (live c4205ea43d). Current browser_signing.js suppresses routine ready status while retaining pending/error handling. Live New post shows no readiness notice or visible empty identity-status row. No source-thread reply is part of Done when. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

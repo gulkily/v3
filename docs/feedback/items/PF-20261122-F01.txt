@@ -3,7 +3,7 @@ Title: Local start page import shows what it is doing
 Kind: feature
 Workflow: blocked
 Created: 2026-11-22
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 "Import public content: this feature on the frontend needs much better feedback. 'Importing… This can take several minutes. Keep this page open.' is not good enough."
@@ -18,3 +18,4 @@ Notes:
 2026-11-22: staged cycle on feat/local_import_progress (docs/plans/local_import_progress/). Verified locally with real zenmemes.com imports in Chromium under ./v3 start, with and without --no-worker, and with JavaScript off. Related: PF-20261117-F01 (the local start page). Blocked on review, merge and the maintainer's own run.
 2026-11-22: PR https://github.com/gulkily/v3/pull/357 opened. Follow-ups found during the work are filed as PF-20261122-B01, PF-20261122-B02 and PF-20261122-B03. Next idea from the maintainer, not started: turn the card into a status of the last import with a re-import action, until sync exists.
 2026-11-22: PR #357 merged. The status card and re-import action are tracked as PF-20261122-F02.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation a8bef8ea13 is on audited main and deployed ancestry (live c4205ea43d). Local import uses queued worker jobs with steps/counts/timing and recovery. ImportProgressViewTest passes. No real site import was run in this history-only sweep. Current next action: Maintainer: perform the retained real zenmemes.com import on your own machine and check progress, responsive other pages and final result. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

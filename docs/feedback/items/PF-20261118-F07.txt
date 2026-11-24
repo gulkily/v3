@@ -3,7 +3,7 @@ Title: Open beside does not work offline
 Kind: feature
 Workflow: blocked
 Created: 2026-11-18
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 "This feature is visible in offline mode but needs to be ported fully?" Asked what happened: "It went to a new page with the item." Offline, with Beside on, a thread clicked on the board replaced the board.
@@ -16,3 +16,4 @@ Offline, with Beside on and room beside the column, a thread title clicked on th
 
 Notes:
 2026-11-18: one-shot on feat/open_beside_offline (record docs/plans/open_beside_offline/open_beside_offline_one_shot.md). Verified locally in Chrome (tests/browser/open_beside_offline.mjs). Not verified offline in Firefox. Blocked on review, merge and deployment.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation b71d1c4269 is on audited main and deployed ancestry (live c4205ea43d). Offline Beside port and worker hooks are on main/live; retained browser record covers Chrome and explicitly excludes offline Firefox. No live offline navigation acceptance is asserted. Fresh live Gallery at 2048px exposes neither the Beside root attribute nor toggle, and a thread click navigates normally. Deployed code is not proof that its feature flag is enabled. Current next action: Operator: enable/configure Open beside if wanted; then an agent can run the wide-screen/toggle/offline acceptance appropriate to this item. No new build is required. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

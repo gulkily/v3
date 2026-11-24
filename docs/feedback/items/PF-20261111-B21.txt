@@ -1,9 +1,9 @@
 ID: PF-20261111-B21
 Title: Gloss SQLite viewer cells clipped
 Kind: bug
-Workflow: untriaged
+Workflow: done
 Created: 2026-11-11
-Evidence: unknown
+Evidence: deployed
 
 Request:
 In the Gloss theme, the expandable fields in SQLite viewer results have a styling problem (screenshot).
@@ -14,3 +14,4 @@ Sources:
 Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 PR #140 (merged 1b2e5cdb) removes pill styling from the cell toggle; not verified here.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 1b2e5cdbfd is on audited main and deployed ancestry (live c4205ea43d). Merged cell-toggle correction explicitly removes Gloss pill radius and fixes cell sizing. Current sqlite.css/theme-gloss.css retain the narrower cell rule after later theme updates; it is not a global change to rounded controls. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.
