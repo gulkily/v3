@@ -46,6 +46,7 @@ final class EventPhraseApiController
                 'event_date' => (string) ($query['event_date'] ?? ''),
                 'event_end_date' => (string) ($query['event_end_date'] ?? ''),
                 'event_time' => (string) ($query['event_time'] ?? ''),
+                'event_end_time' => (string) ($query['event_end_time'] ?? ''),
             ],
             (string) ($query['event_date_fixed'] ?? '') === '1'
         );
@@ -56,6 +57,7 @@ final class EventPhraseApiController
             'event_date' => $result['fields']['event_date'],
             'event_end_date' => $result['fields']['event_end_date'],
             'event_time' => $result['fields']['event_time'],
+            'event_end_time' => $result['fields']['event_end_time'],
             'message' => $result['status'],
             'today' => $today,
         ], 200, $headers);

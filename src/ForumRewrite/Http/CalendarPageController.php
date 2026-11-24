@@ -11,6 +11,7 @@ use ForumRewrite\Calendar\CalendarDays;
 use ForumRewrite\Calendar\CalendarIcs;
 use ForumRewrite\Calendar\CalendarQuery;
 use ForumRewrite\Calendar\EventStatus;
+use ForumRewrite\Calendar\EventTimes;
 use ForumRewrite\SiteConfig;
 use ForumRewrite\Support\EventStatusDirective;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
@@ -48,7 +49,7 @@ final class CalendarPageController
         $to = $last->format('Y-m-d');
 
         $pdo = $this->routeServices->pdo();
-        $events = CalendarQuery::eventsBetween($pdo, $from, $to, $tag);
+        $events = EventTimes::apply($pdo, $this->repositoryRoot, CalendarQuery::eventsBetween($pdo, $from, $to, $tag));
         $states = EventStatus::forThreads($pdo, $this->repositoryRoot, array_map('strval', array_column($events, 'root_post_id')));
         $days = CalendarDays::derive($events, $states, $from, $to);
 
@@ -90,7 +91,7 @@ final class CalendarPageController
         $to = $day->modify('+' . self::FEED_YEARS_AHEAD . ' years')->format('Y-m-d');
 
         $pdo = $this->routeServices->pdo();
-        $events = CalendarQuery::eventsBetween($pdo, $from, $to, $tag);
+        $events = EventTimes::apply($pdo, $this->repositoryRoot, CalendarQuery::eventsBetween($pdo, $from, $to, $tag));
         $states = EventStatus::forThreads($pdo, $this->repositoryRoot, array_map('strval', array_column($events, 'root_post_id')));
         $events = array_values(array_filter(
             $events,
@@ -118,6 +119,7 @@ final class CalendarPageController
         if ($event === null) {
             return null;
         }
+        [$event] = EventTimes::apply($pdo, $this->repositoryRoot, [$event]);
         $states = EventStatus::forThreads($pdo, $this->repositoryRoot, [$threadId]);
 
         return CalendarIcs::document([$event], $states, self::origin($siteUrl), CalendarIcs::title($event), timeZone: SiteProfileRegistry::calendarTimeZone());
@@ -144,7 +146,7 @@ final class CalendarPageController
         }
 
         $pdo = $this->routeServices->pdo();
-        $events = CalendarQuery::eventsBetween($pdo, $date, $date, $tag);
+        $events = EventTimes::apply($pdo, $this->repositoryRoot, CalendarQuery::eventsBetween($pdo, $date, $date, $tag));
         $states = EventStatus::forThreads($pdo, $this->repositoryRoot, array_map('strval', array_column($events, 'root_post_id')));
         $day = CalendarDays::derive($events, $states, $date, $date)[$date];
 

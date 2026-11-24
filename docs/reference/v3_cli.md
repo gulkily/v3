@@ -1028,11 +1028,15 @@ Runs the local (non-live) agent-reply test suite: `AgentReplyGenerationTest`,
 ```bash
 ./v3 feedback list [--sort=salient|entered|touched|effort|impact] [--order=newest|oldest] [--show=can-start|waiting|open|<workflow>] [--kind=all|bug|feature|other]
 ./v3 feedback start <ID>... [--mode=auto|one-shot|staged]
+./v3 feedback claim --site=<address> <ID>... [--note=<text>] [--anyway]
+./v3 feedback release --site=<address> <ID>... [--post=<claim post ID>]
 ```
 
 `list` prints the open [feedback items](../concepts/feedback_items.md) as `Key: value` blocks, in the same order as the Backlog page and `/backlog.txt` for the same words. The defaults are `salient`, `newest`, `can-start` (ready and untriaged) and `all`. An unknown word falls back to its default, is named on standard error, and the command exits 2.
 
 `start` prints the short prompt that starts an agent on the named items as one cycle. The mode defaults to `auto`, which leaves one-shot or staged to the agent. The prompt asks for work in a clone and an open pull request, not patch files; for several items it also asks the agent to say so first when they do not belong in one pull request. Unknown and closed IDs are named on standard error and left out; with no open item left it exits 1. The agent's side is [backlog to pull request](../agents/backlog_to_pr.md).
+
+`claim --site=<address> <ID>...` reads `<address>/backlog/claims.txt` for the named items and prints it. If a counted, unstale claim holds any of them, it names the holder, posts nothing and exits 1; `--anyway` claims regardless. Otherwise it posts one signed reply in the site's claims thread whose first line is `claim: <ID>, <ID>`, followed by `--note=<text>` when given. `release --site=<address> <ID>...` replies to the holder's claim post on each item with `release: <ID>`; `--post=<claim post ID>` names another claim, such as your own when someone else holds the item. Both post with `public/quill.py`; set `V3_QUILL` to use another client, such as `V3_QUILL="php public/quill.php"`. A site whose profile names no claims thread answers that it keeps no claims, and the commands exit 1. A release by anyone but the claim's author or an operator has no effect.
 
 ## Seed an approved identity (shorthand)
 

@@ -2237,6 +2237,11 @@ PHP;
             assertStringContains('data-shape="' . $key . '">' . $label . '</h2>', $tools);
         }
         assertOrdered($tools, '>Your device</h2>', '>Operator</h2>');
+        // Developer sits between Community and Operator and holds Platform Docs (Backlog joins it while its flag is on).
+        assertOrdered($tools, '>Community</h2>', '>Developer</h2>');
+        assertOrdered($tools, '>Developer</h2>', 'class="tool-launcher-button" href="/docs/"');
+        assertOrdered($tools, 'class="tool-launcher-button" href="/docs/"', '>Operator</h2>');
+        assertOrdered($tools, 'class="tool-launcher-button" href="/forte"', '>Community</h2>');
         assertStringContains('System status', $codebase);
         assertStringContains('<strong>Name:</strong> zenmemes', $codebase);
         assertStringContains('<strong>Admin:</strong>', $codebase);
@@ -2284,8 +2289,8 @@ PHP;
         // The Tools bar follows the launcher's groups, with a divider between each.
         $toolsBar = substr($featureFlags, (int) strpos($featureFlags, '<div class="nav tools-nav"'));
         $toolsBar = substr($toolsBar, 0, (int) strpos($toolsBar, '</div>'));
-        assertSame(3, substr_count($toolsBar, 'tools-nav-divider'));
-        $order = ['href="/tools/outbox/"', 'href="/activity/"', 'href="/tools/user-access/"', 'href="/tools/feature-flags/"', 'href="/tools/operations/"'];
+        assertSame(4, substr_count($toolsBar, 'tools-nav-divider'));
+        $order = ['href="/tools/outbox/"', 'href="/activity/"', 'href="/tools/user-access/"', 'href="/docs/"', 'href="/tools/feature-flags/"', 'href="/tools/operations/"'];
         for ($i = 1; $i < count($order); $i++) {
             assertOrdered($toolsBar, $order[$i - 1], $order[$i]);
         }
@@ -2356,7 +2361,7 @@ PHP;
         assertStringContains('Users Awaiting Approval', $pendingUsers);
         assertFingerprintedAsset($pendingUsers, 'pending_approvals.js');
         assertStringContains('meta name="app-version" content="' . ReadModelMetadata::repositoryHead(dirname(__DIR__)) . '"', $board);
-        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","bubblegum","spearmint","arena","thermal","whitehot","word97","midnight","gloss","glossdark","engagify","underground","ochre"];', $board);
+        assertStringContains('var allowed = ["light","dark","console","lcd","chicago","vapor","forge","sticker","bubblegum","spearmint","arena","thermal","whitehot","word97","midnight","gloss","glossdark","engagify","underground","undergrounddark","ochre"];', $board);
         assertStringContains('data-role="theme-menu"', $board);
         assertStringContains('aria-haspopup="menu"', $board);
         assertStringContains('data-theme-option="auto"', $board);
@@ -3144,6 +3149,7 @@ PHP;
 
         try {
             $repositoryRoot = $root . '/repository';
+            mkdir($repositoryRoot, 0700);
             $this->copyDirectory(__DIR__ . '/fixtures/parity_minimal_v1', $repositoryRoot);
             $application = new Application(dirname(__DIR__), $repositoryRoot, $root . '/index.sqlite3');
             $featureFlags = $this->render($application, '/tools/feature-flags/');

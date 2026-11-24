@@ -51,6 +51,20 @@ final class ViewerSessions
         return $this->current()?->identityId ?? '';
     }
 
+    /** A stable key for this request's session, or '' when there is none (see ViewerSessionStore::sessionKey()). */
+    public function sessionKey(): string
+    {
+        $token = $this->token();
+
+        return $token === '' ? '' : $this->store()->sessionKey($token);
+    }
+
+    /** The identity a session key is still signed in as, or ''. */
+    public function signedInIdentityForKey(string $sessionKey): string
+    {
+        return $this->store()->signedInIdentityForKey($sessionKey);
+    }
+
     /** The identity this browser signed out of, for the Lobby; '' when none. */
     public function lobbyIdentityId(): string
     {

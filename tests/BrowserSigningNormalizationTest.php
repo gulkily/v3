@@ -3526,6 +3526,7 @@ NODE;
                 'event_date' => '',
                 'event_end_date' => '',
                 'event_time' => '',
+                'event_end_time' => '',
                 'event_location' => '',
                 'event_link' => '',
                 'event_when' => '',
@@ -3560,6 +3561,7 @@ const fields = [
   field('event_date', '2026-11-14'),
   field('event_end_date', '2026-11-15'),
   field('event_time', '19:30'),
+  field('event_end_time', '22:00'),
   field('event_location', 'MIT Media Lab, E14'),
   field('event_link', 'https://example.test/cypher-night'),
   field('event_when', 'Saturday 7:30pm')
@@ -3606,6 +3608,7 @@ NODE;
                 'event_date' => '2026-11-14',
                 'event_end_date' => '2026-11-15',
                 'event_time' => '19:30',
+                'event_end_time' => '22:00',
                 'event_location' => 'MIT Media Lab, E14',
                 'event_link' => 'https://example.test/cypher-night',
                 'event_when' => 'Saturday 7:30pm',

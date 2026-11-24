@@ -244,7 +244,7 @@ final class InboxPageController
         $pdo = $this->routeServices->pdo();
         $keys = (new ApprovedUserKeyResolver($this->routeServices->repositoryRoot()))->keysForUsernameToken($pdo, (string) $viewer['username_token'], true);
         $identityIds = array_values(array_unique([(string) $viewer['identity_id'], ...array_column($keys, 'identity_id')]));
-        return new InboxFeed($pdo, ($this->markStore)(), (string) $viewer['username_token'], $identityIds);
+        return new InboxFeed($pdo, ($this->markStore)(), (string) $viewer['username_token'], $identityIds, \ForumRewrite\SiteProfileRegistry::backlogClaimsThread());
     }
 
     /**

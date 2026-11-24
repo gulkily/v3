@@ -29,8 +29,11 @@ $composerLeadFields = (string) ($composerLeadFields ?? '');
 $composerTagsSummary = implode(' ', array_map(static fn (string $tag): string => '#' . ltrim($tag, '#'), preg_split('/[\s,]+/', trim((string) $boardTags), -1, PREG_SPLIT_NO_EMPTY) ?: []));
 $composerTagsOpen = $composerFull && ((string) $boardTags !== 'general' || ($error ?? null) !== null);
 $composerEventSpan = (string) ($eventDate ?? '') !== '' && (string) ($eventEndDate ?? '') !== '' ? $eventDate . ' – ' . $eventEndDate : (string) ($eventDate ?? '');
-$composerEventValues = array_values(array_filter([$composerEventSpan, (string) ($eventTime ?? ''), (string) ($eventLocation ?? '')], static fn (string $value): bool => $value !== ''));
-$composerEventOpen = $composerEventValues !== [] || (string) ($eventLink ?? '') !== '' || (string) ($eventWhen ?? '') !== '' || ($error ?? null) !== null;
+$composerEventTime = (string) ($eventTime ?? '');
+$composerEventEndTime = (string) ($eventEndTime ?? '');
+$composerEventClock = $composerEventTime !== '' && $composerEventEndTime !== '' ? $composerEventTime . '–' . $composerEventEndTime : $composerEventTime;
+$composerEventValues = array_values(array_filter([$composerEventSpan, $composerEventClock, (string) ($eventLocation ?? '')], static fn (string $value): bool => $value !== ''));
+$composerEventOpen = $composerEventValues !== [] || $composerEventEndTime !== '' || (string) ($eventLink ?? '') !== '' || (string) ($eventWhen ?? '') !== '' || ($error ?? null) !== null;
 $composerNormalizationStatus = static fn (string $field): string => <<<HTML
   <p class="meta compose-normalization-inline" data-role="compose-field-normalization-status" data-compose-field-status-for="{$field}" hidden>
     <span data-role="compose-field-normalization-message"></span>
@@ -125,7 +128,10 @@ if (!($composerShowOptions ?? true)) {
 <?php endif; ?>
       <label>Date<input type="date" name="event_date" value="<?= $e($eventDate ?? '') ?>"<?= ($composerEventDateFixed ?? false) ? ' readonly' : '' ?>></label>
       <label>Until<input type="date" name="event_end_date" value="<?= $e($eventEndDate ?? '') ?>"></label>
-      <label>Time<input type="time" name="event_time" value="<?= $e($eventTime ?? '') ?>"></label>
+      <div class="compose-event-times">
+        <label>Time<input type="time" name="event_time" value="<?= $e($eventTime ?? '') ?>"></label>
+        <label>Ends<input type="time" name="event_end_time" value="<?= $e($eventEndTime ?? '') ?>"></label>
+      </div>
       <label>Place<input type="text" name="event_location" value="<?= $e($eventLocation ?? '') ?>"></label>
       <label>Link<input type="text" name="event_link" value="<?= $e($eventLink ?? '') ?>"></label>
     </details>

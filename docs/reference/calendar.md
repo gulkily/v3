@@ -27,20 +27,28 @@ The calendar has no navigation entry; reach it by its link.
 
 Open a day and post. The composer is the one used everywhere else, with the day
 already set as the event's date and, on a tag calendar, that tag already set. Fill in
-the last day under **Until** for a multi-day event; leave it empty for one day. Time,
-Place and Link are optional. A post that is refused keeps its draft and shows the
+the last day under **Until** for a multi-day event. Leave it empty for one day.
+Set **Time** and **Ends** for a timed event. With Time alone, the calendar export
+ends an hour after that clock time on the last day. An explicit end at or before
+the start on a one-day event falls on the following day. Place and Link are optional. A post that is refused keeps its draft and shows the
 reason, as on `/compose/thread`.
 
 With Event phrases on (`FORUM_EVENT_WHEN_ENABLED`), **When** takes the event's
-timing in words: type `Friday 7pm`, `Nov 14-16` or `this weekend` and press
-**Fill** (or Enter). Date, Until and Time fill in place, read with your own date;
-check them before posting. On a day page the date stays fixed and Fill sets only
-Until and Time. Phrases the built-in reader does not know go to the site's LLM for
+timing in words: type `Friday 1-4pm`, `Nov 14-16` or `this weekend` and press
+**Fill** (or Enter). Check the date and time fields before posting. The date stays
+fixed on a day page. Phrases the built-in reader does not know go to the site's LLM for
 approved members when one is configured. The words are kept with the event and
 shown after its dates ([date phrase](../concepts/date_phrase.md)).
 
 Events can also be posted from `/compose/thread` (open **Event**) or through the
 agent API ([events](agent_api.md#events)).
+
+## Correcting event times
+
+The verified thread author or a current operator can reply with
+`event-time: 13:00-16:00` on its own line. The thread, calendar day and exports
+use the latest eligible reply. Use a start-only line such as `event-time: 13:00`
+to return to the default end time.
 
 ## Confirming or declining
 

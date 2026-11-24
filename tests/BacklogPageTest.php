@@ -5,9 +5,14 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use ForumRewrite\Application;
+use ForumRewrite\Canonical\CanonicalRecordRepository;
+use ForumRewrite\Feedback\BacklogClaims;
 use ForumRewrite\Feedback\FeedbackBacklog;
 use ForumRewrite\Http\BacklogPageController;
+use ForumRewrite\SiteProfileRegistry;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
+use ForumRewrite\Write\LocalWriteService;
 
 /**
  * Tools → Backlog reads the checkout's own docs/feedback/items, so these tests
@@ -196,6 +201,275 @@ final class BacklogPageTest
     }
 
     /** @param callable(Application): void $test */
+    public function testWithNoClaimsThreadNothingAboutClaimsIsShownOrPrinted(): void
+    {
+        $this->withSite(true, function (Application $application): void {
+            $html = $this->render($application, '/backlog?claimed=hide');
+            assertStringNotContains('Hide claimed', $html);
+            assertStringNotContains('data-role="backlog-claim"', $html);
+            assertStringNotContains('Not understood', $html, 'The word is known everywhere; it just hides nothing here.');
+            $text = $this->raw($application, '/backlog.txt');
+            assertSame(0, preg_match(self::CLAIM_KEYS, $text), 'No claim line of any kind.');
+            assertSame($text, $this->raw($application, '/backlog.txt?claimed=hide'));
+        });
+    }
+
+    public function testRowsShowWhoHoldsAnItemAndHideClaimedLeavesHeldRowsOut(): void
+    {
+        $this->withClaims(function (callable $application, LocalWriteService $service, string $thread, array $ids): void {
+            [$held, $guest, $free] = $ids;
+            // A claim posted through the write service is on the next request: nothing is rebuilt or deployed.
+            $started = hrtime(true);
+            $claim = $this->reply($service, $thread, "claim: {$held}\n\nBranch fix/example.", self::MEMBER);
+            $html = $this->render($application(), '/backlog');
+            assertTrue((hrtime(true) - $started) / 1e9 < 10, 'Post, then read, within one request each.');
+            $this->reply($service, $thread, "claim: {$guest}", null);
+            $html = $this->render($application(), '/backlog');
+
+            $row = fn (string $page, string $id): string => (string) (preg_match('/<li class="backlog-row"[^>]*>\s*<input[^>]*value="' . preg_quote($id, '/') . '".*?<\/li>/s', $page, $m) === 1 ? $m[0] : '');
+            assertSame(1, preg_match('/data-role="backlog-claim">Claimed by [^<·]+<\/span>/', $row($html, $held)), $row($html, $held));
+            assertStringContains('data-role="backlog-claim">Claimed by a guest · not counted</span>', $row($html, $guest));
+            assertStringNotContains('data-role="backlog-claim"', $row($html, $free));
+            assertStringContains('<a class="nav-link" href="/backlog?claimed=hide">Hide claimed</a>', $html);
+
+            $hidden = $this->render($application(), '/backlog?claimed=hide&kind=bug');
+            assertSame('', $row($this->render($application(), '/backlog?claimed=hide'), $held), 'A counted claim hides the row.');
+            assertTrue($row($this->render($application(), '/backlog?claimed=hide'), $guest) !== '', 'A guest claim does not.');
+            assertStringContains('<a class="nav-link is-active" href="/backlog?kind=bug" aria-current="true">Hide claimed</a>', $hidden, 'The active word turns itself off and keeps the others.');
+            assertStringContains('href="/backlog?sort=effort&amp;kind=bug&amp;claimed=hide"', $hidden, 'Sort links keep the word.');
+
+            // Released by its holder, the row is free again.
+            $this->reply($service, $thread, 'release', self::MEMBER, $claim);
+            assertStringNotContains('data-role="backlog-claim"', $row($this->render($application(), '/backlog'), $held));
+        });
+    }
+
+    public function testTextListCarriesClaimLines(): void
+    {
+        $this->withClaims(function (callable $application, LocalWriteService $service, string $thread, array $ids): void {
+            [$held, $guest, $free] = $ids;
+            $claim = $this->reply($service, $thread, "claim: {$held}, {$guest}", self::MEMBER);
+            $this->reply($service, $thread, "claim: {$guest}", null);
+            $text = $this->raw($application(), '/backlog.txt');
+
+            assertStringContains("Start-Command: ./v3 feedback start <ID>...\nClaimed: show\nClaims-Address: /backlog/claims.txt?items=<ID>,<ID>\n\n", $text);
+            $block = fn (string $all, string $id): string => (string) (preg_match('/^ID: ' . preg_quote($id, '/') . '\n.*?(?=\n\n|\z)/ms', $all, $m) === 1 ? $m[0] : '');
+            assertSame(1, preg_match('/\nFile: [^\n]+\nClaim-State: held\nClaimed-By: [^\n]+\nClaimed-Since: [0-9T:Z-]+\nClaim-Post: ' . preg_quote($claim, '/') . '$/', $block($text, $held)), $block($text, $held));
+            assertStringContains("\nGuest-Claims: 1", $block($text, $guest));
+            assertSame(0, preg_match(self::CLAIM_KEYS, $block($text, $free)));
+
+            $hidden = $this->raw($application(), '/backlog.txt?claimed=hide');
+            assertStringContains("\nClaimed: hide\n", $hidden);
+            assertSame('', $block($hidden, $held));
+            assertTrue($block($hidden, $free) !== '');
+        });
+    }
+
+    public function testStartPageShowsHoldersAndOffersClaimToARecognisedViewer(): void
+    {
+        $this->withClaims(function (callable $application, LocalWriteService $service, string $thread, array $ids): void {
+            [$mine, $theirs, $free] = $ids;
+            $second = (string) $service->linkIdentity(['public_key' => (string) file_get_contents(__DIR__ . '/fixtures/openpgp_signature/reaction-public-key.asc')])['identity_id'];
+            (new PDO('sqlite:' . $this->database))->prepare('UPDATE profiles SET is_approved = 1 WHERE identity_id = ?')->execute([$second]);
+            $this->reply($service, $thread, "claim: {$mine}", self::MEMBER);
+            $this->reply($service, $thread, "claim: {$theirs}", $second);
+            $path = "/backlog/start?items={$mine},{$theirs},{$free}";
+            $oldCookies = $_COOKIE;
+            try {
+                // Nobody recognised: holders and "Not claimed" for everyone, no form.
+                $_COOKIE = [];
+                $anyone = $this->render($application(), $path);
+                assertSame(1, preg_match('/data-claim-id="' . preg_quote($mine, '/') . '">Claimed by [^<·]+ since [A-Z][a-z]{2} \d{1,2}<\/span>/', $anyone), 'The holder and the date.');
+                assertStringContains('data-claim-id="' . $free . '">Not claimed</span>', $anyone);
+                assertStringNotContains('data-role="backlog-claim-form"', $anyone);
+                assertStringContains('/assets/backlog_claim.', $anyone);
+                assertStringContains('data-copy-prompt-source', $anyone, 'The prompt is there whatever the claims say.');
+
+                // The member holds one item already; the form claims the other two, the held one included (Start warns, never refuses).
+                $_COOKIE = ['identity_hint' => self::MEMBER];
+                $member = $this->render($application(), $path);
+                assertStringContains('<form class="backlog-claim-form requires-script" method="post" action="/compose/reply" data-role="backlog-claim-form" data-claim-ids="' . $theirs . ',' . $free . '">', $member);
+                assertStringContains('<input type="hidden" name="thread_id" value="' . $thread . '">', $member);
+                assertStringContains('<input type="hidden" name="parent_id" value="' . $thread . '">', $member);
+                assertStringContains('<input type="hidden" name="body" value="claim: ' . $theirs . ', ' . $free . '">', $member);
+
+                // Once they have a claim on every picked item there is nothing left to claim: a reload offers no form.
+                $this->reply($service, $thread, "claim: {$theirs}, {$free}", self::MEMBER);
+                $after = $this->render($application(), $path);
+                assertStringNotContains('data-role="backlog-claim-form"', $after);
+                assertSame(1, preg_match('/data-claim-id="' . preg_quote($theirs, '/') . '">Claimed by [^<·]+ since [^<·]+ · Also claimed by [^<·]+<\/span>/', $after), 'The earlier claim holds; the later one is listed.');
+            } finally {
+                $_COOKIE = $oldCookies;
+            }
+        });
+    }
+
+    public function testReleaseIsOfferedToTheHolderAndToAnOperator(): void
+    {
+        $this->withClaims(function (callable $application, LocalWriteService $service, string $thread, array $ids): void {
+            [$mine, $theirs, $free] = $ids;
+            $second = (string) $service->linkIdentity(['public_key' => (string) file_get_contents(__DIR__ . '/fixtures/openpgp_signature/reaction-public-key.asc')])['identity_id'];
+            (new PDO('sqlite:' . $this->database))->prepare('UPDATE profiles SET is_approved = 1 WHERE identity_id = ?')->execute([$second]);
+            $theirClaim = $this->reply($service, $thread, "claim: {$theirs}, {$free}", $second);
+            $form = static fn (string $id, string $post): string => '<form id="release-' . $id . '" method="post" action="/compose/reply" data-role="backlog-release-form"';
+            $button = static fn (string $id): string => '<button type="submit" class="backlog-release requires-script" form="release-' . $id . '">Release</button>';
+            $oldCookies = $_COOKIE;
+            try {
+                // Nobody recognised, or a stranger: no Release anywhere.
+                foreach ([[], ['identity_hint' => 'openpgp:' . str_repeat('b', 40)]] as $cookies) {
+                    $_COOKIE = $cookies;
+                    assertStringNotContains('backlog-release', $this->render($application(), '/backlog'));
+                }
+
+                // The holder: Release on their own rows, naming one item, so a two-item claim keeps the other.
+                $_COOKIE = ['identity_hint' => $second];
+                $holder = $this->render($application(), '/backlog');
+                assertStringContains($button($theirs), $holder);
+                assertStringContains($button($free), $holder);
+                assertSame(2, substr_count($holder, 'data-role="backlog-release-form"'));
+                assertSame(1, preg_match('/<form id="release-' . preg_quote($theirs, '/') . '"[^>]*>\s*<input type="hidden" name="thread_id" value="' . preg_quote($thread, '/') . '">\s*<input type="hidden" name="parent_id" value="' . preg_quote($theirClaim, '/') . '">\s*<input type="hidden" name="board_tags" value="general">\s*<input type="hidden" name="body" value="release: ' . preg_quote($theirs, '/') . '">/', $holder), 'A reply to the claim that releases this item only.');
+                assertSame(0, preg_match('/<form class="backlog-form".*<form id="release-.*<\/form>\s*<div class="backlog-start-bar"/s', $holder), 'Release forms are not nested in the Start form.');
+                assertStringContains($button($theirs), $this->render($application(), '/backlog/start?items=' . $theirs), 'Also beside their claim on the start page.');
+
+                // The fixture's key is an operator: Release on rows it does not hold.
+                $_COOKIE = ['identity_hint' => self::MEMBER];
+                $operator = $this->render($application(), '/backlog');
+                assertStringContains($button($theirs), $operator);
+                assertStringNotContains($button($mine), $operator, 'Nothing to release on an unclaimed row.');
+
+                // Releasing one item leaves the other held.
+                $this->reply($service, $thread, 'release: ' . $theirs, $second, $theirClaim);
+                $_COOKIE = ['identity_hint' => $second];
+                $after = $this->render($application(), '/backlog');
+                assertStringNotContains($button($theirs), $after);
+                assertStringContains($button($free), $after);
+            } finally {
+                $_COOKIE = $oldCookies;
+            }
+        });
+    }
+
+    public function testStartPageWithNoClaimsThreadSaysNothingAboutClaims(): void
+    {
+        $this->withSite(true, function (Application $application): void {
+            $oldCookies = $_COOKIE;
+            try {
+                $_COOKIE = ['identity_hint' => self::MEMBER];
+                $id = FeedbackBacklog::select(BacklogPageController::load(dirname(__DIR__)), 'can-start', 'all')[0]->id();
+                $html = $this->render($application, '/backlog/start?items=' . $id);
+                foreach (['Not claimed', 'data-role="backlog-claim', 'backlog_claim.', 'backlog-start-claims', 'Release'] as $absent) {
+                    assertStringNotContains($absent, $html);
+                }
+                assertStringNotContains('backlog-claim-intent', $this->render($application, '/backlog'));
+            } finally {
+                $_COOKIE = $oldCookies;
+            }
+        });
+    }
+
+    public function testClaimsAddressSaysWhoHoldsTheNamedItems(): void
+    {
+        $this->withClaims(function (callable $application, LocalWriteService $service, string $thread, array $ids): void {
+            [$held, $guest, $free] = $ids;
+            $claim = $this->reply($service, $thread, "claim: {$held}", self::MEMBER);
+            $this->reply($service, $thread, "claim: {$guest}", null);
+            $text = $this->raw($application(), "/backlog/claims.txt?items={$held},{$guest},{$free},PF-20990101-F99");
+
+            assertStringContains("Claims-Thread: {$thread}\nStale-After-Days: 3\nClaim: reply to the thread with the first line \"claim: <ID>, <ID>\"\n", $text);
+            assertSame(1, preg_match('/\n\nID: ' . preg_quote($held, '/') . '\nClaim-State: held\nClaimed-By: [^\n]+\nClaimed-Since: [^\n]+\nClaim-Post: ' . preg_quote($claim, '/') . '\n\n/', $text), $text);
+            assertStringContains("\n\nID: {$guest}\nClaim-State: none\nGuest-Claims: 1\n\n", $text);
+            assertStringContains("\n\nID: {$free}\nClaim-State: free\n", $text);
+            assertStringNotContains('PF-20990101-F99', $text, 'An unknown item is left out (and named in X-Left-Out).');
+            assertStringContains('Name at least one item', $this->raw($application(), '/backlog/claims.txt'));
+        });
+        $this->withSite(true, function (Application $application): void {
+            assertStringContains('This site keeps no backlog claims.', $this->raw($application, '/backlog/claims.txt?items=PF-20261104-B10'));
+        });
+    }
+
+    public function testASiteWithClaimsNamesItsClaimsAddressInThePrompt(): void
+    {
+        $oldHost = $_SERVER['HTTP_HOST'] ?? null;
+        $_SERVER['HTTP_HOST'] = 'backlog.example';
+        try {
+            $this->withClaims(function (callable $application, LocalWriteService $service, string $thread, array $ids): void {
+                [$a, $b] = $ids;
+                $prompt = $this->raw($application(), "/backlog/start.txt?items={$a},{$b}");
+                assertStringContains("\n\nRepository: ", $prompt);
+                assertSame(1, preg_match('/\nRepository: [^\n]+\nClaims: http:\/\/backlog\.example\/backlog\/claims\.txt\?items=' . preg_quote($a, '/') . ',' . preg_quote($b, '/') . '\n\nWork in a clone/', $prompt), $prompt);
+                assertTrue(substr_count($prompt, "\n") < 15, 'Still a short prompt.');
+                assertStringContains('Claims: http://backlog.example/backlog/claims.txt?items=' . $a . ',' . $b, $this->render($application(), "/backlog/start?items={$a},{$b}"));
+            });
+            $this->withSite(true, function (Application $application): void {
+                assertStringNotContains('Claims:', $this->raw($application, '/backlog/start.txt?items=PF-20261104-B10'), 'No claims thread, no line.');
+            });
+        } finally {
+            if ($oldHost === null) {
+                unset($_SERVER['HTTP_HOST']);
+            } else {
+                $_SERVER['HTTP_HOST'] = $oldHost;
+            }
+        }
+    }
+
+    public function testANamedThreadThatDoesNotExistShowsNoClaimsAndNoError(): void
+    {
+        $this->withClaims(function (callable $application): void {
+            $html = $this->render($application(), '/backlog');
+            assertStringContains('Hide claimed', $html);
+            assertStringNotContains('data-role="backlog-claim"', $html);
+            assertStringContains("\nClaimed: show\n", $this->raw($application(), '/backlog.txt'));
+        }, 'thread-that-was-never-posted');
+    }
+
+    private string $database = '';
+
+    /** Any Key: value line the text routes print about claims. */
+    private const CLAIM_KEYS = '/^(Claim|Claimed|Claims|Also-Claimed|Guest-Claims)[A-Za-z-]*: /m';
+
+    /** The fixture's committed root-approved operator. */
+    private const MEMBER = 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954';
+
+    /**
+     * A site whose profile names a claims thread. The test gets a maker of fresh
+     * applications (each request reads the posts anew), the write service, the
+     * thread's ID and three real items that can start.
+     *
+     * @param callable(callable(): Application, LocalWriteService, string, list<string>): void $test
+     */
+    private function withClaims(callable $test, ?string $missingThread = null): void
+    {
+        $this->withSite(true, function (Application $first, string $repositoryRoot) use ($test, $missingThread): void {
+            $database = dirname($repositoryRoot) . '/read-model.sqlite3';
+            $this->database = $database;
+            $this->render($first, '/');
+            $service = new LocalWriteService($repositoryRoot, $database, dirname($repositoryRoot) . '/public', new CanonicalRecordRepository($repositoryRoot), featureFlags: FeatureFlagEvaluator::forRepository($repositoryRoot));
+            $thread = $missingThread ?? (string) $service->createThread(['board_tags' => 'general', 'subject' => 'Backlog claims', 'body' => 'Claims on backlog items.', 'author_identity_id' => self::MEMBER])['thread_id'];
+            $profiles = SiteProfileRegistry::all();
+            foreach ($profiles as $siteId => $profile) {
+                $profiles[$siteId]['backlogClaimsThread'] = $thread;
+            }
+            SiteProfileRegistry::setProfilesForTesting($profiles);
+            try {
+                $startable = FeedbackBacklog::select(BacklogPageController::load(dirname(__DIR__)), 'can-start', 'all');
+                $ids = array_map(static fn ($item): string => $item->id(), array_slice($startable, 0, 3));
+                $test(static fn (): Application => new Application(dirname(__DIR__), $repositoryRoot, $database), $service, $thread, $ids);
+            } finally {
+                SiteProfileRegistry::setProfilesForTesting(null);
+            }
+        });
+    }
+
+    private function reply(LocalWriteService $service, string $thread, string $body, ?string $author, ?string $parent = null): string
+    {
+        $input = ['thread_id' => $thread, 'parent_id' => $parent ?? $thread, 'body' => $body];
+        if ($author !== null) {
+            $input['author_identity_id'] = $author;
+        }
+
+        return (string) $service->createReply($input)['post_id'];
+    }
+
     private function withSite(bool $enabled, callable $test): void
     {
         $oldFlag = getenv(FeatureFlagRegistry::BACKLOG_ENABLED);
@@ -207,7 +481,8 @@ final class BacklogPageTest
             foreach (['git init', 'git config user.name "Forum Rewrite"', 'git config user.email "forum-rewrite@example.invalid"', 'git add .', 'git commit -m "Test repository"'] as $command) {
                 $this->runCommand($repositoryRoot, $command);
             }
-            $test(new Application(dirname(__DIR__), $repositoryRoot, dirname($repositoryRoot) . '/read-model.sqlite3'));
+            mkdir(dirname($repositoryRoot) . '/public', 0777, true);
+            $test(new Application(dirname(__DIR__), $repositoryRoot, dirname($repositoryRoot) . '/read-model.sqlite3'), $repositoryRoot);
         } finally {
             putenv($oldFlag === false ? FeatureFlagRegistry::BACKLOG_ENABLED : FeatureFlagRegistry::BACKLOG_ENABLED . '=' . $oldFlag);
             exec('rm -rf ' . escapeshellarg(dirname($repositoryRoot)));

@@ -16,3 +16,20 @@
   display: inline-flex;
   align-items: center;
 }
+
+/* Notifications has a state and up to two actions; on a phone the actions wrap together
+   under the state, at the right, instead of squeezing the title. */
+.preferences-page [data-preference-row="notifications"] {
+  flex-wrap: wrap;
+  row-gap: 0;
+}
+
+.preferences-page [data-preference-row="notifications"] .account-row__title {
+  flex: 1 0 auto;
+}
+
+.preferences-page__actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-left: auto;
+}

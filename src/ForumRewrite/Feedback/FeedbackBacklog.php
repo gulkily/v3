@@ -25,7 +25,9 @@ final class FeedbackBacklog
         'in-progress' => ['in-progress'],
         'blocked' => ['blocked'],
     ];
-    public const DEFAULTS = ['sort' => 'salient', 'order' => 'newest', 'show' => 'can-start', 'kind' => 'all'];
+    /** claimed=hide leaves out items a counted, unstale claim holds; it does nothing on a site with no claims thread. */
+    public const CLAIMED = ['show', 'hide'];
+    public const DEFAULTS = ['sort' => 'salient', 'order' => 'newest', 'show' => 'can-start', 'kind' => 'all', 'claimed' => 'show'];
 
     /** A missing Estimate or Impact counts as the middle of the scale in the salient order. */
     private const MIDDLE = 0.5;
@@ -35,11 +37,11 @@ final class FeedbackBacklog
      * Reads sort, order, show and kind from a query; an unknown word falls back to its default.
      *
      * @param array<string, mixed> $query
-     * @return array{sort: string, order: string, show: string, kind: string, unknown: list<string>}
+     * @return array{sort: string, order: string, show: string, kind: string, claimed: string, unknown: list<string>}
      */
     public static function words(array $query): array
     {
-        $allowed = ['sort' => self::SORTS, 'order' => self::ORDERS, 'show' => array_keys(self::SHOWS), 'kind' => self::KINDS];
+        $allowed = ['sort' => self::SORTS, 'order' => self::ORDERS, 'show' => array_keys(self::SHOWS), 'kind' => self::KINDS, 'claimed' => self::CLAIMED];
         $words = self::DEFAULTS;
         $unknown = [];
         foreach ($allowed as $name => $values) {
