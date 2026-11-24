@@ -15,6 +15,8 @@ final class PrivateMessageMailboxService
         private readonly PDO $readPdo,
         private readonly ApprovedUserKeyResolver $keyResolver = new ApprovedUserKeyResolver(),
         private readonly ?string $repositoryRoot = null,
+        /** @var (\Closure(string, string, string): mixed)|null message ID, sender, recipient; after a new message is accepted */
+        private readonly ?\Closure $onMessageAccepted = null,
     ) {
     }
 
@@ -25,10 +27,23 @@ final class PrivateMessageMailboxService
      */
     public function send(array $viewer, array $input): array
     {
-        $accept = fn (): array => $this->sendAccepted($viewer, $input);
-        return $this->repositoryRoot === null ? $accept() : \ForumRewrite\Support\PublicationLock::withLock($this->repositoryRoot, $accept);
+        $isNew = false;
+        $accept = function () use ($viewer, $input, &$isNew): array {
+            return $this->sendAccepted($viewer, $input, $isNew);
+        };
+        $message = $this->repositoryRoot === null ? $accept() : \ForumRewrite\Support\PublicationLock::withLock($this->repositoryRoot, $accept);
+        if ($isNew && $this->onMessageAccepted !== null) {
+            // After the lock; only who wrote to whom, never the envelope (PushNotices).
+            try {
+                ($this->onMessageAccepted)((string) $message['message_id'], (string) $message['sender_username_token'], (string) $message['recipient_username_token']);
+            } catch (\Throwable $error) {
+                error_log('Push notice after an accepted message failed: ' . $error->getMessage());
+            }
+        }
+
+        return $message;
     }
-    private function sendAccepted(array $viewer, array $input): array
+    private function sendAccepted(array $viewer, array $input, bool &$isNew = false): array
     {
         $viewer = $this->approvedViewer($viewer);
         $messageId = trim((string) ($input['message_id'] ?? ''));
@@ -60,7 +75,10 @@ final class PrivateMessageMailboxService
             throw new InvalidArgumentException('Recipient has no approved profile keys.');
         }
 
-        return $this->store->acceptEnvelope($attempt);
+        $message = $this->store->acceptEnvelope($attempt);
+        $isNew = true;
+
+        return $message;
     }
 
     /** @param array<string, mixed> $viewer @return list<array<string, string>> */

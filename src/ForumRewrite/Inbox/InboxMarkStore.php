@@ -99,6 +99,28 @@ final class InboxMarkStore
         });
     }
 
+    /**
+     * True when the member has caught up past this post in a section. Read-only: with no mark yet
+     * (Unread never opened) nothing counts as read, where mark() would start one now.
+     */
+    public function isCaughtUp(string $viewer, string $section, string $postId, string $createdAt): bool
+    {
+        [$viewer, $section] = $this->key($viewer, $section);
+        $stmt = $this->pdo->prepare('SELECT mark_at FROM inbox_marks WHERE viewer = ? AND section = ?');
+        $stmt->execute([$viewer, $section]);
+        $markAt = $stmt->fetchColumn();
+        if ($markAt === false) {
+            return false;
+        }
+        if ($createdAt <= self::shift((string) $markAt, -self::LATE_ARRIVAL_SECONDS)) {
+            return true;
+        }
+        $acknowledged = $this->pdo->prepare('SELECT 1 FROM inbox_acknowledged WHERE viewer = ? AND section = ? AND post_id = ?');
+        $acknowledged->execute([$viewer, $section, $postId]);
+
+        return $acknowledged->fetchColumn() !== false;
+    }
+
     public static function shift(string $timestamp, int $seconds): string
     {
         return gmdate('Y-m-d\TH:i:s\Z', (int) strtotime($timestamp) + $seconds);

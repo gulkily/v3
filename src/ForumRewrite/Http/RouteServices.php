@@ -325,7 +325,49 @@ final class RouteServices
             enqueueOfflineSnapshotPublication: function (): void {
                 $this->enqueueOfflineSnapshotPublication();
             },
+            onPostPublished: $this->featureFlags->isEnabled(FeatureFlagRegistry::PUSH_ENABLED)
+                ? fn (string $postId): int => $this->recordPushNotices(static fn (\ForumRewrite\Push\PushNotices $notices): int => $notices->recordReply($postId))
+                : null,
         );
+    }
+
+    /**
+     * Records push notices for a new reply or DM (FORUM_PUSH_ENABLED). Best effort: a failure is
+     * logged and never reaches the poster.
+     *
+     * @param \Closure(\ForumRewrite\Push\PushNotices): int $record
+     */
+    public function recordPushNotices(\Closure $record): int
+    {
+        try {
+            $config = PrivateConfig::load($this->projectRoot);
+            $store = \ForumRewrite\Push\PushSubscriptionStore::open(\ForumRewrite\Push\PushStorageConfig::databasePath($this->projectRoot, $config));
+            $host = strtolower((string) preg_replace('/[^A-Za-z0-9.\-:\[\]]/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')));
+            if ($host !== '') {
+                $store->rememberSite('https://' . $host);
+            }
+            $site = $host !== '' ? 'https://' . $host : $store->site();
+            if ($site === null) {
+                return 0;
+            }
+            $notices = new \ForumRewrite\Push\PushNotices($this->pdo(), static fn (): \ForumRewrite\Push\PushSubscriptionStore => $store, $site, \ForumRewrite\SiteProfileRegistry::backlogClaimsThread());
+
+            $recorded = $record($notices);
+            if ($recorded > 0) {
+                // The queue task is the fallback; the request itself sends once its response is out.
+                $queuePath = TaskQueueDatabaseConfig::path($this->projectRoot);
+                if (!is_dir(dirname($queuePath))) {
+                    @mkdir(dirname($queuePath), 0700, true);
+                }
+                $task = (new SqliteTaskQueueStore(new PDO('sqlite:' . $queuePath)))->enqueue(SqliteTaskQueueStore::PUSH_NOTIFY, 'push-notify');
+                \ForumRewrite\Push\PushAfterResponse::request((int) $task['id']);
+            }
+
+            return $recorded;
+        } catch (\Throwable $error) {
+            error_log('Push notice could not be recorded: ' . $error->getMessage());
+            return 0;
+        }
     }
 
     public function enqueueOfflineSnapshotPublication(): void

@@ -109,6 +109,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Push subscription](push_subscribe/push_subscribe_step1_solution_assessment.md) — staged: a member turns notifications on for a device in Preferences and gets a test notification; cycle 2 of the notifications checklist.
 
+[Push on events](push_on_events/push_on_events_step1_solution_assessment.md) — staged: a DM or a reply to your post notifies each of your devices, with held follow-ups and a per-member cap; cycle 4 of the notifications checklist.
+
 [Guestbook](guestbook/guestbook_step3_development_plan.md) — a `/guestbook/` page shows the guestbook thread's top-level replies as a paper book with numbered pages and a "Sign the book" form; the thread stays available as an ordinary thread.
 
 [Tagsets file comments](tagsets_file_comments/tagsets_file_comments_one_shot.md) — one-shot: plainer comments in `resources/tagsets.txt`.
