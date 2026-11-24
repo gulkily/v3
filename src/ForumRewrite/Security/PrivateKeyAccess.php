@@ -138,6 +138,19 @@ final class PrivateKeyAccess
     }
 
     /**
+     * Waiting keys of the viewer's own account, shown only to a viewer who can confirm them.
+     *
+     * @param array<string, mixed> $viewer
+     * @return list<array<string, mixed>>
+     */
+    public function waitingForViewer(array $viewer): array
+    {
+        $id = (string) ($viewer['identity_id'] ?? '');
+        $account = strtolower(trim((string) ($viewer['username_token'] ?? '')));
+        return $account === '' || !$this->hasAccess($id) ? [] : $this->waitingFor($account);
+    }
+
+    /**
      * Every active approved key with its reason, for the operator report.
      *
      * @return list<array{username_token:string,identity_id:string,profile_slug:string,approved_by_identity_id:?string,reason:string}>

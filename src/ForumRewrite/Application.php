@@ -437,6 +437,11 @@ final class Application
             return;
         }
 
+        if (preg_match('#^/account/confirm/([a-f0-9]{40})/?$#D', $path, $matches) === 1) {
+            $this->privateMessagePageController()->confirmPage($method, $matches[1]);
+            return;
+        }
+
         if ($path === '/api/create_thread') {
             $this->writePostAndIdentityApiController()->createThread($method, $query);
             return;
@@ -2670,7 +2675,7 @@ final class Application
 
     private function isApplicationRoute(string $path): bool
     {
-        if (str_starts_with($path, '/images/') || str_starts_with($path, '/messages/conversation/') || str_starts_with($path, '/port/') || $path === '/port') {
+        if (str_starts_with($path, '/images/') || str_starts_with($path, '/messages/conversation/') || str_starts_with($path, '/account/confirm/') || str_starts_with($path, '/port/') || $path === '/port') {
             return true;
         }
 

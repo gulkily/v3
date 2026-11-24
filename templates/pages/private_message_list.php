@@ -1,3 +1,4 @@
+<?= $partial('partials/private_access_waiting.php', ['waitingKeys' => $waitingKeys ?? [], 'accountName' => $accountName ?? '']) ?>
 <section class="card stack message-list-window" data-conversation-list data-private-message-cache="<?= ($privateMessageCacheEnabled ?? false) ? '1' : '0' ?>" data-approved-identity="<?= $e((string) ($viewerProfile['identity_id'] ?? '')) ?>" data-page-cursor="<?= $e($page['page_cursor']) ?>" data-next-cursor="<?= $e($page['next_cursor'] ?? '') ?>" data-viewer="<?= $e($viewerProfile['username_token']) ?>">
   <h1 class="message-list-title">Messages</h1>
   <div class="board-empty" data-role="empty"<?= $page['conversations'] !== [] ? ' hidden' : '' ?>>

@@ -185,6 +185,59 @@ final class PrivateAccessConfirmationTest
         });
     }
 
+    public function testOwnPrivateDeviceSeesWaitingKeysOnUnreadMessagesAndTheConfirmPage(): void
+    {
+        $this->withAccounts(function (string $root, string $db, LocalWriteService $writer, array $keys): void {
+            file_put_contents($root . '/records/instance/feature-flags.txt', "Schema: site-feature-flags-v1\n\nFORUM_INBOX_ENABLED: true\n");
+            $page = $this->pageAs($root, $db, $keys);
+            try {
+                $codes = [PrivateKeyAccess::shortCode($keys['mira2']['identity_id']), PrivateKeyAccess::shortCode($keys['mira3']['identity_id'])];
+                foreach (['/messages', '/unread'] as $path) {
+                    $html = $page('mira1', $path);
+                    assertSame(true, str_contains($html, '2 keys for mira want to read your messages'), $path);
+                    foreach ($codes as $code) assertSame(true, str_contains($html, $code), $path . ' ' . $code);
+                    assertSame(true, str_contains($html, 'href="/tools/user-access/profiles/' . $keys['mira2']['profile_slug'] . '/">Not me</a>'), $path);
+                    assertSame(true, str_contains($html, '/assets/private_access_confirm'), $path);
+                }
+                // A public-only key sees no card, and Unread points it to Messages.
+                $unread = $page('mira2', '/unread');
+                assertSame(false, str_contains($unread, 'want to read your messages'));
+                assertSame(true, str_contains($unread, "This device can't read messages yet."));
+                // Another account sees nothing.
+                assertSame(false, str_contains($page('bob', '/messages'), 'want to read your messages'));
+
+                // Not me leads to the key's User Access page, where mira1 may retire it.
+                $access = $page('mira1', '/tools/user-access/profiles/' . $keys['mira2']['profile_slug'] . '/');
+                assertSame(true, str_contains($access, 'data-key-retirement'));
+                assertSame(true, str_contains($access, substr($keys['mira1']['identity_id'], 8)));
+
+                $confirm = '/account/confirm/' . substr($keys['mira2']['identity_id'], 8);
+                assertSame(true, str_contains($page('mira1', $confirm), 'A new key for mira wants to read your messages'));
+                assertSame(true, str_contains($page('mira2', $confirm), 'Open this link on another of your devices'));
+                assertSame(true, str_contains($page('bob', $confirm), 'Only another device of mira'));
+                assertSame(true, str_contains($page('mira1', '/account/confirm/' . str_repeat('0', 40)), 'Key Not Found'));
+
+                $this->confirm($writer, $keys['mira1'], $keys['mira2']);
+                assertSame(true, str_contains($page('mira1', $confirm), "This key can already read its account's messages."));
+                assertSame(true, str_contains($page('mira1', '/messages'), 'A new key for mira wants to read your messages'));
+            } finally {
+                TestViewerSession::reset();
+            }
+        });
+    }
+
+    /** @return callable(string, string): string */
+    private function pageAs(string $root, string $db, array $keys): callable
+    {
+        return function (string $name, string $path) use ($root, $db, $keys): string {
+            TestViewerSession::signIn($keys[$name]['identity_id']);
+            $_SERVER['REQUEST_METHOD'] = 'GET';
+            ob_start();
+            (new Application(dirname(__DIR__), $root, $db, dirname($db) . '/public'))->handle('GET', $path);
+            return (string) ob_get_clean();
+        };
+    }
+
     public function testShortCodeIsTheFingerprintTailInGroups(): void
     {
         assertSame('89AB CDEF 0123', PrivateKeyAccess::shortCode('openpgp:' . str_repeat('0', 28) . '89abcdef0123'));

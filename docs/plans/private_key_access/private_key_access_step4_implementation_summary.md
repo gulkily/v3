@@ -118,3 +118,34 @@ Effort study: `railspike-effort` / `v3/private_key_access`; [host ledger](../eff
 - Estimate details: original 0.10. Retrospective 0.12, from moving the QR helper out of invites and the screenshot pass. New understanding, not changed scope.
 
 *— Claude · 2026-11-24 UTC · Model: Claude Opus 5.5*
+
+## Stage 5 - The Confirm / Not me card
+
+**Original estimate: 0.12**
+**Retrospective: 0.15**
+
+- Changes:
+  - `templates/partials/private_access_waiting.php`: one card listing the account's waiting keys, each with its short code, Confirm and Not me.
+    - The heading reads "A new key for <name> wants to read your messages", or "N keys for <name> want to read your messages".
+    - One kept warning: "Confirm only if the code matches a device of yours."
+    - Five rows show; the rest sit in a "N more" disclosure, per the Stage 1 finding.
+  - The card appears on Unread (`inbox.php`) and on Messages (`private_message_list.php`), only for a viewer with private access, through `PrivateKeyAccess::waitingForViewer`. Unread also shows "This device can't read messages yet. Confirm it" for a public-only key.
+  - `GET /account/confirm/<fingerprint>` (`PrivateMessagePageController::confirmPage`) is the page the Stage 4 QR opens. It shows the card for that one key, or explains `self`, `has_access` or `not_allowed`. An unknown key gives 404, and a signed-out viewer gets the existing sign-in access page.
+  - `public/assets/private_access_confirm.js`: prepare, sign with `ForumBrowserSigning.signCanonicalRecord`, then confirm. On an uncertain failure it keeps the signed request and retries it as is, as `key_retirement.js` does. On success it shows "Confirmed" and hides Not me.
+  - Not me links to the key's `/tools/user-access/profiles/<slug>/` page, where the existing "Retire this key…" shows for an eligible same-account key. Retirement itself is unchanged.
+  - `public/assets/private_access.css`, attached to Unread, Messages and the confirm page in `TemplateRenderer`.
+- Verification:
+  - `PrivateAccessConfirmationTest`, new test. It checks:
+    - mira1 sees both waiting codes, the Not me links and the confirm script on `/messages` and `/unread`.
+    - mira2 (public only) sees no card and gets the Unread line; bob sees no card.
+    - Every confirm-page state: confirm, self, not_allowed, 404, and has_access after a confirm.
+    - The Not me page offers mira1 the retirement.
+  - `./v3 test --smoke PrivateAccessConfirmationTest PrivateKeyAccessTest PrivateMessagePageControllerTest InboxPageTest InboxFeedTest WebServerRoutingTest ApiRouteCatalogTest`: 526 of 526 passed. The full suite was not run.
+  - End to end in Chrome (Playwright, outside the repository), on a fixture with real gpg keys: mira1's browser identity in `localStorage` with a real session opened `/account/confirm/<mira2>` and clicked Confirm. It showed "Confirmed", `/api/private_access_status` went from `public_only` to `confirmed`, and mira2 then opened Messages normally. No page errors.
+  - Long list on the zenmemes.com import, signed in as an `ilyag` root key: "17 keys for ilyag want to read your messages" with 5 rows and "12 more". Checked in Gloss, Word97, Bubblegum and Dark at 375 and 1280 px, and in Gloss with scripts off: no horizontal overflow.
+- Notes:
+  - The card lists every waiting key, but confirming a chain root also restores the keys it approved (rule 2). On zenmemes.com, 10 confirms would clear all 17. Listing chain roots first, or saying how many each restores, would cut the taps. Not done; recorded as a follow-up.
+  - On Messages the card's `h2` comes before the list's `h1`. That is minor, left as is.
+- Estimate details: original 0.12. Retrospective 0.15, for the confirm page's four states and the end-to-end browser check. New understanding, not changed scope.
+
+*— Claude · 2026-11-24 UTC · Model: Claude Opus 5.5*

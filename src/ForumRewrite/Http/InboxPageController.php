@@ -55,12 +55,17 @@ final class InboxPageController
             if ($failedCatchUp === null) return;
         }
 
+        $waiting = $this->privateMessageStore === null ? [] : $this->waitingKeys($viewer);
         $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('inbox.php', [
             'viewerProfile' => $viewer,
             'stagedCount' => $this->stagedCount($viewer),
             'messages' => $this->messages($viewer),
             'sections' => $this->sections($viewer, $failedCatchUp),
-        ], 'Unread', 'inbox', ['/assets/inbox_catch_up.js']), $failedCatchUp === null ? 200 : 409, $this->routeServices->noStoreHeaders());
+            'waitingKeys' => $waiting,
+            'accountName' => (string) ($viewer['username'] ?? $viewer['username_token'] ?? ''),
+        ], 'Unread', 'inbox', array_merge(['/assets/inbox_catch_up.js'], $waiting === [] ? []
+            : ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_access_confirm.js'])),
+            $failedCatchUp === null ? 200 : 409, $this->routeServices->noStoreHeaders());
     }
 
     /**
@@ -215,6 +220,21 @@ final class InboxPageController
             return count((new StagedPageController($this->routeServices, $this->authenticatedViewerProfile))->visibleItems($viewer));
         } catch (\Throwable) {
             return 0;
+        }
+    }
+
+    /**
+     * Keys of the viewer's account waiting for private access; empty when the viewer cannot confirm.
+     *
+     * @param array<string, mixed> $viewer
+     * @return list<array<string, mixed>>
+     */
+    private function waitingKeys(array $viewer): array
+    {
+        try {
+            return (new \ForumRewrite\Security\PrivateKeyAccess($this->routeServices->pdo(), $this->routeServices->repositoryRoot()))->waitingForViewer($viewer);
+        } catch (\Throwable) {
+            return [];
         }
     }
 

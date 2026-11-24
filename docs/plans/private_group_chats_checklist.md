@@ -44,7 +44,9 @@ A key gets private access only if it is the username's first key, was approved b
 - [x] Stage 2: signed confirm record and API; rule 3 now trusts receipts. Import report: 77 public only, 17 of them `ilyag`
 - [x] Stage 3: enforcement in recipient keys, mailbox and history sync, behind `FORUM_PRIVATE_KEY_ACCESS_ENFORCED`
 - [x] Stage 4: "This device can't read messages yet" with code and QR on Messages
-- [ ] Stages 5–7, then Stage 8 on zenmemes.com
+- [x] Stage 5: Confirm / Not me card on Unread and Messages, and `/account/confirm/<fingerprint>` for the QR; confirmed end to end in Chrome
+- [ ] Stages 6–7, then Stage 8 on zenmemes.com
+- [ ] Follow-up idea: list chain roots first on the card (10 confirms restore all 17 `ilyag` keys)
 - [ ] Before deploy: list the zenmemes.com keys the downgrade affects; maintainer confirms his own devices
 - [ ] PR opened, merged, deployed
 - [ ] Maintainer accepts: a new same-name key approved by someone else shows Public only and gets no DMs; confirming it from his phone brings new messages and history
