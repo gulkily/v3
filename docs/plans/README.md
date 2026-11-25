@@ -709,7 +709,7 @@ and repair its navigation and affected references. See the
 - [Zen hero](zen_hero/zen_hero_step1_solution_assessment.md) — staged: the front page shows one top-liked Zen meme with a row of tiny thumbnails that opens All, on the home page only.
 - [Board nav to /threads/](board_nav_threads/board_nav_threads_one_shot.md) — one-shot: Board links to /threads/, so the Zen hero only greets the home page.
 - [Underground theme](underground_theme/underground_theme_one_shot.md) — one-shot: a lavender-and-ultramarine halftone theme from the MIT Rap Club "underground concert" flyer; default on the mitrapclub profile.
-- [MIT Rap Club chalkboard theme](mitrapclub_chalkboard_theme/mitrapclub_chalkboard_theme_one_shot.md) — one-shot: rebuilds the dark `mitrapclub` theme around the club's chalk, lowercase type and rhyme-scheme annotations.
+- [MIT Rap Club chalkboard theme](mitrapclub_chalkboard_theme/mitrapclub_chalkboard_theme_one_shot.md) — one-shot: takes the Underground theme (the club site's default) to the club's own marks: cube wordmark, margin notes in flyer ink, Polaroids; clearer feature-flag switches.
 - [MIT Rap Club About and Underground Dark](rapclub_about_dark/rapclub_about_dark_one_shot.md) — one-shot: socials-only About page on mitrapclub and a dark partner for the Underground theme.
 - [Image loading](image_loading/image_loading_step1_solution_assessment.md) — staged: images load faster through browser caching, a lighter serving path and home page tweaks.
 

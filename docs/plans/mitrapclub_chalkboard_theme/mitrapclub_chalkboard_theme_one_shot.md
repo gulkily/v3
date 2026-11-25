@@ -1,4 +1,4 @@
-# MIT Rap Club theme: from generic dark to the club's chalkboard
+# MIT Rap Club theme: Underground taken from 20% to 80% club (record began as a chalkboard rebuild of the dark theme)
 
 Cycle: `v3/mitrapclub_chalkboard_theme`; Mode: one-shot; Record/index: this file, [plans index](../README.md). Related: [Underground theme](../underground_theme/underground_theme_one_shot.md), [de-genericize checklist](../mitrapclub_theme_and_features_checklist.md) ("Extend the theme" items).
 
@@ -68,7 +68,11 @@ Planning commit: `ccccbfaa2` (record, debug log and index only).
 - 2026-11-25, scope addition (user, mid-task): "also if it's in scope for this, please improve the design of the toggles … (the on position is hard to see)", screenshot from Underground's feature flags page. Accepted. Cause: the feature-flag switch is a `button[type=submit]`, and Underground's submit rule painted the track blue in both states, leaving only a dark green knob to tell them apart. Changes: Underground and MIT Rap Club submit rules exclude `.switch`; base `.switch` on state is now a solid `--status-ok` track with a page-coloured knob, off keeps the empty track with an `--ink-soft` knob (was `--line`, faint); knob motion respects reduced motion.
 - 2026-11-25: debugging used a local-only profile edit (`brandedStylesheet` → `mitrapclub`) to render the theme by default; reverted before commit.
 
-## Verification
+- 2026-11-25, **scope correction (user)**: "can you please look at the existing theme", then, asked which theme was meant, chose **Underground**: the theme the club site opens in is the one to take from 20% to 80% club. The chalkboard rebuild of the dark `mitrapclub` theme was a misreading; `theme-mitrapclub.css` restored to `origin/main` (the chalkboard version stays in commit `acd58b3ef` for reference). Switch fix kept.
+- 2026-11-25: Underground additions, in the flyer's ink and type: margin notes (cypherposium cube, "mit rap club", scansion and stress marks, `a a / b b` rhyme scheme, "what is rap?", mic, waveform, cypher circle, "1 bar = 4 beats") as a CSS mask so the ink follows `--ug-blue` in light and dark; cube before the wordmark; Polaroid frames for gallery tiles and post images; events as a dashed ticket stub.
+- 2026-11-25, discovery: `body` is `isolation: isolate`, so a `:root::after` layer at `z-index: -1` paints under body's own layers and was invisible. The notes live on `.shell::before` instead (fixed, `z-index: -1`, inside body's layer, under the multiply halftone).
+
+## Verification (superseded by the Underground pass below)
 
 - `./v3 test --smoke ThemeRegistryTest ThemeCatalogPageTest PreferencesPageTest`: 499 run, 499 passed. `./v3 test --smoke FeatureFlagChangePageTest`: 495 run, 495 passed. Full suite not run.
 - Local server, `FORUM_SITE_ID=mitrapclub` with zenmemes.com content imported, system Chrome: `/threads/` at 1280px and 380px, `/gallery/` at 1280px; margin notes appear only at ≥ 1180px.
@@ -77,13 +81,24 @@ Planning commit: `ccccbfaa2` (record, debug log and index only).
 - Limitation: this box has no chalk fonts, so screenshots show the system sans fallback. iPhone and Mac get Chalkboard SE, Windows Segoe Print; Android and Linux the rounded or system sans.
 - Recovery: revert the three stylesheets; nothing else changed.
 
-## Outcome
+## Verification (Underground pass)
+
+- `./v3 test --smoke ThemeRegistryTest ThemeCatalogPageTest PreferencesPageTest FeatureFlagChangePageTest`: 501 run, 501 passed. Full suite not run.
+- Local `mitrapclub` server (default theme Underground, no profile edits): `/threads/` in Underground and Underground Dark at 1280px, `/gallery/` at 1280px and 380px. Notes show at ≥ 1180px only; on phones only the cube and Polaroids change.
+- Limitation: the margin notes' blue fleck (existing halftone at 80% of the viewport height) can overlap the cypher circle depending on window height; left as print overlap.
+
+## Outcome (superseded)
 
 Delivered: the MIT Rap Club theme rebuilt around the club's chalk, lowercase name, cube, rhyme-scheme and cypher notes, and Polaroid images; clearer feature-flag switches site-wide, with Underground's on/off bug fixed. Not done: board hero / "what's next" callout, self-hosted chalk font (needs dependency approval), club favicon art; the `mitrapclub` profile still defaults to Underground.
+
+## Outcome
+
+Delivered: Underground (the club site's default) carries the club's own marks: cube wordmark, margin notes in flyer ink, Polaroid images, ticket-stub events. Feature-flag switches have a clear on state site-wide, and Underground no longer paints both states blue. The dark `mitrapclub` theme is unchanged from `origin/main`. Not done: board hero / "what's next" callout, self-hosted display font, club favicon art.
 
 ## Study history
 
 - 2026-11-25 UTC, intake: **0.30**. Claude, single exposed rater.
-- 2026-11-25 UTC, closeout: scope grew by the switch fix (user-requested addition, small); assessment **0.35**. Maintainer judgment pending; measured time unknown.
+- 2026-11-25 UTC, revision: scope grew by the switch fix (user-requested addition, small); assessment **0.35**.
+- 2026-11-25 UTC, closeout: target theme corrected to Underground (rework); assessment **0.45**. Maintainer judgment pending; measured time unknown.
 
 Attribution: Claude · 2026-11-25 UTC · Model: claude-opus-5-5
