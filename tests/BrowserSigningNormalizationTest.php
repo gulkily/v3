@@ -367,6 +367,78 @@ NODE;
         assertStringContains('detached_signature=approval-signature', $result['fetches'][2]['body']);
     }
 
+    public function testPrivateAccessConfirmPreparesSignsSubmitsAndRetriesTheSameRequest(): void
+    {
+        $script = <<<'NODE'
+const state = {
+  store: {
+    forum_pki_fingerprint: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    forum_pki_public_key: 'public',
+    forum_pki_private_key: 'private'
+  },
+  fetches: [],
+  confirmReplies: [{ status: 'error', error: 'Repository is busy.' }, { status: 'ok', has_access: true, reason: 'confirmed' }]
+};
+global.window = {
+  openpgp: {
+    async readKey(){ return { getFingerprint(){ return 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'; } }; },
+    async readPrivateKey(){ return { getFingerprint(){ return 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'; } }; },
+    async createMessage(input){ return input; },
+    async sign(){ return 'confirm-signature'; }
+  }
+};
+global.localStorage = {
+  getItem(key){ return state.store[key] || ''; },
+  setItem(key, value){ state.store[key] = String(value); },
+  removeItem(key){ delete state.store[key]; }
+};
+global.document = {
+  addEventListener(){},
+  querySelector(){ return null; },
+  createElement(){ return { setAttribute(){}, style:{}, select(){}, value:'' }; },
+  body: { appendChild(){}, removeChild(){} }
+};
+global.navigator = {};
+global.fetch = async function(url, options) {
+  state.fetches.push({ url, body: options.body });
+  const payload = url === '/api/prepare_private_access_confirmation'
+    ? { status: 'ok', prepare_token: 'confirm-token', canonical_record: 'Version: 1\nTarget-Identity-ID: openpgp:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n\n' }
+    : state.confirmReplies.shift();
+  return { text: async () => JSON.stringify(payload), headers: { get(name){ return name === 'Server-Timing' ? 'commit;dur=12.5' : ''; } } };
+};
+const fs = require('fs');
+const vm = require('vm');
+vm.runInThisContext(fs.readFileSync(process.argv[1], 'utf8'));
+(async () => {
+  const signing = window.ForumBrowserSigning;
+  const failed = await signing.submitSignedPrivateAccessConfirmation('openpgp:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
+  const retried = await signing.submitSignedPrivateAccessConfirmation('openpgp:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', { signed: failed.signed });
+  process.stdout.write(JSON.stringify({ failed, retried, fetches: state.fetches }));
+})().catch((error) => {
+  process.stderr.write(error.stack || String(error));
+  process.exit(1);
+});
+NODE;
+
+        $result = $this->runScript($script);
+
+        assertSame('/api/prepare_private_access_confirmation', $result['fetches'][0]['url']);
+        assertStringContains('actor_identity_id=openpgp%3Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', $result['fetches'][0]['body']);
+        assertStringContains('target_identity_id=openpgp%3Abbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', $result['fetches'][0]['body']);
+        assertSame('/api/confirm_private_access', $result['fetches'][1]['url']);
+        assertStringContains('prepare_token=confirm-token', $result['fetches'][1]['body']);
+        assertStringContains('detached_signature=confirm-signature', $result['fetches'][1]['body']);
+        assertSame(false, $result['failed']['ok']);
+        assertSame('Repository is busy.', $result['failed']['error']);
+        // Retry repeats the same signed request without preparing again.
+        assertSame(3, count($result['fetches']));
+        assertSame('/api/confirm_private_access', $result['fetches'][2]['url']);
+        assertSame($result['fetches'][1]['body'], $result['fetches'][2]['body']);
+        assertSame(true, $result['retried']['ok']);
+        assertSame(true, $result['retried']['hasAccess']);
+        assertSame(12.5, $result['retried']['serverTiming']['commit'] ?? null);
+    }
+
     public function testNormalizeComposeAsciiTransliteratesApprovedLatinDiacritics(): void
     {
         $result = $this->runHelper('Café déjà vu. François ate smörgåsbord.');

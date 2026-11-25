@@ -516,6 +516,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Private message history synchronization](private_message_history_sync/)
 - [Private message history](private_message_history/) — recorded steps: 2, 3, 4.
 - [Private message reader refinement](private_message_reader_refinement/)
+- [Private access signing helper](private_access_signing_helper/private_access_signing_helper_one_shot.md) — one-shot: Confirm on the waiting-keys card goes through a shared `ForumBrowserSigning` helper, as approvals do.
 - [Private message unread state](private_message_unread/)
 - [Private messaging](private_messaging/)
 - [Private-window lobby fallback](private_window_lobby_fallback/)

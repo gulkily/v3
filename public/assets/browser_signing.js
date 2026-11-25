@@ -1356,6 +1356,46 @@
     return finalPreparedApprovalFailure(finalized);
   }
 
+  // Confirm that a waiting key of this account may read its messages: prepare the confirm record,
+  // sign it with this browser's key, submit. Pass back result.signed to retry: the exact signed
+  // request is repeated, and the server treats a repeat of an accepted confirm as success.
+  async function submitSignedPrivateAccessConfirmation(targetIdentityId, options = {}) {
+    let signed = options.signed || null;
+    const fallback = "Couldn't confirm this key.";
+    if (!signed) {
+      const actorIdentityId = currentAuthorIdentityId();
+      if (!actorIdentityId) {
+        return { ok: false, error: "No saved browser identity is available to sign this confirm.", signed: null, serverTiming: {} };
+      }
+      const preparedResponse = await submitUrlEncoded("/api/prepare_private_access_confirmation", {
+        actor_identity_id: actorIdentityId,
+        target_identity_id: String(targetIdentityId || ""),
+      });
+      const prepared = parsePreparedPostJsonResponse(preparedResponse.text, preparedResponse.serverTiming, fallback);
+      if (!prepared.ok) {
+        return Object.assign(prepared, { signed: null });
+      }
+      signed = {
+        prepare_token: prepared.prepareToken,
+        canonical_record: prepared.canonicalRecord,
+        detached_signature: await signCanonicalRecord(prepared.canonicalRecord, actorIdentityId),
+      };
+    }
+
+    const response = await submitUrlEncoded("/api/confirm_private_access", signed);
+    let data = null;
+    try {
+      data = JSON.parse(String(response.text || ""));
+    } catch (error) {
+      data = null;
+    }
+    if (!data || data.status !== "ok") {
+      return { ok: false, error: data && data.error ? String(data.error) : fallback, signed: signed, serverTiming: response.serverTiming };
+    }
+
+    return { ok: true, hasAccess: data.has_access === true, signed: signed, serverTiming: response.serverTiming };
+  }
+
   function parseRetractionResponse(text, serverTiming, fallbackMessage) {
     let data = null;
     try {
@@ -4307,6 +4347,7 @@
   window.ForumBrowserSigning.saveRegisteredName = saveRegisteredName;
   window.ForumBrowserSigning.normalizeProfileName = normalizeProfileName;
   window.ForumBrowserSigning.submitSignedApproval = submitSignedApproval;
+  window.ForumBrowserSigning.submitSignedPrivateAccessConfirmation = submitSignedPrivateAccessConfirmation;
   window.ForumBrowserSigning.submitSignedRetraction = submitSignedRetraction;
   window.ForumBrowserSigning.submitSignedPostFormat = submitSignedPostFormat;
   window.ForumBrowserSigning.signCanonicalRecord = signCanonicalRecord;
