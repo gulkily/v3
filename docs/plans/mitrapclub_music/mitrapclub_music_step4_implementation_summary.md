@@ -112,3 +112,22 @@ Step 4 entry: **0.55**, Step 3 reaffirmed unchanged. Stage originals copied from
   - Retrospective 0.10 against 0.05: the icons and the nav_slots fix.
 
 *— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Documentation and final review
+
+**Original estimate: 0.05**
+**Retrospective: 0.05**
+
+- Changes:
+  - New `docs/concepts/music_section.md` (purpose, scenario, sources, boundary).
+  - `docs/concepts/shared_composer.md`: the Music page placement. `docs/concepts/navigation_slots.md`: Music as a destination.
+  - `docs/plans/media_embed_support_checklist.md`: fetched titles for every provider, and the first-line flag.
+- Verification:
+  - Local links in the four files resolve.
+  - `git diff --check` (worktree and `origin/main...HEAD`): clean.
+  - Smoke set, `./v3 test`: 494 run, 494 passed.
+  - Final review of the whole diff (33 files) against the implementation standards: every new surface reuses an existing component (TagPage, `thread_row.php`, the shared composer, `$br`, the preview cache and write path); the two new pieces, `OembedTitleFetcher` and `media_embed_warm_beacon.php`, replace three near-identical fetchers and three copies of the beacon. No new dependency.
+- Notes:
+  - With media embeds off, a row's player line shows the plain link instead of a card, as the post body would.
+
+*— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
