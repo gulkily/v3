@@ -82,7 +82,7 @@ Diff checked: the worker changes stay in the existing listener and reuse `suppor
 
 ## Commit, merge and publication
 
-Planning commit `dab9f54`; completion commit and PR: see the PR (reference pending in this record). Not merged, not deployed.
+Planning commit `dab9f54`; completion commit `7e47b05`; [PR #415](https://github.com/gulkily/v3/pull/415) open. Not merged, not deployed.
 
 ## Study history
 
