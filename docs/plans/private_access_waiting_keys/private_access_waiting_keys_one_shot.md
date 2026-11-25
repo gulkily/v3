@@ -53,7 +53,7 @@ Verification:
 
 Final review: the diff touches the two controllers, `PrivateKeyAccess.php`, this record, the plans index, the ledger and the debug log. No new class, no dependency.
 
-Commit/merge/publication status: completion commit pending at the time of writing; branch `fix/private_access_waiting_keys`; PR to be opened; not merged.
+Commit/merge/publication status: completion commit `58a4354` on `fix/private_access_waiting_keys`; PR https://github.com/gulkily/v3/pull/421 opened 2026-11-25; not merged.
 
 Debug: [debug log](./private_access_waiting_keys_debug_log.md).
 
