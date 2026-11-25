@@ -42,6 +42,8 @@ Reuse: `publishPublicKey`, `serverKnowsCurrentIdentity`, the prepare/create iden
 - Passed `./v3 test BrowserSigningNormalizationTest AccountKeyPageHooksTest` and the smoke set with those tests. The full suite was not run.
 - Not verified: the production cause of the reported failure; a real phone against zenmemes.com.
 
+Failure-mode reference: [Key registration failure modes](../../reference/key_registration_failure_modes.md) (2026-11-25).
+
 Follow-ups: make post-commit work in create_identity non-fatal on the server (C); on members-only sites, a sign-in failure after a successful publish still reports "Couldn't publish your key."
 
 Commit status: this record accompanies the implementation commit. Merge and deployment are pending.
