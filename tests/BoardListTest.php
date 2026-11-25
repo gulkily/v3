@@ -355,6 +355,22 @@ final class BoardListTest
         assertSame('<a href="/profiles/mouse">mouse</a> · <time datetime="2025-10-06T12:37:00Z" title="Oct 6, 2025 at 12:37 UTC">Oct 6, 2025</time> <a class="pending-chip" href="/profiles/mouse" data-pending-profile="mouse" data-pending-username="mouse"><span class="chip chip--pending">Pending</span></a>', $meta);
     }
 
+    public function testThreadBylineShowsThePendingChipNotUnapprovedText(): void
+    {
+        $renderer = new TemplateRenderer(dirname(__DIR__) . '/templates');
+        $method = new ReflectionMethod($renderer, 'renderContentMeta');
+        $escape = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES);
+        $meta = $method->invoke($renderer, [
+            'author_label' => 'mouse',
+            'author_profile_slug' => 'mouse',
+            'author_is_approved' => 0,
+            'created_at' => '2025-10-06T12:37:00Z',
+        ], 'created_at', '', $escape);
+
+        assertTrue(str_starts_with($meta, 'by <a href="/profiles/mouse">mouse</a> <a class="pending-chip" href="/profiles/mouse" data-pending-profile="mouse" data-pending-username="mouse"><span class="chip chip--pending">Pending</span></a> on <time'));
+        assertStringNotContains('(unapproved)', $meta);
+    }
+
     public function testPendingChipIsAPlainLabelWhenItsFlagIsOff(): void
     {
         $flag = 'FORUM_PENDING_CHIP_APPROVAL_ENABLED';
