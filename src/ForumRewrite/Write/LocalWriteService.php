@@ -60,6 +60,7 @@ use ForumRewrite\Security\KeyRetirement;
 use ForumRewrite\Security\KeyBootstrapReplay;
 use ForumRewrite\Security\KeyRetirementPolicy;
 use ForumRewrite\Security\PrivateAccessConfirmation;
+use ForumRewrite\Security\ReactionSignature;
 use ForumRewrite\Security\PrivateAccessConfirmationPolicy;
 use ForumRewrite\Security\PrivateKeyAccess;
 use ForumRewrite\Images\ImageReference;
@@ -2711,6 +2712,8 @@ class LocalWriteService
                 $path = PrivateAccessConfirmation::path($target);
                 $sha = $this->timePhase($timings, 'commit', fn (): string => (new SignedPostTransaction($this->repositoryRoot))->accept([$path => $bytes, $path . '.asc' => $signature,
                     PrivateAccessConfirmation::acceptancePath($target) => PrivateAccessConfirmation::acceptance($bytes, $signature, $this->canonicalTimestampNow())]));
+                // The answer below and the next page load read this record back; reuse this check instead of running gpg again.
+                ReactionSignature::rememberVerified($this->repositoryRoot, $path, $bytes, $signature, $record['Actor-Identity-ID'], $key, $fingerprint);
                 $this->deletePreparedPost($token);
             }
 

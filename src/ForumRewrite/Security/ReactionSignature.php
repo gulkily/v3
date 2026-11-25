@@ -50,4 +50,27 @@ final class ReactionSignature
         }
         return 'verified';
     }
+
+    /**
+     * After a writer has verified a signature itself, let status() reuse that check instead of
+     * running gpg again on the same bytes. Remembers only when the inputs are exactly those
+     * status() would verify: the stored `.asc` beside the record, and the stored public key with
+     * the same armored bytes and fingerprint the writer used. Anything else remembers nothing.
+     */
+    public static function rememberVerified(string $root, string $path, string $contents, string $signature,
+        string $author, string $verifiedKey, string $verifiedFingerprint): void
+    {
+        if (!preg_match('/^openpgp:([a-f0-9]{40})$/D', $author, $match)) return;
+        $fingerprint = strtoupper($match[1]);
+        if (strtoupper($verifiedFingerprint) !== $fingerprint) return;
+        $keyFile = $root . '/records/public-keys/openpgp-' . $fingerprint . '.asc';
+        $signatureFile = $root . '/' . $path . '.asc';
+        if (!is_file($keyFile) || !is_file($signatureFile) || file_exists($root . '/' . $path . '.sig')) return;
+        $key = \ForumRewrite\Canonical\RecordLimits::read($keyFile);
+        if ($key !== $verifiedKey || \ForumRewrite\Canonical\RecordLimits::read($signatureFile) !== $signature) return;
+        $cacheKey = hash('sha256', serialize([$contents, $signature, $key, $fingerprint]));
+        if (count(self::$cache) >= 1024) self::$cache = [];
+        self::$cache[$cacheKey] = true;
+        SignatureCheckCache::remember($cacheKey);
+    }
 }

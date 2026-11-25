@@ -164,6 +164,34 @@ final class PrivateKeyAccessTest
         assertFalse($access->hasAccess('openpgp:fake'));
     }
 
+    public function testEachKeyIsLookedUpOncePerCheck(): void
+    {
+        // Nine keys waiting, as on the account that prompted this: the fixed-point loop and
+        // rule 1 would otherwise ask about the same keys again on every pass.
+        $pdo = $this->database();
+        $this->add($pdo, 'openpgp:ilya1', 'ilyag', 'openpgp:bob');
+        $this->receipts['openpgp:ilya1'] = ['classification' => 'new_account', 'target_username' => 'ilyag', 'actor_is_operator' => false];
+        for ($i = 1; $i <= 9; $i++) {
+            $this->add($pdo, 'openpgp:phone' . $i, 'ilyag', 'openpgp:carol');
+            $this->receipts['openpgp:phone' . $i] = ['classification' => 'cross_account_key', 'target_username' => 'ilyag', 'actor_is_operator' => false];
+            $this->confirmations['openpgp:phone' . $i] = ['openpgp:phone' . ($i + 1)];
+        }
+        $operatorCalls = [];
+        $confirmerCalls = [];
+        $access = new PrivateKeyAccess(
+            $pdo,
+            null,
+            fn (string $id) => $this->receipts[$id] ?? null,
+            function (string $id) use (&$operatorCalls): bool { $operatorCalls[] = $id; return false; },
+            function (string $id) use (&$confirmerCalls): array { $confirmerCalls[] = $id; return $this->confirmations[$id] ?? []; },
+        );
+
+        assertSame(9, count($access->waitingFor('ilyag')));
+        assertSame(true, $access->hasAccess('openpgp:ilya1'));
+        assertSame(count(array_unique($operatorCalls)), count($operatorCalls));
+        assertSame(count(array_unique($confirmerCalls)), count($confirmerCalls));
+    }
+
     public function testPendingAndUnknownKeysArePublicOnly(): void
     {
         $pdo = $this->database();

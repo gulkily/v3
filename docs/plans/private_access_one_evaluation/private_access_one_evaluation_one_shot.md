@@ -8,7 +8,7 @@ Extended estimates: enabled. No alternatives or work units, so no unit estimates
 
 **Cycle estimate: 0.12**
 
-Status: planned; next permitted action: implement.
+Status: implemented and committed; next permitted action: maintainer review (PR), after #422.
 
 Feedback item: none matches (searched `docs/feedback/items/`).
 
@@ -34,13 +34,42 @@ Completion conditions: a Confirm click returns `has_access: true` with `status` 
 
 Concepts touched: [Private key access](../../concepts/private_key_access.md) (used unchanged).
 
-Verification and recovery plan: `./v3 test --smoke PrivateAccessConfirmationTest PrivateKeyAccessTest ReactionSignatureTest` (whichever of these exist) plus a test for the mismatched-key case; a local timing run to compare with the sibling's 94 ms `status`; `git diff --check`. Full suite not run. Recovery: revert the commit; the cache entries are only ever true statements.
+Verification and recovery plan: `./v3 test --smoke PrivateAccessConfirmationTest PrivateKeyAccessTest ReactionSignatureTest` (`ReactionSignatureTest` does not exist; the cache tests live in `SignatureCheckCacheTest`) plus a test for the mismatched-key case; a local timing run to compare with the sibling's 94 ms `status`; `git diff --check`. Full suite not run. Recovery: revert the commit; the cache entries are only ever true statements.
 
 Starting revisions and branch: `fix/private_access_one_evaluation` from `fix/private_access_confirm_timing` `e18d1de`.
 
-Planning commit: pending.
+Planning commit: `e78b0c0` (plan and index entry only, before any implementation).
 
 Study history:
 - 2026-11-25 UTC, intake and execution entry: **0.12**. Recorded after inspecting the code and measuring, so not a clean intake. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified.
 
-*Claude · 2026-11-25 UTC*
+Dated execution history:
+- 2026-11-25: `ReactionSignature::rememberVerified()` added. It remembers a check in the same memory and persistent caches `status()` uses, and only when the stored `.asc` equals the verified signature, no `.sig` sits beside it, the fingerprint is the author's, and the stored public key's bytes equal the key the writer verified with. Addition.
+- 2026-11-25: `finalizePrivateAccessConfirmation()` calls it right after the commit, before the status answer. Addition.
+- 2026-11-25: `PrivateKeyAccess` memoizes `isOperator` and `confirmersFor` per instance, as `receiptFor` already was. Correction of repeated work.
+- 2026-11-25: tests: `SignatureCheckCacheTest::testAWritersOwnCheckIsReusedWithoutGpg` (no gpg run in this request or, from the persistent cache, the next), `testAWritersCheckWithOtherInputsRemembersNothing` (different key bytes, fingerprint or signature: gpg still runs); `PrivateKeyAccessTest::testEachKeyIsLookedUpOncePerCheck` (nine waiting keys; failed before the memo with 19 operator lookups for 11 keys, passes after).
+
+Study history, closeout:
+- 2026-11-25 UTC: retrospective scope assessment **0.12**. Delivered as revised before the planning commit. Claude, single exposed rater. Maintainer judgment pending; measured time unknown.
+
+Outcome: delivered. Locally (one run, small test repository), finalize's `status` phase fell from 94.2 ms to 4.1 ms and the lock hold from 311.6 ms to 225.3 ms; `verify` (86 ms) and `commit` (127 ms) are unchanged and are now most of a Confirm. The next Messages or Unread load also finds the new record's check in the persistent cache.
+
+Verification:
+- Passed: `./v3 test --smoke PrivateAccessConfirmationTest PrivateKeyAccessTest SignatureCheckCacheTest InboxPageTest PrivateMessagePageControllerTest`: 532 run, 532 passed. Full suite not run.
+- Passed: the memo test fails with the old `PrivateKeyAccess.php` (stashed) and passes with the new one.
+- Passed: `php -l`, `git diff --check`.
+- Unverified: production timings; check `Server-Timing` on a Confirm after deploying #422 and this PR.
+- Inapplicable: markup, themes, icons, schema, flags.
+
+Final review: the diff touches `ReactionSignature.php`, `PrivateKeyAccess.php`, `LocalWriteService.php`, two tests, this record, the plans index, the ledger and the debug log. One cache, reused.
+
+Follow-up noted, not done: `finalizePreparedKeyRetirement()` re-reads its record through `KeyRetirement::read()` in the same way and would gain from the same call. The commit path (about 7 git calls through `SignedPostTransaction`, against 3 for approvals) is the next measured decision.
+
+Commit/merge/publication status: completion commit pending at the time of writing; branch `fix/private_access_one_evaluation`, stacked on `fix/private_access_confirm_timing` (#422); PR to be opened against `main`, to merge after #422; not merged.
+
+Debug: [debug log](./private_access_one_evaluation_debug_log.md).
+
+Enhancement requests:
+- Same signature reuse for key retirement. Addition, proposed by Claude. Not approved. Not done.
+
+Attribution: Claude · 2026-11-25 UTC · Model: claude-opus-5-5
