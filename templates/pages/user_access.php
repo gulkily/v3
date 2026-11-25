@@ -33,8 +33,9 @@
         . '<button type="button" data-action="confirm-private-access" data-private-access-operator-only>Confirm</button>'
         . '<span class="meta" data-role="private-access-feedback" role="status" hidden></span></li>';
 ?>
-  <article class="card" id="private-access-waiting">
+  <article class="card" id="private-access-waiting" data-private-access-waiting>
     <h2>Waiting for private access</h2>
+    <p class="meta" data-role="private-access-card-feedback" role="status" hidden></p>
     <script>
       (function () {
         var operators = <?= json_encode($operatorFingerprints ?? [], JSON_HEX_TAG | JSON_THROW_ON_ERROR) ?>;
