@@ -70,6 +70,6 @@ Verification:
 
 Final review: the diff touches `public/assets/site.css` (3 lines), `tests/ThemeRegistryTest.php`, this record, the plans index and the cycle's ledger and debug log. No new component, dependency or schema change. Deploy now is enough.
 
-Commit/merge/publication status: implementation commit pending at the time of writing; PR to follow. Not merged or deployed.
+Commit/merge/publication status: planning commit `1aee2f0`, implementation commit `c44294d`, PR #427 open. Not merged or deployed.
 
 *— Claude · 2026-11-25 UTC · Model: Claude Opus 5.5 (claude-opus-5-5)*
