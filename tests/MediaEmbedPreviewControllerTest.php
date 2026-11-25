@@ -8,10 +8,12 @@ use ForumRewrite\Application;
 use ForumRewrite\Http\MediaEmbedPreviewController;
 use ForumRewrite\Http\RouteServices;
 use ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator;
+use ForumRewrite\View\BandcampPagePlayerFetcher;
 use ForumRewrite\View\InstagramPagePreviewFetcher;
 use ForumRewrite\View\MediaEmbedDetector;
 use ForumRewrite\View\MediaEmbedPreviewCacheStore;
 use ForumRewrite\View\MediaEmbedPreviewDatabaseConfig;
+use ForumRewrite\View\OembedTitleFetcher;
 use ForumRewrite\View\TemplateRenderer;
 use ForumRewrite\View\YoutubeOembedTitleFetcher;
 
@@ -32,6 +34,104 @@ final class MediaEmbedPreviewControllerTest
             ob_end_clean();
             assertSame('https://www.youtube.com/oembed?format=json&url=' . rawurlencode('https://www.youtube.com/watch?v=M7lc1UVf-VE'), $requested);
             assertSame('A short clip', $this->readCache($root, 'M7lc1UVf-VE', 'youtube')['title']);
+        } finally {
+            $this->cleanup($root);
+        }
+    }
+
+    public function testMusicProvidersFetchTitlesThroughTheirOwnEndpoints(): void
+    {
+        $cases = [
+            ['spotify', 'https://open.spotify.com/album/3LVR5at2HIWpbqFfV7Zzdj?si=x', 'https://open.spotify.com/oembed?url=' . rawurlencode('https://open.spotify.com/album/3LVR5at2HIWpbqFfV7Zzdj'), 'album:3LVR5at2HIWpbqFfV7Zzdj'],
+            ['soundcloud', 'https://soundcloud.com/forss/flickermood?si=x', 'https://soundcloud.com/oembed?format=json&url=' . rawurlencode('https://soundcloud.com/forss/flickermood'), 'forss/flickermood'],
+            ['tiktok', 'https://www.tiktok.com/@scout2015/video/6718335390845095173', 'https://www.tiktok.com/oembed?url=' . rawurlencode('https://www.tiktok.com/@scout2015/video/6718335390845095173'), '6718335390845095173'],
+        ];
+        foreach ($cases as [$provider, $url, $expectedRequest, $cacheId]) {
+            $root = $this->tempProjectRoot();
+            try {
+                $requested = [];
+                $oembed = new OembedTitleFetcher(function (string $request) use (&$requested): string {
+                    $requested[] = $request;
+                    return '{"title":"  A track  "}';
+                });
+                $controller = $this->controller($root, new InstagramPagePreviewFetcher(), null, null, null, $oembed);
+                ob_start();
+                $controller->warmPreview('GET', ['provider' => $provider, 'url' => $url]);
+                $controller->warmPreview('GET', ['provider' => $provider, 'url' => $url]);
+                ob_end_clean();
+                assertSame([$expectedRequest], $requested, $provider . ': one request; the second is a cache hit');
+                assertSame('A track', $this->readCache($root, $cacheId, $provider)['title']);
+            } finally {
+                $this->cleanup($root);
+            }
+        }
+    }
+
+    public function testBandcampTitleComesFromTheReleasePage(): void
+    {
+        $root = $this->tempProjectRoot();
+        try {
+            $bandcamp = new BandcampPagePlayerFetcher(fn (string $url): array => [
+                'status' => 200, 'type' => 'text/html; charset=utf-8',
+                'body' => '<html><head><meta charset="utf-8"><meta property="og:title" content="Take My Hand, by Dark Time Sunshine"></head></html>',
+            ]);
+            $url = 'https://darktimesunshine.bandcamp.com/track/take-my-hand';
+            $controller = $this->controller($root, new InstagramPagePreviewFetcher(), null, null, null, null, $bandcamp);
+            ob_start();
+            $controller->warmPreview('GET', ['provider' => 'bandcamp', 'url' => $url]);
+            ob_end_clean();
+            assertSame('Take My Hand, by Dark Time Sunshine', $this->readCache($root, $url, 'bandcamp')['title']);
+        } finally {
+            $this->cleanup($root);
+        }
+    }
+
+    public function testMusicFetchFailureIsCachedAndNeverWritesASubject(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createWritableEnvironment('root-no-subject');
+        try {
+            $calls = 0;
+            $oembed = new OembedTitleFetcher(function () use (&$calls) { $calls++; return '{"html":"<iframe>"}'; });
+            $controller = $this->controller($repositoryRoot, new InstagramPagePreviewFetcher(), null, $databasePath, $repositoryRoot, $oembed);
+            ob_start();
+            $controller->warmPreview('GET', ['provider' => 'tiktok', 'url' => 'https://www.tiktok.com/@scout2015/video/6718335390845095173', 'thread_id' => 'root-no-subject']);
+            $controller->warmPreview('GET', ['provider' => 'tiktok', 'url' => 'https://www.tiktok.com/@scout2015/video/6718335390845095173', 'thread_id' => 'root-no-subject']);
+            ob_end_clean();
+            assertSame(1, $calls, 'a recent failure is not retried');
+            assertSame(null, $this->readCache($repositoryRoot, '6718335390845095173', 'tiktok')['title']);
+            assertSame('', (string) $this->currentSubject($databasePath, 'root-no-subject'));
+        } finally {
+            $this->cleanup($repositoryRoot);
+        }
+    }
+
+    public function testMusicTitleBackfillsAnEmptyThreadSubject(): void
+    {
+        [$repositoryRoot, $databasePath, $artifactRoot] = $this->createWritableEnvironment('root-no-subject');
+        try {
+            $oembed = new OembedTitleFetcher(fn (string $url): string => '{"title":"I Done Changed A lot"}');
+            $controller = $this->controller($repositoryRoot, new InstagramPagePreviewFetcher(), null, $databasePath, $repositoryRoot, $oembed);
+            ob_start();
+            $controller->warmPreview('GET', ['provider' => 'spotify', 'url' => 'https://open.spotify.com/album/3LVR5at2HIWpbqFfV7Zzdj', 'thread_id' => 'root-no-subject']);
+            ob_end_clean();
+            assertSame('I Done Changed A lot', $this->currentSubject($databasePath, 'root-no-subject'));
+        } finally {
+            $this->cleanup($repositoryRoot);
+        }
+    }
+
+    public function testProviderMismatchIsRejectedWithoutFetch(): void
+    {
+        $root = $this->tempProjectRoot();
+        try {
+            $calls = 0;
+            $oembed = new OembedTitleFetcher(function () use (&$calls) { $calls++; return '{"title":"x"}'; });
+            $controller = $this->controller($root, new InstagramPagePreviewFetcher(), null, null, null, $oembed);
+            ob_start();
+            $controller->warmPreview('GET', ['provider' => 'spotify', 'url' => 'https://soundcloud.com/forss/flickermood']);
+            $controller->warmPreview('GET', ['provider' => 'soundcloud', 'url' => 'https://example.com/forss/flickermood']);
+            ob_end_clean();
+            assertSame(0, $calls);
         } finally {
             $this->cleanup($root);
         }
@@ -344,7 +444,9 @@ final class MediaEmbedPreviewControllerTest
         InstagramPagePreviewFetcher $fetcher,
         ?YoutubeOembedTitleFetcher $youtubeFetcher = null,
         ?string $databasePath = null,
-        ?string $repositoryRoot = null
+        ?string $repositoryRoot = null,
+        ?OembedTitleFetcher $oembedFetcher = null,
+        ?BandcampPagePlayerFetcher $bandcampFetcher = null
     ): MediaEmbedPreviewController {
         $routeServices = new RouteServices(
             $databasePath ?? $projectRoot . '/read_model.sqlite3',
@@ -365,7 +467,9 @@ final class MediaEmbedPreviewControllerTest
             $projectRoot,
             new MediaEmbedDetector(),
             $fetcher,
-            $youtubeFetcher ?? new YoutubeOembedTitleFetcher()
+            $youtubeFetcher ?? new YoutubeOembedTitleFetcher(),
+            $oembedFetcher ?? new OembedTitleFetcher(fn (string $url) => false),
+            $bandcampFetcher ?? new BandcampPagePlayerFetcher(fn (string $url) => null)
         );
     }
 

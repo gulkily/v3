@@ -789,6 +789,7 @@ final class TemplateRenderer
             'tagLinksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_LINKS_ENABLED),
             'tagUnlocksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_UNLOCKS_ENABLED),
             'mediaEmbedsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_ENABLED),
+            'mediaEmbedFirstLineTitles' => $this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_FIRST_LINE_TITLES_ENABLED),
             // The composer's theme choice lists only themes this site offers now.
             'themeFlags' => $this->featureFlags,
         ], $data);

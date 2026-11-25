@@ -6,10 +6,13 @@ $isPinned = $showPinnedMarker && in_array('pinned', $thread['thread_labels'] ?? 
 $previewDuplicatesTitle = trim((string) $thread['body_preview']) === trim($subject)
     && !$hasMediaEmbed($thread['body_preview']);
 $bareMediaEmbedWarmBeacon = '';
-if (($mediaEmbedsEnabled ?? false) && $subject === 'Untitled') {
+// An empty subject that a fetched title can fill: YouTube and Instagram show Untitled
+// meanwhile, music links show the link.
+if (($mediaEmbedsEnabled ?? false) && trim((string) ($thread['subject'] ?? '')) === '') {
     $bareMediaEmbedMatch = \ForumRewrite\Support\ThreadTitle::bareMediaEmbedMatch(
         (string) ($thread['subject'] ?? ''),
-        (string) ($thread['body_preview'] ?? $thread['body'] ?? '')
+        (string) ($thread['body_preview'] ?? $thread['body'] ?? ''),
+        (bool) ($mediaEmbedFirstLineTitles ?? false)
     );
     if ($bareMediaEmbedMatch !== null) {
         $bareMediaEmbedWarmBeaconUrl = '/internal/media-embeds/warm-preview?provider=' . rawurlencode($bareMediaEmbedMatch['provider'])

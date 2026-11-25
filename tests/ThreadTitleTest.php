@@ -9,21 +9,37 @@ use ForumRewrite\Images\ImageReference;
 
 final class ThreadTitleTest
 {
-    public function testTikTokDoesNotBecomeUntitledOrRequestTitleBackfill(): void
+    public function testTikTokKeepsItsLinkAsTitleButRequestsTitleBackfill(): void
     {
         $url = 'https://www.tiktok.com/@scout2015/video/6718335390845095173';
         assertSame($url, ThreadTitle::displayTitle('', $url, 'thread-1', 80, true));
-        assertSame(null, ThreadTitle::bareMediaEmbedMatch('', $url));
+        assertSame('tiktok', ThreadTitle::bareMediaEmbedMatch('', $url)['provider']);
     }
 
-    public function testSpotifyUsesBodyDerivedTitlesAndNeverRequestsTitleBackfill(): void
+    public function testSpotifyShowsItsLinkUntilTheFetchedTitleIsBackfilled(): void
     {
         foreach (['track', 'album', 'playlist'] as $kind) {
             $url = 'https://open.spotify.com/' . $kind . '/11dFghVXANMlKmJXsNCbNl';
             assertSame($url, ThreadTitle::displayTitle('', $url, 'thread-1', 80, true));
-            assertSame(null, ThreadTitle::bareMediaEmbedMatch('', $url));
+            assertSame('spotify', ThreadTitle::bareMediaEmbedMatch('', $url)['provider']);
             assertSame('My album', ThreadTitle::displayTitle('My album', $url, 'thread-1', 80, true));
         }
+    }
+
+    public function testFirstLineTitlesNeedTheFlagAndALinkOnItsOwnFirstLine(): void
+    {
+        $link = 'https://www.youtube.com/watch?v=mNLeVUCLrLo';
+        $withNote = $link . "\nthis one goes hard";
+        assertSame(null, ThreadTitle::bareMediaEmbedMatch('', $withNote));
+        assertSame('youtube', ThreadTitle::bareMediaEmbedMatch('', $withNote, true)['provider']);
+        assertSame('soundcloud', ThreadTitle::bareMediaEmbedMatch('', "https://soundcloud.com/forss/flickermood  \n\nnote", true)['provider']);
+        assertSame('youtube', ThreadTitle::bareMediaEmbedMatch('', $link, true)['provider'], 'a bare link still matches with the flag on');
+        assertSame(null, ThreadTitle::bareMediaEmbedMatch('', 'listen: ' . $withNote, true), 'text before the link');
+        assertSame(null, ThreadTitle::bareMediaEmbedMatch('', $link . ' this one goes hard', true), 'text on the same line');
+        assertSame(null, ThreadTitle::bareMediaEmbedMatch('', $withNote . "\nhttps://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl", true), 'a second embed');
+        assertSame(null, ThreadTitle::bareMediaEmbedMatch('Set by hand', $withNote, true));
+        // Display titles don't depend on the flag: text after the link reads as today.
+        assertSame(false, ThreadTitle::displayTitle('', $withNote, 'thread-1', 80, true) === 'Untitled');
     }
 
     public function testShortsRemainEligibleForExistingTitleBackfill(): void

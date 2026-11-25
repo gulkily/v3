@@ -82,3 +82,14 @@
 ### Uncertain assessments
 
 - "That" is read as the first-line title rule, the decision the Step 3 handoff raised. Another reading (the whole music section) is already covered by the profile setting; the handoff states the reading taken.
+
+## 2026-11-25T19:40Z — Step 4, Stage 1
+
+### Necessary/useful instructions
+
+- Maintainer preference (fix pre-existing failures): the smoke run surfaced `FeatureFlagsBehaviorTest` failing on `main` (Instagram clip flag in the wrong group); fixed in this stage and recorded.
+- `step4_implementation_do.md`, retrospective separate from original: kept both lines even though equal.
+
+### Uncertain assessments
+
+- One fetcher class instead of three: judged a reuse improvement within the approved scope, recorded as a deviation.

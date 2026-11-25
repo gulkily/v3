@@ -52,10 +52,13 @@ $titleRepeatsBody = trim((string) ($thread['subject'] ?? '')) === ''
     && $postBodyDisplay === $postBody
     && !in_array($title, ['Untitled', 'Image'], true);
 $bareMediaEmbedWarmBeacon = '';
-if (($mediaEmbedsEnabled ?? false) && $title === 'Untitled') {
+// An empty subject that a fetched title can fill: YouTube and Instagram show Untitled
+// meanwhile, music links show the link.
+if (($mediaEmbedsEnabled ?? false) && trim((string) ($thread['subject'] ?? '')) === '') {
     $bareMediaEmbedMatch = \ForumRewrite\Support\ThreadTitle::bareMediaEmbedMatch(
         (string) ($thread['subject'] ?? ''),
-        $postBody
+        $postBody,
+        (bool) ($mediaEmbedFirstLineTitles ?? false)
     );
     if ($bareMediaEmbedMatch !== null) {
         $bareMediaEmbedWarmBeaconUrl = '/internal/media-embeds/warm-preview?provider=' . rawurlencode($bareMediaEmbedMatch['provider'])

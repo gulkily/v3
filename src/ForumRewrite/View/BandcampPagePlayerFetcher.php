@@ -15,15 +15,8 @@ final class BandcampPagePlayerFetcher
         $release = BandcampReleaseUrl::parse($url);
         if ($release === null) { return null; }
         try {
-            $response = $this->transport !== null ? ($this->transport)($release['url']) : $this->request($release['url']);
-            if ($response === null || $response['status'] !== 200
-                || !preg_match('#^text/html(?:;|$)#i', $response['type'])
-                || strlen($response['body']) > self::MAX_BYTES) { return null; }
-            $dom = new \DOMDocument();
-            $previous = libxml_use_internal_errors(true);
-            try { $loaded = $dom->loadHTML($response['body'], LIBXML_NONET); }
-            finally { libxml_clear_errors(); libxml_use_internal_errors($previous); }
-            if (!$loaded) { return null; }
+            $dom = $this->page($release['url']);
+            if ($dom === null) { return null; }
             $ids = [];
             foreach ($dom->getElementsByTagName('meta') as $meta) {
                 if (strtolower($meta->getAttribute('property')) !== 'og:video') { continue; }
@@ -34,6 +27,36 @@ final class BandcampPagePlayerFetcher
             if (count($ids) !== 1) { return null; }
             return ['kind' => $release['kind'], 'id' => (string) array_key_first($ids)];
         } catch (\Throwable) { return null; }
+    }
+
+    /** The release's title from the same page fetch (og:title), or null. */
+    public function fetchTitle(string $url): ?string
+    {
+        $release = BandcampReleaseUrl::parse($url);
+        if ($release === null) { return null; }
+        try {
+            $dom = $this->page($release['url']);
+            if ($dom === null) { return null; }
+            foreach ($dom->getElementsByTagName('meta') as $meta) {
+                if (strtolower($meta->getAttribute('property')) !== 'og:title') { continue; }
+                $title = trim($meta->getAttribute('content'));
+                return $title !== '' ? $title : null;
+            }
+            return null;
+        } catch (\Throwable) { return null; }
+    }
+
+    private function page(string $releaseUrl): ?\DOMDocument
+    {
+        $response = $this->transport !== null ? ($this->transport)($releaseUrl) : $this->request($releaseUrl);
+        if ($response === null || $response['status'] !== 200
+            || !preg_match('#^text/html(?:;|$)#i', $response['type'])
+            || strlen($response['body']) > self::MAX_BYTES) { return null; }
+        $dom = new \DOMDocument();
+        $previous = libxml_use_internal_errors(true);
+        try { $loaded = $dom->loadHTML($response['body'], LIBXML_NONET); }
+        finally { libxml_clear_errors(); libxml_use_internal_errors($previous); }
+        return $loaded ? $dom : null;
     }
 
     public function isPublicAddress(string $ip): bool
