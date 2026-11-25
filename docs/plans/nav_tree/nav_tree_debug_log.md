@@ -92,3 +92,29 @@ Debug mode: enabled (inherited from the Step 2 artifact). Approval arrived as "A
 
 - Exact approval phrase. `RAILSPIKE.md` asks for "Approved Step N" exactly, but says nothing about near matches such as "Approved. Step 2." This step treated it as approval and said so in the handoff.
 - Stage sizing at about 50 lines. Stage 2 may run past 50 lines of change; it was kept whole because splitting load capture from back and forward would leave an untestable half.
+
+## 2026-11-25T09:35Z — Step 4
+
+Debug mode: enabled (inherited from the Step 3 artifact). Seven stages on `feat/nav-tree`, planning commit `f585d60`, stage commits `65ebdbe` to `9aa0b06`.
+
+### Necessary/useful instructions
+
+- `step4_implementation_before.md`, Planning Docs Commit Gate. Moving the approved plans from the planning branch into `docs/plans/nav_tree/` before any code kept the planning commit clean; the ledger and checklist went with Stage 1, as the gate requires. Retain.
+- `step3_development_plan_do.md` and `RAILSPIKE.md`, "Resolve each material risk before dependent work". Stage 1's probe answered the `sessionStorage` question in all three engines before any recorder code, and dropped an unneeded mitigation. Retain.
+- `implementation_standards.md`, "Check affected shared consumers … themes". It led to running `tools_launcher.mjs` and `ToolsRegistryTest`, which caught the registry count and the launcher's flag list. Retain.
+- Host `AGENTS.md`, Navigation icons, "Verify the icon in each affected theme … text-only theme checks do not cover this". The screenshots also exposed the History page's unclear branches, fixed in Stage 6. Retain.
+- `step4_implementation_do.md`, Stage Boundary Protocol. One commit per stage with its summary update kept each discovery (Firefox reload, Forte layout) next to the change it caused. Retain.
+
+### Redundant/unnecessary instructions
+
+- `step4_implementation_do.md`, extended-estimate paragraphs on split, blocked and replaced stages. No stage was split or blocked; the paragraphs were read and not used. Suggest folding them behind a link, as the debug section does.
+
+### Inapplicable instructions
+
+- Documentation-only scope rules, Follow-up Cycles Before Merge, and the known-user replay stage: none apply to this cycle.
+
+### Uncertain assessments
+
+- Step 3 named `BrowserRuntimeProfile.php` for key names and `open_beside.mjs` for the Beside tests; Step 4 followed closer precedents instead and recorded why. The workflow has no field for "followed a different canonical component than planned"; the stage notes carried it.
+- `tests/browser/` offline tests run only in Chromium. The Completion Contract asked for three engines without naming offline; the summary reports offline in Chromium only rather than claiming all three.
+- Push and PR. Step 4 ends at handoff; the branch was pushed so the work survives the session, but no PR was opened without a request.
