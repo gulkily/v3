@@ -78,6 +78,8 @@ final class SiteProfileRegistry
                 'editorialContentKey' => 'mitrapclub',
                 'enabledExperienceKeys' => ['forum'],
                 'composerPrompt' => 'Drop a verse, a cypher clip, or an announcement...',
+                // No /start/ page or Getting started links on this site.
+                'gettingStarted' => false,
                 'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'socials', 'editorial' => 'mitrapclub', 'brandedStylesheet' => 'underground', 'toolsNav' => 'hidden', 'favicon' => 'mitrapclub'],
             ],
         ];
@@ -149,6 +151,12 @@ final class SiteProfileRegistry
         $threadId = self::active()['backlogClaimsThread'] ?? null;
 
         return is_string($threadId) && $threadId !== '' ? $threadId : null;
+    }
+
+    /** Whether the active site offers the /start/ page and its Getting started links (default yes). */
+    public static function gettingStarted(): bool
+    {
+        return (self::active()['gettingStarted'] ?? true) !== false;
     }
 
     /** The active site's guestbook thread ID, or null when the site has none. */
@@ -254,6 +262,10 @@ final class SiteProfileRegistry
                 if (!is_string($pageTheme) || $pageTheme === 'auto' || !in_array($pageTheme, $profile['permittedThemes'], true)) {
                     throw new \RuntimeException("Site profile {$siteId} page theme must be a permitted explicit theme: {$pagePath}");
                 }
+            }
+
+            if (array_key_exists('gettingStarted', $profile) && !is_bool($profile['gettingStarted'])) {
+                throw new \RuntimeException("Site profile {$siteId} gettingStarted must be true or false.");
             }
 
             if (isset($profile['guestbookThread']) && (!is_string($profile['guestbookThread']) || preg_match('/^[A-Za-z0-9._-]+$/', $profile['guestbookThread']) !== 1)) {

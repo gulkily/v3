@@ -80,7 +80,7 @@ final class BoardPageController
         $qdbVoteTags = $qdbPolicy?->voteTags() ?? [];
         $boardCardSlot = PresentationSlotRegistry::resolve(\ForumRewrite\SiteProfileRegistry::active(), 'boardCard');
         if ($boardCardSlot === 'list' && $qdbPolicy === null) {
-            return $this->boardList($view, $sort, $threads, $viewOptions, $sortOptions, \ForumRewrite\Pagination\PageNavigation::pageNumber($listPage), $fellBackToAll, $zenHome);
+            return $this->boardList($view, $sort, $threads, $viewOptions, $sortOptions, \ForumRewrite\Pagination\PageNavigation::pageNumber($listPage), $fellBackToAll && \ForumRewrite\SiteProfileRegistry::gettingStarted(), $zenHome);
         }
 
         return $this->routeServices->renderPageTemplate(
@@ -110,7 +110,7 @@ final class BoardPageController
                 'qdbQuoteCount' => $qdbQuoteCount,
                 'qdbPendingCount' => $qdbPendingCount,
                 'pagination' => $pagination,
-                'showGettingStarted' => $fellBackToAll,
+                'showGettingStarted' => $fellBackToAll && \ForumRewrite\SiteProfileRegistry::gettingStarted(),
                 'zenStrip' => $this->zenStrip($zenHome && $qdbPolicy === null && $page === 1),
             ],
             $qdbPolicy !== null ? match ($activeSection) {
@@ -172,6 +172,7 @@ final class BoardPageController
                 'pagination' => $pagination,
                 'paginationError' => null,
                 'showGettingStarted' => $showGettingStarted,
+                'gettingStartedPage' => \ForumRewrite\SiteProfileRegistry::gettingStarted(),
                 'zenStrip' => $this->zenStrip($zenHome && $number === 1),
             ],
             'Board',

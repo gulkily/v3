@@ -824,6 +824,10 @@ final class Application
         }
 
         if ($path === '/start/' || $path === '/start') {
+            if (!\ForumRewrite\SiteProfileRegistry::gettingStarted()) {
+                $this->routeServices()->notFound();
+                return;
+            }
             $this->sendHtml($this->renderGettingStarted(), 200);
             return;
         }

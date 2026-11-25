@@ -118,6 +118,22 @@ final class BoardListTest
         assertStringNotContains('href="/start/"', $liked);
     }
 
+    public function testSiteWithoutGettingStartedHasNoStartPageOrLinks(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);
+        putenv('FORUM_SITE_ID=mitrapclub');
+        try {
+            $board = $this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/threads/');
+            assertStringContains('href="/threads/root-001"', $board);
+            assertStringNotContains('href="/start/"', $board, 'Nothing liked yet, but this site has no Getting started link.');
+            $start = $this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/start/');
+            assertStringNotContains('<h1>Getting started</h1>', $start);
+            assertSame(404, http_response_code());
+        } finally {
+            putenv('FORUM_SITE_ID');
+        }
+    }
+
     public function testStartPageOffersBrowsingAndImportChoices(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);
