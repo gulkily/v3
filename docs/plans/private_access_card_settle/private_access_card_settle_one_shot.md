@@ -8,7 +8,7 @@ Extended estimates: enabled. No alternatives or work units, so no unit estimates
 
 **Cycle estimate: 0.15**
 
-Status: planned; next permitted action: implement.
+Status: implemented and committed; next permitted action: maintainer review (PR), after #424.
 
 Feedback item: none matches (searched `docs/feedback/items/`).
 
@@ -41,9 +41,39 @@ Verification and recovery plan: new `tests/browser/private_access_card.mjs` (pin
 
 Starting revisions and branch: `fix/private_access_card_settle` from `fix/private_access_signing_helper` `fa4219d`.
 
-Planning commit: pending.
+Planning commit: `39b1673` (plan and index entry only, before any implementation).
 
 Study history:
 - 2026-11-25 UTC, intake and execution entry: **0.15**. Recorded after inspecting the partial, User Access and `pending_approvals.js`, so not a clean intake. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified.
 
-*Claude · 2026-11-25 UTC*
+Dated execution history:
+- 2026-11-25: `private_access_waiting.php`: `data-account-name` on the card, `data-role` on the heading and hint, one status `<p>`; the docblock says the script repeats the two headings. Addition.
+- 2026-11-25: `user_access.php`: its waiting card gets `data-private-access-waiting` and the same status `<p>`. Addition.
+- 2026-11-25: `private_access_confirm.js`: on success `settle()` removes the row, recounts the drawer (removing it when empty), rewrites the heading with the server's wording, says "Confirmed CODE.", and hides everything but the status line when no rows are left. Errors and Retry are unchanged. Change of behaviour, as authorized.
+- 2026-11-25: `tests/browser/private_access_card.mjs` renders the real partial with seven keys through PHP and checks the countdown, a failed Confirm with Retry, the drawer, the one-key wording, the last-key state and a User Access card, at 1280 and 390 px. It fails (timeout) with the previous script.
+- 2026-11-25: UI copy checklist entry added.
+
+Study history, closeout:
+- 2026-11-25 UTC: retrospective scope assessment **0.15**. Delivered as planned. Claude, single exposed rater. Maintainer judgment pending; measured time unknown.
+
+Outcome: delivered. A confirmed key leaves the card as soon as the server answers, the heading counts down ("6 keys for ilyag ...", then "A new key for ilyag ..."), and the card ends as one line, "Confirmed CODE.".
+
+Verification:
+- Passed: `node tests/browser/private_access_card.mjs` (playwright-core from the environment, Chromium): all steps at both widths; fails with the old script.
+- Passed: `./v3 test --smoke PrivateAccessConfirmationTest UserAccessTest`: 502 run, 502 passed. Full suite not run.
+- Passed: `node --check`, `php -l` on the two templates, `git diff --check`.
+- Unverified: themes other than the default (only existing `card`, `meta` and list styles are used); a real iPhone; the real page with OpenPGP.js.
+- Inapplicable: icons (no navigation change), schema, flags.
+
+Final review: the diff touches the partial, `user_access.php`, `private_access_confirm.js`, the new browser test, the UI copy checklist, this record, the plans index, the ledger and the debug log. No new CSS or component.
+
+Follow-up noted, not done: Tools → User Access builds its waiting rows with its own `$waitingRow` instead of the partial (it adds an account link and an operator-only button). Folding it into the partial would leave one row markup.
+
+Commit/merge/publication status: completion commit pending at the time of writing; branch `fix/private_access_card_settle`, stacked on `fix/private_access_signing_helper` (#424); PR to be opened against `main`, to merge after #424; not merged.
+
+Debug: [debug log](./private_access_card_settle_debug_log.md).
+
+Enhancement requests:
+- One row markup for the card and User Access. Addition, proposed by Claude. Not approved. Not done.
+
+Attribution: Claude · 2026-11-25 UTC · Model: claude-opus-5-5
