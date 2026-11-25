@@ -222,7 +222,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
-- [Visit tree](nav_tree/nav_tree_step3_development_plan.md) — item 1 of the [browsing tree checklist](browsing_tree_checklist.md): record each page change in this browser as a tree (tab and Beside pane cursors, the referrer as fallback) and list it on Tools → History; behind `FORUM_VISIT_HISTORY_ENABLED`; Steps 1–7 committed, PR pending. Concept: [visit tree](../concepts/visit_tree.md).
+- [Visit tree](nav_tree/nav_tree_step3_development_plan.md) — item 1 of the [browsing tree checklist](browsing_tree_checklist.md): record each page change in this browser as a tree (tab and Beside pane cursors, the referrer as fallback) and list it on Tools → History; behind `FORUM_VISIT_HISTORY_ENABLED`; merged in PR #420, deployed and accepted 2026-11-25. Concept: [visit tree](../concepts/visit_tree.md).
 - [Guest name visibility](guest_name_visibility/guest_name_visibility_one_shot.md) — one-shot: every composer says "Posting as guest · Choose a name" while this browser is a guest, and Account makes choosing a first name obvious; PR pending.
 - [Title-only activity](title_only_activity/title_only_activity_one_shot.md) — one-shot: a reply that is only a `title:` line (with or without labels) joins tag-only replies in the thread Activity drawer; PR pending.
 - [Thread activity record links](thread_activity_record_links/thread_activity_record_links_one_shot.md) — one-shot follow-up to the thread activity drawer: with Post records on, each name in the drawer's like and flag lists links to the record that added it; one `git grep` per thread view; PR pending.
