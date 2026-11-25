@@ -47,3 +47,25 @@ Revision of the 2026-11-15T02:44:42Z entry's step: the draft was rechecked again
 
 - Scope versioning when only understanding changes. The rules say to "distinguish new understanding from changed scope" but give no label for it. This revision used "scope v2 (new understanding, same outcome)"; a fixed label would help.
 - Planning branches. `RAILSPIKE.md` keeps Steps 1–3 uncommitted, yet this cycle keeps its draft on an unmerged planning branch to survive a new session. The workflow says nothing about such branches.
+
+## 2026-11-25T07:10Z — Step 2
+
+Debug mode: enabled (inherited from the Step 1 artifact).
+
+### Necessary/useful instructions
+
+- `step2_feature_description.md`, Structure, "Shared component inventory … inspect and enumerate existing UI/API surfaces". Inspecting Tools found the Usage Log page and the Tools "device" group, which set History's layout and place. Retain.
+- `step2_feature_description.md`, Guardrails, "Surface material risks; do not bury them". The Safari seven-day storage wipe and the restored-pane duplicate became explicit risks. Retain.
+- `implementation_standards.md`, "Define completion through ordinary UI/CLI entry … required failure/retry recovery". It produced the storage-failure recovery line, which the draft lacked. Retain.
+
+### Redundant/unnecessary instructions
+
+- `step2_feature_description.md`, "Known user or environment". No user or environment was named, so the item was omitted; the instruction already says so. No supported findings beyond that.
+
+### Inapplicable instructions
+
+- Documentation-only scope rules: this is an application change.
+
+### Uncertain assessments
+
+- Step 1 left several choices "decided in Step 2" without the maintainer present. The step has no section for proposed decisions, so this artifact added "Proposed decisions for confirmation". A named place for them would help.

@@ -67,6 +67,9 @@ under protocol P2.
     fetch on tap, nav-copy cache). Still Option B, now with a second cursor
     for the beside pane; estimate 0.65. Draft kept on the unmerged planning
     branch `plan/nav_tree-step1`; awaiting Approved Step 1._
+  - _Approved Step 1 on 2026-11-25. Step 2 drafted with proposed decisions
+    (flag off by default, Tools device group, 2,000 visits, history kept
+    across key changes, recorded offline); awaiting Approved Step 2._
 - [ ] **2. `tree_history`: history and bookmark views.**
   **Estimate: 0.50**
   A richer tree view of history, with branches that fold and a way back to
