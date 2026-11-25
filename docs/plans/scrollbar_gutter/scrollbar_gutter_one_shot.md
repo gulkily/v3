@@ -8,7 +8,7 @@ Extended estimates: enabled. No alternatives or work units, so no unit estimates
 
 **Cycle estimate: 0.10**
 
-Status: planned; next permitted action: implement after the planning commit.
+Status: implemented and committed; next permitted action: maintainer review (PR).
 
 Original request: "some pages on mitrapclub.com exhibit a jumping effect shortly after first paint." Then: "the affected pages are board, recent" and "i think it's partially due to scrollbar, so we could maybe mitigate it by always showing scrollbar, if no better option exists". After the diagnosis, the maintainer said "please go ahead and make pr".
 
@@ -46,9 +46,30 @@ Verification and recovery plan:
 
 Starting revisions and branch: `fix/scrollbar-gutter` from `origin/main` `1e9e80b99`.
 
-Planning commit: pending.
+Planning commit: `1aee2f0` (plan and index entry only, before any implementation).
 
 Study history:
 - 2026-11-25 UTC, intake and execution entry: **0.10**. Recorded after the diagnosis (live-site inspection and the replay above), before any repository change. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified.
+
+Dated execution history:
+- 2026-11-25: `site.css` adds `scrollbar-gutter: stable` to the `html` rule in the critical block, with a comment saying why.
+- 2026-11-25: new `ThemeRegistryTest::testPageReservesTheScrollbarGutterOnFirstPaint`. It checks that the critical block's `html` rule reserves the gutter and that no theme sets overflow or a gutter on `html`, `body` or `:root`. It failed with the CSS line removed and passed with it.
+- Discovery: Calendar shifts too when it is taller than the window (800px high at 1280px wide). The same line fixes it. Correction, not added scope.
+
+Study history, when enrolled:
+- 2026-11-25 UTC, closeout: retrospective scope assessment **0.10**. Delivered as planned. Claude, single exposed rater. Maintainer judgment pending; measured time unknown.
+
+Outcome: delivered. Long pages keep their column in place while they load. Short pages sit half a gutter (about 7px) left of their old position, steadily.
+
+Verification:
+- `./v3 test --smoke ThemeRegistryTest`: 490 run, 490 passed. The full suite was not run.
+- Two-chunk replay of live mitrapclub.com HTML in headless Chrome with classic 15px scrollbars. "x" is `.shell`'s left edge, first frame then settled.
+  - `main` CSS at 1280x800: Recent 260 then 253; Calendar 260 then 253; About 260 throughout. At 900x800: Board, Recent and Calendar 70 then 63; About 70.
+  - Branch CSS (inlined critical block and `site.css` both from this branch) at 1280x800 and 900x800: Board, Recent, About and Calendar at 253 (or 63) from the first frame.
+- Not replayed: Firefox, Safari and the maintainer's own browser. Not checked: each theme's screenshot. No theme sets page-level overflow, and long pages already rendered with the scrollbar's width taken, so the settled layout of long pages is unchanged.
+
+Final review: the diff touches `public/assets/site.css` (3 lines), `tests/ThemeRegistryTest.php`, this record, the plans index and the cycle's ledger and debug log. No new component, dependency or schema change. Deploy now is enough.
+
+Commit/merge/publication status: implementation commit pending at the time of writing; PR to follow. Not merged or deployed.
 
 *— Claude · 2026-11-25 UTC · Model: Claude Opus 5.5 (claude-opus-5-5)*
