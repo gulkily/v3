@@ -609,3 +609,51 @@
 .usage-log-who {
   text-align: center;
 }
+
+/* Tools → History (templates/pages/history.php). A path reads down one list;
+   where a page led to several, its branches are indented under it. */
+.visit-tree,
+.visit-tree ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.visit-tree {
+  font-family: var(--ui-font);
+}
+.visit-tree > .visit-tree__branch + .visit-tree__branch {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+.visit-tree li:not(.visit-tree__branch) {
+  padding: 0.3rem 0;
+}
+.visit-tree li:not(.visit-tree__branch) > a {
+  overflow-wrap: anywhere;
+}
+.visit-tree .visit-tree__branches {
+  margin: 0.2rem 0 0 0.35rem;
+}
+/* Each branch is its own bar, so two branches read as two. */
+.visit-tree__branches > .visit-tree__branch {
+  padding-left: 0.85rem;
+  border-left: 2px solid var(--line);
+}
+.visit-tree__branches > .visit-tree__branch + .visit-tree__branch {
+  margin-top: 0.5rem;
+}
+.visit-tree__when,
+.visit-tree__beside {
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.visit-history-actions {
+  margin-top: 1rem;
+}
+.visit-history-actions button {
+  width: auto;
+  min-height: 44px;
+  padding-inline: 1.5rem;
+}

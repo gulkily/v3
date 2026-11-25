@@ -8,4 +8,6 @@ The pane is a frame named `forum-open-beside` showing the real page. A page load
 
 Offline it works the same way: the pane's request is answered by the service worker with the offline reader, which draws the thread or tag in the pane. The reader's own thread titles call `window.forumOpenBeside.take(event)` before handling a click themselves, so they open in the pane too ([offline reader](../../public/assets/offline_reader.js), [offline browser test](../../tests/browser/open_beside_offline.mjs)). A page that fails to load, such as one with no offline copy, shows a line of text in the pane in place of the browser's error page.
 
+With visit history on, `open_beside.js` tells the recorder whether each pane load is a reader's click or the pane restored on the next main page, and when Open alone is pressed, so pane pages join the [visit tree](visit_tree.md) under the page they were opened from.
+
 Not covered: the main page is not refreshed by a post made in the pane; there is one pane, not a trail of them. Later directions are in the [design notes](../plans/open_beside_design_notes.md).

@@ -307,6 +307,10 @@
 <?php if ($showReadingMargins ?? false): ?>
   <script src="<?= $e($readingMarginsScriptPath) ?>" defer></script>
 <?php endif; ?>
+<?php /* Visit history before open beside, which tells it what each pane load is. */ ?>
+<?php if (($visitHistoryScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($visitHistoryScriptPath) ?>" defer></script>
+<?php endif; ?>
 <?php if ($openBesideEnabled ?? false): ?>
   <link rel="stylesheet" href="<?= $e($openBesideCssPath) ?>">
   <script src="<?= $e($openBesideScriptPath) ?>" defer></script>

@@ -1154,6 +1154,12 @@ final class Application
             return;
         }
 
+        if (($path === '/tools/history/' || $path === '/tools/history')
+            && $this->featureFlags()->isEnabled(FeatureFlagRegistry::VISIT_HISTORY_ENABLED)) {
+            $this->sendHtml($this->toolsPageController()->history(), 200);
+            return;
+        }
+
         if (($path === '/tools/usage-log/' || $path === '/tools/usage-log')
             && $this->featureFlags()->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED)) {
             $this->usageReportsController()->log();
@@ -2781,6 +2787,7 @@ final class Application
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/tools/usage-log', '/tools/usage-log/', '/tools/usage-log/upload', '/tools/usage-reports', '/tools/usage-reports/',
+            '/tools/history', '/tools/history/',
             '/tools/tag-unlocks', '/tools/tag-unlocks/',
             '/compose/thread', '/compose/reply',
             '/unread', '/unread/', '/inbox', '/inbox/', '/api/inbox/unread', '/api/inbox/catch_up', '/staged', '/staged/',

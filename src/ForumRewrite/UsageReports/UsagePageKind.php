@@ -24,7 +24,7 @@ final class UsagePageKind
         'commits', 'staged', 'tags', 'themes', 'threads', 'top', 'unread', 'pending', 'watch',
         'tools', 'bookmarklets', 'codebase', 'deploy', 'fastmod', 'feature-flags', 'changes',
         'llm-exchanges', 'operations', 'outbox', 'preferences', 'sqlite', 'user-access', 'accounts',
-        'visitor-statistics', 'usage-log', 'usage-reports', 'upload',
+        'visitor-statistics', 'usage-log', 'usage-reports', 'upload', 'history',
     ];
 
     public static function fromPath(string $path): string
