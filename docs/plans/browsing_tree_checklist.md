@@ -34,7 +34,14 @@ can offer many screens at once.
   the navigation entry type `back_forward`.
 - `public/service_worker.js` fetches pages network-first and caches only the
   offline reader, compose pages and assets. Other pages are not cached by the
-  worker, which matters for the filmstrip.
+  worker, which matters for the filmstrip. It now also keeps
+  navbar pages in its `nav-copy` cache and answers early fetches started on
+  tap by `fast_navigation.js`; neither is a visit.
+- `public/assets/open_beside.js` shows a real page in a frame named
+  `forum-open-beside`. Pane pages are visits with their own cursor (nav_tree
+  Step 1).
+- `templates/tour/page.php` already shows saved pages in scaled-down frames,
+  a precedent for live filmstrip frames (item 3).
 
 ## Estimates
 
@@ -56,6 +63,17 @@ under protocol P2.
   - _Step 1 drafted 2026-11-15 (recommends a per-tab cursor with the
     referrer as fallback); awaiting Approved Step 1. Staged plans are
     committed after Approved Step 3._
+  - _Step 1 revised 2026-11-24 against main `2d7805c` (open beside, early
+    fetch on tap, nav-copy cache). Still Option B, now with a second cursor
+    for the beside pane; estimate 0.65. Draft kept on the unmerged planning
+    branch `plan/nav_tree-step1`; awaiting Approved Step 1._
+  - _Approved Step 1 on 2026-11-25. Step 2 drafted with proposed decisions
+    (flag off by default, Tools device group, 2,000 visits, history kept
+    across key changes, recorded offline); awaiting Approved Step 2._
+  - _Approved Step 2 on 2026-11-25 with the proposals as written. Step 3
+    drafted in seven stages; estimate 0.70; awaiting Approved Step 3._
+  - _Approved Step 3 on 2026-11-25. Step 4 on `feat/nav-tree`; plans in
+    [nav_tree/](nav_tree/nav_tree_step4_implementation_summary.md)._
 - [ ] **2. `tree_history`: history and bookmark views.**
   **Estimate: 0.50**
   A richer tree view of history, with branches that fold and a way back to
@@ -73,8 +91,9 @@ under protocol P2.
 
 - Whether cached pages are cheap enough for live frames, given that the
   service worker does not cache most pages (item 3).
-- Whether a tab opened from a link inherits its opener's current visit in
-  Safari, Chrome and Firefox (item 1).
+- Answered 2026-11-25 (nav_tree Stage 1): a tab opened from a link starts
+  empty in Chromium, Firefox and WebKit; `window.open` copies the opener's
+  `sessionStorage`, which gives the right parent (item 1).
 - Later: sync across devices, and in-page changes as visits.
 - Whether the filmstrip and the pane list in the
   [open beside design notes](open_beside_design_notes.md) are one control:
