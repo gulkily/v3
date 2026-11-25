@@ -151,6 +151,22 @@ final class PrivateKeyAccess
     }
 
     /**
+     * The keys for the waiting card on Messages and Unread. The card is optional, so a failed
+     * access check shows no card rather than breaking the page.
+     *
+     * @param array<string, mixed> $viewer
+     * @return list<array<string, mixed>>
+     */
+    public static function waitingCardKeys(PDO $pdo, ?string $repositoryRoot, array $viewer): array
+    {
+        try {
+            return (new self($pdo, $repositoryRoot))->waitingForViewer($viewer);
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    /**
      * Every active approved key with its reason, for the operator report.
      *
      * @return list<array{username_token:string,identity_id:string,profile_slug:string,approved_by_identity_id:?string,reason:string}>

@@ -8,7 +8,7 @@ Extended estimates: enabled. No alternatives or work units, so no unit estimates
 
 **Cycle estimate: 0.05**
 
-Status: planned; next permitted action: implement.
+Status: implemented and committed; next permitted action: maintainer review (PR).
 
 Feedback item: none matches (searched `docs/feedback/items/` for private access and the waiting card; PF-20261124-F01 and F02 are different features).
 
@@ -32,9 +32,31 @@ Verification and recovery plan: `./v3 test --smoke PrivateAccessConfirmationTest
 
 Starting revisions and branch: `fix/private_access_waiting_keys` from `origin/main` `797971a`.
 
-Planning commit: pending.
+Planning commit: `3077732` (plan and index entry only, before any implementation).
 
 Study history:
 - 2026-11-25 UTC, intake and execution entry: **0.05**. Recorded after inspecting both controllers, so not a clean intake. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified.
 
-*Claude · 2026-11-25 UTC*
+Dated execution history:
+- 2026-11-25: `PrivateKeyAccess::waitingCardKeys()` added beside `waitingForViewer()`; `InboxPageController` and `PrivateMessagePageController` call it and lose their private `waitingKeys()`. Correction of a duplication, no behaviour change.
+- 2026-11-25: discovery: in `PrivateMessagePageController` the copied `waitingKeys()` sat between `accessPage()` and its docblock, so the docblock described the wrong method. Removing the copy reattaches it. Correction.
+
+Study history, closeout:
+- 2026-11-25 UTC: retrospective scope assessment **0.05**. Delivered as planned. Claude, single exposed rater. Maintainer judgment pending; measured time unknown.
+
+Outcome: delivered. Messages and Unread get the waiting card's keys from one method. No visible change.
+
+Verification:
+- Passed: `./v3 test --smoke PrivateAccessConfirmationTest PrivateKeyAccessTest InboxPageTest PrivateMessagePageControllerTest`: 524 run, 524 passed. `PrivateAccessConfirmationTest` renders both pages with waiting keys. Full suite not run.
+- Passed: `php -l` on the three files; `git diff --check`.
+- Inapplicable: browser checks (no markup or script change), schema, flags, icons, themes.
+
+Final review: the diff touches the two controllers, `PrivateKeyAccess.php`, this record, the plans index, the ledger and the debug log. No new class, no dependency.
+
+Commit/merge/publication status: completion commit pending at the time of writing; branch `fix/private_access_waiting_keys`; PR to be opened; not merged.
+
+Debug: [debug log](./private_access_waiting_keys_debug_log.md).
+
+Enhancement requests: none.
+
+Attribution: Claude · 2026-11-25 UTC · Model: claude-opus-5-5
