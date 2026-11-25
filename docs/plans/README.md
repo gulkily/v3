@@ -744,3 +744,5 @@ and repair its navigation and affected references. See the
 - [Apply feedback completion reconciliation](feedback_completion_apply/feedback_completion_apply_one_shot.md)
 
 - [Save the completion reconciliation prompt](feedback_completion_prompt/feedback_completion_prompt_one_shot.md)
+
+- [Authenticated users on the visitor statistics graph](visitor_stats_user_line/visitor_stats_user_line_one_shot.md) — one-shot: a line of authenticated users over the request bars on Tools → Visitor Statistics.
