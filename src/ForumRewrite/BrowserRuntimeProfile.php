@@ -12,7 +12,7 @@ final class BrowserRuntimeProfile
 
     /**
      * @param array<string, mixed> $profile
-     * @return array{namespace:string,themeStorageKey:string,threadDensityStorageKey:string,readingMarginsStorageKey:string,windowControlsStorageKey:string,openBesideStorageKey:string,openBesidePaneStorageKey:string,collapsedWindowsStorageKey:string,offlineCachePrefix:string,offlineCacheName:string,offlineDiagnosticKey:string,manifestName:string,manifestShortName:string}
+     * @return array{namespace:string,themeStorageKey:string,threadDensityStorageKey:string,readingMarginsStorageKey:string,windowControlsStorageKey:string,openBesideStorageKey:string,openBesidePaneStorageKey:string,resumeStorageKey:string,collapsedWindowsStorageKey:string,offlineCachePrefix:string,offlineCacheName:string,offlineDiagnosticKey:string,manifestName:string,manifestShortName:string}
      */
     public static function fromProfile(array $profile): array
     {
@@ -37,6 +37,8 @@ final class BrowserRuntimeProfile
             // Open beside (open_beside.js): 'on' when the reader turned the mode on; the page shown in the pane.
             'openBesideStorageKey' => 'forum-' . $namespace . '-open-beside',
             'openBesidePaneStorageKey' => 'forum-' . $namespace . '-open-beside-pane',
+            // Installed app (owa_resume): the page and scroll position left last; a session mark per app launch.
+            'resumeStorageKey' => 'forum-' . $namespace . '-resume',
             'offlineCachePrefix' => $offlineCachePrefix,
             'offlineCacheName' => $offlineCachePrefix . 'v' . self::OFFLINE_CACHE_VERSION,
             'offlineDiagnosticKey' => $namespace . '-offline-registration-error',

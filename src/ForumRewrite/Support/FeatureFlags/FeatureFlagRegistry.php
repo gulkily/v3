@@ -65,6 +65,7 @@ final class FeatureFlagRegistry
     public const USAGE_REPORTS_ENABLED = 'FORUM_USAGE_REPORTS_ENABLED';
     public const VISIT_HISTORY_ENABLED = 'FORUM_VISIT_HISTORY_ENABLED';
     public const PUSH_ENABLED = 'FORUM_PUSH_ENABLED';
+    public const OWA_RESUME_ENABLED = 'FORUM_OWA_RESUME_ENABLED';
     public const THREAD_ACTIVITY_DRAWER_ENABLED = 'FORUM_THREAD_ACTIVITY_DRAWER_ENABLED';
     public const PLEDGES_ENABLED = 'FORUM_PLEDGES_ENABLED';
     public const THREAD_PORT_ENABLED = 'FORUM_THREAD_PORT_ENABLED';
@@ -89,7 +90,7 @@ final class FeatureFlagRegistry
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED, self::AGENT_CHECKIN_ENABLED,
             self::READING_MARGINS_ENABLED, self::DRAGGABLE_WINDOWS_ENABLED, self::OPEN_BESIDE_ENABLED, self::GUESTBOOK_ENABLED, self::ZEN_STRIP_ENABLED, self::POST_RECORDS_ENABLED,
             self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::VISIT_HISTORY_ENABLED, self::PLEDGES_ENABLED, self::THREAD_PORT_ENABLED, self::THREAD_PORT_GUESTS_ENABLED,
-            self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED, self::QDB_QUEUE_ENABLED, self::BACKLOG_ENABLED, self::PUSH_ENABLED],
+            self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED, self::QDB_QUEUE_ENABLED, self::BACKLOG_ENABLED, self::PUSH_ENABLED, self::OWA_RESUME_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
             self::THREAD_ACTIVITY_DRAWER_ENABLED],
@@ -654,6 +655,16 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 group: 'EXPERIENCE',
                 releasedOn: '2026-11-24',
+            ),
+            new FeatureFlagDefinition(
+                self::OWA_RESUME_ENABLED,
+                'Reopen where you left off',
+                'In the app added to the home screen, a fresh start returns to the page and scroll position left in the last 6 hours instead of the home page. A notification still opens its own page. Browser tabs are not affected.',
+                true,
+                self::OWA_RESUME_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+                releasedOn: '2026-11-25',
             ),
             new FeatureFlagDefinition(
                 self::PLEDGES_ENABLED,

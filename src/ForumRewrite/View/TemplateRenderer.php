@@ -365,6 +365,7 @@ final class TemplateRenderer
             // Visit history (visit_history.js): loaded before page scripts, so it sees their address changes.
             'visitHistoryScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::VISIT_HISTORY_ENABLED) ? $this->assetPath('/assets/visit_history.js') : null,
             'fastNavigationScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::FAST_NAVIGATION_ENABLED) ? $this->assetPath('/assets/fast_navigation.js') : null,
+            'owaResumeEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::OWA_RESUME_ENABLED) && !$this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY),
             'navCachedCopyScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::NAV_CACHED_COPY_ENABLED) ? $this->assetPath('/assets/nav_cached_copy.js') : null,
             'deployPromptEnabled' => $deployPrompt = $this->featureFlags->isEnabled(FeatureFlagRegistry::DEPLOY_HEADER_PROMPT_ENABLED),
             'deployPromptScriptPath' => $deployPrompt ? $this->assetPath('/assets/deploy_prompt.js') : null,

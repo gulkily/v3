@@ -4,6 +4,46 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= $e($title) ?></title>
+<?php if ($owaResumeEnabled ?? false): ?>
+  <script>
+    // Installed app (owa_resume): a fresh launch at / returns to the page left in the last 6 hours.
+    (function () {
+      var key = <?= json_encode($browserRuntime['resumeStorageKey'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) ?>;
+      var standalone = window.navigator.standalone === true
+        || (typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches);
+      if (!standalone) return;
+      try {
+        var launch = sessionStorage.getItem(key) === null;
+        sessionStorage.setItem(key, '1');
+        var saved = JSON.parse(localStorage.getItem(key) || 'null');
+        var age = saved ? Date.now() - Number(saved.at) : NaN;
+        if (launch && location.pathname === '/' && location.search === '' && location.hash === ''
+          && saved && typeof saved.address === 'string' && /^\/(?!\/)/.test(saved.address) && saved.address !== '/'
+          && age >= 0 && age < 6 * 3600 * 1000) {
+          sessionStorage.setItem(key + '-scroll', String(Number(saved.y) || 0));
+          location.replace(saved.address);
+          return;
+        }
+        var scroll = sessionStorage.getItem(key + '-scroll');
+        if (scroll !== null) {
+          sessionStorage.removeItem(key + '-scroll');
+          window.addEventListener('load', function () { window.scrollTo(0, Number(scroll) || 0); });
+        }
+      } catch (error) {
+        return;
+      }
+      function remember() {
+        try {
+          localStorage.setItem(key, JSON.stringify({ address: location.pathname + location.search + location.hash, y: Math.round(window.scrollY), at: Date.now() }));
+        } catch (error) {}
+      }
+      window.addEventListener('pagehide', remember);
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') remember();
+      });
+    })();
+  </script>
+<?php endif; ?>
   <meta name="apple-mobile-web-app-title" content="<?= $e($appName) ?>">
   <link id="theme-stylesheet" rel="stylesheet" href="<?= $e($initialThemeStylesheetPath) ?>" fetchpriority="high">
   <script>
