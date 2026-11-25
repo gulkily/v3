@@ -61,7 +61,7 @@ Verification:
 
 Final review: the diff touches `browser_signing.js`, `private_access_confirm.js`, two tests, this record, the plans index, the ledger and the debug log. The helper reuses the approval flow's building blocks.
 
-Commit/merge/publication status: completion commit pending at the time of writing; branch `fix/private_access_signing_helper`; PR to be opened; not merged. `private_access_card_settle` is stacked on this branch.
+Commit/merge/publication status: completion commit `fa4219d` on `fix/private_access_signing_helper`; PR https://github.com/gulkily/v3/pull/424 opened 2026-11-25; not merged. `private_access_card_settle` (#425) is stacked on this branch.
 
 Debug: [debug log](./private_access_signing_helper_debug_log.md).
 
