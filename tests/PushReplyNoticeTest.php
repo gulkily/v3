@@ -45,7 +45,7 @@ final class PushReplyNoticeTest
             assertSame(1, count($pending));
             assertSame(['reply', 'ilyag', 'thread:' . $thread['thread_id'], 'guest', 'Hello from a guest', 'https://zenmemes.com'],
                 [$pending[0]['kind'], $pending[0]['recipient'], $pending[0]['tag'], $pending[0]['actor'], $pending[0]['body'], $pending[0]['site']]);
-            assertSame('/posts/' . $pending[0]['source_id'], $pending[0]['url']);
+            assertSame('/threads/' . $thread['thread_id'] . '#post-' . $pending[0]['source_id'], $pending[0]['url']);
         } finally {
             $this->cleanup();
         }

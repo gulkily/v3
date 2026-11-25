@@ -2,7 +2,7 @@
 // Preferences → Notifications (push_subscribe): the row shows only with the flag on, a saved
 // key and push support; Turn on asks permission and subscribes; Send a test reports the
 // result; Turn off unsubscribes; a refusal shows Blocked. The service worker shows every
-// push, with a plain notice when the payload can't be read, and a tap focuses the app.
+// push, with a plain notice when the payload can't be read, and a tap opens its page.
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
 import { readFile, mkdir } from 'node:fs/promises';
@@ -155,7 +155,7 @@ try {
     await context.close();
   }
 
-  // The worker: every push shows a notification; a tap focuses an open window.
+  // The worker: every push shows a notification; a tap opens its page.
   {
     const listeners = {};
     const shown = [];
@@ -187,9 +187,11 @@ try {
     const click = url => new Promise(done => listeners.notificationclick({ notification: { data: { url }, close() {} }, waitUntil: promise => promise.then(done) }));
     await click('/tools/preferences/');
     assert.deepEqual(opened, ['https://zenmemes.com/tools/preferences/']);
-    windows = [{ url: 'https://zenmemes.com/', focus: () => { focused.push(1); return Promise.resolve(); } }];
+    // An open window is focused and sent to the notice's page (push_tap_routing).
+    const navigated = [];
+    windows = [{ url: 'https://zenmemes.com/', focus() { focused.push(1); return Promise.resolve(this); }, navigate: url => { navigated.push(url); return Promise.resolve({ url }); } }];
     await click('/tools/preferences/');
-    assert.deepEqual([opened.length, focused.length], [1, 1]);
+    assert.deepEqual([opened.length, focused.length, navigated], [1, 1, ['https://zenmemes.com/tools/preferences/']]);
   }
   console.log('push_preferences: ok');
 } finally {
