@@ -744,3 +744,5 @@ and repair its navigation and affected references. See the
 - [Apply feedback completion reconciliation](feedback_completion_apply/feedback_completion_apply_one_shot.md)
 
 - [Save the completion reconciliation prompt](feedback_completion_prompt/feedback_completion_prompt_one_shot.md)
+
+- [System status Admin line matches its query](system_status_admins/system_status_admins_one_shot.md)
