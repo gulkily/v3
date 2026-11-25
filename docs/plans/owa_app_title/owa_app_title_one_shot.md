@@ -7,7 +7,7 @@ Extended estimates: enabled (no alternatives or work units, so only the cycle es
 
 **Cycle estimate: 0.06**
 
-Status: planned on `fix/owa-app-title`. Next action: implement.
+Status: implemented on `fix/owa-app-title`; PR open, not merged or deployed. Next action: the maintainer merges and deploys, then adds the app from Firefox on the iPhone (release check below).
 
 ## Request and authorization
 
@@ -45,8 +45,19 @@ None changed.
 - `/` on the zenmemes profile has `<meta name="apple-mobile-web-app-title" content="ZenMemes">` and `<link rel="manifest" href="/manifest.webmanifest?v=…">` whose hash matches the served manifest; `/manifest.webmanifest?v=…` returns the manifest.
 - Release: on the iPhone, Add to Home Screen from Firefox shows "ZenMemes" (or, if not, record that Firefox ignores the tag and decide on the `<title>`); from Safari still "ZenMemes" with the Z.
 
+## Verification
+
+- `./v3 test --smoke LocalAppSmokeTest SiteProfileRegistryTest`: 500 run, 500 passed. `testPublicLayoutRegistersTheNormalNavigationOfflineWorker` now checks the meta tag and that the manifest link's hash matches `BrowserRuntimeAssetRenderer::manifest()`; the two existing manifest-link assertions match the versioned link, and the members-only lobby check now asserts no `rel="manifest"` at all. The full suite was not run.
+- Local replay (`./v3 start 127.0.0.1:8123 --no-worker`, zenmemes profile): `/` and `/offline/reader/` carry `<meta name="apple-mobile-web-app-title" content="ZenMemes">` and `<link rel="manifest" href="/manifest.webmanifest?v=3f46d86b6af3">`; the first 12 hex of the sha256 of the served `/manifest.webmanifest` is `3f46d86b6af3`; `/manifest.webmanifest?v=x` returns the manifest.
+- Not verified: Firefox or Safari on a real iPhone; whether Firefox reads the tag.
+
+## Execution history
+
+- 2026-11-25: planning commit `11b6314a` on `fix/owa-app-title` from `eac0968f`; then the meta tag in both layouts, the versioned manifest link, test updates and this record.
+
 ## Study history
 
 2026-11-25T07:00Z; scope v1; starting revision `eac0968f`; reference R1, hashes not re-verified. Claude, single exposed rater. Intake **0.06**.
+- Closeout: retrospective scope assessment **0.05**; maintainer comfortable-fit judgment pending.
 
 *— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
