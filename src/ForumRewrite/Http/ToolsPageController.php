@@ -256,6 +256,20 @@ final class ToolsPageController
                         'description' => 'Tweet text, author, and link from x.com.',
                         'bookmarklet_kind' => 'tweet',
                     ],
+                    ...($this->featureFlags->isEnabled(FeatureFlagRegistry::INSTAGRAM_CLIP_ENABLED) ? [
+                        [
+                            'label' => 'Instagram',
+                            'mode' => 'same-window',
+                            'description' => 'The Instagram post on screen, with its image attached.',
+                            'bookmarklet_kind' => 'instagram',
+                        ],
+                        [
+                            'label' => 'Instagram',
+                            'mode' => 'new-window',
+                            'description' => 'The Instagram post on screen, with its image attached.',
+                            'bookmarklet_kind' => 'instagram',
+                        ],
+                    ] : []),
                     ...($this->featureFlags->isEnabled(FeatureFlagRegistry::THREAD_PORT_ENABLED) ? [
                         [
                             'label' => 'Port HN',

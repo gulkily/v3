@@ -867,6 +867,18 @@ final class RouteServices
         echo $text;
     }
 
+    /** Bytes already in memory (e.g. a fetched image), as the given type. @param string[] $headers */
+    public function sendBinary(string $bytes, string $contentType, array $headers = []): void
+    {
+        http_response_code(200);
+        header('Content-Type: ' . $contentType);
+        header('X-Content-Type-Options: nosniff');
+        foreach ($headers as $headerValue) {
+            header($headerValue);
+        }
+        echo $bytes;
+    }
+
     public function errorPayload(\Throwable $error): array
     {
         return ['status' => 'error', 'error' => $error->getMessage()] + ($error instanceof \ForumRewrite\Support\TextValidationException ? $error->details() : [])
