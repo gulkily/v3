@@ -259,6 +259,12 @@ final class ToolsPageController
                     ...($this->featureFlags->isEnabled(FeatureFlagRegistry::INSTAGRAM_CLIP_ENABLED) ? [
                         [
                             'label' => 'Instagram',
+                            'mode' => 'same-window',
+                            'description' => 'The image of the Instagram post on screen, in a new post.',
+                            'bookmarklet_kind' => 'instagram',
+                        ],
+                        [
+                            'label' => 'Instagram',
                             'mode' => 'new-window',
                             'description' => 'The image of the Instagram post on screen, in a new post. Uses this window where a new one is blocked.',
                             'bookmarklet_kind' => 'instagram',

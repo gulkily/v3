@@ -281,9 +281,10 @@
     }
     var fn = kind === "tweet" ? tweetComposeUrl : kind === "instagram" ? instagramComposeUrl : composeUrl;
 
-    // Instagram: a new window when the browser allows one, otherwise this window.
-    // No "noopener" feature, since with it window.open() never reports success.
-    if (kind === "instagram") {
+    // Instagram, new window: a new window when the browser allows one, otherwise
+    // this window. No "noopener" feature, since with it window.open() never reports
+    // success. The same-window version is the ordinary one below.
+    if (kind === "instagram" && mode === "new-window") {
       return (
         "(function(){var u=(" +
         fn.toString() +
