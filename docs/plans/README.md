@@ -9,6 +9,7 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
+- [Browser invitation expiry](invitation_expiry_runbook/invitation_expiry_runbook_one_shot.md) — correct the duration stated in the deployment runbook.
 - [Scrollbar gutter](scrollbar_gutter/scrollbar_gutter_one_shot.md) — Board and Recent no longer shift sideways when the scrollbar appears during load.
 - [Key publish first try](key_publish_first_try/key_publish_first_try_one_shot.md) — Continue on Account retries a registration that fails for a passing reason instead of showing "Couldn't publish your key."
 - [Read model rebuild memory](read_model_post_memory/read_model_post_memory_one_shot.md) — a full rebuild holds the post corpus once, so qdb rebuilds fit in 128 MB.

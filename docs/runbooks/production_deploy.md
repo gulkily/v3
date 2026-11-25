@@ -586,7 +586,8 @@ verification hash, never the secret or the share URL.
 
 Recipients create a disposable browser key in Lobby, redeem the invitation,
 authenticate with that key, and then enter the selected internal destination
-or the board. Invitations expire after seven days. An issuer can revoke an
+or the board. Invitations created with **Invite** in the browser expire after
+30 days. For API-issued links, see [Invitation entry](../reference/invitation_entry.md#capped-invitations-through-the-api). An issuer can revoke an
 unused invitation from the Invite page using its invitation ID and verification
 hash.
 
