@@ -129,6 +129,8 @@ try {
     all = await tree(page);
     assert.equal(all.length, start + 1, 'choosing a row on /forte adds a visit');
     assert.ok(all.at(-1)[0].startsWith('/forte?') && all.at(-1)[1] === '/forte', 'the row visit hangs under /forte');
+    // Let the reader's detail request finish; WebKit reports a cancelled one as a page error.
+    await page.waitForLoadState('networkidle');
   } else {
     console.log('note: /forte not available with this fixture; paned reader check skipped');
   }
@@ -186,6 +188,81 @@ try {
   assert.ok(await brokenPage.locator('.main').count() > 0, 'pages still work when storage throws');
   assert.deepEqual(brokenErrors, [], 'no page errors when storage throws');
   await broken.close();
+
+  // --- The Beside pane ---
+  const beside = await startServer(true, { FORUM_OPEN_BESIDE_ENABLED: 'true', FORUM_READING_MARGINS_ENABLED: 'true' }); servers.push(beside);
+  const wide = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 2048, height: 1280 } });
+  const desk = await wide.newPage();
+  desk.on('pageerror', e => errors.push(e.message));
+  const paneFrame = () => desk.frames().find(frame => frame.name() === 'forum-open-beside' && frame.parentFrame() === desk.mainFrame());
+  const paneShows = expected => desk.waitForFunction(path => {
+    const frame = document.querySelector('.open-beside__frame');
+    return frame && frame.contentDocument && frame.contentDocument.readyState === 'complete'
+      && frame.contentWindow.location.pathname === path && frame.contentWindow.forumVisitHistory !== undefined;
+  }, expected, { timeout: 15000 });
+  const visitsOn = p => p.evaluate(() => {
+    const visits = JSON.parse(localStorage.getItem('forum_visit_history') || '{"visits":[]}').visits;
+    const byId = Object.fromEntries(visits.map(visit => [visit.id, visit]));
+    return visits.map(visit => [visit.url, visit.parent && byId[visit.parent] ? byId[visit.parent].url : null, visit.beside === true]);
+  });
+  await desk.goto(beside.base + '/threads/'); await settle(desk);
+  // Room beside the column: narrow it to the left, then turn the mode on.
+  const stops = await desk.locator('[data-reading-margin-stop]:not([hidden])').evaluateAll(all => all.map(stop => Number(stop.value)));
+  const left = Math.min(...stops);
+  await desk.locator(`[data-reading-margin-stop][value="${left}"]`).click();
+  await desk.locator(`[data-reading-margin-stop][value="${left + 5}"]`).click();
+  await desk.locator('[data-open-beside-toggle]').click();
+  await desk.locator('.main a[href="/threads/root-001"]').first().click();
+  await paneShows('/threads/root-001');
+  let pane = await visitsOn(desk);
+  assert.deepEqual(pane.at(-1), ['/threads/root-001', '/threads/', true], 'a page opened beside hangs under the main page, marked beside');
+  assert.equal(new URL(desk.url()).pathname, '/threads/', 'the main page stayed');
+  // A link followed in the pane hangs under the pane's last visit.
+  await paneFrame().evaluate(() => {
+    const link = document.createElement('a');
+    link.href = '/threads/thread-zenmemes-rules'; link.id = 'visit-history-pane-link'; link.textContent = 'next';
+    document.querySelector('.main').appendChild(link);
+  });
+  await paneFrame().click('#visit-history-pane-link');
+  await paneShows('/threads/thread-zenmemes-rules');
+  pane = await visitsOn(desk);
+  assert.deepEqual(pane.at(-1), ['/threads/thread-zenmemes-rules', '/threads/root-001', true], 'a link in the pane follows the pane');
+  // The main page still grows its own branch: the main cursor was not moved by the pane.
+  await desk.goto(beside.base + '/threads/root-001');
+  await settle(desk);
+  await paneShows('/threads/thread-zenmemes-rules');
+  pane = await visitsOn(desk);
+  assert.deepEqual(pane.filter(visit => !visit[2]).at(-1), ['/threads/root-001', '/threads/', false], 'the main page hangs under the main branch, not the pane');
+  assert.equal(pane.filter(visit => visit[2]).length, 2, 'the restored pane adds no visit');
+  // A theme change reloads the pane: still no visit.
+  const beforeTheme = (await visitsOn(desk)).length;
+  await desk.evaluate(() => {
+    const now = document.documentElement.getAttribute('data-theme');
+    document.documentElement.setAttribute('data-theme', now === 'word97' ? 'gloss' : 'word97');
+  });
+  await desk.waitForTimeout(500);
+  await paneShows('/threads/thread-zenmemes-rules');
+  assert.equal((await visitsOn(desk)).length, beforeTheme, 'the theme reload adds no visit');
+  // Open alone: the main page becomes the pane's page, already a visit.
+  const paneVisit = await paneFrame().evaluate(() => window.forumVisitHistory.current().id);
+  await desk.locator('[data-open-beside-alone]').click();
+  await desk.waitForURL('**/threads/thread-zenmemes-rules'); await settle(desk);
+  assert.equal((await visitsOn(desk)).length, beforeTheme, 'Open alone adds no visit');
+  assert.equal(await desk.evaluate(() => window.forumVisitHistory.current().id), paneVisit, 'Open alone moves the tab to the pane\'s visit');
+  // Another frame (the tour) records nothing.
+  const beforeFrame = (await visitsOn(desk)).length;
+  await desk.evaluate(() => {
+    const frame = document.createElement('iframe');
+    frame.name = 'tour-snapshot'; frame.src = '/threads/root-001'; frame.id = 'visit-history-other-frame';
+    document.body.appendChild(frame);
+  });
+  await desk.waitForFunction(() => {
+    const frame = document.getElementById('visit-history-other-frame');
+    return frame.contentDocument && frame.contentDocument.readyState === 'complete' && frame.contentWindow.location.pathname === '/threads/root-001';
+  });
+  await desk.waitForTimeout(300);
+  assert.equal((await visitsOn(desk)).length, beforeFrame, 'another frame records nothing');
+  await wide.close();
 
   // --- Flag off ---
   const off = await startServer(false); servers.push(off);

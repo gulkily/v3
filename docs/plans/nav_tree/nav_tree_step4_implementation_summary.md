@@ -75,6 +75,28 @@ Branch: `feat/nav-tree` from `origin/main` `2d7805c`. Planning commit: `f585d60`
 
 *— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
 
+## Stage 4 - Beside pane and other frames
+
+**Original estimate: 0.12**
+
+**Retrospective: 0.12**
+
+- Changes:
+  - `visit_history.js` runs in two lanes: the main page with `forum_visit_cursor`, and the Beside pane (a frame named `forum-open-beside` marked `data-open-beside-framed`) with `forum_visit_pane_cursor`. Pane visits carry `beside: true`. Any other frame, such as the tour's, records nothing.
+  - A pane page opened from the main page hangs under the main page's visit; a link followed in the pane hangs under the pane's last visit. A restored pane and a theme reload add nothing. Open alone moves the tab's cursor to the pane's visit and adds nothing.
+  - `open_beside.js` tells the recorder what each pane load is, through `window.forumVisitHistory.paneLoading("open" | "restore")` and `paneAlone()`. It does nothing when the history flag is off. `layout.php` now loads `visit_history.js` just before `open_beside.js`, because `open_beside.js` restores the pane as soon as it runs.
+  - `visit_history.mjs` gains a Beside section.
+- Verification:
+  - `node tests/browser/visit_history.mjs` in Chromium, Firefox and WebKit: passed in all three. Covers opening beside, a link in the pane, a main-page change with the pane restored, a theme change, Open alone and another frame.
+  - `node tests/browser/open_beside.mjs` (Chromium), with the history flag off and on: passed. `node tests/browser/open_beside_offline.mjs`: passed.
+- Notes:
+  - The Beside checks live in `visit_history.mjs`, not `open_beside.mjs` as Step 3 said, so all history behaviour is tested in one place; `open_beside.mjs` is run unchanged as a regression check.
+  - WebKit once reported a cancelled `/api/forte_thread_detail` request from the Forte reader as a page error when the test left `/forte` early. The test now waits for the network to settle there. This is a test timing fix, not a product change.
+  - Signals in `sessionStorage` are read once. A pane load that fails after the signal is set can leave it for the next pane load; the next open overwrites it.
+- Estimate details: original scope as planned; no revision.
+
+*— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
+
 ## Enhancement Requests
 
 - Sync, in-page changes as visits, `tree_history` and `filmstrip`: unchanged from Step 2, all deferred or separate.
