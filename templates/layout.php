@@ -310,6 +310,9 @@
   <link rel="stylesheet" href="<?= $e($openBesideCssPath) ?>">
   <script src="<?= $e($openBesideScriptPath) ?>" defer></script>
 <?php endif; ?>
+<?php if (($visitHistoryScriptPath ?? null) !== null): ?>
+  <script src="<?= $e($visitHistoryScriptPath) ?>" defer></script>
+<?php endif; ?>
 <?php foreach ($scriptPaths as $scriptPath): ?>
   <script src="<?= $e($scriptPath) ?>" defer></script>
 <?php endforeach; ?>
