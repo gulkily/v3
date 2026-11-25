@@ -40,6 +40,9 @@ try {
         || str_contains($allowed, '>Apply</button>')
         || !str_contains($allowed, '<option value="30d" selected>Last 30 days</option>')
         || !str_contains($allowed, 'role="img"')
+        || !str_contains($allowed, 'class="visitor-statistics-users-line"')
+        || preg_match('/<circle class="visitor-statistics-users-point" cx="[0-9.]+" cy="20"[^>]*><title>[^<]*: 2 authenticated users<\/title>/', $allowed) !== 1
+        || !str_contains($allowed, 'Authenticated users · peak 2</text>')
         || !str_contains($allowed, 'How this is counted')) {
         throw new RuntimeException('Root-authenticated statistics page did not render its summary.');
     }

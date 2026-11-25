@@ -32,11 +32,13 @@
 <?php $periodStartTimestamp = (new \DateTimeImmutable($dashboard['period_start']))->getTimestamp(); ?>
 <?php $periodEndTimestamp = (new \DateTimeImmutable($dashboard['period_end']))->getTimestamp(); ?>
 <?php $periodDuration = max(1, $periodEndTimestamp - $periodStartTimestamp); ?>
+<?php $maxUsers = $buckets === [] ? 0 : max(array_map(static fn (array $bucket): int => $bucket['authenticated_users'], $buckets)); ?>
+<?php $userPoints = []; ?>
     <figure class="visitor-statistics-trend">
       <figcaption>Eligible requests over time (<?= $e($periodOptions[$periodKey]['label']) ?>)</figcaption>
       <svg viewBox="0 0 740 210" role="img" aria-labelledby="visitor-statistics-trend-title visitor-statistics-trend-description">
         <title id="visitor-statistics-trend-title">Eligible requests over time</title>
-        <desc id="visitor-statistics-trend-description">Each bar shows the eligible requests in an observed <?= $periodKey === '24h' ? 'UTC hour' : 'UTC day' ?>. The lower, darker part of each bar is server-authenticated requests; the upper, lighter part is anonymous requests.</desc>
+        <desc id="visitor-statistics-trend-description">Each bar shows the eligible requests in an observed <?= $periodKey === '24h' ? 'UTC hour' : 'UTC day' ?>. The lower, darker part of each bar is server-authenticated requests; the upper, lighter part is anonymous requests. The line shows estimated authenticated users in each <?= $periodKey === '24h' ? 'hour' : 'day' ?>, on its own scale with the peak at the top.</desc>
         <line x1="20" y1="180" x2="720" y2="180" class="visitor-statistics-axis" />
 <?php foreach ($buckets as $index => $bucket): ?>
 <?php $height = $maxVisits === 0 ? 0 : (int) round($plotHeight * $bucket['visits'] / $maxVisits); ?>
@@ -45,7 +47,15 @@
 <?php $x = 20 + (int) round(($plotWidth - $barWidth) * max(0, min(1, ($bucketTimestamp - $periodStartTimestamp) / $periodDuration))); ?>
         <rect class="visitor-statistics-bar-anonymous" x="<?= $x ?>" y="<?= 180 - $height ?>" width="<?= $barWidth ?>" height="<?= $height - $authenticatedHeight ?>"><title><?= $e($bucket['bucket_start'] . ': ' . $bucket['anonymous_visits'] . ' anonymous requests') ?></title></rect>
         <rect class="visitor-statistics-bar-authenticated" x="<?= $x ?>" y="<?= 180 - $authenticatedHeight ?>" width="<?= $barWidth ?>" height="<?= $authenticatedHeight ?>"><title><?= $e($bucket['bucket_start'] . ': ' . $bucket['authenticated_visits'] . ' server-authenticated requests') ?></title></rect>
+<?php $userPoints[] = ['x' => $x + $barWidth / 2, 'y' => 180 - ($maxUsers === 0 ? 0 : (int) round($plotHeight * $bucket['authenticated_users'] / $maxUsers)), 'bucket' => $bucket]; ?>
 <?php endforeach; ?>
+<?php if ($maxUsers > 0): ?>
+        <polyline class="visitor-statistics-users-line" points="<?= $e(implode(' ', array_map(static fn (array $point): string => $point['x'] . ',' . $point['y'], $userPoints))) ?>" />
+<?php foreach ($userPoints as $point): ?>
+        <circle class="visitor-statistics-users-point" cx="<?= $point['x'] ?>" cy="<?= $point['y'] ?>" r="2.5"><title><?= $e($point['bucket']['bucket_start'] . ': ' . $point['bucket']['authenticated_users'] . ' authenticated users') ?></title></circle>
+<?php endforeach; ?>
+        <text class="visitor-statistics-users-label" x="720" y="13" text-anchor="end"><?= $e('Authenticated users · peak ' . number_format($maxUsers)) ?></text>
+<?php endif; ?>
         <text x="20" y="202"><?= $e($dashboard['period_start']) ?></text>
         <text x="720" y="202" text-anchor="end"><?= $e($dashboard['period_end']) ?></text>
       </svg>

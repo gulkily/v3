@@ -76,6 +76,22 @@
   fill: var(--status-ok);
 }
 
+.visitor-statistics-users-line {
+  fill: none;
+  stroke: var(--active-line);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.visitor-statistics-users-point {
+  fill: var(--active-line);
+}
+
+.visitor-statistics-trend .visitor-statistics-users-label {
+  fill: var(--active-line);
+  font-weight: 700;
+}
+
 .visitor-statistics-table {
   width: 100%;
   border-collapse: collapse;
