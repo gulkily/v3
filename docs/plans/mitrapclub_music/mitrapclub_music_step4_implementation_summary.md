@@ -147,6 +147,7 @@ Step 4 entry: **0.55**, Step 3 reaffirmed unchanged. Stage originals copied from
 - Completion Contract: normal entry, outcome and recovery verified locally (unit, browser, and a local mitrapclub server); deployment and release pending Stage 7.
 - Baseline failures reproduced on `origin/main` and fixed here: `FeatureFlagsBehaviorTest::testPresentationOrderCoversEveryFlagOnceInItsAssignedGroup` (Stage 1) and `tests/browser/nav_slots.mjs` (Stage 5).
 - Not run: the full suite (`./v3 fulltest`), per the maintainer's standing preference; the smoke set and every touched test class and browser test passed.
+- Nav icon, checked after the PR opened: the Music icon renders in Word 97 (pixel set) and Bubblegum (cute set) on a local mitrapclub server. The smooth set (Gloss, Engagify, Spearmint) was not seen on a page, because no site has both those themes and the Music page; `NavIconSetsTest` confirms the three sets match.
 - Unverified: provider titles fetched from DreamHost, and the maintainer's phone check.
 - Cycle retrospective: **0.60** against 0.55 (Stages 4 and 5 ran over). Maintainer comfortable-fit judgment: pending. Measured time: unknown.
 
