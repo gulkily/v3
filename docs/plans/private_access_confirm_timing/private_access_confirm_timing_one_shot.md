@@ -59,7 +59,7 @@ Verification:
 
 Final review: the diff touches the controller, `LocalWriteService.php`, one test, this record, the plans index, the ledger and the debug log. Existing helpers only.
 
-Commit/merge/publication status: completion commit pending at the time of writing; branch `fix/private_access_confirm_timing`; PR to be opened; not merged. `private_access_one_evaluation` is stacked on this branch.
+Commit/merge/publication status: completion commit `e18d1de` on `fix/private_access_confirm_timing`; PR https://github.com/gulkily/v3/pull/422 opened 2026-11-25; not merged. `private_access_one_evaluation` (#423) is stacked on this branch.
 
 Debug: [debug log](./private_access_confirm_timing_debug_log.md).
 
