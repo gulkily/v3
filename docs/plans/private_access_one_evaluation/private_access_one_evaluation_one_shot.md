@@ -65,7 +65,7 @@ Final review: the diff touches `ReactionSignature.php`, `PrivateKeyAccess.php`, 
 
 Follow-up noted, not done: `finalizePreparedKeyRetirement()` re-reads its record through `KeyRetirement::read()` in the same way and would gain from the same call. The commit path (about 7 git calls through `SignedPostTransaction`, against 3 for approvals) is the next measured decision.
 
-Commit/merge/publication status: completion commit pending at the time of writing; branch `fix/private_access_one_evaluation`, stacked on `fix/private_access_confirm_timing` (#422); PR to be opened against `main`, to merge after #422; not merged.
+Commit/merge/publication status: completion commit `c1f1a9e` on `fix/private_access_one_evaluation`, stacked on `fix/private_access_confirm_timing` (#422); PR https://github.com/gulkily/v3/pull/423 opened 2026-11-25, to merge after #422; not merged.
 
 Debug: [debug log](./private_access_one_evaluation_debug_log.md).
 
