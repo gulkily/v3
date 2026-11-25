@@ -2468,11 +2468,3 @@ Relationship: integration follow-up to v3/local_start_import on open PR #284, no
 | `v3/invite_show_mode` | Implemented; PR open | v1 (one-shot) / R1 / P2 | 0.20 | [One-shot record](./invite_show_mode/invite_show_mode_one_shot.md#study-history) | Follow-up to `v3/invite_qr_pitch`; maintainer acceptance pending |
 
 2026-11-17: one-shot invite show mode; baseline `f05cc945`. Intake and execution entry 0.20; closeout retrospective 0.20. Single exposed rater Claude (claude-opus-5-5). No measured effort or accepted-count increment.
-
-## Cycle v3/private_message_local_pull
-
-| Stable cycle ID | Status | Scope / reference / protocol | Projected total | Canonical checkpoints | Parent / acceptance |
-| --- | --- | --- | --- | --- | --- |
-| `v3/private_message_local_pull` | Stages 1–6 committed; Stage 7 (deploy and production replay) pending | v2 / R1 / P2 | 1.10 (intake 0.80; Step 2 0.85, v2 0.95; Step 3 0.95; entry 0.95; Stage 5 revision 1.10) | [Step 1](./private_message_local_pull/private_message_local_pull_step1_solution_assessment.md#study-checkpoint) · [Step 2](./private_message_local_pull/private_message_local_pull_step2_feature_description.md#study-checkpoint) · [Step 3](./private_message_local_pull/private_message_local_pull_step3_development_plan.md#study-checkpoint) · [Step 4](./private_message_local_pull/private_message_local_pull_step4_implementation_summary.md) | No parent; acceptance pending |
-
-2026-11-18: standing P2 enrollment, staged. Intake 0.80 recorded after inspecting the messaging code, so not pristine. The scope grew twice by maintainer decision, both kept as revisions: key registration and transfer confirmation (Step 2 v2), then one-click local trust after the discovery that imports carry no approvals (Stage 5). Baseline `6bdc52d7` for planning; branch from `31e16b06`. Single exposed rater Claude (claude-opus-5-5); R1 hashes not re-verified. No measured effort or accepted-count increment.

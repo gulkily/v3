@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/private_message_local_pull`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment.
+Effort study: `railspike-effort` / `v3/private_message_local_pull`; [cycle ledger](../effort_ledger/private_message_local_pull.md). Standing P2 enrollment.
 
 Extended estimates: enabled
 
@@ -166,7 +166,7 @@ Branch `feature/private_message_local_pull` from `origin/main` `31e16b06`, which
   4. Approve the key from an existing device (Tools → User Access link on the card). Visit zenmemes.com on that device and leave the tab open until history sync settles.
   5. Press Pull before importing: it ends with "Run Import above". Run Import, then Pull. Trust the listed keys. Check that nothing is "not readable yet", or note how many and why.
   6. Compare the local Messages conversation count with zenmemes.com. Pull again: it should say "0 new".
-- Ledger entry written to `docs/plans/effort_estimation_trial.md`. Closeout retrospective pending.
+- Ledger entry in `docs/plans/effort_ledger/private_message_local_pull.md` (moved there from the frozen original ledger when rebasing). Closeout retrospective pending.
 
 ## Rebase onto main `fe10f955` (2026-11-25)
 

@@ -2,7 +2,7 @@
 
 Debug mode: enabled
 
-Effort study: `railspike-effort` / `v3/private_message_local_pull`; [host ledger](../effort_estimation_trial.md). Standing P2 enrollment.
+Effort study: `railspike-effort` / `v3/private_message_local_pull`; [cycle ledger](../effort_ledger/private_message_local_pull.md). Standing P2 enrollment.
 
 Extended estimates: enabled
 
