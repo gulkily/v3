@@ -8,7 +8,7 @@ Extended estimates: enabled. No alternatives or work units, so no unit estimates
 
 **Cycle estimate: 0.08**
 
-Status: planned; next permitted action: implementation.
+Status: implemented and committed; next permitted action: maintainer review (PR).
 
 Feedback item: none matches (searched `docs/feedback/items/` for the launcher, its groups and History).
 
@@ -37,7 +37,35 @@ Verification and recovery plan: `./v3 test --smoke ToolsRegistryTest NavIconSets
 
 Starting revisions and branch: `feat/tools_history_reading` from `origin/main` `8f8730e17` (the #435 merge); the branch's first commit closes out nav_tree's checklist and ledger entries.
 
-Planning commit: pending.
+Planning commit: `0703719e3` (plan and index entry only, before any implementation).
 
 Study history:
 - 2026-11-25 UTC, intake and execution entry: **0.08**. Recorded after measuring the three fixes, so not a clean intake. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified.
+
+Dated execution history:
+- 2026-11-25: `ToolsPageSupport::registry()`: History's group goes from `device` to `reading`, listed after Forte. `ToolsRegistryTest` expects Activity, Forte, History in Reading.
+- 2026-11-25, discovery: Underground Dark's last button ends at 720.4 px, not 720 (the pre-change measurement was rounded), so the check still failed by 0.4 px. Stopped and asked; the maintainer chose to skip Underground Dark like Underground, its light twin with the same layout. This changes the exclusion stated above ("the test's list of excluded themes stays as it is"); the authorization for it is that answer.
+- 2026-11-25: `tests/browser/tools_launcher.mjs`: Underground Dark joins the skip list; the comment gives 24 tools and the margins left. `docs/concepts/tools_launcher.md`: History under Reading, the fit numbers, Underground Dark among the themes that scroll.
+
+Study history, closeout:
+- 2026-11-25 UTC: retrospective scope assessment **0.08**, as projected. The sub-pixel miss cost one question and a one-word test change. Claude, single exposed rater. Maintainer judgment pending; measured time unknown.
+
+Outcome: delivered. With every flagged tool on, every theme the check covers fits a 1280×720 window: default themes 711.8 px, Sticker 718.8, LCD 665, Chicago 657. Little room is left; the next tool added to any three-column theme's launcher will likely need a regroup.
+
+Verification:
+- Passed: `./v3 test --smoke ToolsRegistryTest NavIconSetsTest VisitHistoryPageTest`: 498 run, 498 passed. Full suite not run.
+- Passed: `node tests/browser/tools_launcher.mjs` on zenmemes (48 theme and width cases) and with `FORUM_SITE_ID=chouse` (36 cases), with every flagged tool on.
+- Looked at: the Gloss launcher at 1280 px (History third in Reading, icon present).
+- `git diff --check`: passed.
+- Not checked: the live site; phones beyond the check's 390 px cases.
+- Inapplicable: schema, read model, flags, new destinations.
+
+Final review: the diff touches `ToolsPageSupport.php`, `ToolsRegistryTest.php`, `tools_launcher.mjs`, the Tools launcher concept entry and plan records. No tool added, renamed or removed; no dependency; Deploy now is enough.
+
+Commit/merge/publication status: completion commit on `feat/tools_history_reading` (hash in the PR); not merged.
+
+Debug: [debug log](./tools_history_reading_debug_log.md).
+
+Enhancement requests: none.
+
+Attribution: Claude · 2026-11-25 UTC · Model: claude-opus-5-5
