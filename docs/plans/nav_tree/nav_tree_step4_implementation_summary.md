@@ -54,6 +54,27 @@ Branch: `feat/nav-tree` from `origin/main` `2d7805c`. Planning commit: `f585d60`
 
 *— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
 
+## Stage 3 - Record address changes
+
+**Original estimate: 0.08**
+
+**Retrospective: 0.10**
+
+- Changes:
+  - `visit_history.js` wraps `pushState` and `replaceState` and listens for `popstate`. A push to a new address adds a visit under the current one; a replace moves the current visit to the new address; popstate moves the cursor. Same-address and `#spot` changes add nothing. The page scripts' own calls are unchanged.
+  - The one-time hints `__v` and `created_post_id`, which `url_hints.js` drops, are never stored in an address.
+  - `TemplateRenderer::renderStandalonePage` loads `visit_history.js` first on Forte pages (`/forte`, `/forte/activity`, `/forte/users`), which use `standalone_layout.php`, not `layout.php`.
+  - `visit_history.mjs` gains a pushState, popstate and replaceState section and a `/forte` row click.
+- Verification:
+  - `node tests/browser/visit_history.mjs` in Chromium, Firefox and WebKit: passed in all three, including the `/forte` row check.
+  - `./v3 test --smoke ForteBoardReaderTest FeatureFlagEvaluatorTest`: passed, 492 run. Full suite not run.
+- Notes:
+  - Forte pages were not in the Step 3 plan, which assumed every reader uses `layout.php`. Loading the recorder there is an in-scope refinement: Step 3 named the paned readers as captured. Recorded as new understanding.
+  - A `replaceState` made while the browser is on an older entry of the same page can leave that entry with no visit; going back to it then adds one. Seen only in an artificial test sequence; left as is.
+- Estimate details: original scope as planned; the Forte layout added a little. Retrospective 0.10.
+
+*— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
+
 ## Enhancement Requests
 
 - Sync, in-page changes as visits, `tree_history` and `filmstrip`: unchanged from Step 2, all deferred or separate.

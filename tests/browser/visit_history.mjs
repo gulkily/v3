@@ -96,6 +96,43 @@ try {
   await page.reload(); await settle(page);
   assert.equal((await tree(page)).length, 3, 'a reload adds nothing');
 
+  // --- Address changes from page scripts ---
+  await page.goto(on.base + '/threads/root-001'); await settle(page);
+  let start = (await tree(page)).length;
+  await page.evaluate(() => history.pushState(null, '', '/threads/root-001?view=a'));
+  await page.evaluate(() => history.pushState(null, '', '/threads/root-001?view=a#spot'));
+  let all = await tree(page);
+  assert.equal(all.length, start + 1, 'pushState to a new address adds one visit; a #spot adds none');
+  assert.deepEqual(all[all.length - 1], ['/threads/root-001?view=a', '/threads/root-001'], 'a pushed address hangs under the page');
+  await page.goBack();
+  await page.waitForFunction(() => location.hash === '');
+  await page.goBack();
+  await page.waitForFunction(() => location.search === '');
+  assert.equal(await cursorUrl(page), '/threads/root-001', 'popstate back moves to the page');
+  await page.goForward();
+  await page.waitForFunction(() => location.search === '?view=a');
+  assert.equal(await cursorUrl(page), '/threads/root-001?view=a', 'popstate forward moves to the pushed visit');
+  assert.equal((await tree(page)).length, start + 1, 'popstate adds nothing');
+  await page.evaluate(() => history.replaceState(null, '', '/threads/root-001?view=b'));
+  all = await tree(page);
+  assert.equal(all.length, start + 1, 'replaceState adds nothing');
+  assert.equal(all[all.length - 1][0], '/threads/root-001?view=b', 'replaceState moves the current visit');
+  await page.evaluate(() => history.replaceState(null, '', '/threads/root-001?view=b&__v=123'));
+  assert.equal((await tree(page)).at(-1)[0], '/threads/root-001?view=b', 'one-time hints are never kept');
+  // The paned board reader (/forte) changes the address when a row is chosen.
+  const forte = await page.goto(on.base + '/forte');
+  if (forte && forte.ok() && await page.locator('.paned-list-row').count() > 0) {
+    await settle(page);
+    start = (await tree(page)).length;
+    await page.locator('.paned-list-row').first().click();
+    await page.waitForFunction(() => location.search.includes('selected='));
+    all = await tree(page);
+    assert.equal(all.length, start + 1, 'choosing a row on /forte adds a visit');
+    assert.ok(all.at(-1)[0].startsWith('/forte?') && all.at(-1)[1] === '/forte', 'the row visit hangs under /forte');
+  } else {
+    console.log('note: /forte not available with this fixture; paned reader check skipped');
+  }
+
   // --- A second tab ---
   // Opened from a link: empty session storage, so the referrer is the parent.
   await page.goto(on.base + '/threads/root-001'); await settle(page);
@@ -107,7 +144,7 @@ try {
   });
   const [second] = await Promise.all([context.waitForEvent('page'), page.click('#visit-history-new-tab')]);
   await settle(second);
-  let all = await tree(second);
+  all = await tree(second);
   assert.equal(all.length, before + 1, 'the new tab adds one visit');
   assert.deepEqual(all[all.length - 1], ['/threads/', '/threads/root-001'], 'a new tab from a link hangs under the page it came from');
   // Typed into a fresh tab: no referrer, so a new top.

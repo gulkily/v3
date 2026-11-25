@@ -62,10 +62,14 @@
     return null;
   }
   // An address is the path and query; a spot on the page (#…) is the same page.
+  // The one-time hints url_hints.js drops (__v, created_post_id) are never kept.
   function address(href) {
     try {
       var url = new URL(href, location.href);
-      return url.origin === location.origin ? url.pathname + url.search : null;
+      if (url.origin !== location.origin) return null;
+      url.searchParams.delete('__v');
+      url.searchParams.delete('created_post_id');
+      return url.pathname + url.search;
     } catch (error) {
       return null;
     }
@@ -143,6 +147,40 @@
       write(visits);
     }).observe(head, { childList: true, subtree: true, characterData: true });
   }
+
+  // A page change by a page script: pushState to another address is a visit
+  // under the current one; replaceState moves the current visit to the new
+  // address; back and forward between such entries (popstate) move the cursor.
+  // The page scripts' own calls are left as they are.
+  function changed(replacing) {
+    var url = address(location.href);
+    if (url === null || quiet(url)) return;
+    var visits = read();
+    var here = find(visits, cursor());
+    if (here && here.url === url) return;
+    if (replacing && here) {
+      here.url = url;
+      here.title = title();
+      write(visits);
+      return;
+    }
+    add(url, here ? here.id : null);
+  }
+  function wrap(name, replacing) {
+    var original = history[name];
+    if (typeof original !== 'function') return;
+    history[name] = function () {
+      var result = original.apply(this, arguments);
+      try { changed(replacing); } catch (error) {}
+      return result;
+    };
+  }
+  wrap('pushState', false);
+  wrap('replaceState', true);
+  window.addEventListener('popstate', function () {
+    var url = address(location.href);
+    if (url !== null && !quiet(url)) move(url);
+  });
 
   arrived();
   followTitle();

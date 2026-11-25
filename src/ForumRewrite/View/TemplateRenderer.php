@@ -670,6 +670,10 @@ final class TemplateRenderer
         array $additionalCssPaths = [],
     ): string {
         $content = $this->renderFile('pages/' . $pageTemplate, $pageData);
+        // Visit history first, so it sees the Forte readers' address changes.
+        if ($this->featureFlags->isEnabled(FeatureFlagRegistry::VISIT_HISTORY_ENABLED)) {
+            array_unshift($scriptPaths, '/assets/visit_history.js');
+        }
         if ($this->featureFlags->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED)) {
             $scriptPaths = array_merge($scriptPaths, [
                 '/assets/media_embed_inline_player.js',
