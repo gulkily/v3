@@ -55,6 +55,58 @@ final class MusicPageTest
         }
     }
 
+    public function testShareBoxPostsATaggedTrackAndReturnsToTheMusicPage(): void
+    {
+        putenv('FORUM_MEDIA_EMBEDS_ENABLED=true');
+        try {
+            $this->withSite('mitrapclub', function (string $repositoryRoot, string $databasePath): void {
+                $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+                $page = $this->markup($this->render($application, '/music/'));
+                assertStringContains('data-compose-draft-scope="music"', $page, 'Its own drafts, apart from the Board composer.');
+                assertStringContains('name="board_tags" autocapitalize="none" value="music"', $page);
+                assertStringContains('name="return_to" value="/music/"', $page);
+                assertStringContains('placeholder="Paste a link to a track"', $page);
+
+                // As a browser without JavaScript sends it, signed out.
+                $_POST = ['body' => 'https://www.youtube.com/watch?v=B7Gj3YodcWU', 'subject' => '', 'board_tags' => 'music', 'return_to' => '/music/', 'body_format' => 'plain'];
+                try {
+                    ob_start();
+                    $application->handle('POST', '/compose/thread');
+                    $redirect = (string) ob_get_clean();
+                } finally {
+                    $_POST = [];
+                }
+                assertStringContains('/music/?created_post_id=thread-', $redirect, 'Back on the Music page.');
+                $latest = trim((string) shell_exec('cd ' . escapeshellarg($repositoryRoot) . ' && git log -1 --name-only --format='));
+                $record = (string) file_get_contents($repositoryRoot . '/' . strtok($latest, "\n"));
+                assertStringContains("Board-Tags: music\n", $record);
+                assertStringNotContains('Author-Identity-ID', $record, 'A guest share.');
+
+                $after = $this->markup($this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/music/'));
+                assertStringContains('provider=youtube&amp;url=' . rawurlencode('https://www.youtube.com/watch?v=B7Gj3YodcWU'), $after, 'The untitled share asks for its title from the Music page.');
+            });
+        } finally {
+            putenv('FORUM_MEDIA_EMBEDS_ENABLED');
+        }
+    }
+
+    public function testShareBoxReturnAddressIsIgnoredWithoutTheSection(): void
+    {
+        $this->withSite('zenmemes', function (string $repositoryRoot, string $databasePath): void {
+            $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
+            $_POST = ['body' => 'Just a thought', 'subject' => 'A thought', 'board_tags' => 'general', 'return_to' => '/music/', 'body_format' => 'plain'];
+            try {
+                ob_start();
+                $application->handle('POST', '/compose/thread');
+                $redirect = (string) ob_get_clean();
+            } finally {
+                $_POST = [];
+            }
+            assertStringContains('/threads/thread-', $redirect, 'Lands on the new thread.');
+            assertStringNotContains('/music/', $redirect);
+        });
+    }
+
     public function testEmptyMusicPageStillRenders(): void
     {
         $this->withSite('mitrapclub', function (string $repositoryRoot, string $databasePath): void {

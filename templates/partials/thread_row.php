@@ -47,7 +47,7 @@ $pledgeStatusLabel = match ($pledgeStatus) {
 <?php endif; ?>
   <p class="meta thread-row__meta"><?= $rowMeta($thread, 'root_post_created_at') ?></p>
 <?php if ($rowPlayer !== ''): ?>
-  <div class="thread-row__player"><?= $rowPlayer ?></div>
+  <div class="thread-row__player"><?= $rowPlayer ?><?= $partial('partials/media_embed_warm_beacon.php', ['thread' => $thread, 'beaconBody' => (string) $thread['body_preview']]) ?></div>
 <?php endif; ?>
 <?= $partial('partials/event_block.php') ?>
 </article>

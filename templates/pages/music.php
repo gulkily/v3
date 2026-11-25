@@ -7,6 +7,15 @@
  */
 ?>
 <section class="stack board-list music-page">
+  <article class="card music-share">
+<?= $indent($partial('partials/thread_compose_form.php', [
+    'compact' => false,
+    'returnTo' => '/music/',
+    'composeDraftScope' => 'music',
+    'bodyPlaceholder' => 'Paste a link to a track',
+]), 2) ?>
+    <p class="meta" data-role="compose-identity-status" hidden></p>
+  </article>
 <?php if ($paginationError !== null): ?>
   <p class="board-list__error" role="alert"><?= $e($paginationError) ?></p>
 <?php elseif ($threads === []): ?>

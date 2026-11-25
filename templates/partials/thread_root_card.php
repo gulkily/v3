@@ -51,22 +51,7 @@ $titleRepeatsBody = trim((string) ($thread['subject'] ?? '')) === ''
     && trim($postBody) !== ''
     && $postBodyDisplay === $postBody
     && !in_array($title, ['Untitled', 'Image'], true);
-$bareMediaEmbedWarmBeacon = '';
-// An empty subject that a fetched title can fill: YouTube and Instagram show Untitled
-// meanwhile, music links show the link.
-if (($mediaEmbedsEnabled ?? false) && trim((string) ($thread['subject'] ?? '')) === '') {
-    $bareMediaEmbedMatch = \ForumRewrite\Support\ThreadTitle::bareMediaEmbedMatch(
-        (string) ($thread['subject'] ?? ''),
-        $postBody,
-        (bool) ($mediaEmbedFirstLineTitles ?? false)
-    );
-    if ($bareMediaEmbedMatch !== null) {
-        $bareMediaEmbedWarmBeaconUrl = '/internal/media-embeds/warm-preview?provider=' . rawurlencode($bareMediaEmbedMatch['provider'])
-            . '&url=' . rawurlencode($bareMediaEmbedMatch['url'])
-            . '&thread_id=' . rawurlencode((string) $thread['root_post_id']);
-        $bareMediaEmbedWarmBeacon = '<img class="media-embed-card__warm-beacon" data-media-embed-warm-beacon src="' . $e($bareMediaEmbedWarmBeaconUrl) . '" alt="" width="0" height="0" style="display:none" loading="eager">';
-    }
-}
+$bareMediaEmbedWarmBeacon = $partial('partials/media_embed_warm_beacon.php', ['thread' => $thread, 'beaconBody' => $postBody]);
 $quoteRootId = (string) $thread['root_post_id'];
 $quoteRootNumber = \ForumRewrite\Qdb\QdbQuoteNumbers::fromThreadId($quoteRootId);
 $isQdbQuoteRoot = \ForumRewrite\SiteConfig::siteName() === 'qdb' && $quoteRootNumber !== null;

@@ -73,3 +73,23 @@ Step 4 entry: **0.55**, Step 3 reaffirmed unchanged. Stage originals copied from
   - Spotify album players are tall (the provider's own height); this is existing card behaviour.
 
 *— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Share box
+
+**Original estimate: 0.10**
+**Retrospective: 0.15**
+
+- Changes:
+  - `templates/pages/music.php`: the shared New post form (`thread_compose_form.php`, full mode, as the calendar day page uses it) at the top, with `music` in Tags, `return_to` `/music/`, draft scope `music`, and the placeholder "Paste a link to a track". The Title is optional below Post, as on New post; the tag is visible and can be changed. The plan named the compact form with a Title through the lead-fields slot; the full form already has both, so no slot was needed.
+  - `Http/MusicPageController.php`: passes the form's fields and the signing and Outbox scripts the calendar day page loads.
+  - `Http/ComposeAndAccountKeyController.php`: `resolveComposeThreadReturnTo()` sends `/music/` back to `/music/` on a site with the section; elsewhere the new thread opens, as before.
+  - New `templates/partials/media_embed_warm_beacon.php`: the title-fetch beacon, moved out of `thread_card.php` and `thread_root_card.php` (both now use it) and added to rows that carry a player. Without it, a track shared from /music/ stayed "Untitled" until someone opened its thread.
+- Verification:
+  - `./v3 test MusicPageTest MediaEmbedBeaconTemplatesTest BoardListTest ThreadRootCardRepeatedTitleTest CalendarPageTest`: all passed (MusicPageTest 6 of 6).
+  - New `MusicPageTest` cases: the form carries the tag, return address, draft scope and placeholder; a no-JavaScript guest POST writes `Board-Tags: music` with no identity and redirects to `/music/?created_post_id=…`; the untitled share's row carries the YouTube beacon; on zenmemes a `/music/` return address is ignored.
+  - New browser test `tests/browser/music_share.mjs` (mitrapclub, 390px): with JavaScript, paste, Title, Post, back on /music/ with the track first, its player and `Board-Tags: music`, no sideways scroll, no dialogs or errors; a draft typed on /music/ is not in the Board composer; without JavaScript, a Spotify share posts and returns to /music/. PASS.
+  - `composers.mjs`, `compose_attempt_replay.mjs` (desktop and phone), `offline_compose.mjs`: PASS, unchanged.
+- Notes:
+  - Retrospective 0.15 against 0.10: the missing row beacon and the browser test were more than the stage planned.
+
+*— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*

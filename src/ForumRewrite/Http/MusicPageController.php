@@ -33,9 +33,20 @@ final class MusicPageController
 
         return $this->routeServices->renderPageTemplate(
             'music.php',
-            ['threads' => $threads, 'pagination' => $pagination, 'paginationError' => null],
+            [
+                'threads' => $threads,
+                'pagination' => $pagination,
+                'paginationError' => null,
+                // The share box: the shared New post form with the tag preset; Post returns here.
+                'boardTags' => self::TAG,
+                'subject' => '',
+                'body' => '',
+                'notice' => null,
+                'error' => null,
+            ],
             'Music',
             'music',
+            ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js'],
         );
     }
 }
