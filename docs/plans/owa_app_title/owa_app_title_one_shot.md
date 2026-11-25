@@ -7,7 +7,7 @@ Extended estimates: enabled (no alternatives or work units, so only the cycle es
 
 **Cycle estimate: 0.06**
 
-Status: implemented on `fix/owa-app-title`; PR open, not merged or deployed. Next action: the maintainer merges and deploys, then adds the app from Firefox on the iPhone (release check below).
+Status: implemented on `fix/owa-app-title`; [PR #418](https://github.com/gulkily/v3/pull/418) open, not merged or deployed. Next action: the maintainer merges and deploys, then adds the app from Firefox on the iPhone (release check below).
 
 ## Request and authorization
 
