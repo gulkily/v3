@@ -62,22 +62,31 @@ final class IdentityApprovalAndInvitationApiController
 
     public function privateAccessConfirmation(string $method, array $query, string $action): void
     {
+        $totalStartedAt = hrtime(true);
         $headers = $this->routeServices->noStoreHeaders();
         if ($method !== ($action === 'status' ? 'GET' : 'POST')) {
             $this->routeServices->sendJson(['status' => 'error', 'error' => 'method not allowed'], 405, $headers);
             return;
         }
+        // Server-Timing as on the approval endpoints, so a slow Confirm shows where its time went.
+        $timings = [];
         try {
+            $phaseStartedAt = hrtime(true);
             $input = $this->routeServices->requestData($query);
+            $timings['request_data'] = $this->routeServices->elapsedMilliseconds($phaseStartedAt);
             $writer = $this->routeServices->writer();
             $result = match ($action) {
                 'prepare' => $writer->preparePrivateAccessConfirmation($input),
                 'finalize' => $writer->finalizePrivateAccessConfirmation($input),
                 'status' => $writer->privateAccessStatus((string) ($input['target_identity_id'] ?? '')),
             };
-            $this->routeServices->sendJson($result, 200, $headers);
+            $result = $this->routeServices->mergeResultTimings($result, $timings, $totalStartedAt);
+            $timingHeaders = $this->routeServices->serverTimingHeaders($result);
+            unset($result['timings']);
+            $this->routeServices->sendJson($result, 200, array_merge($headers, $timingHeaders));
         } catch (RuntimeException $error) {
-            $this->routeServices->sendJson($this->routeServices->errorPayload($error), 400, $headers);
+            $this->routeServices->sendJson($this->routeServices->errorPayload($error), 400, array_merge($headers,
+                $this->routeServices->serverTimingHeaders(['timings' => $this->routeServices->timingsWithTotal($timings, $totalStartedAt)])));
         }
     }
 

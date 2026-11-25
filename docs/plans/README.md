@@ -441,6 +441,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Chouse production readiness](chouse_production_readiness/) — recorded steps: 1.
 - [Codebase page source details](codebase_page_source_details/) — recorded steps: 3.
 - [Compact unavailable private messages](private_message_unavailable/)
+- [Private access confirm timing](private_access_confirm_timing/private_access_confirm_timing_one_shot.md) — one-shot: the private-access confirm endpoints send Server-Timing with named phases, like approvals.
 - [Event feature gating](event_feature_gating/)
 - [Event time](event_time/)
 - [Event end time](event_end_time/event_end_time_one_shot.md) — one-shot: events get an end time (`Event-End-Time`, composer Ends, ranges like "1-4pm") and an `event-time:` reply to correct an event's times; calendar exports stop assuming one hour.

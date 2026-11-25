@@ -56,6 +56,12 @@ final class PrivateAccessConfirmationTest
                 'detached_signature' => $this->sign($keys['mira1']['home'], $prepared['canonical_record'])];
             $first = $writer->finalizePrivateAccessConfirmation($input);
             $again = $writer->finalizePrivateAccessConfirmation($input);
+            // Phases the confirm endpoints report as Server-Timing.
+            assertSame(true, isset($prepared['timings']['policy']), 'prepare policy timing');
+            foreach (['policy', 'verify', 'commit', 'status'] as $phase) {
+                assertSame(true, isset($first['timings'][$phase]), 'finalize ' . $phase . ' timing');
+            }
+            assertSame(true, isset($again['timings']['status']), 'repeat status timing');
             assertSame(false, $first['recovered']);
             assertSame(true, $again['recovered']);
             assertSame($first['commit_sha'], $again['commit_sha']);
