@@ -55,6 +55,8 @@ Found on a first read at `93295c82`. Each cycle re-checks its own part before pl
   - Built 2026-11-25 ([PR #415](https://github.com/gulkily/v3/pull/415)): a reply notice opens `/threads/<id>#post-<reply>` (thread pages already anchor every post, online and in the offline reader); an open window is focused and sent there (`navigate()`, else an `open-url` message the page follows). Offline, a thread opens in the offline reader at the reply; a DM or a folded notice opens the home page, because Unread and conversations have no offline page (the handoff's "or Unread" fallback, changed; open to overrule).
   - [ ] Merged and deployed.
   - [ ] Real-phone check on the iPhone SE (home-screen app): a reply notice and a DM notice each open their page (a) with the app closed, (b) with the app open on another page, (c) in airplane mode (reply: the thread from the offline reader; DM: the home page); a folded "N new replies" notice opens Unread.
+- [ ] **`owa_resume`** (one-shot; estimate 0.12; [record](./owa_resume/owa_resume_one_shot.md)) — asked 2026-11-24: a fresh launch of the installed app at `/` returns to the page and scroll position left in the last 6 hours; a notification tap opens its own page. Flag `FORUM_OWA_RESUME_ENABLED`, on by default.
+  - [ ] Real-phone check on the iPhone SE: open a thread, scroll, swipe the app away, reopen: the thread at that spot. Reopen after 6 hours: the home page.
 - [ ] **MVP release check** — the maintainer, on the iPhone SE from the home screen: turn on, get a DM and a reply from a second account with the app closed, tap each, turn off.
 
 ## After the MVP

@@ -357,6 +357,7 @@ final class TemplateRenderer
             'navSlotsScriptPath' => $this->assetPath('/assets/nav_slots.js'),
             'usageLogScriptPath' => $this->assetPath('/assets/usage_log.js'),
             'fastNavigationScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::FAST_NAVIGATION_ENABLED) ? $this->assetPath('/assets/fast_navigation.js') : null,
+            'owaResumeEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::OWA_RESUME_ENABLED) && !$this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY),
             'navCachedCopyScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::NAV_CACHED_COPY_ENABLED) ? $this->assetPath('/assets/nav_cached_copy.js') : null,
             'deployPromptEnabled' => $deployPrompt = $this->featureFlags->isEnabled(FeatureFlagRegistry::DEPLOY_HEADER_PROMPT_ENABLED),
             'deployPromptScriptPath' => $deployPrompt ? $this->assetPath('/assets/deploy_prompt.js') : null,

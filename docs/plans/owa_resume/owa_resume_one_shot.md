@@ -7,7 +7,7 @@ Extended estimates: enabled (no alternatives or work units, so only the cycle es
 
 **Cycle estimate: 0.12**
 
-Status: planned on `feature/owa-resume`. Next action: implement.
+Status: implemented on `feature/owa-resume`; PR open, not merged or deployed. Next action: the maintainer merges and deploys, then runs the iPhone SE check below.
 
 ## Request and authorization
 
@@ -30,9 +30,10 @@ Decisions made here, open to the maintainer's overrule:
 ## Reuse decisions
 
 - `templates/layout.php` already carries an inline before-paint `<script>` for theme choice; the resume snippet sits beside it as its own small inline script, since it must run before paint and an external file would add a blocking request. `standalone_layout.php` pages are not app pages (no manifest) and are left alone.
-- Standalone detection matches the existing worker registration's checks (`matchMedia('(display-mode: standalone)')`, `navigator.standalone`).
+- Standalone detection: no existing helper does it (checked `pwa_registration.js`), so the snippet uses the two standard checks, `matchMedia('(display-mode: standalone)')` and iPhone's `navigator.standalone`. (Corrected at implementation: the plan assumed the worker registration already checked this.)
 - Flag: `FeatureFlagRegistry` definition and `TemplateRenderer` pass-through, like `NAV_CACHED_COPY_ENABLED`.
-- Storage key namespaced per site with the `BrowserRuntimeProfile` namespace, as other per-site browser keys are.
+- Storage key `resumeStorageKey` (`forum-<namespace>-resume`) added to `BrowserRuntimeProfile` beside the other per-site browser keys; the same key name marks the launch in `sessionStorage`, plus `-scroll` for the pending scroll.
+- The script is rendered only where the manifest is linked (not on approved-members-only sites), since only there can the app be installed.
 
 ## Risks
 
@@ -50,8 +51,20 @@ None changed.
 - In a standalone-emulated browser: open a thread, scroll, background the app (pagehide), start a new session at `/`: lands on the thread at the scroll position. After 6 hours, or with the flag off, stays on `/`. Launching at `/threads/x` stays there. In a normal tab nothing changes.
 - Release: on the iPhone SE home-screen app, open a thread, swipe the app away, reopen: the thread. Tap a notification: its page.
 
+## Verification
+
+- New browser check `tests/browser/owa_resume.mjs` (Chrome with `navigator.standalone` set, the `parity_minimal_v1` fixture, zenmemes profile): passes. It covers a fresh launch at `/` returning to the thread left, scrolled; `/` again within the launch staying home; a launch at `/threads/` staying there; a page left 7 hours ago not reopened; a browser tab never redirected; the flag off rendering no script.
+- `./v3 test --smoke FeatureFlagEvaluatorTest LocalAppSmokeTest FastNavigationLayoutTest`: 489 run, 489 passed (`FeatureFlagEvaluatorTest` lists the new flag). The full suite was not run.
+- Not verified: a real iPhone, where a swiped-away app relaunches at `/`; Android installs; display-mode detection in a real installed app (the test sets `navigator.standalone`).
+- Known edge: offline, a DM or folded notification tap opens `/` (`push_tap_routing`), which on a fresh launch counts as a launch at `/` and returns to the page left instead. Accepted for now.
+
+## Execution history
+
+- 2026-11-25: planning commit `8728525a` on `feature/owa-resume` from `eac0968f`; then the flag, the runtime key, the inline head script, the browser check and this record.
+
 ## Study history
 
 2026-11-25T07:20Z; scope v1; starting revision `eac0968f`; reference R1, hashes not re-verified. Claude, single exposed rater. Intake **0.12**.
+- Closeout: retrospective scope assessment **0.12**; maintainer comfortable-fit judgment pending.
 
 *— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
