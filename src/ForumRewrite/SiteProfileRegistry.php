@@ -80,6 +80,8 @@ final class SiteProfileRegistry
                 'composerPrompt' => 'Drop a verse, a cypher clip, or an announcement...',
                 // No /start/ page or Getting started links on this site.
                 'gettingStarted' => false,
+                // The home page (/) shows Gallery; the board stays at /threads/.
+                'homePage' => 'gallery',
                 'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'socials', 'editorial' => 'mitrapclub', 'brandedStylesheet' => 'underground', 'toolsNav' => 'hidden', 'favicon' => 'mitrapclub'],
             ],
         ];
@@ -157,6 +159,12 @@ final class SiteProfileRegistry
     public static function gettingStarted(): bool
     {
         return (self::active()['gettingStarted'] ?? true) !== false;
+    }
+
+    /** What the active site's home page (/) shows: 'board' (default) or 'gallery'. */
+    public static function homePage(): string
+    {
+        return (string) (self::active()['homePage'] ?? 'board');
     }
 
     /** The active site's guestbook thread ID, or null when the site has none. */
@@ -262,6 +270,10 @@ final class SiteProfileRegistry
                 if (!is_string($pageTheme) || $pageTheme === 'auto' || !in_array($pageTheme, $profile['permittedThemes'], true)) {
                     throw new \RuntimeException("Site profile {$siteId} page theme must be a permitted explicit theme: {$pagePath}");
                 }
+            }
+
+            if (array_key_exists('homePage', $profile) && !in_array($profile['homePage'], ['board', 'gallery'], true)) {
+                throw new \RuntimeException("Site profile {$siteId} homePage must be board or gallery.");
             }
 
             if (array_key_exists('gettingStarted', $profile) && !is_bool($profile['gettingStarted'])) {

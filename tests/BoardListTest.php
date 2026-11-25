@@ -134,6 +134,31 @@ final class BoardListTest
         }
     }
 
+    public function testGalleryHomeSiteShowsGalleryAtTheBareHomePage(): void
+    {
+        [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);
+        putenv('FORUM_SITE_ID=mitrapclub');
+        putenv('FORUM_IMAGE_CONTENT_ENABLED=1');
+        putenv('FORUM_IMAGE_GALLERY_ENABLED=1');
+        try {
+            $home = $this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/');
+            assertStringContains('class="stack gallery-page"', $home);
+            assertStringNotContains('href="/threads/root-001"', $home);
+            $board = $this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/threads/');
+            assertStringContains('href="/threads/root-001"', $board);
+            $sorted = $this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/?sort=newest');
+            assertStringContains('href="/threads/root-001"', $sorted, 'A chosen sort on / still means the board.');
+
+            putenv('FORUM_IMAGE_GALLERY_ENABLED=0');
+            $fallback = $this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/');
+            assertStringContains('href="/threads/root-001"', $fallback, 'Without the gallery, / stays the board.');
+        } finally {
+            putenv('FORUM_SITE_ID');
+            putenv('FORUM_IMAGE_GALLERY_ENABLED');
+            putenv('FORUM_IMAGE_CONTENT_ENABLED');
+        }
+    }
+
     public function testStartPageOffersBrowsingAndImportChoices(): void
     {
         [$repositoryRoot, $databasePath] = $this->createTempEnvironment(0);

@@ -799,6 +799,14 @@ final class Application
             return;
         }
 
+        // A site whose home page is Gallery shows it at a bare /; the board stays at /threads/.
+        if (($path === '/' || $path === '') && SiteProfileRegistry::homePage() === 'gallery'
+            && array_intersect(['view', 'sort', 'with', 'page', 'format'], array_keys($query)) === []
+            && $this->featureFlags()->isEnabled(FeatureFlagRegistry::IMAGE_GALLERY_ENABLED)) {
+            $this->sendHtml((new \ForumRewrite\Http\RecentPageController($this->routeServices()))->gallery(), 200);
+            return;
+        }
+
         if ($path === '/' || $path === '' || $path === '/threads/' || $path === '/threads') {
             if (($query['format'] ?? null) === 'rss') {
                 $this->sendXml(

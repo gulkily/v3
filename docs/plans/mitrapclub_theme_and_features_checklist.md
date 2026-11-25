@@ -124,6 +124,9 @@ checked in the current code, not a guess.
       Instagram post's link and its image attached (one-shot
       [instagram_clip](instagram_clip/instagram_clip_one_shot.md), flag
       `FORUM_INSTAGRAM_CLIP_ENABLED`, needs an operator enable on mitrapclub).
+- [x] Gallery is the home page: `/` shows Gallery, the board stays at
+      `/threads/` (one-shot
+      [mitrapclub_gallery_home](mitrapclub_gallery_home/mitrapclub_gallery_home_one_shot.md)).
 - [ ] Continue media-provider expansion. **Spotify tracks/albums/playlists
       and direct TikTok videos are implemented** on
       `feature/top-five-media-embeds`, alongside YouTube Shorts; see the
