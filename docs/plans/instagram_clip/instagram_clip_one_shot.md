@@ -50,3 +50,10 @@ Request: "Can you please make it work in a new window if possible, and don't inc
 - One Instagram bookmarklet (in the New window section) replaces the two. It opens a new window and falls back to the current one when window.open() returns null (popup blocked, or a browser without new windows). It skips the "noopener" feature because with it window.open() always returns null; it sets the opener to null instead.
 - The post body is only the selected text, if any; the Instagram link is no longer added. The link is still passed as `instagram_post`, since the server needs it to validate the request and to fall back to og:image.
 - Checked in headless Chrome with the real generated bookmarklet: a new window opened on the composer and Instagram stayed in its tab. With window.open stubbed to return null, the same tab went to the composer, and the clip script ran and cleared its parameters. Not checked on an iPhone.
+
+## Follow-up: same-window version back (2026-11-25)
+
+Request: "i made a mistake and accidentally added the same-window bookmarklet and was expecting it to open a new window. can you please return the same-window one also?" (Ilya).
+
+- The Same window section has an Instagram bookmarklet again, which opens the composer in the current tab. The New window one keeps its fallback to the current tab when a new window is blocked.
+- Checked in headless Chrome with both generated bookmarklets: same-window navigated the Instagram tab to the composer, and new-window opened a new tab while Instagram stayed put. Not checked on an iPhone.
