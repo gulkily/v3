@@ -42,3 +42,11 @@ A bounded one-shot through an open PR: one bookmarklet that opens a new post wit
 
 - Not verified against live Instagram (no access from the workspace): its markup may differ from the mock, and whether DreamHost can fetch Instagram's CDN is unverified (the preview card's og fetch already works there). A reel attaches its cover image.
 - Attaching still needs an approved key with image upload; otherwise the post goes out with the link only.
+
+## Follow-up: new window, no source link (2026-11-25)
+
+Request: "Can you please make it work in a new window if possible, and don't include the instagram url it comes from" (Ilya).
+
+- One Instagram bookmarklet (in the New window section) replaces the two. It opens a new window and falls back to the current one when window.open() returns null (popup blocked, or a browser without new windows). It skips the "noopener" feature because with it window.open() always returns null; it sets the opener to null instead.
+- The post body is only the selected text, if any; the Instagram link is no longer added. The link is still passed as `instagram_post`, since the server needs it to validate the request and to fall back to og:image.
+- Checked in headless Chrome with the real generated bookmarklet: a new window opened on the composer and Instagram stayed in its tab. With window.open stubbed to return null, the same tab went to the composer, and the clip script ran and cleared its parameters. Not checked on an iPhone.

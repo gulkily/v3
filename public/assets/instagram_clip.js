@@ -1,8 +1,7 @@
-// Instagram clip: the bookmarklet opens /compose/thread with the post's link in the
-// body and ?instagram_post= (plus ?instagram_image=, the image it saw on the page).
-// The site fetches that image from Instagram (the browser can't read Instagram's
-// image host) and it is attached like a chosen file. The link stays in the body,
-// so a failed fetch still leaves a post with the Instagram preview.
+// Instagram clip: the bookmarklet opens /compose/thread with ?instagram_post= (plus
+// ?instagram_image=, the image it saw on the page); the post's link is not put in
+// the body. The site fetches that image from Instagram (the browser can't read
+// Instagram's image host) and it is attached like a chosen file.
 (function () {
   'use strict';
   const params = new URLSearchParams(window.location.search);

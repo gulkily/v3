@@ -98,8 +98,8 @@
 
   // On instagram.com: the post on screen (its own page, the open post, or the feed
   // post nearest the middle of the screen) and the largest image showing in it.
-  // The composer gets the post link as the body and both addresses, then asks the
-  // site to fetch the image and attaches it.
+  // The composer gets both addresses (not the link, which stays out of the post)
+  // and any selected text as the body, then asks the site to fetch the image.
   function instagramComposeUrl(baseOrigin) {
     if (!/(^|\.)instagram\.com$/.test(location.hostname)) {
       alert("Open an Instagram post first, then tap this bookmarklet.");
@@ -149,7 +149,7 @@
     return (
       baseOrigin +
       "/compose/thread?board_tags=general&subject=&body=" +
-      encodeURIComponent((selection ? selection + "\n\n" : "") + link) +
+      encodeURIComponent(selection) +
       "&instagram_post=" + encodeURIComponent(link) +
       (img ? "&instagram_image=" + encodeURIComponent(bestSrc(img)) : "")
     );
@@ -280,6 +280,20 @@
       return "(function(){(" + hnPortSubmit.toString() + ")(" + JSON.stringify(baseOrigin) + "," + JSON.stringify(mode) + ");})()";
     }
     var fn = kind === "tweet" ? tweetComposeUrl : kind === "instagram" ? instagramComposeUrl : composeUrl;
+
+    // Instagram: a new window when the browser allows one, otherwise this window.
+    // No "noopener" feature, since with it window.open() never reports success.
+    if (kind === "instagram") {
+      return (
+        "(function(){var u=(" +
+        fn.toString() +
+        ")(" +
+        JSON.stringify(baseOrigin) +
+        "," +
+        JSON.stringify(kind) +
+        ");if(u){var w=window.open(u,\"_blank\");if(w){w.opener=null;}else{window.location=u;}}})()"
+      );
+    }
 
     if (mode === "new-window") {
       return (
