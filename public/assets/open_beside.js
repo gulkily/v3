@@ -62,6 +62,14 @@
   var leaving = false;
   var scrollKey = paneKey ? paneKey + "-scroll" : null;
 
+  // Visit history (visit_history.js, when its flag is on) is told what each
+  // pane load is, so a restored pane is not a new visit and Open alone moves
+  // the tab to the pane's visit.
+  function tellHistory(name, kind) {
+    var visits = window.forumVisitHistory;
+    if (visits && typeof visits[name] === "function") visits[name](kind);
+  }
+
   function read(key) {
     try {
       return key ? localStorage.getItem(key) : null;
@@ -155,6 +163,7 @@
       // The main page is about to become this page; a load still on its way
       // must not save the pane again.
       leaving = true;
+      tellHistory("paneAlone");
       store(paneKey, null);
       store(scrollKey, null);
     });
@@ -286,6 +295,7 @@
     }
     build();
     alone.href = saved;
+    tellHistory("paneLoading", "restore");
     frame.src = saved;
   }
 
@@ -299,6 +309,7 @@
     store(scrollKey, null);
     title.textContent = "";
     alone.href = url;
+    tellHistory("paneLoading", "open");
     frame.src = url;
     store(paneKey, url);
     place();

@@ -137,6 +137,52 @@ final class SignatureCheckCacheTest
     }
 
     /** @return array{string,string,string} */
+    public function testAWritersOwnCheckIsReusedWithoutGpg(): void
+    {
+        [$root, $cacheDir, $log] = $this->workspace();
+        try {
+            SignatureCheckCache::useBeside($cacheDir . '/post_index.sqlite3');
+            $this->rememberWriterCheck($root, $this->key($root));
+            assertSame('verified', $this->status($root, 'records/posts/signed-test.txt'));
+            assertSame(0, $this->gpgRuns($log));
+
+            // The next request has only the persistent cache.
+            $this->forgetMemory();
+            assertSame('verified', $this->status($root, 'records/posts/signed-test.txt'));
+            assertSame(0, $this->gpgRuns($log));
+        } finally {
+            $this->cleanup($root, $cacheDir);
+        }
+    }
+
+    public function testAWritersCheckWithOtherInputsRemembersNothing(): void
+    {
+        [$root, $cacheDir, $log] = $this->workspace();
+        try {
+            SignatureCheckCache::useBeside($cacheDir . '/post_index.sqlite3');
+            $key = $this->key($root);
+            $this->rememberWriterCheck($root, $key . "\n");
+            $this->rememberWriterCheck($root, $key, str_repeat('0', 40));
+            $this->rememberWriterCheck($root, $key, null, 'not the stored signature');
+            assertSame('verified', $this->status($root, 'records/posts/signed-test.txt'));
+            assertSame(true, $this->gpgRuns($log) > 0);
+        } finally {
+            $this->cleanup($root, $cacheDir);
+        }
+    }
+
+    private function rememberWriterCheck(string $root, string $key, ?string $fingerprint = null, ?string $signature = null): void
+    {
+        $path = 'records/posts/signed-test.txt';
+        ReactionSignature::rememberVerified($root, $path, (string) file_get_contents($root . '/' . $path),
+            $signature ?? (string) file_get_contents($root . '/' . $path . '.asc'), self::AUTHOR, $key, $fingerprint ?? substr(self::AUTHOR, 8));
+    }
+
+    private function key(string $root): string
+    {
+        return (string) file_get_contents($root . '/records/public-keys/openpgp-15C2EF95BAEE78F4C635A43323B6AE7EC7AF9919.asc');
+    }
+
     private function workspace(): array
     {
         $root = sys_get_temp_dir() . '/forum-rewrite-signature-cache-' . bin2hex(random_bytes(6));

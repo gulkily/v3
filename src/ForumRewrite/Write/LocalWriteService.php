@@ -60,6 +60,7 @@ use ForumRewrite\Security\KeyRetirement;
 use ForumRewrite\Security\KeyBootstrapReplay;
 use ForumRewrite\Security\KeyRetirementPolicy;
 use ForumRewrite\Security\PrivateAccessConfirmation;
+use ForumRewrite\Security\ReactionSignature;
 use ForumRewrite\Security\PrivateAccessConfirmationPolicy;
 use ForumRewrite\Security\PrivateKeyAccess;
 use ForumRewrite\Images\ImageReference;
@@ -2639,7 +2640,9 @@ class LocalWriteService
             $this->assertWritableRepository();
             $actor = $this->requireOpenPgpIdentityId((string) ($input['actor_identity_id'] ?? ''), 'actor_identity_id');
             $target = $this->requireOpenPgpIdentityId((string) ($input['target_identity_id'] ?? ''), 'target_identity_id');
-            $context = (new PrivateAccessConfirmationPolicy($this->readModelPdo(), $this->repositoryRoot))->evaluate($actor, $target);
+            $timings = [];
+            $context = $this->timePhase($timings, 'policy', fn (): array
+                => (new PrivateAccessConfirmationPolicy($this->readModelPdo(), $this->repositoryRoot))->evaluate($actor, $target));
             $id = 'private-access-confirmation-' . bin2hex(random_bytes(16));
             $created = $this->canonicalTimestampNow();
             $hash = PrivateAccessConfirmationPolicy::hash($context);
@@ -2649,7 +2652,7 @@ class LocalWriteService
             $path = PrivateAccessConfirmation::path($target);
 
             return $this->storePreparedPost($path, $record, ['kind' => 'private-access-confirmation', 'confirmation_context' => $context])
-                + ['status' => 'ok', 'canonical_record' => $record, 'record_path' => $path, 'confirmation_context' => $context];
+                + ['status' => 'ok', 'canonical_record' => $record, 'record_path' => $path, 'confirmation_context' => $context, 'timings' => $timings];
         });
     }
 
@@ -2679,6 +2682,7 @@ class LocalWriteService
             if (strlen($signature) > 65536 || $signature === '') {
                 throw new RuntimeException('Invalid confirmation signature.');
             }
+            $timings = [];
             $existing = PrivateAccessConfirmation::read($this->repositoryRoot, $target);
             if ($existing !== null) {
                 // A repeat of the accepted request is a no-op; any other confirm for the target is refused.
@@ -2694,22 +2698,28 @@ class LocalWriteService
                     || !hash_equals($prepared['canonical_sha256'], hash('sha256', $bytes))) {
                     throw new RuntimeException('Confirmation review changed or expired. Prepare it again.');
                 }
-                $context = (new PrivateAccessConfirmationPolicy($this->readModelPdo(), $this->repositoryRoot))->evaluate($record['Actor-Identity-ID'], $target);
+                $context = $this->timePhase($timings, 'policy', fn (): array
+                    => (new PrivateAccessConfirmationPolicy($this->readModelPdo(), $this->repositoryRoot))->evaluate($record['Actor-Identity-ID'], $target));
                 if (!hash_equals(PrivateAccessConfirmationPolicy::hash($context), $record['Context-SHA256'])
                     || $context !== $prepared['confirmation_context']) {
                     throw new RuntimeException('Confirmation authority changed. Prepare it again.');
                 }
                 [$key, $fingerprint] = $this->publicKeyForIdentity($record['Actor-Identity-ID']);
-                if (!$this->signatureVerifier->verifyDetached($key, $bytes, $signature, $fingerprint)['ok']) {
+                $verified = $this->timePhase($timings, 'verify', fn (): bool => $this->signatureVerifier->verifyDetached($key, $bytes, $signature, $fingerprint)['ok']);
+                if (!$verified) {
                     throw new RuntimeException('Confirmation signature verification failed.');
                 }
                 $path = PrivateAccessConfirmation::path($target);
-                $sha = (new SignedPostTransaction($this->repositoryRoot))->accept([$path => $bytes, $path . '.asc' => $signature,
-                    PrivateAccessConfirmation::acceptancePath($target) => PrivateAccessConfirmation::acceptance($bytes, $signature, $this->canonicalTimestampNow())]);
+                $sha = $this->timePhase($timings, 'commit', fn (): string => (new SignedPostTransaction($this->repositoryRoot))->accept([$path => $bytes, $path . '.asc' => $signature,
+                    PrivateAccessConfirmation::acceptancePath($target) => PrivateAccessConfirmation::acceptance($bytes, $signature, $this->canonicalTimestampNow())]));
+                // The answer below and the next page load read this record back; reuse this check instead of running gpg again.
+                ReactionSignature::rememberVerified($this->repositoryRoot, $path, $bytes, $signature, $record['Actor-Identity-ID'], $key, $fingerprint);
                 $this->deletePreparedPost($token);
             }
 
-            return $this->privateAccessStatus($target) + ['commit_sha' => $sha, 'recovered' => $existing !== null];
+            $status = $this->timePhase($timings, 'status', fn (): array => $this->privateAccessStatus($target));
+
+            return $status + ['commit_sha' => $sha, 'recovered' => $existing !== null, 'timings' => $timings];
         });
     }
 

@@ -60,10 +60,19 @@ final class PrivateKeyAccess
         $this->receiptFor = static function (string $id) use ($lookup, &$memo) {
             return array_key_exists($id, $memo) ? $memo[$id] : ($memo[$id] = $lookup($id));
         };
-        $this->isOperator = $isOperator !== null ? \Closure::fromCallable($isOperator)
+        // Rule 1 and the fixed-point loop ask about the same keys again; one answer per key per instance.
+        $operatorLookup = $isOperator !== null ? \Closure::fromCallable($isOperator)
             : fn (string $id): bool => $this->repositoryRoot !== null && ApprovalPolicy::isOperator($this->repositoryRoot, $id);
-        $this->confirmersFor = $confirmersFor !== null ? \Closure::fromCallable($confirmersFor)
+        $operators = [];
+        $this->isOperator = static function (string $id) use ($operatorLookup, &$operators): bool {
+            return $operators[$id] ??= $operatorLookup($id);
+        };
+        $confirmerLookup = $confirmersFor !== null ? \Closure::fromCallable($confirmersFor)
             : fn (string $id): array => $this->repositoryRoot === null ? [] : PrivateAccessConfirmation::confirmersFor($this->repositoryRoot, $id);
+        $confirmers = [];
+        $this->confirmersFor = static function (string $id) use ($confirmerLookup, &$confirmers): array {
+            return $confirmers[$id] ??= $confirmerLookup($id);
+        };
     }
 
     /** Whether messaging enforces private access on this instance (FORUM_PRIVATE_KEY_ACCESS_ENFORCED). */
@@ -148,6 +157,22 @@ final class PrivateKeyAccess
         $id = (string) ($viewer['identity_id'] ?? '');
         $account = strtolower(trim((string) ($viewer['username_token'] ?? '')));
         return $account === '' || !$this->hasAccess($id) ? [] : $this->waitingFor($account);
+    }
+
+    /**
+     * The keys for the waiting card on Messages and Unread. The card is optional, so a failed
+     * access check shows no card rather than breaking the page.
+     *
+     * @param array<string, mixed> $viewer
+     * @return list<array<string, mixed>>
+     */
+    public static function waitingCardKeys(PDO $pdo, ?string $repositoryRoot, array $viewer): array
+    {
+        try {
+            return (new self($pdo, $repositoryRoot))->waitingForViewer($viewer);
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     /**

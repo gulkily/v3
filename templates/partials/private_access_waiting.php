@@ -2,7 +2,8 @@
 /**
  * Keys of this account waiting for private access, for a device that can confirm them
  * (docs/concepts/private_key_access.md). Confirm signs a confirm record; Not me opens the
- * key's User Access page, where Retire is available.
+ * key's User Access page, where Retire is available. private_access_confirm.js repeats the
+ * two headings below as rows are confirmed; change both together.
  *
  * @var list<array<string, mixed>> $waitingKeys
  * @var string $accountName
@@ -21,11 +22,12 @@ $row = static function (array $key) use ($e): string {
         . '<span class="meta" data-role="private-access-feedback" role="status" hidden></span></li>';
 };
 ?>
-<article class="card private-access-waiting" data-private-access-waiting aria-labelledby="private-access-waiting-heading">
-  <h2 id="private-access-waiting-heading"><?= $count === 1
+<article class="card private-access-waiting" data-private-access-waiting data-account-name="<?= $e($accountName) ?>" aria-labelledby="private-access-waiting-heading">
+  <h2 id="private-access-waiting-heading" data-role="private-access-heading"><?= $count === 1
       ? 'A new key for ' . $e($accountName) . ' wants to read your messages'
       : $e((string) $count) . ' keys for ' . $e($accountName) . ' want to read your messages' ?></h2>
-  <p>Confirm only if the code matches a device of yours.</p>
+  <p data-role="private-access-hint">Confirm only if the code matches a device of yours.</p>
+  <p class="meta" data-role="private-access-card-feedback" role="status" hidden></p>
   <ul class="private-access-list">
 <?php foreach ($visible as $key): ?>
     <?= $row($key) ?>

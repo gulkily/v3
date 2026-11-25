@@ -11,7 +11,7 @@ final class ToolsRegistryTest
     {
         $groups = array_keys(ToolsPageSupport::groups());
         $tools = ToolsPageSupport::registry();
-        assertSame(23, count($tools));
+        assertSame(24, count($tools));
         assertSame(count($tools), count(array_unique(array_column($tools, 'key'))));
         assertSame(count($tools), count(array_unique(array_column($tools, 'href'))));
         assertSame(count($tools), count(array_unique(array_column($tools, 'tone'))));

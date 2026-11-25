@@ -1356,6 +1356,46 @@
     return finalPreparedApprovalFailure(finalized);
   }
 
+  // Confirm that a waiting key of this account may read its messages: prepare the confirm record,
+  // sign it with this browser's key, submit. Pass back result.signed to retry: the exact signed
+  // request is repeated, and the server treats a repeat of an accepted confirm as success.
+  async function submitSignedPrivateAccessConfirmation(targetIdentityId, options = {}) {
+    let signed = options.signed || null;
+    const fallback = "Couldn't confirm this key.";
+    if (!signed) {
+      const actorIdentityId = currentAuthorIdentityId();
+      if (!actorIdentityId) {
+        return { ok: false, error: "No saved browser identity is available to sign this confirm.", signed: null, serverTiming: {} };
+      }
+      const preparedResponse = await submitUrlEncoded("/api/prepare_private_access_confirmation", {
+        actor_identity_id: actorIdentityId,
+        target_identity_id: String(targetIdentityId || ""),
+      });
+      const prepared = parsePreparedPostJsonResponse(preparedResponse.text, preparedResponse.serverTiming, fallback);
+      if (!prepared.ok) {
+        return Object.assign(prepared, { signed: null });
+      }
+      signed = {
+        prepare_token: prepared.prepareToken,
+        canonical_record: prepared.canonicalRecord,
+        detached_signature: await signCanonicalRecord(prepared.canonicalRecord, actorIdentityId),
+      };
+    }
+
+    const response = await submitUrlEncoded("/api/confirm_private_access", signed);
+    let data = null;
+    try {
+      data = JSON.parse(String(response.text || ""));
+    } catch (error) {
+      data = null;
+    }
+    if (!data || data.status !== "ok") {
+      return { ok: false, error: data && data.error ? String(data.error) : fallback, signed: signed, serverTiming: response.serverTiming };
+    }
+
+    return { ok: true, hasAccess: data.has_access === true, signed: signed, serverTiming: response.serverTiming };
+  }
+
   function parseRetractionResponse(text, serverTiming, fallbackMessage) {
     let data = null;
     try {
@@ -1983,17 +2023,9 @@
     return error;
   }
 
-  function isRetryableIdentityBootstrapFailure(technicalDetails) {
-    const message = String(technicalDetails || "").trim();
-    return message.indexOf("Unable to inspect OpenPGP public key.") === 0
-      || message === "OpenPGP public key is missing a fingerprint or user ID."
-      || message === "Identity bootstrap signature verification failed: signature_verification_failed";
-  }
-
   function identityBootstrapFailureError(rawMessage, diagnosticContext) {
     const failure = classifyIdentityBootstrapFailure(rawMessage, diagnosticContext);
     const error = buildFriendlyError(failure.friendlyMessage, failure.technicalDetails);
-    error.retryableIdentityBootstrapFailure = isRetryableIdentityBootstrapFailure(rawMessage);
     return error;
   }
 
@@ -2630,32 +2662,52 @@
     renderSavedState(root);
   }
 
+  // A first registration can fail for reasons that clear on their own: a dropped
+  // connection, a busy write lock, a slow server response, or a write that committed
+  // before its response was lost. Each attempt first asks whether the server already
+  // has the key, so retrying is safe; only refusals that cannot change are final.
+  const identityPublishRetryDelaysMilliseconds = [1000, 2000, 4000, 8000];
+
+  function isFinalIdentityPublishFailure(error) {
+    const details = error instanceof Error
+      ? [error.technicalDetails, error.message].filter(function (part) { return typeof part === "string"; }).join("\n")
+      : String(error || "");
+    return /This key is retired\.|public_key is required\.|public_key must be ASCII only\.|No browser public key is available to publish\.|Write APIs are disabled|Writable repository must be a git checkout|The browser identity changed|Browser OpenPGP is unavailable|OpenPGP\.js failed to load/.test(details);
+  }
+
+  function waitMilliseconds(milliseconds) {
+    return new Promise(function (resolve) { setTimeout(resolve, milliseconds); });
+  }
+
   async function publishPublicKeyWithRetry(root, timing) {
     const bootstrapAttemptId = newIdentityBootstrapAttemptId();
     const openPgpBundleVersion = selectedOpenPgpBundleVersion();
-    try {
-      await publishPublicKey(root, timing, {
-        bootstrapAttemptId: bootstrapAttemptId,
-        bootstrapRetryIndex: 0,
-        openPgpBundleVersion: openPgpBundleVersion,
-      });
-      return;
-    } catch (error) {
-      const technicalDetails = error instanceof Error && typeof error.technicalDetails === "string"
-        ? error.technicalDetails
-        : "";
-      const retryable = error instanceof Error && error.retryableIdentityBootstrapFailure === true;
-      if (!retryable && !isRetryableIdentityBootstrapFailure(technicalDetails)) {
-        throw error;
+    const publicKeyAtStart = localStorage.getItem(storageKeys.publicKey) || "";
+    let lastError = null;
+    for (let retryIndex = 0; retryIndex <= identityPublishRetryDelaysMilliseconds.length; retryIndex += 1) {
+      if (retryIndex > 0) {
+        await waitMilliseconds(identityPublishRetryDelaysMilliseconds[retryIndex - 1]);
+        // Another tab may have replaced the key; publishing that one is its job.
+        if ((localStorage.getItem(storageKeys.publicKey) || "") !== publicKeyAtStart) {
+          throw lastError;
+        }
+        await ensureStoredFingerprint();
+      }
+      try {
+        await publishPublicKey(root, timing, {
+          bootstrapAttemptId: bootstrapAttemptId,
+          bootstrapRetryIndex: retryIndex,
+          openPgpBundleVersion: openPgpBundleVersion,
+        });
+        return;
+      } catch (error) {
+        lastError = error;
+        if (isFinalIdentityPublishFailure(error)) {
+          throw error;
+        }
       }
     }
-
-    await ensureStoredFingerprint();
-    await publishPublicKey(root, timing, {
-      bootstrapAttemptId: bootstrapAttemptId,
-      bootstrapRetryIndex: 1,
-      openPgpBundleVersion: openPgpBundleVersion,
-    });
+    throw lastError;
   }
 
   async function serverKnowsCurrentIdentity(fingerprint) {
@@ -3140,7 +3192,9 @@
         await publishPublicKeyWithRetry(root);
         await authenticatePrivateSiteIfAvailable();
       } catch (error) {
-        setStatus(statusNode, "Couldn't publish your key.", "error", { technicalDetails: error instanceof Error ? error.message : "" });
+        setStatus(statusNode, "Couldn't publish your key.", "error", {
+          technicalDetails: error instanceof Error ? [error.message, error.technicalDetails].filter(Boolean).join("\n") : "",
+        });
         offerRetry(function () { return publishNewKey(username); });
         return;
       }
@@ -4293,6 +4347,7 @@
   window.ForumBrowserSigning.saveRegisteredName = saveRegisteredName;
   window.ForumBrowserSigning.normalizeProfileName = normalizeProfileName;
   window.ForumBrowserSigning.submitSignedApproval = submitSignedApproval;
+  window.ForumBrowserSigning.submitSignedPrivateAccessConfirmation = submitSignedPrivateAccessConfirmation;
   window.ForumBrowserSigning.submitSignedRetraction = submitSignedRetraction;
   window.ForumBrowserSigning.submitSignedPostFormat = submitSignedPostFormat;
   window.ForumBrowserSigning.signCanonicalRecord = signCanonicalRecord;

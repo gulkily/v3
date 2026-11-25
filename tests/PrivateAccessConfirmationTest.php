@@ -56,9 +56,43 @@ final class PrivateAccessConfirmationTest
                 'detached_signature' => $this->sign($keys['mira1']['home'], $prepared['canonical_record'])];
             $first = $writer->finalizePrivateAccessConfirmation($input);
             $again = $writer->finalizePrivateAccessConfirmation($input);
+            // Phases the confirm endpoints report as Server-Timing.
+            assertSame(true, isset($prepared['timings']['policy']), 'prepare policy timing');
+            foreach (['policy', 'verify', 'commit', 'status'] as $phase) {
+                assertSame(true, isset($first['timings'][$phase]), 'finalize ' . $phase . ' timing');
+            }
+            assertSame(true, isset($again['timings']['status']), 'repeat status timing');
             assertSame(false, $first['recovered']);
             assertSame(true, $again['recovered']);
             assertSame($first['commit_sha'], $again['commit_sha']);
+        });
+    }
+
+    public function testConfirmEndpointsAcceptTheFormFieldsTheBrowserSends(): void
+    {
+        $this->withAccounts(function (string $root, string $db, LocalWriteService $writer, array $keys): void {
+            $app = new Application(dirname(__DIR__), $root, $db, dirname($db) . '/public');
+            $post = function (string $path, array $fields) use ($app): array {
+                $_SERVER['REQUEST_METHOD'] = 'POST';
+                $_SERVER['CONTENT_TYPE'] = 'application/x-www-form-urlencoded; charset=UTF-8';
+                $_POST = $fields;
+                ob_start();
+                try {
+                    $app->handle('POST', $path);
+                } finally {
+                    $body = (string) ob_get_clean();
+                    $_POST = [];
+                    unset($_SERVER['CONTENT_TYPE']);
+                }
+                return json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+            };
+            $prepared = $post('/api/prepare_private_access_confirmation',
+                ['actor_identity_id' => $keys['mira1']['identity_id'], 'target_identity_id' => $keys['mira2']['identity_id']]);
+            assertSame('ok', $prepared['status']);
+            $confirmed = $post('/api/confirm_private_access', ['prepare_token' => $prepared['prepare_token'],
+                'canonical_record' => $prepared['canonical_record'], 'detached_signature' => $this->sign($keys['mira1']['home'], $prepared['canonical_record'])]);
+            assertSame('ok', $confirmed['status']);
+            assertSame(true, $confirmed['has_access']);
         });
     }
 

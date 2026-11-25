@@ -9,6 +9,7 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
+- [Key publish first try](key_publish_first_try/key_publish_first_try_one_shot.md) — Continue on Account retries a registration that fails for a passing reason instead of showing "Couldn't publish your key."
 - [Read model rebuild memory](read_model_post_memory/read_model_post_memory_one_shot.md) — a full rebuild holds the post corpus once, so qdb rebuilds fit in 128 MB.
 - [LinkedIn Contacts CRM](linkedin_contacts_crm/linkedin_contacts_crm_step3_development_plan.md) — a local companion imports a LinkedIn archive into a private address book.
 - [Publish local public keys](publish_local_public_keys/publish_local_public_keys_step4_implementation_summary.md) — original publisher verified locally; saved-plan flow superseded by the direct-publication follow-up.
@@ -219,6 +220,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
+- [Visit tree](nav_tree/nav_tree_step3_development_plan.md) — item 1 of the [browsing tree checklist](browsing_tree_checklist.md): record each page change in this browser as a tree (tab and Beside pane cursors, the referrer as fallback) and list it on Tools → History; behind `FORUM_VISIT_HISTORY_ENABLED`; Steps 1–7 committed, PR pending. Concept: [visit tree](../concepts/visit_tree.md).
 - [Guest name visibility](guest_name_visibility/guest_name_visibility_one_shot.md) — one-shot: every composer says "Posting as guest · Choose a name" while this browser is a guest, and Account makes choosing a first name obvious; PR pending.
 - [Title-only activity](title_only_activity/title_only_activity_one_shot.md) — one-shot: a reply that is only a `title:` line (with or without labels) joins tag-only replies in the thread Activity drawer; PR pending.
 - [Thread activity record links](thread_activity_record_links/thread_activity_record_links_one_shot.md) — one-shot follow-up to the thread activity drawer: with Post records on, each name in the drawer's like and flag lists links to the record that added it; one `git grep` per thread view; PR pending.
@@ -415,6 +417,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Account retraction attribution](account_retraction_attribution/)
 
 - [Private messaging live navigation](private_messaging_live_navigation/)
+- [Private access waiting keys](private_access_waiting_keys/private_access_waiting_keys_one_shot.md) — one-shot: Messages and Unread get the waiting-keys card from one method instead of two copies.
 
 - [Private messaging feature flag](private_messaging_feature_flag/)
 
@@ -439,6 +442,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Chouse production readiness](chouse_production_readiness/) — recorded steps: 1.
 - [Codebase page source details](codebase_page_source_details/) — recorded steps: 3.
 - [Compact unavailable private messages](private_message_unavailable/)
+- [Private access confirm timing](private_access_confirm_timing/private_access_confirm_timing_one_shot.md) — one-shot: the private-access confirm endpoints send Server-Timing with named phases, like approvals.
 - [Event feature gating](event_feature_gating/)
 - [Event time](event_time/)
 - [Event end time](event_end_time/event_end_time_one_shot.md) — one-shot: events get an end time (`Event-End-Time`, composer Ends, ranges like "1-4pm") and an `event-time:` reply to correct an event's times; calendar exports stop assuming one hour.
@@ -508,10 +512,12 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Private message chat refinement](private_message_chat_refinement/)
 - [Private message composite user composer](private_message_composite_user_composer/)
 - [Private message conversation list](private_message_conversation_list/)
+- [Private access one evaluation](private_access_one_evaluation/private_access_one_evaluation_one_shot.md) — one-shot: Confirm verifies its signature once, and one access check stops repeating the same lookups.
 - [Private message conversations](private_message_conversations/)
 - [Private message history synchronization](private_message_history_sync/)
 - [Private message history](private_message_history/) — recorded steps: 2, 3, 4.
 - [Private message reader refinement](private_message_reader_refinement/)
+- [Private access signing helper](private_access_signing_helper/private_access_signing_helper_one_shot.md) — one-shot: Confirm on the waiting-keys card goes through a shared `ForumBrowserSigning` helper, as approvals do.
 - [Private message unread state](private_message_unread/)
 - [Private messaging](private_messaging/)
 - [Private-window lobby fallback](private_window_lobby_fallback/)
@@ -538,6 +544,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Read-model failure experience](read_model_failure_experience/)
 - [Runtime detail pages](runtime_detail_pages/)
 - [Sender-assisted private message history synchronization](private_message_sender_history_sync/)
+- [Private access card settles](private_access_card_settle/private_access_card_settle_one_shot.md) — one-shot: a confirmed key leaves the waiting-keys card at once and the heading counts down, like Users › Waiting.
 - [Server cooperative content deletion](server_cooperative_content_deletion/)
 - [Site favicons](site_favicons/)
 - [Site text search](site_text_search/) — recorded steps: 1.

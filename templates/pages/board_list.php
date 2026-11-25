@@ -33,7 +33,9 @@
     <a class="nav-link" href="/threads/?view=all&amp;sort=<?= $e(rawurlencode($sort)) ?>">Show all threads</a>
 <?php else: ?>
     <h2>No threads yet</h2>
+<?php if ($gettingStartedPage ?? true): ?>
     <a class="nav-link" href="/start/">Getting started</a>
+<?php endif; ?>
 <?php endif; ?>
   </div>
 <?php endif; ?>

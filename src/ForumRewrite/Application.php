@@ -824,6 +824,10 @@ final class Application
         }
 
         if ($path === '/start/' || $path === '/start') {
+            if (!\ForumRewrite\SiteProfileRegistry::gettingStarted()) {
+                $this->routeServices()->notFound();
+                return;
+            }
             $this->sendHtml($this->renderGettingStarted(), 200);
             return;
         }
@@ -1151,6 +1155,12 @@ final class Application
 
         if ($path === '/tools/outbox/' || $path === '/tools/outbox') {
             $this->sendHtml($this->toolsPageController()->outbox(), 200);
+            return;
+        }
+
+        if (($path === '/tools/history/' || $path === '/tools/history')
+            && $this->featureFlags()->isEnabled(FeatureFlagRegistry::VISIT_HISTORY_ENABLED)) {
+            $this->sendHtml($this->toolsPageController()->history(), 200);
             return;
         }
 
@@ -2781,6 +2791,7 @@ final class Application
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
             '/tools/usage-log', '/tools/usage-log/', '/tools/usage-log/upload', '/tools/usage-reports', '/tools/usage-reports/',
+            '/tools/history', '/tools/history/',
             '/tools/tag-unlocks', '/tools/tag-unlocks/',
             '/compose/thread', '/compose/reply',
             '/unread', '/unread/', '/inbox', '/inbox/', '/api/inbox/unread', '/api/inbox/catch_up', '/staged', '/staged/',

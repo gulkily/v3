@@ -39,11 +39,14 @@ can offer many screens at once.
   keeps a last copy of each navbar page (cache `nav-copy`, behind its flag).
   Thread and other content pages are still not cached by the worker, which
   matters for the filmstrip. [Nav quick wins](nav_quick_wins/nav_quick_wins_one_shot.md)
-  added an early fetch when a finger goes down on a navbar link.
+  added an early fetch when a finger goes down on a navbar link. Neither the
+  nav-copy answer nor the early fetch is a visit (nav_tree Step 1).
 - `public/assets/open_beside.js` (the [open beside](open_beside/open_beside_step3_development_plan.md)
   mode) already shows a same-origin page in a frame beside the column and
   tracks its title and address. It is the precedent for live frames in the
-  filmstrip, and its pane pages are a case `nav_tree` must decide.
+  filmstrip. Its pane pages are visits with their own cursor (nav_tree).
+- `templates/tour/page.php` already shows saved pages in scaled-down frames,
+  a precedent for live filmstrip frames (item 3).
 
 ## Estimates
 
@@ -62,11 +65,25 @@ under protocol P2.
   to the referrer. Back and forward move to an existing visit instead of
   adding one. A plain Tools → History page lists the tree, with a Clear
   button, so the cycle is usable on its own.
-  - _Step 1 drafted 2026-11-15 against `8bec1f7d` (recommends a per-tab
-    cursor with the referrer as fallback); awaiting Approved Step 1. It
-    lives on the planning branch `plan/nav_tree-step1`, not on `main`.
-    Before approval, recheck it against current `main`: open beside,
-    nav cached copy and nav quick wins landed since._
+  - _Step 1 drafted 2026-11-15 (recommends a per-tab cursor with the
+    referrer as fallback); awaiting Approved Step 1. Staged plans are
+    committed after Approved Step 3._
+  - _Step 1 revised 2026-11-24 against main `2d7805c` (open beside, early
+    fetch on tap, nav-copy cache). Still Option B, now with a second cursor
+    for the beside pane; estimate 0.65. Draft kept on the unmerged planning
+    branch `plan/nav_tree-step1`; awaiting Approved Step 1._
+  - _Approved Step 1 on 2026-11-25. Step 2 drafted with proposed decisions
+    (flag off by default, Tools device group, 2,000 visits, history kept
+    across key changes, recorded offline); awaiting Approved Step 2._
+  - _Approved Step 2 on 2026-11-25 with the proposals as written. Step 3
+    drafted in seven stages; estimate 0.70; awaiting Approved Step 3._
+  - _Approved Step 3 on 2026-11-25. Step 4 on `feat/nav-tree`; plans in
+    [nav_tree/](nav_tree/nav_tree_step4_implementation_summary.md)._
+  - _Step 4 done 2026-11-25 on `feat/nav-tree`, behind
+    `FORUM_VISIT_HISTORY_ENABLED`: recorder (`visit_history.js`), Beside pane
+    lane, Forte pages, Tools → History. Passed in Chromium, Firefox and WebKit;
+    offline in Chromium. Review, merge and deploy pending. Concept:
+    [visit tree](../concepts/visit_tree.md)._
 - [ ] **2. `tree_history`: history and bookmark views.**
   **Estimate: 0.50**
   A richer tree view of history, with branches that fold and a way back to
@@ -84,11 +101,12 @@ under protocol P2.
 
 - Whether cached pages are cheap enough for live frames, given that the
   service worker does not cache most pages (item 3).
-- Whether a tab opened from a link inherits its opener's current visit in
-  Safari, Chrome and Firefox (item 1).
+- Answered 2026-11-25 (nav_tree Stage 1): a tab opened from a link starts
+  empty in Chromium, Firefox and WebKit; `window.open` copies the opener's
+  `sessionStorage`, which gives the right parent (item 1).
 - Later: sync across devices, and in-page changes as visits.
-- Whether a page opened in the open beside pane is a visit, and if so
-  whether its parent is the page in the column (item 1).
+- Answered 2026-11-24 (nav_tree Step 1): a page opened in the open beside
+  pane is a visit, under the page in the column it was opened from (item 1).
 - Whether the filmstrip and the pane list in the
   [open beside design notes](open_beside_design_notes.md) are one control:
   a strip of open panes is also the reader's recent path (item 3).
