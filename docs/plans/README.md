@@ -746,3 +746,4 @@ and repair its navigation and affected references. See the
 - [Save the completion reconciliation prompt](feedback_completion_prompt/feedback_completion_prompt_one_shot.md)
 
 - [Authenticated users on the visitor statistics graph](visitor_stats_user_line/visitor_stats_user_line_one_shot.md) — one-shot: a line of authenticated users over the request bars on Tools → Visitor Statistics.
+- [System status Admin line matches its query](system_status_admins/system_status_admins_one_shot.md)

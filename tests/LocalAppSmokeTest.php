@@ -2005,6 +2005,41 @@ PHP;
         }
     }
 
+    public function testSystemStatusAdminsAreTheRootApprovedUsersItsQueryShows(): void
+    {
+        @unlink($this->databasePath);
+        $application = new Application(
+            dirname(__DIR__),
+            $this->repositoryRoot,
+            $this->databasePath,
+        );
+        $this->render($application, '/');
+        // An approved user whom root did not approve, busy enough to lead the /users/ directory.
+        $pdo = new PDO('sqlite:' . $this->databasePath);
+        $pdo->prepare(
+            'INSERT INTO profiles (identity_id, profile_slug, username, username_token, fallback_label, signer_fingerprint,
+                bootstrap_post_id, bootstrap_thread_id, public_key, is_approved, approved_by_label, thread_count, post_count)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 9, 9)'
+        )->execute(['openpgp:helper', 'openpgp-helper', 'helper', 'helper', 'helper', str_repeat('B', 40), 'identity-openpgp-helper', 'thread-openpgp-helper', 'PUBLIC KEY helper', 'guest']);
+        $pdo = null;
+
+        $codebase = $this->render($application, '/tools/codebase/');
+        $instance = $this->render($application, '/instance/');
+        preg_match('#<strong>Admin:</strong>(.*?)</p>#s', $codebase, $codebaseAdmins);
+        preg_match('#<strong>Admins:</strong>(.*?)</p>#s', $instance, $instanceAdmins);
+
+        assertStringContains('<a href="/user/guest">guest</a>', $codebaseAdmins[1] ?? '');
+        assertStringNotContains('helper', $codebaseAdmins[1] ?? '');
+        assertSame($this->adminTokens($instanceAdmins[1] ?? ''), $this->adminTokens($codebaseAdmins[1] ?? ''));
+    }
+
+    /** @return list<string> */
+    private function adminTokens(string $html): array
+    {
+        preg_match_all('#href="/user/([^"]+)"#', $html, $matches);
+        return $matches[1];
+    }
+
     public function testApplicationRendersCoreRoutes(): void
     {
         @unlink($this->databasePath);

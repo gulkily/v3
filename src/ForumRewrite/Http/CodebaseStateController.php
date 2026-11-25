@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace ForumRewrite\Http;
 
 use ForumRewrite\Images\ImageBackup;
-use ForumRewrite\ReadModel\ProfileRepository;
 use ForumRewrite\ReadModel\ReadModelMetadata;
 use ForumRewrite\ReadModel\ReadModelStaleMarker;
 use ForumRewrite\SiteConfig;
@@ -58,7 +57,7 @@ final class CodebaseStateController
                 'state' => $this->collectState(),
                 'toolNavOptions' => ToolsPageSupport::navOptions('codebase'),
                 'siteName' => SiteConfig::displayName(),
-                'admins' => ProfileRepository::approvedDirectoryUsers($this->routeServices->pdo()),
+                'admins' => ToolsPageSupport::fetchSeedApprovedUsers($this->routeServices->pdo()),
             ],
             'System status',
             'tools',
