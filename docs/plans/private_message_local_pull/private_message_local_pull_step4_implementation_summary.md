@@ -167,3 +167,19 @@ Branch `feature/private_message_local_pull` from `origin/main` `31e16b06`, which
   5. Press Pull before importing: it ends with "Run Import above". Run Import, then Pull. Trust the listed keys. Check that nothing is "not readable yet", or note how many and why.
   6. Compare the local Messages conversation count with zenmemes.com. Pull again: it should say "0 new".
 - Ledger entry written to `docs/plans/effort_estimation_trial.md`. Closeout retrospective pending.
+
+## Rebase onto main `fe10f955` (2026-11-25)
+
+- Upstream rewrote the local start page while this branch waited. Import is now a queued `instance_import` task with live steps, `public/assets/local_development.js` is gone in favor of `import_control.js`, and `LocalDevelopmentImport` takes only the repository root. Resolution:
+  - The **Your messages** script moved to `public/assets/local_message_pull.js`, loaded after `import_control.js`.
+  - `/local/remote` uses the new `LocalDevelopmentImport` constructor.
+  - `/local/?source=` is kept in the new source order: pending import, posted source, `?source=`, last task, known instance.
+  - Concept and API reference sections were merged next to upstream's new text.
+- Upstream also added `SqlInsertColumnsTest`, and the transfer import inserts failed it. Those inserts now name their columns, folded into Stage 4.
+- The page's import button is now "Check for new content", so "Run Import above" now reads "Import public content above".
+- The two-instance browser check now runs the task worker for the queued import, like `./v3 start` does.
+- Verification after the rebase:
+  - Smoke set plus changed tests: 535 run, 534 passed. The single failure was `SqlInsertColumnsTest`, caused by this branch, now fixed and passing.
+  - `LocalDevelopmentImportTest`: 6 of 6.
+  - `python3 tests/browser/local_development.py`: passed.
+  - `node tests/browser/local_message_pull.mjs`: passed.

@@ -85,7 +85,7 @@ final class LocalDevelopmentRemoteController
         $identityId = strtolower($this->field('identity_id', 128));
         $local = ProfileRepository::byIdentityId($this->routes->pdo(), $identityId);
         if ($local === null) {
-            throw new InvalidArgumentException('This clone does not know this key yet. Run Import above, then pull again.');
+            throw new InvalidArgumentException('This clone does not know this key yet. Import public content above, then pull again.');
         }
         if ($this->pullFactory === null) throw new \RuntimeException('Message pull is unavailable on this server.');
         $signedIn = $remote->signIn($identityId, $this->field('challenge', 256), $this->field('signature', 65536));
@@ -105,7 +105,7 @@ final class LocalDevelopmentRemoteController
         $identityId = strtolower($this->field('identity_id', 128));
         $pdo = $this->routes->pdo();
         $own = ProfileRepository::byIdentityId($pdo, $identityId);
-        if ($own === null) throw new InvalidArgumentException('This clone does not know this key yet. Run Import above, then try again.');
+        if ($own === null) throw new InvalidArgumentException('This clone does not know this key yet. Import public content above, then try again.');
         $account = (string) $own['username_token'];
         [$messages, $sync] = $this->stores();
         $ids = array_merge([$identityId], $messages->senderIdentitiesFor($account), array_map(
@@ -135,14 +135,14 @@ final class LocalDevelopmentRemoteController
         $writer = $this->routes->writer();
         $reason = 'Trusted for pulled messages because ' . $remote->source() . ' approves it';
         $own = ProfileRepository::byIdentityId($pdo, $identityId);
-        if ($own === null) throw new InvalidArgumentException('This clone does not know this key yet. Run Import above, then try again.');
+        if ($own === null) throw new InvalidArgumentException('This clone does not know this key yet. Import public content above, then try again.');
         $trusted = [];
         $ordered = array_values(array_unique(array_map(static fn ($id): string => strtolower((string) $id), $requested)));
         usort($ordered, static fn (string $a, string $b): int => ($b === $identityId) <=> ($a === $identityId));
         foreach ($ordered as $candidate) {
             if (preg_match('/^openpgp:[a-f0-9]{40}$/D', $candidate) !== 1) throw new InvalidArgumentException('A key ID is malformed.');
             $profile = ProfileRepository::byIdentityId($pdo, $candidate);
-            if ($profile === null) throw new InvalidArgumentException('This clone does not know ' . $candidate . '. Run Import above, then try again.');
+            if ($profile === null) throw new InvalidArgumentException('This clone does not know ' . $candidate . '. Import public content above, then try again.');
             if ((int) ($profile['is_approved'] ?? 0) === 1) continue;
             if (!$remote->keyState($candidate)['approved']) throw new InvalidArgumentException($remote->source() . ' does not approve ' . $candidate . '. Nothing more was trusted.');
             if ($candidate === $identityId) {
@@ -222,7 +222,7 @@ final class LocalDevelopmentRemoteController
         $identityId = strtolower($this->field('identity_id', 128));
         $local = ProfileRepository::byIdentityId($this->routes->pdo(), $identityId);
         if ($local === null || (int) ($local['is_approved'] ?? 0) !== 1 || !str_starts_with($identityId, 'openpgp:')) {
-            throw new InvalidArgumentException('This clone does not know this key is approved yet. Run Import above, then try again.');
+            throw new InvalidArgumentException('This clone does not know this key is approved yet. Import public content above, then try again.');
         }
         return [(string) $local['username_token'], substr($identityId, 8), $identityId];
     }

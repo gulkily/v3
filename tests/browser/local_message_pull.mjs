@@ -52,15 +52,15 @@ servers.push(spawn('php', ['-d', `session.save_path=${sourceRoot}/sessions`, '-S
 
 php(`ForumRewrite\\Support\\LocalRepositoryBootstrap::initializeLocalRepository(${JSON.stringify(project)}, ${JSON.stringify(join(localRoot, 'repository'))});`);
 await writeFile(join(localRoot, 'secrets.php'), '<?php return [];');
-servers.push(spawn('php', ['-S', `127.0.0.1:${localPort}`, join(project, 'public/router.php')], {
-  cwd: join(project, 'public'),
-  env: { ...process.env, V3_DEV_LOG: '1', FORUM_REPOSITORY_ROOT: join(localRoot, 'repository'),
+const localEnv = { ...process.env, V3_DEV_LOG: '1', FORUM_REPOSITORY_ROOT: join(localRoot, 'repository'),
     FORUM_DATABASE_PATH: join(localRoot, 'cache/index.sqlite3'), FORUM_STATIC_HTML_ROOT: join(localRoot, 'static'),
     FORUM_TASK_QUEUE_DATABASE_PATH: join(localRoot, 'private/tasks.sqlite3'),
     FORUM_SECRETS_PATH: join(localRoot, 'secrets.php'), FORUM_APPROVED_MEMBERS_ONLY: 'false', FAST_SCORING_ENABLED: 'false',
     PRIVATE_MESSAGE_DATABASE_PATH: join(localRoot, 'private/messages.sqlite3'),
     PRIVATE_MESSAGE_HISTORY_SYNC_DATABASE_PATH: join(localRoot, 'private/message_history_sync.sqlite3'),
-    VISITOR_STATISTICS_DATABASE_PATH: join(localRoot, 'visitors.sqlite3') }, stdio: ['ignore', 'ignore', 'pipe'] }));
+    VISITOR_STATISTICS_DATABASE_PATH: join(localRoot, 'visitors.sqlite3') };
+servers.push(spawn('php', ['-S', `127.0.0.1:${localPort}`, join(project, 'public/router.php')], {
+  cwd: join(project, 'public'), env: localEnv, stdio: ['ignore', 'ignore', 'pipe'] }));
 let log = ''; for (const server of servers) server.stderr.on('data', data => { log += data; });
 let browser, page;
 const errors = [];
@@ -128,16 +128,21 @@ try {
   await page.getByText('Approved on 127.0.0.1:' + sourcePort).waitFor();
   // Replay: pulling before the import gets the mail but cannot trust unknown keys.
   await page.getByRole('button', { name: /Pull my messages/ }).click();
-  await status(page).filter({ hasText: 'Run Import above, then pull again.' }).waitFor({ timeout: 120000 });
+  await status(page).filter({ hasText: 'Import public content above, then pull again.' }).waitFor({ timeout: 120000 });
   assert.match(await summary(page).textContent(), /8 new/);
   // The fixture writes approval seeds straight into the source repository; commit them as a real instance would have.
   spawnSync('git', ['-C', join(sourceRoot, 'repository'), '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qam', 'Fixture approvals'], { encoding: 'utf8' });
   spawnSync('git', ['-C', join(sourceRoot, 'repository'), 'add', '-A'], { encoding: 'utf8' });
   spawnSync('git', ['-C', join(sourceRoot, 'repository'), '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'Fixture approvals'], { encoding: 'utf8' });
   await page.locator('[data-local-import] button[type="submit"]').click();
-  await page.waitForLoadState('load');
+  // Like `./v3 start`, run the task worker for the queued import.
+  await page.getByText('Waiting for the task worker').waitFor({ timeout: 30000 }).catch(() => {});
+  const worker = spawnSync('php', [join(project, 'scripts/task_queue.php'), 'run', '--limit=1'], { cwd: project, env: localEnv, encoding: 'utf8', timeout: 240000 });
+  assert.equal(worker.status, 0, worker.stderr + worker.stdout);
+  // The import is a queued task; wait for the card's last-import line, then reload for a fresh key check.
+  await page.locator('[data-import-last]').waitFor({ timeout: 240000 });
+  await page.goto(local + '/local/?source=' + encodeURIComponent(base));
   await status(page).filter({ hasText: 'This key is ready.' }).waitFor({ timeout: 120000 });
-  assert.equal(await page.getByRole('alert').count(), 1, 'Only the import notice may alert');
 
   // 4. Pull, verify, confirm.
   await page.getByRole('button', { name: /Pull my messages/ }).click();

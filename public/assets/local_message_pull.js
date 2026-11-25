@@ -83,7 +83,7 @@
       link.rel = 'noopener';
       approve.querySelector('[data-local-pull-step-text]').appendChild(link);
     }
-    stepText('import', 'Run Import above, so this clone has your correspondents\' public keys. Run it again when you write to someone new.', false);
+    stepText('import', 'Import public content above, so this clone has your correspondents\' public keys. Run it again when you write to someone new.', false);
     var ready = state.approved && state.locally_known;
     stepText('pull', ready ? 'Pull your messages. Pull again any time to fetch new ones.'
       : 'Pull your messages once the steps above are done.', false);
@@ -203,7 +203,7 @@
         if (candidates.missing && candidates.missing.length) {
           summaryNode.hidden = false;
           summaryNode.textContent = 'Pulled: ' + summaryText(total);
-          throw new Error('This clone is missing ' + candidates.missing.length + ' key(s) that signed your mail. Run Import above, then pull again.');
+          throw new Error('This clone is missing ' + candidates.missing.length + ' key(s) that signed your mail. Import public content above, then pull again.');
         }
         if (!candidates.keys.length) return finish(total);
         // Pause for one explicit click before this clone approves anyone.
@@ -218,7 +218,7 @@
         setStatus('Pulled. Trust the listed keys to read your mail here.');
       });
     }).catch(function (error) {
-      setStatus(/Run Import above/.test(error.message) ? error.message : error.message + ' Press Pull to resume.', 'error');
+      setStatus(/Import public content above/.test(error.message) ? error.message : error.message + ' Press Pull to resume.', 'error');
     }).then(function () { pullButton.removeAttribute('aria-disabled'); });
   });
 

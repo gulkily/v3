@@ -279,7 +279,7 @@ final class LocalDevelopmentImportTest
 
         [$code, $body] = $this->request($server->url, '/local/remote', $base + ['action' => 'pull', 'identity_id' => $state['identity_id'], 'challenge' => 'c', 'signature' => 's']);
         assertSame(400, $code, $body);
-        assertStringContains('Run Import above', json_decode($body, true)['error']);
+        assertStringContains('Import public content above', json_decode($body, true)['error']);
         assertStringNotContains('authenticate_identity', file_get_contents($w->root . '/relay-requests.log'));
     }
 
