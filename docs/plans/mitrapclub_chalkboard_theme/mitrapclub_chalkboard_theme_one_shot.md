@@ -71,6 +71,8 @@ Planning commit: `ccccbfaa2` (record, debug log and index only).
 - 2026-11-25, **scope correction (user)**: "can you please look at the existing theme", then, asked which theme was meant, chose **Underground**: the theme the club site opens in is the one to take from 20% to 80% club. The chalkboard rebuild of the dark `mitrapclub` theme was a misreading; `theme-mitrapclub.css` restored to `origin/main` (the chalkboard version stays in commit `acd58b3ef` for reference). Switch fix kept.
 - 2026-11-25: Underground additions, in the flyer's ink and type: margin notes (cypherposium cube, "mit rap club", scansion and stress marks, `a a / b b` rhyme scheme, "what is rap?", mic, waveform, cypher circle, "1 bar = 4 beats") as a CSS mask so the ink follows `--ug-blue` in light and dark; cube before the wordmark; Polaroid frames for gallery tiles and post images; events as a dashed ticket stub.
 - 2026-11-25, discovery: `body` is `isolation: isolate`, so a `:root::after` layer at `z-index: -1` paints under body's own layers and was invisible. The notes live on `.shell::before` instead (fixed, `z-index: -1`, inside body's layer, under the multiply halftone).
+- 2026-11-25, scope addition (user): "for the gallery, can you get rid of the replies counts and only show a title if there is a title (currently all the titles are \"Image\")". Accepted. `RecentPageController::gallery()` drops the reply-count query and gives each tile a `caption`: the thread's title, empty when the post is only a picture (the `ThreadTitle` "Image" stand-in with no subject) or the thread is unavailable. `gallery.php` renders the caption only when present, with no meta line. Applies to every site's gallery. Underground keeps a thick Polaroid bottom on uncaptioned tiles. `GalleryPageTest` updated: no reply counts, and an image-only post gets no caption.
+- 2026-11-25: user asked for the PR ("you can pr the theme update please").
 
 ## Verification (superseded by the Underground pass below)
 
@@ -85,6 +87,7 @@ Planning commit: `ccccbfaa2` (record, debug log and index only).
 
 - `./v3 test --smoke ThemeRegistryTest ThemeCatalogPageTest PreferencesPageTest FeatureFlagChangePageTest`: 501 run, 501 passed. Full suite not run.
 - Local `mitrapclub` server (default theme Underground, no profile edits): `/threads/` in Underground and Underground Dark at 1280px, `/gallery/` at 1280px and 380px. Notes show at ≥ 1180px only; on phones only the cube and Polaroids change.
+- `./v3 test --smoke GalleryPageTest`: 496 run, 496 passed (earlier run with LocalAppSmokeTest and ImageServingTest passed apart from a fixture error in the new test case, since fixed). Gallery screenshot at 1280px: captions only on titled tiles.
 - Limitation: the margin notes' blue fleck (existing halftone at 80% of the viewport height) can overlap the cypher circle depending on window height; left as print overlap.
 
 ## Outcome (superseded)
@@ -93,7 +96,7 @@ Delivered: the MIT Rap Club theme rebuilt around the club's chalk, lowercase nam
 
 ## Outcome
 
-Delivered: Underground (the club site's default) carries the club's own marks: cube wordmark, margin notes in flyer ink, Polaroid images, ticket-stub events. Feature-flag switches have a clear on state site-wide, and Underground no longer paints both states blue. The dark `mitrapclub` theme is unchanged from `origin/main`. Not done: board hero / "what's next" callout, self-hosted display font, club favicon art.
+Delivered: gallery tiles without reply counts, captioned only with real titles (all sites). Underground (the club site's default) carries the club's own marks: cube wordmark, margin notes in flyer ink, Polaroid images, ticket-stub events. Feature-flag switches have a clear on state site-wide, and Underground no longer paints both states blue. The dark `mitrapclub` theme is unchanged from `origin/main`. Not done: board hero / "what's next" callout, self-hosted display font, club favicon art.
 
 ## Study history
 

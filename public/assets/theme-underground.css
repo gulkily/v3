@@ -432,6 +432,11 @@
   color: #4a4959;
 }
 
+/* No caption: keep the Polaroid's thick bottom edge. */
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .gallery-tile:not(:has(.gallery-tile__caption)) {
+  padding-bottom: 1.4rem;
+}
+
 /* Images in posts: the same Polaroid frame. */
 :root:is([data-theme="underground"], [data-theme="undergrounddark"]) .post-image__original {
   display: inline-block;

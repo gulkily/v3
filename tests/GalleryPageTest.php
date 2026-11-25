@@ -22,12 +22,15 @@ final class GalleryPageTest
             $missing = ['sha256' => str_repeat('b', 64), 'type' => 'png', 'bytes' => 10, 'width' => 20, 'height' => 30, 'description' => ''];
             $this->writePost($repositoryRoot, 'gallery-wide', "Subject: Wide picture\n\nLook.\n" . ImageReference::line($wide), '2026-07-01T00:00:00Z');
             $this->writePost($repositoryRoot, 'gallery-missing', "Subject: Lost picture\n\n" . ImageReference::line($missing), '2026-07-01T00:01:00Z');
+            $plain = $this->storeImage($repositoryRoot, 300, 300);
+            $this->writePost($repositoryRoot, 'gallery-plain', "\n" . ImageReference::line($plain), '2026-06-30T00:00:00Z');
             $this->writePost($repositoryRoot, 'gallery-text', "Subject: Words only\n\nNo image here.", '2026-07-01T00:02:00Z');
             $this->writePost($repositoryRoot, 'gallery-reply', "Thread-ID: gallery-wide\nParent-ID: gallery-wide\n\nA tall one.\n" . ImageReference::line($tall), '2026-07-01T00:03:00Z');
             $this->commit($repositoryRoot);
 
             $page = $this->markup($this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/gallery/'));
-            assertSame(2, substr_count($page, 'class="gallery-tile"'), 'Only posts with a stored image become tiles.');
+            assertSame(3, substr_count($page, 'class="gallery-tile"'), 'Only posts with a stored image become tiles.');
+            assertTrue(preg_match('#id="post-gallery-plain"[^>]*>\\s*<img[^>]*>\\s*</a>#', $page) === 1, 'A post that is only a picture gets no caption, not "Image".');
             assertStringContains('<div class="zoom-buttons gallery-zoom" role="group" aria-label="Image size"><button type="button" class="zoom-button" data-gallery-zoom="out" aria-label="Smaller"', $page, 'The gallery has its own image-size buttons.');
             assertStringContains('data-gallery-zoom="in" aria-label="Larger"', $page);
             assertTrue(preg_match('#<script src="/assets/gallery_zoom[^"]*\.js" defer>#', $page) === 1, 'The page loads the gallery zoom script.');
@@ -37,8 +40,8 @@ final class GalleryPageTest
             assertStringContains('<img src="/images/' . ImageReference::filename($tall) . '" alt="Tall test image" width="200" height="400"', $page, 'An image that already fits a tile is shown as is.');
             assertStringContains('<img src="/images/thumbs/' . ThumbnailStore::filename($wide, 'tile') . '"', $page);
             assertStringContains('href="/threads/gallery-wide" style="--ratio: 2"', $page);
-            assertStringContains('<span class="gallery-tile__title">Wide picture</span><span class="gallery-tile__meta">1 reply</span>', $page);
-            assertStringContains('<span class="gallery-tile__meta">1 reply · Reply</span>', $page);
+            assertStringContains('<span class="gallery-tile__caption"><span class="gallery-tile__title">Wide picture</span></span>', $page, 'A titled post shows its title and nothing else.');
+            assertStringNotContains('gallery-tile__meta', $page, 'No reply counts.');
             assertTrue(strpos($page, 'gallery-reply') < strpos($page, 'href="/threads/gallery-wide" '), 'The newer reply comes first.');
             assertStringNotContains('Lost picture', $page);
             assertStringNotContains('Words only', $page);
@@ -46,7 +49,7 @@ final class GalleryPageTest
             assertStringContains('<a id="post-gallery-reply" class="gallery-tile"', $page);
             $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
             assertStringContains('/gallery/#post-gallery-wide', $this->render($application, '/gallery/?with=gallery-wide'));
-            assertSame(2, substr_count($this->markup($this->render($application, '/gallery/?with=gallery-text')), 'class="gallery-tile"'), 'A post without an image shows page 1.');
+            assertSame(3, substr_count($this->markup($this->render($application, '/gallery/?with=gallery-text')), 'class="gallery-tile"'), 'A post without an image shows page 1.');
             $past = $this->markup($this->render($application, '/gallery/?page=2'));
             assertStringContains('No images on this page', $past);
             assertStringContains('First page', $past);
