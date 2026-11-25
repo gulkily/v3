@@ -70,14 +70,7 @@ final class ReadModelHotIndexRebuildTest
             $stale->exec("UPDATE posts SET body = 'stale reply before startup' WHERE post_id = 'reply-001'");
             $stale = null;
 
-            $app = new Application(dirname(__DIR__), $fixture->repository, $livePath);
-            ob_start();
-            try {
-                $app->handle('GET', '/threads/root-001');
-                $html = (string) ob_get_contents();
-            } finally {
-                ob_end_clean();
-            }
+            $html = $this->renderWithoutWorker($fixture, $livePath, '/threads/root-001');
             assertStringContains('Hello world', $html);
             assertStringContains('Reply body.', $html);
             assertStringNotContains('stale reply before startup', $html);
@@ -123,5 +116,27 @@ final class ReadModelHotIndexRebuildTest
         $stmt->execute(['name' => $name]);
 
         return $stmt->fetchColumn() !== false;
+    }
+
+    /**
+     * Startup rebuilds in the request only when no task worker is available. Use a
+     * fixture-local queue so a heartbeat left by an earlier test in the same runner
+     * cannot turn this into a queued rebuild and an update page.
+     */
+    private function renderWithoutWorker(RebuildHistoryFixture $fixture, string $livePath, string $path): string
+    {
+        $previousQueuePath = getenv('FORUM_TASK_QUEUE_DATABASE_PATH');
+        $previousLaunch = getenv('FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED');
+        putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $fixture->root . '/queue.sqlite3');
+        putenv('FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED');
+        ob_start();
+        try {
+            (new Application(dirname(__DIR__), $fixture->repository, $livePath))->handle('GET', $path);
+            return (string) ob_get_contents();
+        } finally {
+            ob_end_clean();
+            $previousQueuePath === false ? putenv('FORUM_TASK_QUEUE_DATABASE_PATH') : putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $previousQueuePath);
+            $previousLaunch === false ? putenv('FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED') : putenv('FORUM_TASK_QUEUE_EMERGENCY_LAUNCH_ENABLED=' . $previousLaunch);
+        }
     }
 }
