@@ -70,6 +70,8 @@ under protocol P2.
   - _Approved Step 1 on 2026-11-25. Step 2 drafted with proposed decisions
     (flag off by default, Tools device group, 2,000 visits, history kept
     across key changes, recorded offline); awaiting Approved Step 2._
+  - _Approved Step 2 on 2026-11-25 with the proposals as written. Step 3
+    drafted in seven stages; estimate 0.70; awaiting Approved Step 3._
 - [ ] **2. `tree_history`: history and bookmark views.**
   **Estimate: 0.50**
   A richer tree view of history, with branches that fold and a way back to

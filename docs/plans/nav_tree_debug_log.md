@@ -69,3 +69,26 @@ Debug mode: enabled (inherited from the Step 1 artifact).
 ### Uncertain assessments
 
 - Step 1 left several choices "decided in Step 2" without the maintainer present. The step has no section for proposed decisions, so this artifact added "Proposed decisions for confirmation". A named place for them would help.
+
+## 2026-11-25T07:25Z — Step 3
+
+Debug mode: enabled (inherited from the Step 2 artifact). Approval arrived as "Approved. Step 2." rather than the exact "Approved Step 2"; it was read as approval of Step 2.
+
+### Necessary/useful instructions
+
+- `step3_development_plan_do.md`, "Prefix usability, data, or rollback risks **High risk:**". It singled out the Beside duplicate-visit risk, which would show on every main page. Retain.
+- `step3_development_plan_do.md`, "Canonical components/API contracts as an explicit bullet". Each stage names the precedent it copies (nav slots, usage log page, open beside), which keeps Step 4 from inventing new patterns. Retain.
+- Host `AGENTS.md`, Navigation icons. It turned "a Tools entry" into its own stage with `NavIconSetsTest`, which would otherwise be missed. Retain.
+
+### Redundant/unnecessary instructions
+
+- `step3_development_plan_do.md`, "Include planned function signatures when relevant, without code" next to "Avoid full code". The two overlap; one sentence would do.
+
+### Inapplicable instructions
+
+- "When Step 2 states a known user or environment recovery condition, include a stage that replays each reported failure". Step 2 names none.
+
+### Uncertain assessments
+
+- Exact approval phrase. `RAILSPIKE.md` asks for "Approved Step N" exactly, but says nothing about near matches such as "Approved. Step 2." This step treated it as approval and said so in the handoff.
+- Stage sizing at about 50 lines. Stage 2 may run past 50 lines of change; it was kept whole because splitting load capture from back and forward would leave an untestable half.
