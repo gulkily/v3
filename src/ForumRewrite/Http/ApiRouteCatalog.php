@@ -98,6 +98,7 @@ final class ApiRouteCatalog
             // Private messages
             ['GET', '/api/private_messages/inbox', 'member', 'json', 'Received messages.'],
             ['GET', '/api/private_messages/sent', 'member', 'json', 'Sent messages.'],
+            ['GET', '/api/private_messages/export?after_time=<optional-created_at>&after_id=<optional-message_id>', 'member', 'json', 'Your own sent and received messages, oldest first, with read state, for pulling into another clone.'],
             ['GET', '/api/private_messages/conversation?username_token=<username>&cursor=<optional-opaque-cursor>', 'member', 'json', 'One conversation, newest page first.'],
             ['GET', '/api/private_messages/conversations?cursor=<optional-opaque-cursor>', 'member', 'json', 'Conversation list.'],
             ['GET', '/api/private_messages/recipient_keys?username_token=<username>', 'member', 'json', 'Recipient encryption keys.'],

@@ -10,6 +10,11 @@ Purpose: Let original senders contribute access to their outgoing messages for a
 Scenario: A sender visits an ordinary page and supplies encrypted access; subsequent combined checks omit that donor's retained contribution without consulting recipient read or recovery receipts. Another donor and explicit legacy repair remain possible.
 Sources: [service](../../src/ForumRewrite/Messaging/PrivateMessageHistorySyncService.php), [contribution store](../../src/ForumRewrite/Messaging/PrivateMessageHistorySyncStore.php).
 
+Name: Pulled history
+Purpose: Keep history access working after a member pulls their mail into a local clone.
+Scenario: The clone stores pulled transfers under their original IDs. The browser verifies them like any target device, then confirms them on the source through the local relay, so later donors stop redoing that work. See [local development import](local_development_import.md).
+Sources: [import methods](../../src/ForumRewrite/Messaging/PrivateMessageHistorySyncStore.php), [relay actions](../../src/ForumRewrite/Http/LocalDevelopmentRemoteController.php).
+
 Name: Messaging history eligibility
 Purpose: Avoid dedicated background history synchronization for accounts with no messages.
 Scenario: An unused account browses quietly. Its first send or receipt changes the next unread response and enables synchronization on ordinary refresh, including on a new device. Eligibility is derived account history, not membership or a browser-local usage marker.

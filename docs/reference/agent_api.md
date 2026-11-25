@@ -559,6 +559,18 @@ history APIs, and new messages are not encrypted to it.
 
 Quill has no confirm command yet (PF-20261124-F01).
 
+## Export your own private messages
+
+An approved, signed-in member can read their own sent and received messages in
+bulk, still encrypted: `GET /api/private_messages/export`. A page holds up to 25
+messages, oldest first, with each received message's `read` flag and the
+history-sync `transfers` addressed to the member's keys for those messages. Pass
+the `next` object back as `after_time` and `after_id` to continue; `next` is null on
+the last page. The account always comes from the session, so no request can name
+another member. Message IDs and transfer IDs are the originals. The local
+development page uses this to pull mail into a clone; see
+[local development import](../concepts/local_development_import.md).
+
 ## Text file publisher scripts
 
 Publish a UTF-8 text file anonymously with Python 3 (standard library only):

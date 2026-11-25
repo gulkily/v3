@@ -37,7 +37,7 @@ final class PrivateMessageFeatureFlagTest
             $before = hash_file('sha256', $root . '/messages.sqlite3');
             foreach (['', 'openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954'] as $viewer) {
                 $viewer === '' ? TestViewerSession::signedOut() : TestViewerSession::signIn($viewer);
-                foreach (['/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent',
+                foreach (['/api/private_messages', '/api/private_messages/inbox', '/api/private_messages/sent', '/api/private_messages/export',
                     '/api/private_messages/conversation?username_token=bob', '/api/private_messages/conversations',
                     '/api/private_messages/recipient_keys?username_token=bob', '/api/private_messages/unread',
                     '/api/private_messages/read', '/api/private_messages/history_sync/work',

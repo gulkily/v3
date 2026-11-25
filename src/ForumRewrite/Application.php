@@ -198,6 +198,18 @@ final class Application
         }
         $this->ensureReadModel();
 
+        if ($path === '/local/remote' && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {
+            (new \ForumRewrite\Http\LocalDevelopmentRemoteController($this->routeServices(), $this->localDevelopmentImport(),
+                pullFactory: fn (): \ForumRewrite\Support\LocalMessagePull => new \ForumRewrite\Support\LocalMessagePull(
+                    $this->privateMessageStore(),
+                    new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore(\ForumRewrite\Messaging\PrivateMessageHistorySyncDatabaseConfig::open($this->projectRoot, PrivateConfig::load($this->projectRoot))),
+                    dirname(PrivateMessageDatabaseConfig::path($this->projectRoot, PrivateConfig::load($this->projectRoot))) . '/local_pull_progress.json',
+                ),
+                localStores: fn (): array => [$this->privateMessageStore(),
+                    new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore(\ForumRewrite\Messaging\PrivateMessageHistorySyncDatabaseConfig::open($this->projectRoot, PrivateConfig::load($this->projectRoot)))],
+            ))->handle($method);
+            return;
+        }
         if (\ForumRewrite\Support\LocalDevelopmentImport::isEntry($requestUri) && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {
             (new \ForumRewrite\Http\LocalDevelopmentPageController($this->routeServices(),
                 new \ForumRewrite\Support\LocalDevelopmentImport($this->repositoryRoot),
@@ -336,6 +348,11 @@ final class Application
 
         if ($path === '/api/private_messages/inbox') {
             $this->privateMessageApiController()->inbox($method, $query);
+            return;
+        }
+
+        if ($path === '/api/private_messages/export') {
+            $this->privateMessageApiController()->export($method, $query);
             return;
         }
 
@@ -2994,6 +3011,11 @@ final class Application
         );
     }
 
+    private function localDevelopmentImport(): \ForumRewrite\Support\LocalDevelopmentImport
+    {
+        return new \ForumRewrite\Support\LocalDevelopmentImport($this->repositoryRoot);
+    }
+
     private function privateMessageApiController(): PrivateMessageApiController
     {
         return new PrivateMessageApiController(
@@ -3001,6 +3023,8 @@ final class Application
             $this->authenticatedViewerProfile(...),
             $this->privateMessageStore(...),
             $this->recordHistoryActivity(...),
+            fn (): \ForumRewrite\Messaging\PrivateMessageHistorySyncStore => new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore(
+                \ForumRewrite\Messaging\PrivateMessageHistorySyncDatabaseConfig::open($this->projectRoot, PrivateConfig::load($this->projectRoot))),
         );
     }
 
