@@ -509,6 +509,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Private message chat refinement](private_message_chat_refinement/)
 - [Private message composite user composer](private_message_composite_user_composer/)
 - [Private message conversation list](private_message_conversation_list/)
+- [Private access one evaluation](private_access_one_evaluation/private_access_one_evaluation_one_shot.md) — one-shot: Confirm verifies its signature once, and one access check stops repeating the same lookups.
 - [Private message conversations](private_message_conversations/)
 - [Private message history synchronization](private_message_history_sync/)
 - [Private message history](private_message_history/) — recorded steps: 2, 3, 4.
