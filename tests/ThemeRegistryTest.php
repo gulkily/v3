@@ -214,6 +214,26 @@ final class ThemeRegistryTest
         assertSame(0, preg_match('/prefers-color-scheme: dark/', substr($baseStyles, (int) $endOffset)));
     }
 
+    public function testPageReservesTheScrollbarGutterOnFirstPaint(): void
+    {
+        // Long pages paint before they finish arriving, so their scrollbar appears
+        // later. Without a reserved gutter the centred column shifts sideways then.
+        // The rule must be in the inlined critical block to hold at first paint,
+        // and no theme may set the page's own overflow or gutter.
+        $publicRoot = dirname(__DIR__) . '/public';
+        $baseStyles = (string) file_get_contents($publicRoot . '/assets/site.css');
+        $endOffset = strpos($baseStyles, '/* critical-css-end */');
+        assertSame(true, $endOffset !== false);
+
+        $criticalCss = substr($baseStyles, 0, (int) $endOffset);
+        assertSame(1, preg_match('/(?:^|\n)html\s*\{[^}]*scrollbar-gutter:\s*stable;/', $criticalCss));
+
+        foreach (ThemeRegistry::stylesheetPaths() as $name => $path) {
+            $styles = (string) file_get_contents($publicRoot . $path);
+            assertSame(0, preg_match('/(?:^|[\s,}])(?:html|body|:root)(?:\[[^\]]*\])*\s*\{[^}]*(?:overflow|scrollbar-gutter)\s*:/', $styles));
+        }
+    }
+
     public function testQdbQuoteHeaderActionsHaveThemeNeutralCompactLayout(): void
     {
         $styles = file_get_contents(dirname(__DIR__) . '/public/assets/site.css');
