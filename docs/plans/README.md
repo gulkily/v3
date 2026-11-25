@@ -416,6 +416,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Account retraction attribution](account_retraction_attribution/)
 
 - [Private messaging live navigation](private_messaging_live_navigation/)
+- [Private access waiting keys](private_access_waiting_keys/private_access_waiting_keys_one_shot.md) — one-shot: Messages and Unread get the waiting-keys card from one method instead of two copies.
 
 - [Private messaging feature flag](private_messaging_feature_flag/)
 

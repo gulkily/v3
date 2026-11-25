@@ -55,7 +55,7 @@ final class InboxPageController
             if ($failedCatchUp === null) return;
         }
 
-        $waiting = $this->privateMessageStore === null ? [] : $this->waitingKeys($viewer);
+        $waiting = $this->privateMessageStore === null ? [] : \ForumRewrite\Security\PrivateKeyAccess::waitingCardKeys($this->routeServices->pdo(), $this->routeServices->repositoryRoot(), $viewer);
         $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('inbox.php', [
             'viewerProfile' => $viewer,
             'stagedCount' => $this->stagedCount($viewer),
@@ -220,21 +220,6 @@ final class InboxPageController
             return count((new StagedPageController($this->routeServices, $this->authenticatedViewerProfile))->visibleItems($viewer));
         } catch (\Throwable) {
             return 0;
-        }
-    }
-
-    /**
-     * Keys of the viewer's account waiting for private access; empty when the viewer cannot confirm.
-     *
-     * @param array<string, mixed> $viewer
-     * @return list<array<string, mixed>>
-     */
-    private function waitingKeys(array $viewer): array
-    {
-        try {
-            return (new \ForumRewrite\Security\PrivateKeyAccess($this->routeServices->pdo(), $this->routeServices->repositoryRoot()))->waitingForViewer($viewer);
-        } catch (\Throwable) {
-            return [];
         }
     }
 

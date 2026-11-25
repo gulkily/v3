@@ -48,7 +48,7 @@ final class PrivateMessagePageController
             $this->messageError('Messages Unavailable', $exception->getMessage(), 403);
             return;
         }
-        $waiting = $this->waitingKeys($viewer);
+        $waiting = \ForumRewrite\Security\PrivateKeyAccess::waitingCardKeys($this->routeServices->pdo(), $this->routeServices->repositoryRoot(), $viewer);
         $this->routeServices->sendHtml($this->routeServices->renderPageTemplate('private_message_list.php',
             ['page' => $page, 'viewerProfile' => $viewer, 'waitingKeys' => $waiting,
                 'accountName' => (string) ($viewer['username'] ?? $viewer['username_token'] ?? '')], 'Messages', 'messages', array_merge([
@@ -130,19 +130,6 @@ final class PrivateMessagePageController
      *
      * @param array<string, mixed>|null $viewer
      */
-    /**
-     * @param array<string, mixed> $viewer
-     * @return list<array<string, mixed>>
-     */
-    private function waitingKeys(array $viewer): array
-    {
-        try {
-            return (new \ForumRewrite\Security\PrivateKeyAccess($this->routeServices->pdo(), $this->routeServices->repositoryRoot()))->waitingForViewer($viewer);
-        } catch (\Throwable) {
-            return [];
-        }
-    }
-
     private function accessPage(?array $viewer, bool $publicOnly = false): void
     {
         $identityId = (string) ($viewer['identity_id'] ?? '');
