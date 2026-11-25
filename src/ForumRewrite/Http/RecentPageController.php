@@ -46,18 +46,15 @@ final class RecentPageController
         } catch (\RuntimeException) {
             $images = [];
         }
-        $replyCounts = [];
-        $threadIds = array_values(array_unique(array_column($page['items'], 'thread_id')));
-        if ($threadIds !== []) {
-            $query = $pdo->prepare('SELECT root_post_id, reply_count FROM threads WHERE root_post_id IN (' . implode(',', array_fill(0, count($threadIds), '?')) . ')');
-            $query->execute($threadIds);
-            foreach ($query->fetchAll(\PDO::FETCH_ASSOC) as $row) $replyCounts[(string) $row['root_post_id']] = (int) $row['reply_count'];
-        }
         $tiles = [];
         foreach ($page['items'] as $item) {
             $image = $images[$item['post_id']] ?? null;
             if ($image === null) continue;
-            $tiles[] = $item + ['image' => $image, 'reply_count' => $replyCounts[$item['thread_id']] ?? 0];
+            // A caption only for a real title: the thread's subject or text, not the
+            // "Image" stand-in for a post that is just a picture, nor an unavailable thread.
+            $untitled = $item['context_id'] === null
+                || (trim((string) $item['context_subject']) === '' && $item['context_title'] === 'Image');
+            $tiles[] = $item + ['image' => $image, 'caption' => $untitled ? '' : (string) $item['context_title']];
         }
         $pagination = PageNavigation::numbered('/gallery/', [], $number, $page['has_next'], $page['items'] === []);
         return $this->routeServices->renderPageTemplate('gallery.php', ['tiles'=>$tiles, 'pagination'=>$pagination, 'paginationError'=>null], 'Gallery', 'gallery', $tiles === [] ? [] : ['/assets/gallery_zoom.js']);

@@ -74,15 +74,21 @@ checked in the current code, not a guess.
 
 ## Extend the theme (visual identity)
 
-- [ ] Current `theme-mitrapclub.css` only overrides CSS color variables and
+- [x] Current `theme-mitrapclub.css` only overrides CSS color variables and
       a handful of selectors (site-header, eyebrow, card, nav-link,
       inputs/buttons) — no distinctive visual motif like cypherposium.com's
       Polaroid-photo-in-a-chalk-cube imagery or chalk-style display type.
+      **Done** in one-shot
+      [mitrapclub_chalkboard_theme](mitrapclub_chalkboard_theme/mitrapclub_chalkboard_theme_one_shot.md):
+      Underground (the site default) gets the cube wordmark, margin notes in
+      the flyer's ink and Polaroid images; the dark `mitrapclub` theme is
+      unchanged.
 - [ ] No hero/banner treatment on the board page — cypherposium.com leads
       with a bold graphic headline ("what is rap?") plus two event CTAs;
       the current board is just the shared layout with new colors.
 - [ ] No club-specific display typeface for headings (only a body/UI font
-      swap today).
+      swap today). Underground uses the system rounded stack; a self-hosted
+      face still needs dependency approval.
 - [ ] No visual distinction between post types on the board — an event
       announcement thread looks identical to an ordinary discussion thread.
 

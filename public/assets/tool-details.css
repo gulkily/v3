@@ -481,6 +481,9 @@ form.feature-flag-control,
   cursor: pointer;
 }
 
+/* Off: an empty track with the knob in muted ink. On: the track fills
+   solid green and the knob turns page-coloured, so the two states differ
+   in fill, not just in a small knob's colour. */
 .switch::after {
   content: "";
   position: absolute;
@@ -489,18 +492,24 @@ form.feature-flag-control,
   width: 1.15rem;
   height: 1.15rem;
   border-radius: 50%;
-  background: var(--line);
+  background: var(--ink-soft);
   transition: transform 0.15s ease;
 }
 
 .switch[aria-checked="true"] {
-  background: color-mix(in srgb, var(--status-ok) 25%, var(--input-bg) 75%);
+  background: var(--status-ok);
   border-color: var(--status-ok);
 }
 
 .switch[aria-checked="true"]::after {
-  background: var(--status-ok);
+  background: var(--page-bg);
   transform: translateX(1.2rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch::after {
+    transition: none;
+  }
 }
 
 .switch:disabled {

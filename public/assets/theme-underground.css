@@ -301,13 +301,13 @@
   border-radius: 999px;
 }
 
-:root:is([data-theme="underground"], [data-theme="undergrounddark"]) button[type="submit"]:not(.theme-menu__option):not([data-action]) {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) button[type="submit"]:not(.theme-menu__option):not([data-action]):not(.switch) {
   color: var(--active-ink);
   background: var(--ug-blue);
   border-color: var(--ug-blue);
 }
 
-:root:is([data-theme="underground"], [data-theme="undergrounddark"]) button[type="submit"]:not(.theme-menu__option):not([data-action]):hover {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) button[type="submit"]:not(.theme-menu__option):not([data-action]):not(.switch):hover {
   background: var(--ug-blue-deep);
 }
 
@@ -347,9 +347,135 @@
   opacity: 0.6;
 }
 
+/* Club notes in the page margins, printed in the same ink: the
+   cypherposium cube, scansion and rhyme-scheme marks, "what is rap?", a
+   mic, a waveform and the cypher circle. A mask, so the ink follows
+   --ug-blue in both light and dark. On .shell, inside body's stacking
+   layer, under the halftone. Only where the page has margins. */
+@media (min-width: 1180px) {
+  :root:is([data-theme="underground"], [data-theme="undergrounddark"]) .shell::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1240px;
+    margin-left: -620px;
+    z-index: -1;
+    pointer-events: none;
+    background: var(--ug-blue);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='230' height='760' viewBox='0 0 230 760'%3E%3Cdefs%3E%3Cfilter id='c' x='-5%25' y='-5%25' width='110%25' height='110%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' seed='3' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='1.6' result='d'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='1' seed='7' result='s'/%3E%3CfeColorMatrix in='s' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.6 1.6' result='m'/%3E%3CfeComposite in='d' in2='m' operator='in'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23c)' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M44 72 L132 70 L134 158 L46 160 Z' stroke='%23ecebe4' stroke-width='2.6'/%3E%3Cpath d='M44 72 L82 38 L168 37 L132 70 M168 37 L170 124 L134 158' stroke='%23ecebe4' stroke-width='2.6'/%3E%3Cpath d='M46 160 L83 127 L170 124 M82 38 L83 127' stroke='%23ecebe4' stroke-width='1.6'/%3E%3Ctext x='56' y='196' fill='%23ecebe4' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='17' text-anchor='start' transform='rotate(-3 56 196)'%3Emit rap club%3C/text%3E%3Cpath d='M30 292 L40 270 M86 292 L96 270 M142 292 L152 270 M198 292 L208 270' stroke='%23ecebe4' stroke-width='2.6'/%3E%3Cpath d='M56 276 Q63 292 70 276 M112 276 Q119 292 126 276 M168 276 Q175 292 182 276' stroke='%23ecebe4' stroke-width='2.6'/%3E%3Cpath d='M26 304 L214 300' stroke='%23ecebe4' stroke-width='1.4'/%3E%3Ctext x='30' y='338' fill='%23ecebe4' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='20' text-anchor='start'%3Ex . x . x . x .%3C/text%3E%3Ctext x='52' y='420' fill='%239aa0ff' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='34' text-anchor='start'%3Ea%3C/text%3E%3Ctext x='52' y='470' fill='%239aa0ff' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='34' text-anchor='start'%3Ea%3C/text%3E%3Ctext x='52' y='534' fill='%23ff7d8c' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='34' text-anchor='start'%3Eb%3C/text%3E%3Ctext x='52' y='584' fill='%23ff7d8c' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='34' text-anchor='start'%3Eb%3C/text%3E%3Cpath d='M86 410 Q120 437 86 462' stroke='%239aa0ff' stroke-width='2.6'/%3E%3Cpath d='M86 524 Q120 551 86 576' stroke='%23ff7d8c' stroke-width='2.6'/%3E%3Cpath d='M134 436 L196 436' stroke='%23ecebe4' stroke-width='1.5'/%3E%3Cpath d='M134 550 L182 550' stroke='%23ecebe4' stroke-width='1.5'/%3E%3Ctext x='134' y='426' fill='%239aa0ff' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='18' text-anchor='start'%3E-ology%3C/text%3E%3Ctext x='134' y='540' fill='%23ff7d8c' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='18' text-anchor='start'%3Eflow%3C/text%3E%3Cpath d='M40 660 C40 620 170 616 186 652 C200 690 70 712 44 684 C34 674 36 664 52 656' stroke='%23ecebe4' stroke-width='1.8'/%3E%3Ctext x='66' y='668' fill='%23ecebe4' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='19' text-anchor='start'%3Estudy it%3C/text%3E%3C/g%3E%3C/svg%3E") left 0 top 150px / 230px 760px no-repeat,
+                  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='230' height='760' viewBox='0 0 230 760'%3E%3Cdefs%3E%3Cfilter id='c' x='-5%25' y='-5%25' width='110%25' height='110%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' seed='3' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='1.6' result='d'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='1' seed='7' result='s'/%3E%3CfeColorMatrix in='s' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.6 1.6' result='m'/%3E%3CfeComposite in='d' in2='m' operator='in'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23c)' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Ctext x='18' y='70' fill='%23ecebe4' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='27' text-anchor='start' transform='rotate(-4 18 70)'%3Ewhat is rap?%3C/text%3E%3Cpath d='M20 86 C70 78 130 80 196 70' stroke='%23ff7d8c' stroke-width='2.2'/%3E%3Cpath d='M115 140 m-34 0 a34 34 0 1 0 68 0 a34 34 0 1 0 -68 0' stroke='%23ecebe4' stroke-width='2.6'/%3E%3Cpath d='M90 120 L140 160 M84 140 L146 140 M90 160 L140 120 M115 106 L115 174' stroke='%23ecebe4' stroke-width='1.4'/%3E%3Cpath d='M96 172 L104 262 L126 262 L134 172' stroke='%23ecebe4' stroke-width='2.6'/%3E%3Cpath d='M115 262 C115 300 60 290 72 330 C82 360 150 340 140 380' stroke='%23ecebe4' stroke-width='1.8'/%3E%3Cpath d='M18 440 L32 440 L38 420 L46 462 L54 404 L62 476 L70 428 L78 452 L86 412 L94 470 L102 432 L110 448 L118 424 L126 458 L134 436 L142 444 L150 438 L212 440' stroke='%239aa0ff' stroke-width='2.2'/%3E%3Cpath d='M177 600 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M159 644 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M115 662 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M71 644 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M53 600 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M71 556 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M115 538 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M159 556 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M115 600 m-4 0 a4 4 0 1 0 8 0 a4 4 0 1 0 -8 0' stroke='%23ff7d8c' stroke-width='3'/%3E%3Cpath d='M140 576 C160 590 160 612 142 626' stroke='%23ff7d8c' stroke-width='1.6'/%3E%3Ctext x='115' y='712' fill='%23ecebe4' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='19' text-anchor='middle'%3E1 bar = 4 beats%3C/text%3E%3C/g%3E%3C/svg%3E") right 0 top 150px / 230px 760px no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='230' height='760' viewBox='0 0 230 760'%3E%3Cdefs%3E%3Cfilter id='c' x='-5%25' y='-5%25' width='110%25' height='110%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' seed='3' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='1.6' result='d'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='1' seed='7' result='s'/%3E%3CfeColorMatrix in='s' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.6 1.6' result='m'/%3E%3CfeComposite in='d' in2='m' operator='in'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23c)' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M44 72 L132 70 L134 158 L46 160 Z' stroke='%23ecebe4' stroke-width='2.6'/%3E%3Cpath d='M44 72 L82 38 L168 37 L132 70 M168 37 L170 124 L134 158' stroke='%23ecebe4' stroke-width='2.6'/%3E%3Cpath d='M46 160 L83 127 L170 124 M82 38 L83 127' stroke='%23ecebe4' stroke-width='1.6'/%3E%3Ctext x='56' y='196' fill='%23ecebe4' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='17' text-anchor='start' transform='rotate(-3 56 196)'%3Emit rap club%3C/text%3E%3Cpath d='M30 292 L40 270 M86 292 L96 270 M142 292 L152 270 M198 292 L208 270' stroke='%23ecebe4' stroke-width='2.6'/%3E%3Cpath d='M56 276 Q63 292 70 276 M112 276 Q119 292 126 276 M168 276 Q175 292 182 276' stroke='%23ecebe4' stroke-width='2.6'/%3E%3Cpath d='M26 304 L214 300' stroke='%23ecebe4' stroke-width='1.4'/%3E%3Ctext x='30' y='338' fill='%23ecebe4' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='20' text-anchor='start'%3Ex . x . x . x .%3C/text%3E%3Ctext x='52' y='420' fill='%239aa0ff' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='34' text-anchor='start'%3Ea%3C/text%3E%3Ctext x='52' y='470' fill='%239aa0ff' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='34' text-anchor='start'%3Ea%3C/text%3E%3Ctext x='52' y='534' fill='%23ff7d8c' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='34' text-anchor='start'%3Eb%3C/text%3E%3Ctext x='52' y='584' fill='%23ff7d8c' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='34' text-anchor='start'%3Eb%3C/text%3E%3Cpath d='M86 410 Q120 437 86 462' stroke='%239aa0ff' stroke-width='2.6'/%3E%3Cpath d='M86 524 Q120 551 86 576' stroke='%23ff7d8c' stroke-width='2.6'/%3E%3Cpath d='M134 436 L196 436' stroke='%23ecebe4' stroke-width='1.5'/%3E%3Cpath d='M134 550 L182 550' stroke='%23ecebe4' stroke-width='1.5'/%3E%3Ctext x='134' y='426' fill='%239aa0ff' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='18' text-anchor='start'%3E-ology%3C/text%3E%3Ctext x='134' y='540' fill='%23ff7d8c' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='18' text-anchor='start'%3Eflow%3C/text%3E%3Cpath d='M40 660 C40 620 170 616 186 652 C200 690 70 712 44 684 C34 674 36 664 52 656' stroke='%23ecebe4' stroke-width='1.8'/%3E%3Ctext x='66' y='668' fill='%23ecebe4' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='19' text-anchor='start'%3Estudy it%3C/text%3E%3C/g%3E%3C/svg%3E") left 0 top 150px / 230px 760px no-repeat,
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='230' height='760' viewBox='0 0 230 760'%3E%3Cdefs%3E%3Cfilter id='c' x='-5%25' y='-5%25' width='110%25' height='110%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' seed='3' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='1.6' result='d'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='1' seed='7' result='s'/%3E%3CfeColorMatrix in='s' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.6 1.6' result='m'/%3E%3CfeComposite in='d' in2='m' operator='in'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23c)' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Ctext x='18' y='70' fill='%23ecebe4' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='27' text-anchor='start' transform='rotate(-4 18 70)'%3Ewhat is rap?%3C/text%3E%3Cpath d='M20 86 C70 78 130 80 196 70' stroke='%23ff7d8c' stroke-width='2.2'/%3E%3Cpath d='M115 140 m-34 0 a34 34 0 1 0 68 0 a34 34 0 1 0 -68 0' stroke='%23ecebe4' stroke-width='2.6'/%3E%3Cpath d='M90 120 L140 160 M84 140 L146 140 M90 160 L140 120 M115 106 L115 174' stroke='%23ecebe4' stroke-width='1.4'/%3E%3Cpath d='M96 172 L104 262 L126 262 L134 172' stroke='%23ecebe4' stroke-width='2.6'/%3E%3Cpath d='M115 262 C115 300 60 290 72 330 C82 360 150 340 140 380' stroke='%23ecebe4' stroke-width='1.8'/%3E%3Cpath d='M18 440 L32 440 L38 420 L46 462 L54 404 L62 476 L70 428 L78 452 L86 412 L94 470 L102 432 L110 448 L118 424 L126 458 L134 436 L142 444 L150 438 L212 440' stroke='%239aa0ff' stroke-width='2.2'/%3E%3Cpath d='M177 600 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M159 644 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M115 662 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M71 644 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M53 600 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M71 556 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M115 538 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M159 556 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M115 600 m-4 0 a4 4 0 1 0 8 0 a4 4 0 1 0 -8 0' stroke='%23ff7d8c' stroke-width='3'/%3E%3Cpath d='M140 576 C160 590 160 612 142 626' stroke='%23ff7d8c' stroke-width='1.6'/%3E%3Ctext x='115' y='712' fill='%23ecebe4' stroke='none' font-family='SF Pro Rounded,Arial Rounded MT Bold,Nunito,Varela Round,Helvetica,Arial,sans-serif' font-weight='800' font-size='19' text-anchor='middle'%3E1 bar = 4 beats%3C/text%3E%3C/g%3E%3C/svg%3E") right 0 top 150px / 230px 760px no-repeat;
+    opacity: 0.62;
+  }
+}
+
+/* The cypherposium cube before the club's name, in the wordmark's ink. */
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .site-header > .eyebrow::before,
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .site-brand .eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 0.78em;
+  height: 0.78em;
+  margin-right: 0.22em;
+  vertical-align: -0.02em;
+  background: var(--ug-blue);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cg fill='none' stroke='%23ecebe4' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M4 14 L24 13 L25 35 L5 36 Z M4 14 L14 4 L35 3 L24 13 M35 3 L36 25 L25 35'/%3E%3Cpath d='M5 36 L15 26 L36 25 M14 4 L15 26' stroke-width='1.3'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cg fill='none' stroke='%23ecebe4' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M4 14 L24 13 L25 35 L5 36 Z M4 14 L14 4 L35 3 L24 13 M35 3 L36 25 L25 35'/%3E%3Cpath d='M5 36 L15 26 L36 25 M14 4 L15 26' stroke-width='1.3'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* Gallery: Polaroids, like the cypherposium photo captioned "mit rap
+   club", each pinned a little off straight. */
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .gallery-grid {
+  gap: 0.9rem;
+  padding: 0.3rem 0.2rem 0.6rem;
+}
+
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .gallery-tile {
+  padding: 0.45rem 0.45rem 0;
+  border: none;
+  border-radius: 2px;
+  background: #f8f7fc;
+  color: #1f1f55;
+  box-shadow: 0 10px 18px -11px var(--ug-card-shadow), 0 0 0 1px rgba(31, 31, 85, 0.08);
+  transform: rotate(-1.1deg);
+  transition: transform 0.15s ease;
+}
+
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .gallery-tile:nth-child(3n + 2) {
+  transform: rotate(0.9deg);
+}
+
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .gallery-tile:nth-child(3n) {
+  transform: rotate(-0.4deg);
+}
+
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .gallery-tile:hover,
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .gallery-tile:focus-visible {
+  transform: rotate(0deg) scale(1.02);
+}
+
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .gallery-tile__caption {
+  padding: 0.35em 0.2em 0.55em;
+  font-family: var(--ug-display-font);
+}
+
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .gallery-tile__title {
+  color: #2b2fd6;
+  font-weight: 800;
+  text-transform: lowercase;
+}
+
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .gallery-tile__meta {
+  color: #4a4959;
+}
+
+/* No caption: keep the Polaroid's thick bottom edge. */
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .gallery-tile:not(:has(.gallery-tile__caption)) {
+  padding-bottom: 1.4rem;
+}
+
+/* Images in posts: the same Polaroid frame. */
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .post-image__original {
+  display: inline-block;
+  padding: 0.45rem 0.45rem 1.6rem;
+  background: #f8f7fc;
+  border-radius: 2px;
+  box-shadow: 0 10px 18px -11px var(--ug-card-shadow), 0 0 0 1px rgba(31, 31, 85, 0.08);
+  transform: rotate(-0.6deg);
+}
+
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .post-image__original img {
+  display: block;
+}
+
+/* Events: a ticket stub off the flyer, date in the heavy blue type. */
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .event-block {
+  padding: 0.55rem 0.8rem;
+  border: 2px dashed var(--ug-blue);
+  border-radius: 12px;
+  font-family: var(--ug-display-font);
+  text-transform: lowercase;
+}
+
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .event-block__date {
+  color: var(--ug-blue);
+  font-size: 1.15em;
+  font-weight: 900;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:is([data-theme="underground"], [data-theme="undergrounddark"]) .gallery-tile {
+    transition: none;
+  }
+}
+
 /* Print and forced colours: drop the texture. */
 @media print, (forced-colors: active) {
-  :root:is([data-theme="underground"], [data-theme="undergrounddark"]) body::after {
+  :root:is([data-theme="underground"], [data-theme="undergrounddark"]) body::after,
+  :root:is([data-theme="underground"], [data-theme="undergrounddark"]) .shell::before {
     display: none;
   }
 }
