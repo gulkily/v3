@@ -69,7 +69,7 @@ Final review: the diff touches the partial, `user_access.php`, `private_access_c
 
 Follow-up noted, not done: Tools → User Access builds its waiting rows with its own `$waitingRow` instead of the partial (it adds an account link and an operator-only button). Folding it into the partial would leave one row markup.
 
-Commit/merge/publication status: completion commit pending at the time of writing; branch `fix/private_access_card_settle`, stacked on `fix/private_access_signing_helper` (#424); PR to be opened against `main`, to merge after #424; not merged.
+Commit/merge/publication status: completion commit `84d2d1b` on `fix/private_access_card_settle`, stacked on `fix/private_access_signing_helper` (#424); PR https://github.com/gulkily/v3/pull/425 opened 2026-11-25, to merge after #424; not merged.
 
 Debug: [debug log](./private_access_card_settle_debug_log.md).
 
