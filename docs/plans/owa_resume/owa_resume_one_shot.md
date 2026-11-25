@@ -7,7 +7,7 @@ Extended estimates: enabled (no alternatives or work units, so only the cycle es
 
 **Cycle estimate: 0.12**
 
-Status: implemented on `feature/owa-resume`; PR open, not merged or deployed. Next action: the maintainer merges and deploys, then runs the iPhone SE check below.
+Status: implemented on `feature/owa-resume`; [PR #419](https://github.com/gulkily/v3/pull/419) open, not merged or deployed. Next action: the maintainer merges and deploys, then runs the iPhone SE check below.
 
 ## Request and authorization
 
