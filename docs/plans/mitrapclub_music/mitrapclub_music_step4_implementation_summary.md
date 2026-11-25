@@ -93,3 +93,22 @@ Step 4 entry: **0.55**, Step 3 reaffirmed unchanged. Stage originals copied from
   - Retrospective 0.15 against 0.10: the missing row beacon and the browser test were more than the stage planned.
 
 *— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Music in the nav
+
+**Original estimate: 0.05**
+**Retrospective: 0.10**
+
+- Changes:
+  - `View/TemplateRenderer.php`: `navigationItems()` adds Music after Gallery (or Calendar, or Recent) when `musicSection()` is true; Agents now follows Music when both are present. `music` joins `$barOrder` after `gallery`.
+  - `public/assets/site.css`: the two `html[data-nav-slots~="music"]` rules, copied from Gallery's, so Music can hold a phone tab and name the More tab.
+  - `public/assets/theme-nav-icons.css`: a beamed-notes icon in the pixel, smooth and cute sets, beside Gallery's, and Music in the shared icon spacing rule.
+  - Pre-existing failure fixed: `tests/browser/nav_slots.mjs` timed out on `main` because Board links to `/threads/` since PR #385 and the test's in-memory server only served `/`. Added `/threads/` to its routes.
+- Verification:
+  - `./v3 test AppNavigationPlacementTest NavIconSetsTest BoardListTest MusicPageTest FastNavigationLayoutTest`: 39 run, 39 passed. New case: Music right after Gallery on mitrapclub, after Recent with Gallery off, and absent on zenmemes, chouse and qdb.
+  - `nav_slots.mjs`: PASS after the fix (it failed the same way on a clean `origin/main` worktree). `viewer_nav_prepaint.mjs`: PASS, 100 page states.
+  - Local mitrapclub server: `/music/` renders `<a class="nav-link is-active" href="/music/">Music</a>`.
+- Notes:
+  - Retrospective 0.10 against 0.05: the icons and the nav_slots fix.
+
+*— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*

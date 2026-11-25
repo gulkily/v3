@@ -18,3 +18,4 @@
 - Stage 2 retrospective 0.10.
 - Stage 3 retrospective 0.10.
 - Stage 4 retrospective 0.15 (original 0.10): row title beacon and a new browser test.
+- Stage 5 retrospective 0.10 (original 0.05): icons and a pre-existing nav_slots.mjs fix.

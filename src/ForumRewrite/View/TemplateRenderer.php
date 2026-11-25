@@ -474,7 +474,7 @@ final class TemplateRenderer
 
         // Desktop bar order. The account menu keeps only the viewer's own items:
         // Profile, Account and Invite. Everything else is a main destination.
-        $barOrder = ['board', 'lobby', 'recent', 'calendar', 'gallery', 'agent', 'profiles', 'messages', 'search', 'about', 'tools'];
+        $barOrder = ['board', 'lobby', 'recent', 'calendar', 'gallery', 'music', 'agent', 'profiles', 'messages', 'search', 'about', 'tools'];
         $menuSections = ['account', 'invite'];
         // Inbox sits just before Messages on the bar. Messages stays on the bar: its
         // link is where the unread count and history sync start.
@@ -601,11 +601,22 @@ final class TemplateRenderer
             array_splice($items, $after === false ? 1 : $after + 1, 0, [['href' => '/gallery/', 'label' => 'Gallery', 'section' => 'gallery']]);
         }
 
+        // Music follows Gallery (or Calendar, or Recent) on sites with the Music page.
+        if (!$isQdbNavigation && SiteProfileRegistry::musicSection()) {
+            $sections = array_column($items, 'section');
+            $after = false;
+            foreach (['gallery', 'calendar', 'recent'] as $section) {
+                $after = array_search($section, $sections, true);
+                if ($after !== false) break;
+            }
+            array_splice($items, $after === false ? 1 : $after + 1, 0, [['href' => '/music/', 'label' => 'Music', 'section' => 'music']]);
+        }
+
         // Agents (/agent/start/) follows the content destinations while the agent page is on.
         if (!$isQdbNavigation && $this->agentPageEnabled()) {
             $sections = array_column($items, 'section');
             $after = false;
-            foreach (['gallery', 'calendar', 'recent'] as $section) {
+            foreach (['music', 'gallery', 'calendar', 'recent'] as $section) {
                 $after = array_search($section, $sections, true);
                 if ($after !== false) break;
             }
