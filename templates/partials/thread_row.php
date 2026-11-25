@@ -4,6 +4,8 @@
  * when the body adds something beyond the title, and compact metadata.
  *
  * @var array<string, mixed> $thread
+ * @var string $rowPlayer optional: a rendered media embed (Music page), on its own line under the meta
+ * @var ?string $rowPlayerLink optional: the link that player plays, left out of the excerpt
  */
 $subject = $threadTitle($thread);
 $replyCount = (int) $thread['reply_count'];
@@ -12,6 +14,11 @@ $excerpt = trim((string) preg_replace('/^' . preg_quote(\ForumRewrite\Images\Ima
 // A campaign row's line says what its goal line says, so the excerpt leaves that line out, as the thread page does.
 if (is_array($thread['pledge_campaign'] ?? null)) {
     $excerpt = trim(\ForumRewrite\Support\PledgeLines::hide($excerpt, \ForumRewrite\Support\PledgeLines::GOAL));
+}
+// A row with a player (the Music page) leaves the played link out of its excerpt.
+$rowPlayer = (string) ($rowPlayer ?? '');
+if ($rowPlayer !== '' && ($rowPlayerLink ?? null) !== null) {
+    $excerpt = trim(str_replace((string) $rowPlayerLink, '', $excerpt));
 }
 $showExcerpt = $excerpt !== '' && $excerpt !== trim($subject) && ($thread['retracted_at'] ?? null) === null;
 ?>
@@ -39,5 +46,8 @@ $pledgeStatusLabel = match ($pledgeStatus) {
   <p class="thread-row__excerpt"><?= $e($excerpt) ?></p>
 <?php endif; ?>
   <p class="meta thread-row__meta"><?= $rowMeta($thread, 'root_post_created_at') ?></p>
+<?php if ($rowPlayer !== ''): ?>
+  <div class="thread-row__player"><?= $rowPlayer ?></div>
+<?php endif; ?>
 <?= $partial('partials/event_block.php') ?>
 </article>

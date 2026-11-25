@@ -6,6 +6,7 @@ namespace ForumRewrite\Http;
 
 use ForumRewrite\Pagination\PageNavigation;
 use ForumRewrite\ReadModel\TagPage;
+use ForumRewrite\View\MediaEmbedDetector;
 
 /**
  * The Music page (/music/) on sites whose profile sets `musicSection`: the
@@ -23,10 +24,16 @@ final class MusicPageController
         $number = PageNavigation::pageNumber($page);
         $selected = TagPage::page($this->routeServices->pdo(), self::TAG, $number);
         $pagination = PageNavigation::numbered('/music/', [], $number, $selected['has_next'], $selected['items'] === []);
+        // Each row plays the opening post's first recognized link; a row without one shows no player.
+        $detector = new MediaEmbedDetector();
+        $threads = array_map(static function (array $thread) use ($detector): array {
+            $first = $detector->detect((string) ($thread['body_preview'] ?? ''))[0] ?? null;
+            return $thread + ['music_link' => $first === null ? null : $first['url']];
+        }, $selected['items']);
 
         return $this->routeServices->renderPageTemplate(
             'music.php',
-            ['threads' => $selected['items'], 'pagination' => $pagination, 'paginationError' => null],
+            ['threads' => $threads, 'pagination' => $pagination, 'paginationError' => null],
             'Music',
             'music',
         );

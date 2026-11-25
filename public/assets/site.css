@@ -1302,6 +1302,19 @@ pre {
   font-size: 0.75rem;
 }
 
+/* A row with a player (the Music page): the embed spans the row under the meta
+   and never widens it. */
+.thread-row__player {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0.4rem 0 0;
+}
+
+.thread-row__player .media-embed-card {
+  max-width: 100%;
+  margin: 0;
+}
+
 /* A row with an attached image: the thumbnail fills a narrow first column as
    tall as the row; the image never adds height of its own. */
 .thread-row--thumb {

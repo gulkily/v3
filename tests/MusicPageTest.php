@@ -30,6 +30,31 @@ final class MusicPageTest
         });
     }
 
+    public function testEachRowPlaysItsFirstLinkWithoutRepeatingIt(): void
+    {
+        putenv('FORUM_MEDIA_EMBEDS_ENABLED=true');
+        putenv('FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED=true');
+        try {
+            $this->withSite('mitrapclub', function (string $repositoryRoot, string $databasePath): void {
+                $this->writePost($repositoryRoot, 'thread-music-note', "Subject: Deante' Hitchcock - I Done Changed A Lot\n\nhttps://open.spotify.com/album/3LVR5at2HIWpbqFfV7Zzdj\nthe whole album", '2026-07-01T00:00:00Z', 'music');
+                $this->writePost($repositoryRoot, 'thread-music-text', "Subject: What are you listening to?\n\nTell us.", '2026-07-02T00:00:00Z', 'music');
+                $this->commit($repositoryRoot);
+                $page = $this->markup($this->render(new Application(dirname(__DIR__), $repositoryRoot, $databasePath), '/music/'));
+                $note = substr($page, strpos($page, 'id="post-thread-music-note"'));
+                $text = substr($page, strpos($page, 'id="post-thread-music-text"'), strpos($page, 'id="post-thread-music-note"') - strpos($page, 'id="post-thread-music-text"'));
+                assertStringContains('<div class="thread-row__player">', $note);
+                assertStringContains('data-provider="spotify"', $note);
+                assertStringContains('<details', $note, 'The player starts collapsed.');
+                assertStringNotContains('thread-row__excerpt', substr($note, 0, strpos($note, '</article>')), 'The row does not repeat the played link as its excerpt.');
+                assertStringNotContains('thread-row__player', $text, 'A track without a recognized link shows no player.');
+                assertStringContains('Tell us.', $text);
+            });
+        } finally {
+            putenv('FORUM_MEDIA_EMBEDS_ENABLED');
+            putenv('FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED');
+        }
+    }
+
     public function testEmptyMusicPageStillRenders(): void
     {
         $this->withSite('mitrapclub', function (string $repositoryRoot, string $databasePath): void {

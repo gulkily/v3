@@ -54,3 +54,22 @@ Step 4 entry: **0.55**, Step 3 reaffirmed unchanged. Stage originals copied from
   - A hand-written fixture can't use a `#music` reply or an unsigned label record to tag a thread: replies create label records at write time, and unsigned labels don't count under the existing approval rules. The test uses board tags; tag membership itself is TagPage's existing, separately tested behaviour.
 
 *— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Track rows with players
+
+**Original estimate: 0.10**
+**Retrospective: 0.10**
+
+- Changes:
+  - `templates/partials/thread_row.php`: optional `rowPlayer` (rendered embed) on its own line under the meta, and `rowPlayerLink`, which is left out of the excerpt. Other callers pass neither and render as before.
+  - `Http/MusicPageController.php`: each row carries `music_link`, the first link `MediaEmbedDetector` recognizes in the opening post's preview.
+  - `templates/pages/music.php`: renders the player through the existing `$br` body renderer, so it follows the media embed and inline player flags like any post.
+  - `public/assets/site.css`: `.thread-row__player` spans the row and clamps the card to the column. The styles went in `site.css`, not the Underground theme files as planned: the rule is layout, and both Underground themes already style the cards.
+- Verification:
+  - `./v3 test MusicPageTest BoardListTest MediaEmbedRendererTest`: 41 run, 41 passed. New case: a Spotify row has a collapsed player and doesn't repeat the link as its excerpt; a text-only #music thread has no player.
+  - Local server (`./v3 start`, `FORUM_SITE_ID=mitrapclub`, five tracks from YouTube, Spotify and SoundCloud), headless Chrome at 380 and 1280px in Underground and Underground Dark, collapsed and with three players open: no sideways overflow (scroll width minus client width: -15px, the scrollbar gutter, in all eight shots). Players are empty in the workspace because provider frames can't load here.
+- Notes:
+  - The row preview holds only the opening post's first line, so a note on the line after the link shows on the thread page, not in the row. Left as is; widening the stored preview is outside this cycle.
+  - Spotify album players are tall (the provider's own height); this is existing card behaviour.
+
+*— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*

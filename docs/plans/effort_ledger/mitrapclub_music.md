@@ -16,3 +16,4 @@
 
 2026-11-25 — Step 3 approved. Step 4 entry **0.55**, reaffirmed. Stage 1 retrospective 0.15.
 - Stage 2 retrospective 0.10.
+- Stage 3 retrospective 0.10.

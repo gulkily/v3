@@ -16,7 +16,11 @@
 <?php else: ?>
   <div class="thread-rows music-tracks">
 <?php foreach ($threads as $thread): ?>
-<?= $indent($partial('partials/thread_row.php', ['thread' => $thread]), 2) ?>
+<?= $indent($partial('partials/thread_row.php', [
+    'thread' => $thread,
+    'rowPlayer' => $thread['music_link'] === null ? '' : $br($thread['music_link']),
+    'rowPlayerLink' => $thread['music_link'],
+]), 2) ?>
 <?php endforeach; ?>
   </div>
 <?php endif; ?>
