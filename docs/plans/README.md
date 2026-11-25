@@ -116,6 +116,8 @@ checklists, and proposals remain at the top level or in the collections below.
 
 [Push tap routing handoff](push_tap_routing_handoff.md) — notifications cycle 5: a tap opens the DM or reply, in an open window or offline.
 
+[Installed app name and fresh manifest](owa_app_title/owa_app_title_one_shot.md) — pages name the app in their own HTML for browsers that skip the manifest, and the manifest link carries its hash so a deploy replaces a cached copy; follow-up to `owa_start_url`.
+
 [Guestbook](guestbook/guestbook_step3_development_plan.md) — a `/guestbook/` page shows the guestbook thread's top-level replies as a paper book with numbered pages and a "Sign the book" form; the thread stays available as an ordinary thread.
 
 [Tagsets file comments](tagsets_file_comments/tagsets_file_comments_one_shot.md) — one-shot: plainer comments in `resources/tagsets.txt`.
