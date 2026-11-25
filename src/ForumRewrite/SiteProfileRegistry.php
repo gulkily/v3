@@ -82,6 +82,8 @@ final class SiteProfileRegistry
                 'gettingStarted' => false,
                 // The home page (/) shows Gallery; the board stays at /threads/.
                 'homePage' => 'gallery',
+                // A Music page (/music/) where people share tracks, tagged #music.
+                'musicSection' => true,
                 'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'socials', 'editorial' => 'mitrapclub', 'brandedStylesheet' => 'underground', 'toolsNav' => 'hidden', 'favicon' => 'mitrapclub'],
             ],
         ];
@@ -162,6 +164,12 @@ final class SiteProfileRegistry
     }
 
     /** What the active site's home page (/) shows: 'board' (default) or 'gallery'. */
+    /** Whether this site has the Music page (/music/): shared tracks tagged #music and a share box. */
+    public static function musicSection(): bool
+    {
+        return (self::active()['musicSection'] ?? false) === true;
+    }
+
     public static function homePage(): string
     {
         return (string) (self::active()['homePage'] ?? 'board');
@@ -276,6 +284,9 @@ final class SiteProfileRegistry
                 throw new \RuntimeException("Site profile {$siteId} homePage must be board or gallery.");
             }
 
+            if (array_key_exists('musicSection', $profile) && !is_bool($profile['musicSection'])) {
+                throw new \RuntimeException("Site profile {$siteId} musicSection must be true or false.");
+            }
             if (array_key_exists('gettingStarted', $profile) && !is_bool($profile['gettingStarted'])) {
                 throw new \RuntimeException("Site profile {$siteId} gettingStarted must be true or false.");
             }

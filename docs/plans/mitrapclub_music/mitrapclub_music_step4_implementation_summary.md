@@ -36,3 +36,21 @@ Step 4 entry: **0.55**, Step 3 reaffirmed unchanged. Stage originals copied from
   - Workspace oEmbed checks (Step 3 Key Risks) still hold; DreamHost is checked in Stage 7.
 
 *— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - The /music/ page
+
+**Original estimate: 0.10**
+**Retrospective: 0.10**
+
+- Changes:
+  - `SiteProfileRegistry.php`: profile key `musicSection` (validated as a bool) and `musicSection(): bool`; the mitrapclub profile sets it to true.
+  - `Application.php`: `/music/` and `/music` render through the new controller, answer 404 when the key is off, and join the live application routes beside `/gallery/`.
+  - New `Http/MusicPageController.php`: `page(mixed $page = null): string` reads `TagPage::page($pdo, 'music', $n)` and numbered pagination at `/music/`; active section `music`.
+  - New `templates/pages/music.php`: the board's `thread_row.php` rows in a `thread-rows music-tracks` list; "No tracks yet" or "on this page" when empty; no visible page title, as for other main-nav pages.
+- Verification:
+  - `./v3 test MusicPageTest SiteProfileRegistryTest GalleryPageTest`: 19 run, 19 passed.
+  - New `MusicPageTest`: /music/ on mitrapclub lists exactly the IDs /tags/music lists, newest first, including a thread with `music` beside another board tag, and leaves an untagged lecture out; page 2 says "No tracks on this page"; an empty tag still renders; zenmemes, chouse and qdb answer 404.
+- Notes:
+  - A hand-written fixture can't use a `#music` reply or an unsigned label record to tag a thread: replies create label records at write time, and unsigned labels don't count under the existing approval rules. The test uses board tags; tag membership itself is TagPage's existing, separately tested behaviour.
+
+*— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
