@@ -5,7 +5,7 @@ Debug mode: disabled
 Effort study: `railspike-effort` (R1, P2), ledger [read_model_post_memory.md](../effort_ledger/read_model_post_memory.md)
 Extended estimates: disabled
 **Cycle estimate: unavailable (intake missing, not backfilled; see Study history)**
-Status: implemented and verified; completion commit and PR pending
+Status: implemented and verified; PR #414 open, qdb replay pending deploy
 
 Original request (2026-11-24): "please help me fix this: PHP Fatal error: Allowed memory size of 134217728 bytes exhausted (tried to allocate 2097152 bytes) in /home/qdb/v3/src/ForumRewrite/ReadModel/ReadModelBuilder.php on line 288"
 
@@ -65,6 +65,6 @@ Under a 128 MB limit the ceiling moves from about 19,000 to about 35,000 posts. 
 
 Diff checked: one builder change, three test adjustments, one new test with its support script, this record, the index line and the ledger file. No duplicated components; no schema or contract changes.
 
-Commit/merge/publication status: completion commit and PR pending.
+Commit/merge/publication status: completion commit `9158f7b`; PR #414 open; not merged or deployed.
 
 *Claude (Opus 5.5), 2026-11-24 UTC*
