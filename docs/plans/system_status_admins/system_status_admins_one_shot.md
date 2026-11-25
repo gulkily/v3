@@ -54,6 +54,6 @@ Verification:
 
 Final review: the diff touches `CodebaseStateController.php`, `LocalAppSmokeTest.php`, this record, the plans index and the ledger. No new query or component, no schema or dependency change. Deploy now is enough.
 
-Commit/merge/publication status: completion commit pending at time of writing; branch `fix/system-status-admins`; not merged.
+Commit/merge/publication status: planning `fc7555c3`, completion `e3a6ea7b` on `fix/system-status-admins`; PR #429 open; not merged.
 
 _Claude · 2026-11-25 UTC · Model: claude-opus-5-5_
