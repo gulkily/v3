@@ -170,6 +170,14 @@ Branch: `feat/nav-tree` from `origin/main` `2d7805c`. Planning commit: `f585d60`
 
 *— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
 
+## After Step 4 - Merge with main for the PR
+
+- Changes: merged `origin/main` (`797971a`) into `feat/nav-tree`. Conflicts in `FeatureFlagRegistry.php` (main added `FORUM_PUSH_ENABLED`; both flags kept), `docs/concepts/tools_launcher.md` (main added the Developer group; History added to its text) and `browsing_tree_checklist.md` (main's links kept; nav_tree progress kept; main's open question on Beside pane visits marked answered).
+- Verification after the merge: `./v3 test --smoke VisitHistoryPageTest ToolsRegistryTest NavIconSetsTest UsageNamesTest UsagePageKindTest UsageReportsPageTest FeatureFlagEvaluatorTest ForteBoardReaderTest PreferencesPageTest`: passed, 507 run. `visit_history.mjs` (Chromium) and `visit_history_offline.mjs`: passed. Full suite not run.
+- **Failed:** `node tests/browser/tools_launcher.mjs`, the 1280×720 check. With every flagged tool on (24 now), the last launcher button ends at 765 px in 11 zenmemes themes and at 772 to 774 px in Sticker and Underground Dark. Main's Developer group used up the room the test had; History adds one row to "Your device". The other launcher checks (order, hooks, icons, no overflow) pass. Not changed here: regrouping the launcher or relaxing the check is a layout decision for the maintainer. With the History flag off (the default) the launcher is as on main.
+
+*— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
+
 ## Enhancement Requests
 
 - Sync, in-page changes as visits, `tree_history` and `filmstrip`: unchanged from Step 2, all deferred or separate.
