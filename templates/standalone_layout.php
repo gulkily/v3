@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <title><?= $e($title) ?></title>
+  <meta name="apple-mobile-web-app-title" content="<?= $e($appName) ?>">
   <link rel="icon" href="<?= $e($faviconPath) ?>" sizes="32x32">
 <?php if (($touchIconPath ?? null) !== null): ?>
   <link rel="apple-touch-icon" href="<?= $e($touchIconPath) ?>">
