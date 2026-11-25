@@ -92,6 +92,7 @@
               if (next.length === 1) { visit = next[0]; continue; }
               if (next.length > 1) {
                 var nested = document.createElement('ul');
+                nested.className = 'visit-tree__branches';
                 next.slice().sort(function (a, b) { return latest(b) - latest(a); }).forEach(function (child) {
                   var item = document.createElement('li');
                   item.className = 'visit-tree__branch';

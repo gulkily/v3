@@ -22,6 +22,9 @@ expect(str_contains($history, 'data-role="visit-history-tree"') && str_contains(
 expect(str_contains($history, "localStorage.getItem('forum_visit_history')"), 'flag on: the tree is drawn in the page, before paint');
 expect(str_contains($history, '/assets/tools.'), 'flag on: tools styles');
 expect(page($application(), 'GET', '/tools/history') !== '', 'flag on: history without the slash');
+$tools = page($application(), 'GET', '/tools/');
+expect(str_contains($tools, 'class="tool-launcher-button" href="/tools/history/"'), 'flag on: Tools launcher entry');
+expect(str_contains($history, 'href="/tools/history/"'), 'flag on: Tools bar entry on the History page');
 
 putenv('FORUM_VISIT_HISTORY_ENABLED=0');
 $off = page($application(), 'GET', '/threads/');
@@ -32,6 +35,8 @@ http_response_code(200);
 $historyOff = page($application(), 'GET', '/tools/history/');
 expect(http_response_code() === 404, 'flag off: history status ' . var_export(http_response_code(), true));
 expect(!str_contains($historyOff, 'data-visit-history'), 'flag off: history page rendered');
+$toolsOff = page($application(), 'GET', '/tools/');
+expect(!str_contains($toolsOff, '/tools/history/'), 'flag off: Tools entry shown');
 PHP);
     }
 

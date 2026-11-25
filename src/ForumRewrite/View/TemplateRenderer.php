@@ -784,8 +784,9 @@ final class TemplateRenderer
             'themeFlags' => $this->featureFlags,
         ], $data);
         // Drop tools whose pages are off: Agent Prompts opens /agent/, the
-        // usage tools exist only while the "Usage reports" flag is on, and
-        // Import only while the "Import page" flag is on.
+        // usage tools exist only while the "Usage reports" flag is on,
+        // Import only while the "Import page" flag is on, and History only
+        // while the "Visit history" flag is on.
         $hiddenTools = [];
         if (!$data['agentPageEnabled']) {
             $hiddenTools[] = 'agent-prompts';
@@ -798,6 +799,9 @@ final class TemplateRenderer
         }
         if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::BACKLOG_ENABLED)) {
             $hiddenTools[] = 'backlog';
+        }
+        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::VISIT_HISTORY_ENABLED)) {
+            $hiddenTools[] = 'history';
         }
         if ($hiddenTools !== []) {
             foreach (['toolPages', 'toolNavOptions'] as $toolListKey) {

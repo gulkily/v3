@@ -52,6 +52,7 @@ final class ToolsPageSupport
             ['key' => 'bookmarklets', 'label' => 'Bookmarklets', 'href' => '/tools/bookmarklets/', 'group' => 'device', 'tone' => 'bookmarklets', 'standalone' => false],
             ['key' => 'agent-prompts', 'label' => 'Agent Prompts', 'href' => '/agent/', 'group' => 'device', 'tone' => 'agent', 'standalone' => true],
             ['key' => 'usage-log', 'label' => 'Usage Log', 'href' => '/tools/usage-log/', 'group' => 'device', 'tone' => 'usage', 'standalone' => false],
+            ['key' => 'history', 'label' => 'History', 'href' => '/tools/history/', 'group' => 'device', 'tone' => 'history', 'standalone' => false],
             ['key' => 'activity', 'label' => 'Activity', 'href' => '/activity/', 'group' => 'reading', 'tone' => 'activity', 'standalone' => true],
             ['key' => 'forte', 'label' => 'Forte', 'href' => '/forte', 'group' => 'reading', 'tone' => 'forte', 'standalone' => true],
             ['key' => 'docs', 'label' => 'Platform Docs', 'href' => '/docs/', 'group' => 'reading', 'tone' => 'docs', 'standalone' => true],

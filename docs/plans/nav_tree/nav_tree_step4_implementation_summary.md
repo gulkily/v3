@@ -120,6 +120,27 @@ Branch: `feat/nav-tree` from `origin/main` `2d7805c`. Planning commit: `f585d60`
 
 *— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
 
+## Stage 6 - Tools listing and icons
+
+**Original estimate: 0.05**
+
+**Retrospective: 0.06**
+
+- Changes:
+  - `ToolsPageSupport::registry()`: History in the "device" group after Usage Log (key and tone `history`, `/tools/history/`). `TemplateRenderer` hides it while the flag is off, as it does the usage tools.
+  - `theme-nav-icons.css`: a History glyph (a node with two branches) in every set, for the launcher button and the Tools bar: pixel art (Word97, Chicago, Midnight), smooth lines (Gloss, Gloss Dark, Engagify, Spearmint) and cute pixel art (Bubblegum); plus the shared sizing rule.
+  - `LocalAppSmokeTest` lists History among the tools that are off by default; `VisitHistoryPageTest` checks the launcher and Tools bar entries with the flag on and off.
+  - From the visual check: on the History page each branch is now its own bar, and Clear is sized to its label.
+- Verification:
+  - `./v3 test --smoke VisitHistoryPageTest NavIconSetsTest UsageNamesTest LocalAppSmokeTest`: passed, 490 run. Full suite not run.
+  - Icon and page checked by eye in screenshots (Chromium, outside the repository): Tools launcher in Word97, Chicago, Midnight, Gloss, Gloss Dark, Engagify, Spearmint and Bubblegum (and Light, which has no icons); History page at 1100px and 390px in the same themes. The glyph shows in each set; the tree reads as a Board with two branches.
+  - `node tests/browser/visit_history.mjs` in Chromium, Firefox and WebKit after the layout change: passed.
+- Notes:
+  - A pushed address with the same title as its page (a `?view=` change) shows the same title twice in the tree. Left as is; page scripts that change what is shown usually change the title too.
+- Estimate details: original scope as planned; the branch bars added a little. Retrospective 0.06.
+
+*— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
+
 ## Enhancement Requests
 
 - Sync, in-page changes as visits, `tree_history` and `filmstrip`: unchanged from Step 2, all deferred or separate.
