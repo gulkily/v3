@@ -131,3 +131,23 @@ Step 4 entry: **0.55**, Step 3 reaffirmed unchanged. Stage originals copied from
   - With media embeds off, a row's player line shows the plain link instead of a card, as the post body would.
 
 *— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
+
+## Stage 7 - After deploy (pending)
+
+**Original estimate: 0.10**
+**Retrospective: pending**
+
+- Status: pending; it needs the merge and the mitrapclub.com deploy. Nothing in it changes code.
+- To do: confirm with the maintainer the 12 track threads to tag (the 13 music-link threads minus the Michael Levin lecture), then post a `#music` reply as "claude" on each; share one untitled bare link per provider on mitrapclub.com, check its fetched title from DreamHost, then retract the test threads; the maintainer's check on his iPhone SE.
+
+## Closeout
+
+- Stages 1–6: complete, each in its own commit with its summary section. Stage 7: pending (above).
+- Commits from `5ab4adbad` (plans only): planning, Stages 1–6, and this closeout; Stage 7 will add its own record.
+- Completion Contract: normal entry, outcome and recovery verified locally (unit, browser, and a local mitrapclub server); deployment and release pending Stage 7.
+- Baseline failures reproduced on `origin/main` and fixed here: `FeatureFlagsBehaviorTest::testPresentationOrderCoversEveryFlagOnceInItsAssignedGroup` (Stage 1) and `tests/browser/nav_slots.mjs` (Stage 5).
+- Not run: the full suite (`./v3 fulltest`), per the maintainer's standing preference; the smoke set and every touched test class and browser test passed.
+- Unverified: provider titles fetched from DreamHost, and the maintainer's phone check.
+- Cycle retrospective: **0.60** against 0.55 (Stages 4 and 5 ran over). Maintainer comfortable-fit judgment: pending. Measured time: unknown.
+
+*— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*

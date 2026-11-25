@@ -93,3 +93,25 @@
 ### Uncertain assessments
 
 - One fetcher class instead of three: judged a reuse improvement within the approved scope, recorded as a deviation.
+
+## 2026-11-25T20:05Z — Step 4
+
+### Necessary/useful instructions
+
+- Step 3's Key Risks early validation (count before changing the title match) gave a concrete number (0 first-line threads on zenmemes.com) to put beside the flag.
+- `step4_implementation_do.md`, stage boundary protocol: stage-by-stage commits kept two unplanned pieces (the row beacon, the nav_slots fix) attached to the stage that found them.
+- Maintainer preference to fix baseline failures: two found and fixed (flag ordering, nav_slots.mjs route).
+- `step4_implementation_after.md`, report pending items first: Stage 7 depends on deploy and is recorded as pending rather than complete.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- The closeout rule "commit count not lower than 1 + number_of_stages" can't hold while a post-deploy stage is pending; recorded instead of padded.
+
+### Uncertain assessments
+
+- Step 3 put the share box on the compact form with a lead-field Title; the full form already had Title and Tags, so it was used instead. Judged within scope; recorded as a deviation.
+- Hashtag replies and unsigned label records don't tag a hand-written fixture; the test uses board tags. Whether the tag page should honour root-post hashtags is outside this cycle.
