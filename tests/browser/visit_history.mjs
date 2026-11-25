@@ -160,6 +160,54 @@ try {
   assert.deepEqual(all[all.length - 1], ['/threads/root-001', '/threads/'], 'the second tab grows its own branch');
   await second.close(); await third.close();
 
+  // --- Tools → History ---
+  // Fresh history: Board, two child threads, the second opened from the Board after back.
+  await page.evaluate(() => window.forumVisitHistory.clear());
+  await page.goto(on.base + '/threads/'); await settle(page);
+  await page.click('a[href="/threads/root-001"]'); await settle(page);
+  await page.goBack(); await settle(page);
+  await page.click('a[href="/threads/thread-zenmemes-rules"]'); await settle(page);
+  const recorded = (await tree(page)).length;
+  // The tree is drawn while the page is read, before anything after it: watch for
+  // the Tools card that follows it and note whether the tree already had rows.
+  await context.addInitScript(() => {
+    new MutationObserver((records, observer) => {
+      const card = document.querySelector('.tools-nav-card');
+      if (!card) return;
+      const list = document.querySelector('[data-role="visit-history-tree"]');
+      window.__treeRowsBeforeCard = list ? list.querySelectorAll('a').length : -1;
+      observer.disconnect();
+    }).observe(document, { childList: true, subtree: true });
+  });
+  await page.goto(on.base + '/tools/history/'); await settle(page);
+  assert.equal(await page.evaluate(() => window.__treeRowsBeforeCard), 3, 'the tree is drawn before the rest of the page');
+  assert.equal((await tree(page)).length, recorded, 'the History page is never recorded');
+  const shape = await page.evaluate(() => {
+    const top = document.querySelector('[data-role="visit-history-tree"] > .visit-tree__branch > ul > li');
+    return {
+      top: top.querySelector(':scope > a').getAttribute('href'),
+      branches: Array.from(top.querySelectorAll(':scope > ul > .visit-tree__branch > ul > li > a')).map(link => link.getAttribute('href')),
+      when: top.querySelector('.visit-tree__when').textContent,
+      empty: document.querySelector('[data-role="visit-history-empty"]').hidden,
+      clear: document.querySelector('[data-action="visit-history-clear"]').hidden,
+    };
+  });
+  assert.equal(shape.top, '/threads/', 'the Board heads the branch');
+  assert.deepEqual(shape.branches, ['/threads/thread-zenmemes-rules', '/threads/root-001'], 'two branches under the Board, newest first');
+  assert.ok(shape.when.length > 0, 'each visit shows its time');
+  assert.equal(shape.empty, true, 'no empty note while there are visits');
+  assert.equal(shape.clear, false, 'Clear is offered');
+  // A visit in the tree opens its page.
+  await page.click('[data-role="visit-history-tree"] a[href="/threads/root-001"]');
+  await page.waitForURL('**/threads/root-001'); await settle(page);
+  await page.goto(on.base + '/tools/history/'); await settle(page);
+  await page.click('[data-action="visit-history-clear"]');
+  assert.equal(await page.locator('[data-role="visit-history-tree"] a').count(), 0, 'Clear empties the tree');
+  assert.equal(await page.locator('[data-role="visit-history-empty"]').isVisible(), true, 'the empty note shows');
+  assert.equal(await page.evaluate(() => localStorage.getItem('forum_visit_history')), null, 'Clear removes the stored visits');
+  await page.goto(on.base + '/threads/'); await settle(page);
+  assert.deepEqual(await tree(page), [['/threads/', null]], 'the next page starts a fresh tree');
+
   // --- The cap ---
   await page.evaluate(() => {
     const visits = [];

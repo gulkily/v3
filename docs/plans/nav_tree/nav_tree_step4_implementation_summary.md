@@ -97,6 +97,29 @@ Branch: `feat/nav-tree` from `origin/main` `2d7805c`. Planning commit: `f585d60`
 
 *— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
 
+## Stage 5 - Tools → History page
+
+**Original estimate: 0.12**
+
+**Retrospective: 0.12**
+
+- Changes:
+  - Route `/tools/history/` (and without the slash) behind the flag in `Application.php`, listed among the application routes; `ToolsPageController::history()`; `templates/pages/history.php` with `tools.css`.
+  - The tree is drawn by a small script inside the page, right after its list, from `forum_visit_history`, so it is final before the rest of the page is read. A path reads down one list; where a page led to several, each branch is indented under it, newest first. Each visit shows its title (or address), its time and a "beside" mark when shown beside. Clear empties the tree; the empty note and Clear are hidden in the server HTML and set by the script. Without JavaScript one line says history is kept by JavaScript.
+  - `tools.css` gains the `.visit-tree` styles, following the Usage log list.
+  - `UsagePageKind::WORDS` gains `history`, so the usage log names the page `/tools/history`.
+  - New PHP test `tests/VisitHistoryPageTest.php`; `visit_history.mjs` gains a History section.
+- Verification:
+  - `./v3 test --smoke VisitHistoryPageTest UsagePageKindTest UsageNamesTest UsageReportsPageTest`: passed, 495 run. Full suite not run.
+  - `node tests/browser/visit_history.mjs` in Chromium, Firefox and WebKit: passed. Covers the drawn tree before later content, the page not being recorded, branch order, a click on a visit, Clear and a fresh tree afterwards.
+- Notes:
+  - Branch order uses each visit's place in storage, not its time in seconds: two visits in the same second tied in Chromium and Firefox.
+  - The tree script is inline in the template rather than in a page script, because a deferred page script runs after the first paint is allowed. This follows the head scripts in `layout.php`.
+  - A damaged store with a parent loop shows no row for the loop instead of hanging.
+- Estimate details: original scope as planned; no revision.
+
+*— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
+
 ## Enhancement Requests
 
 - Sync, in-page changes as visits, `tree_history` and `filmstrip`: unchanged from Step 2, all deferred or separate.

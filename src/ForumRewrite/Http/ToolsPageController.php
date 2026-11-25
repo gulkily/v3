@@ -306,6 +306,17 @@ final class ToolsPageController
         );
     }
 
+    /** Tools → History: the tree of pages this browser opened (visit_history.js); drawn in the page from browser storage. */
+    public function history(): string
+    {
+        return $this->routeServices->renderPageTemplate(
+            'history.php',
+            ['toolNavOptions' => ToolsPageSupport::navOptions('history')],
+            'History',
+            'tools',
+        );
+    }
+
     public function outbox(): string
     {
         return $this->routeServices->renderPageTemplate(
