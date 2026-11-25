@@ -8,7 +8,7 @@ Extended estimates: enabled. No alternatives or work units, so no unit estimates
 
 **Cycle estimate: 0.08**
 
-Status: planned; next permitted action: implement.
+Status: implemented and committed; next permitted action: maintainer review (PR).
 
 Feedback item: none matches (searched `docs/feedback/items/`).
 
@@ -35,9 +35,34 @@ Verification and recovery plan: `./v3 test --smoke PrivateAccessConfirmationTest
 
 Starting revisions and branch: `fix/private_access_confirm_timing` from `origin/main` `797971a`.
 
-Planning commit: pending.
+Planning commit: `be02096` (plan and index entry only, before any implementation).
 
 Study history:
 - 2026-11-25 UTC, intake and execution entry: **0.08**. Recorded after inspecting the controller and writer, so not a clean intake. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified.
 
-*Claude · 2026-11-25 UTC*
+Dated execution history:
+- 2026-11-25: `privateAccessConfirmation()` in `IdentityApprovalAndInvitationApiController` times `request_data`, merges the writer's timings with `mergeResultTimings()`, sends `Server-Timing` beside `no-store`, and drops `timings` from the body; errors send `request_data` and `total`. Addition.
+- 2026-11-25: `preparePrivateAccessConfirmation()` times `policy`; `finalizePrivateAccessConfirmation()` times `policy`, `verify`, `commit` and `status` with `timePhase()`. A repeat of an accepted confirm reports `status` only. Addition.
+- 2026-11-25: `PrivateAccessConfirmationTest::testRepeatOfTheAcceptedConfirmIsANoOp` asserts the phase names.
+- 2026-11-25, discovery (local test repository, one run, printed and then removed): prepare `policy` 3.3 ms, lock held 3.8 ms; finalize lock held 311.6 ms: `policy` 4.1, `verify` 85.8, `commit` 127.1, `status` 94.2. `status` is about one more gpg run because `privateAccessStatus()` re-reads the confirm record just written, and `PrivateAccessConfirmation::read()` verifies its signature again, both directly and through `PrivateKeyAccess`. Handed to `private_access_one_evaluation`.
+
+Study history, closeout:
+- 2026-11-25 UTC: retrospective scope assessment **0.08**. Delivered as planned. Claude, single exposed rater. Maintainer judgment pending; measured time unknown.
+
+Outcome: delivered. Confirm's two requests now show where their time goes in the network panel, named like the approval endpoints' timings.
+
+Verification:
+- Passed: `./v3 test --smoke PrivateAccessConfirmationTest ApplicationServerTimingTest`: 504 run, 504 passed. Full suite not run.
+- Passed: `php -l` on the changed files; `git diff --check`.
+- Unverified here: the `Server-Timing` header on a real request (PHP's `header()` is not observable in the CLI tests). The helpers it uses are covered by `ApplicationServerTimingTest`. Check in the network panel after deploying.
+- Inapplicable: markup, themes, icons, schema, flags.
+
+Final review: the diff touches the controller, `LocalWriteService.php`, one test, this record, the plans index, the ledger and the debug log. Existing helpers only.
+
+Commit/merge/publication status: completion commit pending at the time of writing; branch `fix/private_access_confirm_timing`; PR to be opened; not merged. `private_access_one_evaluation` is stacked on this branch.
+
+Debug: [debug log](./private_access_confirm_timing_debug_log.md).
+
+Enhancement requests: none.
+
+Attribution: Claude · 2026-11-25 UTC · Model: claude-opus-5-5
