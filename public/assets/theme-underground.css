@@ -301,13 +301,13 @@
   border-radius: 999px;
 }
 
-:root:is([data-theme="underground"], [data-theme="undergrounddark"]) button[type="submit"]:not(.theme-menu__option):not([data-action]) {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) button[type="submit"]:not(.theme-menu__option):not([data-action]):not(.switch) {
   color: var(--active-ink);
   background: var(--ug-blue);
   border-color: var(--ug-blue);
 }
 
-:root:is([data-theme="underground"], [data-theme="undergrounddark"]) button[type="submit"]:not(.theme-menu__option):not([data-action]):hover {
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) button[type="submit"]:not(.theme-menu__option):not([data-action]):not(.switch):hover {
   background: var(--ug-blue-deep);
 }
 

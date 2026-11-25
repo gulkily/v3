@@ -1,86 +1,406 @@
 /* Theme: mitrapclub */
+/* MIT Rap Club: the lecture-hall chalkboard after a cypher. Slate board with
+   chalk dust and eraser haze; the club's lowercase name in chalk with the
+   cypherposium cube beside it; rhyme-scheme notes, scansion marks, a mic and
+   a cypher circle chalked in the margins; chalk-blue links and cardinal-red
+   marks; images pinned up as Polaroids. Chrome text (wordmark, nav, buttons,
+   labels) is lowercased; what people write is left as written.
+   Fonts are system only: Chalkboard SE on Apple devices, Segoe Print on
+   Windows, the rounded or system sans elsewhere. */
 :root[data-theme="mitrapclub"],
 .theme-menu__option[data-theme-option="mitrapclub"] {
   color-scheme: dark;
-  --media-dim: 0.85;
-  --page-bg: #15120f;
+  --media-dim: 0.9;
+  --mrc-board: #1f2724;
+  --mrc-board-deep: #141a18;
+  --mrc-chalk: #ecebe4;
+  --mrc-chalk-soft: #b4bbb5;
+  --mrc-blue: #9aa0ff;
+  --mrc-red: #ff7d8c;
+  --mrc-yellow: #f3dc7a;
+  --mrc-edge: rgba(236, 235, 228, 0.3);
+  --mrc-chalk-font: "Chalkboard SE", "Chalkduster", "Segoe Print", "Bradley Hand",
+                    ui-rounded, "SF Pro Rounded", "Nunito", system-ui, sans-serif;
+  /* Chalk dust: pale specks, denser than the eye notices. */
+  --mrc-dust: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .93 0 0 0 0 .92 0 0 0 0 .89 0 0 0 -1.3 0.58'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  --page-bg: var(--mrc-board);
   --body-background:
-    radial-gradient(circle at top, rgba(217, 79, 43, 0.10), transparent 45%),
-    #15120f;
-  --ink: #f4efe6;
-  --ink-soft: #b8ac98;
-  --line: #4a4038;
-  --panel: #201c17;
-  --input-bg: #0f0d0b;
-  --button-bg: #2a2521;
-  --button-alt-bg: #332c25;
-  --feedback-ok-bg: #16241a;
-  --feedback-error-bg: #2a1512;
-  --status-error: #ff8a65;
-  --status-ok: #8bd17c;
-  --status-warning: #ffcc66;
-  --active-bg: #c4441f;
-  --active-ink: #fff6ee;
-  --active-line: #ff7a45;
-  --active-ring: rgba(217, 79, 43, 0.25);
-  --body-font: "Courier New", "Courier Prime", ui-monospace, monospace;
-  --ui-font: "Arial Black", "Helvetica Neue", Arial, sans-serif;
+    var(--mrc-dust),
+    /* Eraser haze: wide, soft sweeps where the last lecture got wiped. */
+    radial-gradient(ellipse 38% 9% at 22% 18%, rgba(236, 235, 228, 0.07), transparent 70%),
+    radial-gradient(ellipse 30% 7% at 76% 34%, rgba(236, 235, 228, 0.06), transparent 70%),
+    radial-gradient(ellipse 44% 10% at 40% 72%, rgba(236, 235, 228, 0.05), transparent 70%),
+    radial-gradient(ellipse 26% 8% at 84% 88%, rgba(236, 235, 228, 0.06), transparent 70%),
+    radial-gradient(ellipse 120% 90% at 50% 35%, #243029 0%, var(--mrc-board) 55%, var(--mrc-board-deep) 100%);
+  --ink: var(--mrc-chalk);
+  --ink-soft: var(--mrc-chalk-soft);
+  --line: #48534e;
+  --panel: rgba(34, 43, 39, 0.94);
+  --input-bg: #161c1a;
+  --button-bg: #28322e;
+  --button-alt-bg: #303b36;
+  --feedback-ok-bg: #18301f;
+  --feedback-error-bg: #3a1a20;
+  --status-error: #ff8e9b;
+  --status-ok: #8fdca0;
+  --status-warning: var(--mrc-yellow);
+  --active-bg: var(--mrc-chalk);
+  --active-ink: #18201d;
+  --active-line: var(--mrc-red);
+  --active-ring: rgba(243, 220, 122, 0.45);
+  --body-font: ui-rounded, "SF Pro Rounded", "Nunito", "Varela Round", system-ui,
+               -apple-system, "Segoe UI", sans-serif;
+  --ui-font: var(--mrc-chalk-font);
   --code-font: ui-monospace, "Cascadia Code", "SF Mono", "Consolas",
                "Liberation Mono", monospace;
 }
 
+/* Swatch: a cypher in chalk on slate, one red mic in the middle. */
 .theme-swatch[data-theme="mitrapclub"] {
   background:
-    radial-gradient(circle at 35% 35%, #d94f2b 0 32%, #201c17 33% 100%);
-  border-color: #ff7a45;
-  box-shadow: inset 0 0 0 0.22rem #15120f;
-}
-
-:root[data-theme="mitrapclub"] .site-header {
-  border-bottom: 3px solid var(--active-line);
-  padding-bottom: 0.6rem;
-}
-
-:root[data-theme="mitrapclub"] .eyebrow {
-  background: var(--active-bg);
-  color: var(--active-ink);
-  border: 1px solid var(--active-line);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-:root[data-theme="mitrapclub"] .card {
-  position: relative;
-  border: 1px solid var(--line);
+    radial-gradient(circle at 50% 50%, #ff7d8c 0 14%, transparent 16%),
+    radial-gradient(circle at 50% 50%, transparent 0 30%, #ecebe4 32% 40%, transparent 42%),
+    #1f2724;
+  border-color: #ecebe4;
   box-shadow: none;
 }
 
-:root[data-theme="mitrapclub"] .card::before {
+.theme-menu__option[data-theme-option="mitrapclub"] {
+  font-family: var(--mrc-chalk-font);
+  text-transform: lowercase;
+}
+
+/* Page: dust tiles, the haze and board fade stretch. */
+:root[data-theme="mitrapclub"] body::before {
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+  background-size: 220px 220px, cover, cover, cover, cover, cover;
+}
+
+/* Margin notes: only where the page has margins to write in. */
+@media (min-width: 1180px) {
+  :root[data-theme="mitrapclub"] body::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1240px;
+    margin-left: -620px;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='230' height='760' viewBox='0 0 230 760'%3E%3Cdefs%3E%3Cfilter id='c' x='-5%25' y='-5%25' width='110%25' height='110%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='2' seed='4' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='3' result='d'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.6' numOctaves='1' seed='9' result='s'/%3E%3CfeColorMatrix in='s' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.4 1.75' result='m'/%3E%3CfeComposite in='d' in2='m' operator='in'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23c)' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M44 72 L132 70 L134 158 L46 160 Z' stroke='%23ecebe4' stroke-width='2.6'/%3E%3Cpath d='M44 72 L82 38 L168 37 L132 70 M168 37 L170 124 L134 158' stroke='%23ecebe4' stroke-width='2.6'/%3E%3Cpath d='M46 160 L83 127 L170 124 M82 38 L83 127' stroke='%23ecebe4' stroke-width='1.6'/%3E%3Ctext x='56' y='196' fill='%23ecebe4' stroke='none' font-family='Chalkboard SE,Chalkduster,Segoe Print,Bradley Hand,cursive' font-size='17' text-anchor='start' transform='rotate(-3 56 196)'%3Emit rap club%3C/text%3E%3Cpath d='M30 292 L40 270 M86 292 L96 270 M142 292 L152 270 M198 292 L208 270' stroke='%23ecebe4' stroke-width='2.6'/%3E%3Cpath d='M56 276 Q63 292 70 276 M112 276 Q119 292 126 276 M168 276 Q175 292 182 276' stroke='%23ecebe4' stroke-width='2.6'/%3E%3Cpath d='M26 304 L214 300' stroke='%23ecebe4' stroke-width='1.4'/%3E%3Ctext x='30' y='338' fill='%23ecebe4' stroke='none' font-family='Chalkboard SE,Chalkduster,Segoe Print,Bradley Hand,cursive' font-size='20' text-anchor='start'%3Ex . x . x . x .%3C/text%3E%3Ctext x='52' y='420' fill='%239aa0ff' stroke='none' font-family='Chalkboard SE,Chalkduster,Segoe Print,Bradley Hand,cursive' font-size='34' text-anchor='start'%3Ea%3C/text%3E%3Ctext x='52' y='470' fill='%239aa0ff' stroke='none' font-family='Chalkboard SE,Chalkduster,Segoe Print,Bradley Hand,cursive' font-size='34' text-anchor='start'%3Ea%3C/text%3E%3Ctext x='52' y='534' fill='%23ff7d8c' stroke='none' font-family='Chalkboard SE,Chalkduster,Segoe Print,Bradley Hand,cursive' font-size='34' text-anchor='start'%3Eb%3C/text%3E%3Ctext x='52' y='584' fill='%23ff7d8c' stroke='none' font-family='Chalkboard SE,Chalkduster,Segoe Print,Bradley Hand,cursive' font-size='34' text-anchor='start'%3Eb%3C/text%3E%3Cpath d='M86 410 Q120 437 86 462' stroke='%239aa0ff' stroke-width='2.6'/%3E%3Cpath d='M86 524 Q120 551 86 576' stroke='%23ff7d8c' stroke-width='2.6'/%3E%3Cpath d='M134 436 L196 436' stroke='%23ecebe4' stroke-width='1.5'/%3E%3Cpath d='M134 550 L182 550' stroke='%23ecebe4' stroke-width='1.5'/%3E%3Ctext x='134' y='426' fill='%239aa0ff' stroke='none' font-family='Chalkboard SE,Chalkduster,Segoe Print,Bradley Hand,cursive' font-size='18' text-anchor='start'%3E-ology%3C/text%3E%3Ctext x='134' y='540' fill='%23ff7d8c' stroke='none' font-family='Chalkboard SE,Chalkduster,Segoe Print,Bradley Hand,cursive' font-size='18' text-anchor='start'%3Eflow%3C/text%3E%3Cpath d='M40 660 C40 620 170 616 186 652 C200 690 70 712 44 684 C34 674 36 664 52 656' stroke='%23ecebe4' stroke-width='1.8'/%3E%3Ctext x='66' y='668' fill='%23ecebe4' stroke='none' font-family='Chalkboard SE,Chalkduster,Segoe Print,Bradley Hand,cursive' font-size='19' text-anchor='start'%3Estudy it%3C/text%3E%3C/g%3E%3C/svg%3E") left 0 top 96px / 230px 760px no-repeat,
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='230' height='760' viewBox='0 0 230 760'%3E%3Cdefs%3E%3Cfilter id='c' x='-5%25' y='-5%25' width='110%25' height='110%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='2' seed='4' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='3' result='d'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.6' numOctaves='1' seed='9' result='s'/%3E%3CfeColorMatrix in='s' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.4 1.75' result='m'/%3E%3CfeComposite in='d' in2='m' operator='in'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23c)' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Ctext x='18' y='70' fill='%23ecebe4' stroke='none' font-family='Chalkboard SE,Chalkduster,Segoe Print,Bradley Hand,cursive' font-size='27' text-anchor='start' transform='rotate(-4 18 70)'%3Ewhat is rap?%3C/text%3E%3Cpath d='M20 86 C70 78 130 80 196 70' stroke='%23ff7d8c' stroke-width='2.2'/%3E%3Cpath d='M115 140 m-34 0 a34 34 0 1 0 68 0 a34 34 0 1 0 -68 0' stroke='%23ecebe4' stroke-width='2.6'/%3E%3Cpath d='M90 120 L140 160 M84 140 L146 140 M90 160 L140 120 M115 106 L115 174' stroke='%23ecebe4' stroke-width='1.4'/%3E%3Cpath d='M96 172 L104 262 L126 262 L134 172' stroke='%23ecebe4' stroke-width='2.6'/%3E%3Cpath d='M115 262 C115 300 60 290 72 330 C82 360 150 340 140 380' stroke='%23ecebe4' stroke-width='1.8'/%3E%3Cpath d='M18 440 L32 440 L38 420 L46 462 L54 404 L62 476 L70 428 L78 452 L86 412 L94 470 L102 432 L110 448 L118 424 L126 458 L134 436 L142 444 L150 438 L212 440' stroke='%239aa0ff' stroke-width='2.2'/%3E%3Cpath d='M177 600 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M159 644 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M115 662 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M71 644 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M53 600 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M71 556 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M115 538 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M159 556 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0' stroke='%23ecebe4' stroke-width='2.2'/%3E%3Cpath d='M115 600 m-4 0 a4 4 0 1 0 8 0 a4 4 0 1 0 -8 0' stroke='%23ff7d8c' stroke-width='3'/%3E%3Cpath d='M140 576 C160 590 160 612 142 626' stroke='%23ff7d8c' stroke-width='1.6'/%3E%3Ctext x='115' y='712' fill='%23ecebe4' stroke='none' font-family='Chalkboard SE,Chalkduster,Segoe Print,Bradley Hand,cursive' font-size='19' text-anchor='middle'%3E1 bar = 4 beats%3C/text%3E%3C/g%3E%3C/svg%3E") right 0 top 96px / 230px 760px no-repeat;
+    opacity: 0.7;
+  }
+}
+
+/* Wordmark: the club's name in lowercase chalk, the cube before it and a
+   red scribble under it. */
+:root[data-theme="mitrapclub"] .site-header {
+  padding-top: 1rem;
+  border-bottom: none;
+}
+
+:root[data-theme="mitrapclub"] .site-header > .eyebrow,
+:root[data-theme="mitrapclub"] .site-brand .eyebrow {
+  position: relative;
+  display: inline-block;
+  margin: 0 0 0.9rem;
+  padding: 0 0 0.35rem 0;
+  border: none;
+  background: none;
+  font-family: var(--mrc-chalk-font);
+  font-size: clamp(2.1rem, 7.5vw, 3.3rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: lowercase;
+  color: var(--mrc-chalk);
+  /* Chalk: the letters take the board's dust as holes. */
+  background: var(--mrc-dust) 0 0 / 90px 90px, var(--mrc-chalk);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 1.5px rgba(236, 235, 228, 0.35));
+}
+
+:root[data-theme="mitrapclub"] .site-header > .eyebrow::before,
+:root[data-theme="mitrapclub"] .site-brand .eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-right: 0.28em;
+  vertical-align: -0.04em;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cg fill='none' stroke='%23ecebe4' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M4 14 L24 13 L25 35 L5 36 Z M4 14 L14 4 L35 3 L24 13 M35 3 L36 25 L25 35'/%3E%3Cpath d='M5 36 L15 26 L36 25 M14 4 L15 26' stroke-width='1.3'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+:root[data-theme="mitrapclub"] .site-header > .eyebrow::after,
+:root[data-theme="mitrapclub"] .site-brand .eyebrow::after {
   content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--active-line), transparent 85%);
+  left: 1em;
+  right: -0.2em;
+  bottom: -0.1rem;
+  height: 0.5rem;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 16' preserveAspectRatio='none'%3E%3Cpath d='M4 10 C60 4 140 3 200 6 C240 8 270 9 296 5 M30 13 C110 9 190 10 262 11' fill='none' stroke='%23ff7d8c' stroke-width='3' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+
+/* Other eyebrows: small chalk labels. */
+:root[data-theme="mitrapclub"] .eyebrow {
+  font-family: var(--mrc-chalk-font);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: lowercase;
+  color: var(--mrc-red);
+  background: none;
+  border: none;
+}
+
+/* Headings in chalk; thread titles stay chalk white. */
+:root[data-theme="mitrapclub"] h1,
+:root[data-theme="mitrapclub"] h2,
+:root[data-theme="mitrapclub"] h3 {
+  font-family: var(--mrc-chalk-font);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--mrc-chalk);
+}
+
+:root[data-theme="mitrapclub"] h1 a,
+:root[data-theme="mitrapclub"] h2 a,
+:root[data-theme="mitrapclub"] h3 a {
+  color: var(--mrc-chalk);
+  text-decoration: none;
+}
+
+:root[data-theme="mitrapclub"] h1 a:hover,
+:root[data-theme="mitrapclub"] h2 a:hover,
+:root[data-theme="mitrapclub"] h3 a:hover {
+  text-decoration: underline wavy var(--mrc-red) 0.08em;
+  text-underline-offset: 0.22em;
 }
 
 :root[data-theme="mitrapclub"] a {
-  color: var(--active-line);
+  color: var(--mrc-blue);
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.16em;
+}
+
+:root[data-theme="mitrapclub"] a:hover {
+  color: #c4c8ff;
+}
+
+:root[data-theme="mitrapclub"] .meta,
+:root[data-theme="mitrapclub"] time {
+  color: var(--mrc-chalk-soft);
+}
+
+/* Cards: a ruled-off section of the board, chalk outline, nearly solid. */
+:root[data-theme="mitrapclub"] .card {
+  position: relative;
+  border: 1.5px solid var(--mrc-edge);
+  border-radius: 4px 7px 5px 6px;
+  background: var(--panel);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 8px 22px -14px rgba(0, 0, 0, 0.9);
+}
+
+:root[data-theme="mitrapclub"] .card::before {
+  content: none;
+}
+
+:root[data-theme="mitrapclub"] .post-card:target {
+  border-color: var(--mrc-yellow);
+}
+
+:root[data-theme="mitrapclub"] .chip {
+  font-family: var(--mrc-chalk-font);
+  text-transform: lowercase;
+  background: transparent;
+  border: 1.5px solid currentColor;
+}
+
+/* Events: a chalk box around the date, like a flyer on the board. */
+:root[data-theme="mitrapclub"] .event-block {
+  padding: 0.5rem 0.75rem;
+  border: 2px dashed var(--mrc-red);
+  border-radius: 6px;
+  font-family: var(--mrc-chalk-font);
+}
+
+:root[data-theme="mitrapclub"] .event-block__date {
+  color: var(--mrc-red);
+  font-weight: 700;
+}
+
+/* Nav: chalk words; the current page gets circled. */
+:root[data-theme="mitrapclub"] .nav-link {
+  font-family: var(--mrc-chalk-font);
+  font-weight: 700;
+  text-transform: lowercase;
+  color: var(--mrc-chalk);
+  background: transparent;
+  border: 1.5px solid transparent;
+}
+
+:root[data-theme="mitrapclub"] .nav-link:hover {
+  color: var(--mrc-chalk);
+  border-color: transparent;
+  text-decoration: underline wavy var(--mrc-blue) 0.07em;
+  text-underline-offset: 0.25em;
 }
 
 :root[data-theme="mitrapclub"] .nav-link.is-active {
+  color: var(--mrc-chalk);
+  box-shadow: none;
+  outline: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 48' preserveAspectRatio='none'%3E%3Cpath d='M14 30 C8 14 46 5 78 6 C108 7 118 18 112 32 C104 44 50 46 26 40 C12 36 8 26 22 16' fill='none' stroke='%23ff7d8c' stroke-width='2.6' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") center / 112% 120% no-repeat;
+  border-color: transparent;
+}
+
+/* Buttons: chalk outlines, lowercase. Submit is a solid stick of chalk. */
+:root[data-theme="mitrapclub"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.lcd-palette__trigger):not(.switch),
+:root[data-theme="mitrapclub"] .button {
+  font-family: var(--mrc-chalk-font);
+  font-weight: 700;
+  text-transform: lowercase;
+  border: 1.5px solid var(--mrc-edge);
+  border-radius: 6px 9px 7px 8px;
+}
+
+:root[data-theme="mitrapclub"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):not(.lcd-palette__trigger):not(.switch):hover,
+:root[data-theme="mitrapclub"] .button:hover {
+  border-color: var(--mrc-chalk);
+}
+
+:root[data-theme="mitrapclub"] button[type="submit"]:not(.theme-menu__option):not([data-action]):not(.switch) {
   color: var(--active-ink);
-  background: var(--active-bg);
+  background: var(--mrc-chalk);
+  border-color: var(--mrc-chalk);
 }
 
+:root[data-theme="mitrapclub"] button[type="submit"]:not(.theme-menu__option):not([data-action]):not(.switch):hover {
+  background: #ffffff;
+}
+
+:root[data-theme="mitrapclub"] label,
+:root[data-theme="mitrapclub"] summary {
+  font-family: var(--mrc-chalk-font);
+}
+
+/* Inputs: a darker patch of board. */
 :root[data-theme="mitrapclub"] input,
-:root[data-theme="mitrapclub"] textarea {
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+:root[data-theme="mitrapclub"] textarea,
+:root[data-theme="mitrapclub"] select {
+  border: 1.5px solid var(--line);
+  border-radius: 6px;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.45);
 }
 
-:root[data-theme="mitrapclub"] button:not(.theme-swatch):not(.theme-menu__trigger):not(.theme-menu__option):hover,
-:root[data-theme="mitrapclub"] .nav-link:hover {
-  border-color: var(--active-line);
+:root[data-theme="mitrapclub"] input::placeholder,
+:root[data-theme="mitrapclub"] textarea::placeholder {
+  font-family: var(--mrc-chalk-font);
+  color: #8e9690;
+}
+
+/* Focus: yellow chalk, the colour nothing else uses. */
+:root[data-theme="mitrapclub"] input:focus-visible,
+:root[data-theme="mitrapclub"] textarea:focus-visible,
+:root[data-theme="mitrapclub"] select:focus-visible,
+:root[data-theme="mitrapclub"] a:focus-visible,
+:root[data-theme="mitrapclub"] button:focus-visible {
+  outline: 2.5px solid var(--mrc-yellow);
+  outline-offset: 2px;
+}
+
+:root[data-theme="mitrapclub"] ::selection {
+  background: var(--mrc-blue);
+  color: #121633;
+}
+
+/* Gallery: Polaroids pinned to the board, each a little off straight. */
+:root[data-theme="mitrapclub"] .gallery-grid {
+  gap: 0.9rem;
+  padding: 0.3rem 0.2rem 0.6rem;
+}
+
+:root[data-theme="mitrapclub"] .gallery-tile {
+  padding: 0.45rem 0.45rem 0;
+  border: none;
+  border-radius: 2px;
+  background: #f1eee5;
+  color: #22262a;
+  box-shadow: 0 10px 18px -10px rgba(0, 0, 0, 0.9), 0 1px 0 rgba(0, 0, 0, 0.3);
+  transform: rotate(-1.1deg);
+  transition: transform 0.15s ease;
+}
+
+:root[data-theme="mitrapclub"] .gallery-tile:nth-child(3n + 2) {
+  transform: rotate(0.9deg);
+}
+
+:root[data-theme="mitrapclub"] .gallery-tile:nth-child(3n) {
+  transform: rotate(-0.4deg);
+}
+
+:root[data-theme="mitrapclub"] .gallery-tile:hover,
+:root[data-theme="mitrapclub"] .gallery-tile:focus-visible {
+  transform: rotate(0deg) scale(1.02);
+}
+
+:root[data-theme="mitrapclub"] .gallery-tile img {
+  background: #cfcabd;
+}
+
+:root[data-theme="mitrapclub"] .gallery-tile__caption {
+  padding: 0.35em 0.2em 0.55em;
+  font-family: var(--mrc-chalk-font);
+}
+
+:root[data-theme="mitrapclub"] .gallery-tile__title {
+  color: #22262a;
+  font-weight: 700;
+  text-transform: lowercase;
+}
+
+:root[data-theme="mitrapclub"] .gallery-tile__meta {
+  color: #5b5f66;
+}
+
+/* Images in posts: the same Polaroid frame. */
+:root[data-theme="mitrapclub"] .post-image__original {
+  display: inline-block;
+  padding: 0.45rem 0.45rem 1.6rem;
+  background: #f1eee5;
+  border-radius: 2px;
+  box-shadow: 0 10px 18px -10px rgba(0, 0, 0, 0.9);
+  transform: rotate(-0.6deg);
+}
+
+:root[data-theme="mitrapclub"] .post-image__original img {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="mitrapclub"] .gallery-tile {
+    transition: none;
+  }
+}
+
+/* Print and forced colours: drop the texture and margin notes. */
+@media print, (forced-colors: active) {
+  :root[data-theme="mitrapclub"] body::after {
+    display: none;
+  }
+  :root[data-theme="mitrapclub"] .site-header > .eyebrow,
+  :root[data-theme="mitrapclub"] .site-brand .eyebrow {
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+}
+
+/* Switches: on is a solid chalk-green track, off an empty outline. */
+:root[data-theme="mitrapclub"] .switch[aria-checked="true"]::after {
+  background: var(--mrc-board-deep);
 }

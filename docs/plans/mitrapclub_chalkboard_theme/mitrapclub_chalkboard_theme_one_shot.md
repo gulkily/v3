@@ -10,7 +10,7 @@ Extended estimates: disabled
 
 **Cycle estimate: 0.30 (intake)**
 
-Status: planned; next permitted action: implement on `feat/mitrapclub-chalkboard-theme`.
+Status: implemented and verified locally; PR open; next permitted action: maintainer review.
 
 ## Original request
 
@@ -32,7 +32,7 @@ Application change, CSS only. Today `theme-mitrapclub.css` is a dark palette wit
 
 Concretely: slate chalkboard page with chalk dust and eraser smudges; chalk-annotation margins (stress marks, `a a b b`, rhyme arcs, a chalk cube); lowercase chalk wordmark with a scribbled underline; chalk-outlined cards; nav active state as a chalk circle; Polaroid frames for images (Gallery is the club's home page); chalk-blue links, cardinal-red accents; swatch redrawn.
 
-Allowed paths: `public/assets/theme-mitrapclub.css`, theme tests if they assert on it, this folder, the plans index, the checklist and the ledger.
+Allowed paths: `public/assets/theme-mitrapclub.css`, and after the scope addition below `public/assets/tool-details.css` (`.switch`) and `public/assets/theme-underground.css` (switch exclusion), theme tests if they assert on it, this folder, the plans index, the checklist and the ledger.
 
 ## Approach and risks
 
@@ -58,14 +58,32 @@ Concepts touched: [page theme](../../concepts/page_theme.md), used unchanged.
 
 Starting revisions and branch: `origin/main` `1b244371c`; branch `feat/mitrapclub-chalkboard-theme`.
 
-Planning commit: pending.
+Planning commit: `ccccbfaa2` (record, debug log and index only).
 
 ## Dated execution history
 
-- 2026-11-25: record written.
+- 2026-11-25: record written; planning commit `ccccbfaa2`.
+- 2026-11-25: stylesheet rebuilt. Margin notes and wordmark marks are inline SVG data URIs with a chalk filter (displacement plus noise holes); text in them uses the chalk font stack. Polaroid frames on `.gallery-tile` and `.post-image__original`.
+- 2026-11-25, correction after first render: chalk dust too dense (alpha lowered); margin notes too faint (0.5 → 0.7); the default `.nav-link.is-active` ring showed around the chalk circle (box-shadow cleared).
+- 2026-11-25, scope addition (user, mid-task): "also if it's in scope for this, please improve the design of the toggles … (the on position is hard to see)", screenshot from Underground's feature flags page. Accepted. Cause: the feature-flag switch is a `button[type=submit]`, and Underground's submit rule painted the track blue in both states, leaving only a dark green knob to tell them apart. Changes: Underground and MIT Rap Club submit rules exclude `.switch`; base `.switch` on state is now a solid `--status-ok` track with a page-coloured knob, off keeps the empty track with an `--ink-soft` knob (was `--line`, faint); knob motion respects reduced motion.
+- 2026-11-25: debugging used a local-only profile edit (`brandedStylesheet` → `mitrapclub`) to render the theme by default; reverted before commit.
+
+## Verification
+
+- `./v3 test --smoke ThemeRegistryTest ThemeCatalogPageTest PreferencesPageTest`: 499 run, 499 passed. `./v3 test --smoke FeatureFlagChangePageTest`: 495 run, 495 passed. Full suite not run.
+- Local server, `FORUM_SITE_ID=mitrapclub` with zenmemes.com content imported, system Chrome: `/threads/` at 1280px and 380px, `/gallery/` at 1280px; margin notes appear only at ≥ 1180px.
+- Switches: on and off captured on `/tools/feature-flags/` in Underground, Underground Dark, MIT Rap Club, Light, Dark, Gloss, Bubblegum and Spearmint; states are distinct in all. Bubblegum keeps its own button styling (unchanged by this cycle).
+- Contrast (WCAG): chalk on card 12.18, chalk blue on card 6.13, cardinal red on card 5.94, soft chalk on card 7.43, submit text 13.91, Polaroid title 13.13, Polaroid meta 5.53, placeholder 5.69.
+- Limitation: this box has no chalk fonts, so screenshots show the system sans fallback. iPhone and Mac get Chalkboard SE, Windows Segoe Print; Android and Linux the rounded or system sans.
+- Recovery: revert the three stylesheets; nothing else changed.
+
+## Outcome
+
+Delivered: the MIT Rap Club theme rebuilt around the club's chalk, lowercase name, cube, rhyme-scheme and cypher notes, and Polaroid images; clearer feature-flag switches site-wide, with Underground's on/off bug fixed. Not done: board hero / "what's next" callout, self-hosted chalk font (needs dependency approval), club favicon art; the `mitrapclub` profile still defaults to Underground.
 
 ## Study history
 
 - 2026-11-25 UTC, intake: **0.30**. Claude, single exposed rater.
+- 2026-11-25 UTC, closeout: scope grew by the switch fix (user-requested addition, small); assessment **0.35**. Maintainer judgment pending; measured time unknown.
 
 Attribution: Claude · 2026-11-25 UTC · Model: claude-opus-5-5
