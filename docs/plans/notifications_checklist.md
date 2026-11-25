@@ -49,9 +49,9 @@ Found on a first read at `93295c82`. Each cycle re-checks its own part before pl
   - Step 1 settles: what a reply notification shows for an unsigned post; whether a post already read on another device still notifies.
   - Steps 1–3 approved 2026-11-24: Option A (pending list, sent right after the response, queue as fallback). Guest replies show as "guest replied" with the first line; read state is checked just before each send; follow-ups held 5 minutes; at most 6 notices per member per 10 minutes; hiding who wrote waits for cycle 7. The maintainer confirmed the limits and that `reply-agent` replies notify (2026-11-24).
   - Step 4 done 2026-11-24: four code stages and this docs stage. Also fixed in scope: a device gets a username's notices only if an approved key of that username turned it on.
-  - [ ] Merged and deployed, with cron running the task queue.
+  - [ ] Merged (PR #411, 2026-11-24) and deployed, with cron running the task queue.
   - [ ] Real-phone check on the iPhone SE (home-screen app, app closed): a reply within about 10 seconds; a second reply in the same thread as one replacement after 5 minutes; a DM with the name and no text; a DM read on the laptop first gives no follow-up. Each sent notice records its route (`after-response` or `queue`) in the push store; `./v3 task-queue` lists the `push_notify` runs.
-- [ ] **5. `push_tap_routing`** (one-shot; estimate 0.15) — a tap opens the DM conversation or the reply, focusing an open app window rather than a new one; with no network, the cached copy or Unread. Cycle 5 ends the MVP.
+- [ ] **5. `push_tap_routing`** (one-shot; estimate 0.15; next, see the [handoff](./push_tap_routing_handoff.md)) — a tap opens the DM conversation or the reply, focusing an open app window rather than a new one; with no network, the cached copy or Unread. Cycle 5 ends the MVP.
 - [ ] **MVP release check** — the maintainer, on the iPhone SE from the home screen: turn on, get a DM and a reply from a second account with the app closed, tap each, turn off.
 
 ## After the MVP
