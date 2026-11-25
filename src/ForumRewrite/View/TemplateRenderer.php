@@ -6,6 +6,7 @@ namespace ForumRewrite\View;
 
 use ForumRewrite\BrowserRuntimeProfile;
 use ForumRewrite\Host\AssetFingerprint;
+use ForumRewrite\Host\BrowserRuntimeAssetRenderer;
 use ForumRewrite\PresentationSlotRegistry;
 use ForumRewrite\Qdb\QdbPresentation;
 use ForumRewrite\SiteConfig;
@@ -293,6 +294,10 @@ final class TemplateRenderer
             'faviconPath' => $this->versionEndpoint === '/api/docs-version'
                 ? '/docs/_assets/' . basename(FaviconRegistry::resolve($profile)) : FaviconRegistry::resolve($profile),
             'touchIconPath' => $this->versionEndpoint === '/api/docs-version' ? null : FaviconRegistry::touchIcon($profile),
+            // Named in the page itself for browsers that skip the manifest when adding to the home screen.
+            'appName' => BrowserRuntimeProfile::fromProfile($profile)['manifestName'],
+            // The hash makes a browser that cached an older manifest fetch the current one.
+            'manifestPath' => '/manifest.webmanifest?v=' . substr(hash('sha256', BrowserRuntimeAssetRenderer::manifest($profile)), 0, 12),
             'browserRuntimeAssetPaths' => [
                 'openpgpV6' => $this->assetPath('/assets/openpgp.min.js'),
                 'openpgpV5' => $this->assetPath('/assets/openpgp.v5.11.3.min.js'),
@@ -708,6 +713,7 @@ final class TemplateRenderer
             'siteCssPath' => $this->assetPath('/assets/site.css'),
             'faviconPath' => FaviconRegistry::resolve($profile),
             'touchIconPath' => FaviconRegistry::touchIcon($profile),
+            'appName' => BrowserRuntimeProfile::fromProfile($profile)['manifestName'],
             'additionalCssPaths' => $assetAdditionalCssPaths,
             'themeStorageKey' => BrowserRuntimeProfile::fromProfile($profile)['themeStorageKey'],
             'defaultTheme' => $this->defaultThemeName($profile, array_column($themes, 'name')),
