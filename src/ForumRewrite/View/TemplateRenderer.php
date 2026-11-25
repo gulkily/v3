@@ -850,6 +850,7 @@ final class TemplateRenderer
         $shortenProfileSlug = static fn (string $slug): string => strlen($slug) > 17 ? substr($slug, 0, 17) . '...' : $slug;
         $author = fn (array $record): string => $this->renderAuthorHtml($record, $e);
         $forteAuthor = fn (array $record): string => $this->renderAuthorHtml($record, $e, true);
+        $authorWithoutChip = fn (array $record): string => $this->renderAuthorHtml($record, $e, false, false);
         $contentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e);
         $rowMeta = fn (array $record, string $timeField = 'created_at', bool $withAuthor = true): string => $this->renderRowMeta($record, $timeField, $e, $withAuthor);
         $forteContentMeta = fn (array $record, string $timeField = 'created_at', string $timeLabel = 'Posted'): string => $this->renderContentMeta($record, $timeField, $timeLabel, $e, true);
@@ -923,7 +924,7 @@ final class TemplateRenderer
     /**
      * @param callable(mixed): string $escape
      */
-    private function renderAuthorHtml(array $record, callable $escape, bool $forteTarget = false): string
+    private function renderAuthorHtml(array $record, callable $escape, bool $forteTarget = false, bool $withPendingChip = true): string
     {
         $authorLabel = trim((string) ($record['author_label'] ?? ''));
         if ($authorLabel === '') {
@@ -958,7 +959,38 @@ final class TemplateRenderer
             return '<a href="' . $userBase . $escape($authorUsernameToken) . '"' . $summaryAttrs . '>' . $escape($authorLabel) . '</a>';
         }
 
-        return '<a href="' . $profilesBase . $escape($authorProfileSlug) . '"' . $summaryAttrs . '>' . $escape($authorLabel) . '</a> <span class="meta">(unapproved)</span>';
+        $link = '<a href="' . $profilesBase . $escape($authorProfileSlug) . '"' . $summaryAttrs . '>' . $escape($authorLabel) . '</a>';
+
+        return $withPendingChip ? $link . ' ' . $this->renderPendingChipHtml($record, $escape) : $link;
+    }
+
+    /** Whether a record's author is a signed key that is not yet approved (shows the Pending chip). */
+    private function authorIsPending(array $record): bool
+    {
+        return ((int) ($record['attribution_counted'] ?? 1)) !== 0
+            && (string) ($record['ported_from'] ?? '') === ''
+            && trim((string) ($record['author_profile_slug'] ?? '')) !== ''
+            && !(((int) ($record['author_is_approved'] ?? 0)) === 1 && trim((string) ($record['author_username_token'] ?? '')) !== '');
+    }
+
+    /**
+     * The "Pending" chip for an unapproved author. With PENDING_CHIP_APPROVAL_ENABLED it
+     * opens an in-page summary with Approve (pending_user_summary.js); without script it
+     * is a plain link to the profile, which has Approve too.
+     *
+     * @param callable(mixed): string $escape
+     */
+    private function renderPendingChipHtml(array $record, callable $escape): string
+    {
+        $chip = '<span class="chip chip--pending">Pending</span>';
+        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::PENDING_CHIP_APPROVAL_ENABLED)) {
+            return $chip;
+        }
+
+        $profileSlug = trim((string) ($record['author_profile_slug'] ?? ''));
+        $authorLabel = trim((string) ($record['author_label'] ?? ''));
+
+        return '<a class="pending-chip" href="/profiles/' . $escape($profileSlug) . '" data-pending-profile="' . $escape($profileSlug) . '" data-pending-username="' . $escape($authorLabel) . '">' . $chip . '</a>';
     }
 
     /** A ported post's byline shows when it was written on its source site, not when it was ported. */
@@ -993,28 +1025,18 @@ final class TemplateRenderer
     /** Without the author, for a byline whose row already names them (a pledge row). */
     private function renderRowMeta(array $record, string $timeField, callable $escape, bool $withAuthor = true): string
     {
-        $authorHtml = $this->renderAuthorHtml($record, $escape);
-        $authorHtml = str_replace(' <span class="meta">(unapproved)</span>', '', $authorHtml, $unapproved);
+        $authorHtml = $this->renderAuthorHtml($record, $escape, false, false);
         $parts = $withAuthor ? [$authorHtml] : [];
         $dateHtml = $this->renderShortDateHtml((string) ($this->portedTime($record) ?? $record[$timeField] ?? ''), $escape);
         if ($dateHtml !== '') {
             $parts[] = $dateHtml;
         }
 
-        if ($unapproved === 0) {
+        if (!$this->authorIsPending($record)) {
             return implode(' · ', $parts);
         }
-        if (!$this->featureFlags->isEnabled(FeatureFlagRegistry::PENDING_CHIP_APPROVAL_ENABLED)) {
-            return implode(' · ', $parts) . ' <span class="chip chip--pending">Pending</span>';
-        }
 
-        // The chip opens an in-page summary with Approve (pending_user_summary.js);
-        // without script it is a plain link to the profile, which has Approve too.
-        $profileSlug = trim((string) ($record['author_profile_slug'] ?? ''));
-        $authorLabel = trim((string) ($record['author_label'] ?? ''));
-
-        return implode(' · ', $parts)
-            . ' <a class="pending-chip" href="/profiles/' . $escape($profileSlug) . '" data-pending-profile="' . $escape($profileSlug) . '" data-pending-username="' . $escape($authorLabel) . '"><span class="chip chip--pending">Pending</span></a>';
+        return implode(' · ', $parts) . ' ' . $this->renderPendingChipHtml($record, $escape);
     }
 
     /**

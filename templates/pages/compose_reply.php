@@ -1,7 +1,7 @@
 <?php
 $replyThreadTitle = (string) ($replyThreadTitle ?? '');
 $parentAuthorName = is_array($parentPost)
-    ? trim(str_replace('(unapproved)', '', strip_tags($author($parentPost))))
+    ? trim(strip_tags($authorWithoutChip($parentPost)))
     : '';
 $parentBody = is_array($parentPost) ? $plainText($parentPost, (string) ($parentPost['body'] ?? '')) : '';
 // Long parents are clamped to a few lines; the full post is one tap away.

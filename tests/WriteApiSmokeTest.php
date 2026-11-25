@@ -4030,7 +4030,7 @@ NODE;
         assertStringContains('forum-user', $threadPage);
         assertStringContains('/user/forum-user', $threadPage);
         assertStringContains('by <a href="/user/forum-user">forum-user</a> on <time datetime="', $threadPage);
-        assertStringNotContains('(unapproved)', $threadPage);
+        assertStringNotContains('<span class="chip chip--pending">Pending</span>', $threadPage);
         assertFalse(str_contains($threadPage, 'by guest'));
     }
 
