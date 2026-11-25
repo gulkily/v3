@@ -539,6 +539,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Read-model failure experience](read_model_failure_experience/)
 - [Runtime detail pages](runtime_detail_pages/)
 - [Sender-assisted private message history synchronization](private_message_sender_history_sync/)
+- [Private access card settles](private_access_card_settle/private_access_card_settle_one_shot.md) — one-shot: a confirmed key leaves the waiting-keys card at once and the heading counts down, like Users › Waiting.
 - [Server cooperative content deletion](server_cooperative_content_deletion/)
 - [Site favicons](site_favicons/)
 - [Site text search](site_text_search/) — recorded steps: 1.
