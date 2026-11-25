@@ -7,7 +7,7 @@ Extended estimates: enabled (no alternatives or work units, so only the cycle es
 
 **Cycle estimate: 0.15**
 
-Status: planned; next permitted action: implement on `feature/push-tap-routing`.
+Status: implemented on `feature/push-tap-routing`; PR open, not merged or deployed. Next action: the maintainer merges and deploys, then runs the iPhone SE checks below and the MVP release check.
 
 ## Request and authorization
 
@@ -57,14 +57,37 @@ Application change. A tap on a notice opens what it is about: a reply opens its 
 `./v3 test --smoke PushReplyNoticeTest PushNotifierTest OfflineNavigationWorkerTest`; `node tests/browser/push_preferences.mjs` with the local Chrome; a by-hand browser check of the offline reader scroll if a local fixture allows it. The full suite is not run (AGENTS.md). Recovery for a member: a tap that lands on the wrong page leaves the app usable; nothing is stored.
 
 Starting revision `87dd42d6` on `main`; branch `feature/push-tap-routing`.
-Planning commit: pending.
+Planning commit: `dab9f54` (confirmed with Git before any implementation edit).
 
 ## Execution history
 
 - 2026-11-24: plan written. Decisions 1–3 above taken under the handoff's one-shot instruction.
+- 2026-11-25: implemented. `service_worker.js`: `noticeTapUrl()` (same-site only; offline, paths with no offline page become `/`) and `openNoticePage()` (no window → `openWindow`; a window already on the URL → focus only; else focus, `navigate()`, else `open-url` message). `pwa_registration.js`: the `open-url` listener, same-site paths only, plus `startMessages()` so a message sent while the page loads is not held. `offline_reader.js`: `renderOfflineThread()` scrolls to `#post-<id>`. `PushNotices::recordReply()`: the thread URL. `docs/concepts/push_subscription.md`: taps described; the "proposed" line for this cycle removed.
+- 2026-11-25: correction to the plan's test list: `tests/browser/push_preferences.mjs` asserted that a tap with an open window only focuses it; updated to expect focus plus `navigate()`.
+
+## Outcome
+
+Delivered as planned. Limitations: an open window shows its current page for a moment before it moves; offline, a reply newer than the device's snapshot is not in the thread the reader shows; DMs and Unread offline open the home page. Not verified: any real phone, and which of `navigate()` or the `open-url` message runs in an iPhone home-screen app.
+
+## Verification
+
+- `./v3 test --smoke OfflineNavigationWorkerTest PushReplyNoticeTest PushNotifierTest`: 515 run, 515 passed. New: `OfflineNavigationWorkerTest::testNotificationTapOpensItsPageInTheOpenWindowOrANewOne` (closed app, navigate, navigate failing, no navigate, window already there, another site's URL, offline DM/Unread/thread) and `testPageFollowsOnlySameSiteOpenUrlMessages`; `PushReplyNoticeTest` asserts the thread URL. The full suite was not run.
+- `node tests/browser/push_preferences.mjs` (local Chrome, `playwright-core` from outside the repository): ok.
+- Local replay (a disposable Playwright script outside the repository, `parity_minimal_v1` fixture, zenmemes profile, 375 by 260 px so the reply is below the fold): online, `/threads/root-001#post-reply-001` lands on the reply. Offline after the reader is cached, the same address shows the offline reader with the reply at the top (scrollY 310); with this cycle's `offline_reader.js` change removed it stayed at the top of the page (scrollY 0). No page errors.
+- Not run: `notificationclick` in a real browser (headless Chrome cannot tap a notification); the iPhone SE checks.
+
+## Final review
+
+Diff checked: the worker changes stay in the existing listener and reuse `supportsOfflineNavigation()`; the page listener sits in the script that already registers the worker; no new asset, dependency, UI text, flag or navigation destination. Files are within the plan's scope plus this record, the debug log, the ledger, the checklist, the plans index and the concept page.
+
+## Commit, merge and publication
+
+Planning commit `dab9f54`; completion commit and PR: see the PR (reference pending in this record). Not merged, not deployed.
 
 ## Study history
 
 2026-11-25T01:20Z; scope v1; starting revision `87dd42d6`; reference R1, hashes not re-verified. Claude, single exposed rater (saw the checklist's 0.15). Intake **0.15**.
+
+2026-11-25T01:55Z; closeout; scope v1 unchanged. Retrospective **0.13**: the anchor already existed, so the URL question took less than the handoff expected; the offline reader scroll was a small addition.
 
 *— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*

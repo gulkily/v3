@@ -403,14 +403,38 @@ self.addEventListener("push", (event) => {
   const notice = pushNotice(event);
   event.waitUntil(self.registration.showNotification(notice.title, notice.options));
 });
-// A tap focuses an open app window if there is one, else opens the notice's page.
+// The page a tap opens. With no network, a page that has no offline copy (a DM conversation,
+// Unread) gives way to the home page, which is the offline reader.
+function noticeTapUrl(data) {
+  let url;
+  try { url = new URL((data && data.url) || "/", self.location.origin); } catch (error) { url = new URL("/", self.location.origin); }
+  if (url.origin !== self.location.origin) url = new URL("/", self.location.origin);
+  if (self.navigator && self.navigator.onLine === false && !supportsOfflineNavigation(url)) url = new URL("/", self.location.origin);
+  return url.href;
+}
+
+// An open app window is brought to the front and sent to the page; navigate() is not
+// available everywhere (nor for a window this worker doesn't control), so the page is
+// asked to go there itself (pwa_registration.js). With no window, a new one opens there.
+async function openNoticePage(url) {
+  const windows = (await self.clients.matchAll({ type: "window", includeUncontrolled: true }))
+    .filter((client) => new URL(client.url).origin === self.location.origin && "focus" in client);
+  if (!windows.length) return self.clients.openWindow(url);
+  const open = windows.find((client) => client.url === url) || windows[0];
+  let client = open;
+  try { client = (await open.focus()) || open; } catch (error) { client = open; }
+  if (client.url === url) return client;
+  if (typeof client.navigate === "function") {
+    try {
+      const moved = await client.navigate(url);
+      if (moved) return moved;
+    } catch (error) { /* fall through to asking the page */ }
+  }
+  client.postMessage({ type: "open-url", url: new URL(url).pathname + new URL(url).search + new URL(url).hash });
+  return client;
+}
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = new URL((event.notification.data && event.notification.data.url) || "/", self.location.origin).href;
-  event.waitUntil((async () => {
-    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    const open = windows.find((client) => new URL(client.url).origin === self.location.origin && "focus" in client);
-    if (open) return open.focus();
-    return self.clients.openWindow(url);
-  })());
+  event.waitUntil(openNoticePage(noticeTapUrl(event.notification.data)));
 });

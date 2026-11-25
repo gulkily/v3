@@ -67,7 +67,8 @@ final class PushNotices
             'tag' => 'thread:' . $post['thread_id'],
             'actor' => trim((string) ($post['author_label'] ?? '')) !== '' ? (string) $post['author_label'] : 'guest',
             'body' => self::firstPlainLine((string) $post['body']),
-            'url' => '/posts/' . rawurlencode((string) $post['post_id']),
+            // The reply in its thread: thread pages, online and in the offline reader, give each post an id.
+            'url' => '/threads/' . rawurlencode((string) $post['thread_id']) . '#post-' . rawurlencode((string) $post['post_id']),
         ]);
     }
 
