@@ -8,7 +8,7 @@ Extended estimates: enabled. No alternatives or work units, so no unit estimates
 
 **Cycle estimate: 0.05**
 
-Status: planned; next permitted action: implementation.
+Status: implemented and committed; next permitted action: maintainer review (PR).
 
 Original request: the maintainer shared screenshots of the MIT Rap Club System status page (/tools/codebase/). Its Instance card lists 18 admins, but the query shown under the list, run in the query viewer, returns one row (`ilyag`). "can you please help me understand the discrepancy", then "can you please review this in the codebase and prepare to make a pr", then "please pr".
 
@@ -31,12 +31,29 @@ Verification and recovery plan: new `LocalAppSmokeTest` test that adds an approv
 
 Starting revisions and branch: `fix/system-status-admins` from `origin/main` `0431fc93`.
 
-Planning commit: pending.
+Planning commit: `fc7555c3` (plan only, before any implementation).
 
 Study history:
 - 2026-11-25 UTC, intake and execution entry: **0.05**, before implementation, after reading both controllers and reproducing the mismatch on the test fixture. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified.
 
 Dated execution history:
 - 2026-11-25: reproduced on `parity_minimal_v1` with an extra profile approved by `guest`: /instance/ shows `guest`; /tools/codebase/ shows `helper , guest`.
+- 2026-11-25: added `LocalAppSmokeTest::testSystemStatusAdminsAreTheRootApprovedUsersItsQueryShows`; it failed before the fix ("output does not contain: helper").
+- 2026-11-25: maintainer, mid-cycle: "admin should be anyone who has admin privileges, and i think that currently means approved by root?" Checked: operator power comes from an approval seed (`ApprovalPolicy::isOperator`), and the read model labels exactly the seeded keys `approved_by_label = 'root'` (`ReadModelBuilder::deriveApprovalState`). Same set; the fix stands. Clarification, not a scope change.
+- 2026-11-25: `CodebaseStateController` passes `ToolsPageSupport::fetchSeedApprovedUsers()` as `admins`; its unused `ProfileRepository` import removed. Correction, not an addition.
+- Discovery, not acted on: `fetchSeedApprovedUsers()` does not exclude retired keys, while `ApprovalPolicy::isActiveOperator()` does, so a retired operator would still be listed on both /instance/ and /tools/codebase/. Out of scope (the shown query and /instance/ share it); left for a follow-up if wanted.
+
+Study history, when enrolled:
+- 2026-11-25 UTC, closeout: retrospective scope assessment **0.05**. Delivered as planned. Claude, single exposed rater. Maintainer judgment pending; measured time unknown.
+
+Outcome: delivered. The System status Admin line lists the root-approved (operator) users, the same rows as its shown query and as /instance/.
+
+Verification:
+- `./v3 test --smoke LocalAppSmokeTest PresentationProfileMatrixTest`: 499 run, 499 passed; the new test passes after the fix and failed before it. The full suite was not run.
+- Production replay pending deploy: the MIT Rap Club System status page should list `ilyag` alone, matching the query viewer.
+
+Final review: the diff touches `CodebaseStateController.php`, `LocalAppSmokeTest.php`, this record, the plans index and the ledger. No new query or component, no schema or dependency change. Deploy now is enough.
+
+Commit/merge/publication status: completion commit pending at time of writing; branch `fix/system-status-admins`; not merged.
 
 _Claude · 2026-11-25 UTC · Model: claude-opus-5-5_
