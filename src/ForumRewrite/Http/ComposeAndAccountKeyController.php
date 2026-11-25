@@ -301,7 +301,8 @@ final class ComposeAndAccountKeyController
             'eventEndDate' => $eventEndDate,
             'eventEndTime' => $eventEndTime,
             'retiredComposeAttempt' => $retiredComposeAttempt,
-        ], 'New Post', 'compose', $this->identityScripts(['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js']));
+        ], 'New Post', 'compose', $this->identityScripts(['/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js',
+            ...($this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::INSTAGRAM_CLIP_ENABLED) ? ['/assets/instagram_clip.js'] : [])]));
     }
 
     /**

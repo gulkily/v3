@@ -120,6 +120,10 @@ checked in the current code, not a guess.
       (`FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED`, depends on
       `FORUM_MEDIA_EMBEDS_ENABLED`), defaulted off; also needs a manual
       operator enable before it's visible anywhere.
+- [x] One-click Instagram clip: a bookmarklet opens a new post with the
+      Instagram post's link and its image attached (one-shot
+      [instagram_clip](instagram_clip/instagram_clip_one_shot.md), flag
+      `FORUM_INSTAGRAM_CLIP_ENABLED`, needs an operator enable on mitrapclub).
 - [ ] Continue media-provider expansion. **Spotify tracks/albums/playlists
       and direct TikTok videos are implemented** on
       `feature/top-five-media-embeds`, alongside YouTube Shorts; see the

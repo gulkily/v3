@@ -96,6 +96,66 @@
   }
 
 
+  // On instagram.com: the post on screen (its own page, the open post, or the feed
+  // post nearest the middle of the screen) and the largest image showing in it.
+  // The composer gets the post link as the body and both addresses, then asks the
+  // site to fetch the image and attaches it.
+  function instagramComposeUrl(baseOrigin) {
+    if (!/(^|\.)instagram\.com$/.test(location.hostname)) {
+      alert("Open an Instagram post first, then tap this bookmarklet.");
+      return null;
+    }
+    function codeOf(href) {
+      var m = String(href || "").match(/\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
+      return m ? { kind: m[1] === "tv" ? "p" : m[1], code: m[2] } : null;
+    }
+    function isPostImage(img) {
+      var src = img.currentSrc || img.src || "";
+      return /^https:\/\/[^\/]*(cdninstagram\.com|fbcdn\.net)\//.test(src) && img.naturalWidth >= 150;
+    }
+    function bestSrc(img) {
+      var best = img.currentSrc || img.src, bestWidth = img.naturalWidth || 0;
+      String(img.getAttribute("srcset") || "").split(",").forEach(function (part) {
+        var bits = part.trim().split(/\s+/), w = parseInt(bits[1], 10);
+        if (bits[0] && w > bestWidth) { best = bits[0]; bestWidth = w; }
+      });
+      return best;
+    }
+    function shown(el) {
+      var r = el.getBoundingClientRect();
+      var w = Math.max(0, Math.min(r.right, innerWidth) - Math.max(r.left, 0));
+      var h = Math.max(0, Math.min(r.bottom, innerHeight) - Math.max(r.top, 0));
+      return w * h;
+    }
+    var scope = document.querySelector('div[role="dialog"]') || document;
+    var imgs = [].slice.call(scope.querySelectorAll("img")).filter(isPostImage);
+    imgs.sort(function (a, b) { return shown(b) - shown(a); });
+    var img = imgs[0] && shown(imgs[0]) > 0 ? imgs[0] : null;
+
+    var post = codeOf(location.pathname);
+    if (!post && img) {
+      for (var el = img; el && !post; el = el.parentElement) {
+        var links = el.querySelectorAll ? el.querySelectorAll('a[href*="/p/"], a[href*="/reel/"]') : [];
+        for (var i = 0; i < links.length && !post; i++) post = codeOf(links[i].getAttribute("href"));
+        if (el.tagName === "ARTICLE") break;
+      }
+    }
+    if (!post) {
+      alert("No Instagram post found. Open the post itself, then tap this bookmarklet.");
+      return null;
+    }
+    var link = "https://www.instagram.com/" + post.kind + "/" + post.code + "/";
+    var selection = window.getSelection ? window.getSelection().toString().trim() : "";
+    return (
+      baseOrigin +
+      "/compose/thread?board_tags=general&subject=&body=" +
+      encodeURIComponent((selection ? selection + "\n\n" : "") + link) +
+      "&instagram_post=" + encodeURIComponent(link) +
+      (img ? "&instagram_image=" + encodeURIComponent(bestSrc(img)) : "")
+    );
+  }
+
+
   // Reads a Hacker News item page (a story, a comment's own page, or the
   // comment holding the selection) into a port file and sends it to /port.
   // Self-contained: its source text is the bookmarklet.
@@ -219,7 +279,7 @@
     if (kind === "hn-port") {
       return "(function(){(" + hnPortSubmit.toString() + ")(" + JSON.stringify(baseOrigin) + "," + JSON.stringify(mode) + ");})()";
     }
-    var fn = kind === "tweet" ? tweetComposeUrl : composeUrl;
+    var fn = kind === "tweet" ? tweetComposeUrl : kind === "instagram" ? instagramComposeUrl : composeUrl;
 
     if (mode === "new-window") {
       return (

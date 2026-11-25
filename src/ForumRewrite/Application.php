@@ -186,6 +186,15 @@ final class Application
             return;
         }
 
+        if ($path === '/internal/instagram-clip/image') {
+            if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::INSTAGRAM_CLIP_ENABLED)) {
+                $this->routeServices()->sendText("Not found.\n", 404);
+                return;
+            }
+            (new \ForumRewrite\Http\InstagramClipImageController($this->routeServices()))->image($method, $query);
+            return;
+        }
+
         if ($path === '/internal/media-embeds/warm-preview') {
             $this->mediaEmbedPreviewController()->warmPreview($method, $query);
             return;
