@@ -3,7 +3,7 @@ Title: Deploy page buttons: one row, clearer main action
 Kind: feature
 Workflow: blocked
 Created: 2026-11-14
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 On the deploy page, make the buttons look nicer; perhaps put them on the same row.
@@ -17,3 +17,4 @@ On the deploy page the three buttons sit in one row on desktop and wrap neatly o
 Notes:
 2026-11-14: one-shot on deploy-buttons-row (record docs/plans/deploy_buttons/deploy_buttons_one_shot.md); verified locally in headless Chrome; awaiting PR review and deployment.
 2026-11-17: Renumbered from PF-20261114-F01 after a collision with the preferences page item on main.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation a5a9d6c74e is on audited main and deployed ancestry (live c4205ea43d). Deploy button row/main-action styles are on main/live. Renumbering from F01 is an ID collision correction, not evidence that Preferences implements this item. Current next action: Maintainer: inspect Deploy actions on desktop and phone, including Bubblegum, for one clear main action and sensible wrapping. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

@@ -75,7 +75,7 @@ final class CalendarQuery
     {
         return 'SELECT threads.root_post_id, threads.root_post_created_at, threads.subject, threads.body_preview, threads.retracted_at,
                     threads.event_date, threads.event_end_date, threads.event_time, threads.event_location,
-                    threads.event_link, threads.event_when,
+                    threads.event_link, threads.event_when, threads.event_end_time,
                     posts.author_label, posts.ported_from, posts.ported_created_at, posts.author_profile_slug, posts.attribution_counted, posts.body_format,
                     (SELECT profiles.username_token FROM profiles WHERE profiles.identity_id = posts.author_identity_id) AS author_username_token,
                     ' . self::AUTHOR_IS_APPROVED_SQL . ' AS author_is_approved';

@@ -379,7 +379,8 @@
 }
 
 /* Tools launcher group headings, keyed to data-shape (ToolsPageSupport::groups()):
-   Your device, Reading, Community (the Users glyph) and Operator. */
+   Your device, Reading, Community (the Users glyph), Developer (angle brackets
+   around a slash) and Operator. */
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"], [data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"], [data-theme="bubblegum"], [data-theme="spearmint"]) .tool-launcher-group-heading[data-shape]::before {
   content: "";
   display: inline-block;
@@ -400,6 +401,10 @@
 
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-group-heading[data-shape="community"]::before {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='9' y='2' width='3' height='3' fill='%23808080'/><rect x='8' y='6' width='5' height='4' fill='%23808080'/><rect x='4' y='4' width='3' height='3' fill='%23000080'/><rect x='2' y='8' width='7' height='5' fill='%23000080'/></svg>");
+}
+
+:root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-group-heading[data-shape="developer"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='5' y='4' width='2' height='1' fill='%23000080'/><rect x='4' y='5' width='2' height='1' fill='%23000080'/><rect x='3' y='6' width='2' height='1' fill='%23000080'/><rect x='2' y='7' width='2' height='1' fill='%23000080'/><rect x='2' y='8' width='2' height='1' fill='%23000080'/><rect x='3' y='9' width='2' height='1' fill='%23000080'/><rect x='4' y='10' width='2' height='1' fill='%23000080'/><rect x='5' y='11' width='2' height='1' fill='%23000080'/><rect x='7' y='4' width='2' height='1' fill='%23000080'/><rect x='8' y='5' width='2' height='1' fill='%23000080'/><rect x='9' y='6' width='2' height='1' fill='%23000080'/><rect x='10' y='7' width='2' height='1' fill='%23000080'/><rect x='10' y='8' width='2' height='1' fill='%23000080'/><rect x='9' y='9' width='2' height='1' fill='%23000080'/><rect x='8' y='10' width='2' height='1' fill='%23000080'/><rect x='7' y='11' width='2' height='1' fill='%23000080'/><rect x='8' y='3' width='1' height='5' fill='%23808080'/><rect x='7' y='8' width='1' height='5' fill='%23808080'/></svg>");
 }
 
 :root:is([data-theme="word97"], [data-theme="chicago"], [data-theme="midnight"]) .tool-launcher-group-heading[data-shape="operator"]::before {
@@ -575,6 +580,10 @@
 
 :root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"], [data-theme="spearmint"]) .tool-launcher-group-heading[data-shape="reading"]::before {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='4.5' cy='9.75' r='2.75' fill='%23ede9fe'/><circle cx='11.5' cy='9.75' r='2.75' fill='%23ede9fe'/><path d='M7.25 9.5c.5-.5 1-.5 1.5 0M1.75 9.25 2.75 5M14.25 9.25 13.25 5'/></svg>");
+}
+
+:root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"], [data-theme="spearmint"]) .tool-launcher-group-heading[data-shape="developer"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='none' stroke='%236d28d9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M5 4.5 1.75 8 5 11.5M11 4.5 14.25 8 11 11.5M9.25 3 6.75 13'/></svg>");
 }
 
 :root:is([data-theme="gloss"], [data-theme="glossdark"], [data-theme="engagify"], [data-theme="spearmint"]) .tool-launcher-group-heading[data-shape="community"]::before {
@@ -872,6 +881,10 @@
 
 :root:is([data-theme="bubblegum"]) .tool-launcher-group-heading[data-shape="reading"]::before {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='0' y='3' width='8' height='11' fill='%238e2457'/><rect x='1' y='4' width='6' height='9' fill='%23ffffff'/><rect x='8' y='3' width='8' height='11' fill='%238e2457'/><rect x='9' y='4' width='6' height='9' fill='%23ffffff'/><rect x='7' y='3' width='2' height='11' fill='%238e2457'/><rect x='2' y='5' width='4' height='1' fill='%23e45b9c'/><rect x='2' y='7' width='4' height='1' fill='%23ffc7e0'/><rect x='2' y='9' width='4' height='1' fill='%23ffc7e0'/><rect x='10' y='5' width='4' height='1' fill='%23e45b9c'/><rect x='10' y='7' width='4' height='1' fill='%23ffc7e0'/><rect x='10' y='9' width='3' height='1' fill='%23ffc7e0'/><rect x='1' y='13' width='14' height='1' fill='%238e2457'/><rect x='6' y='14' width='4' height='1' fill='%238e2457'/><rect x='8' y='0' width='1' height='1' fill='%238e2457'/><rect x='7' y='1' width='1' height='1' fill='%238e2457'/><rect x='8' y='1' width='1' height='1' fill='%23ffe873'/><rect x='9' y='1' width='1' height='1' fill='%238e2457'/><rect x='8' y='2' width='1' height='1' fill='%238e2457'/></svg>");
+}
+
+:root:is([data-theme="bubblegum"]) .tool-launcher-group-heading[data-shape="developer"]::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' shape-rendering='crispEdges'><rect x='5' y='4' width='2' height='1' fill='%238e2457'/><rect x='4' y='5' width='2' height='1' fill='%238e2457'/><rect x='3' y='6' width='2' height='1' fill='%238e2457'/><rect x='2' y='7' width='2' height='1' fill='%238e2457'/><rect x='2' y='8' width='2' height='1' fill='%238e2457'/><rect x='3' y='9' width='2' height='1' fill='%238e2457'/><rect x='4' y='10' width='2' height='1' fill='%238e2457'/><rect x='5' y='11' width='2' height='1' fill='%238e2457'/><rect x='7' y='4' width='2' height='1' fill='%238e2457'/><rect x='8' y='5' width='2' height='1' fill='%238e2457'/><rect x='9' y='6' width='2' height='1' fill='%238e2457'/><rect x='10' y='7' width='2' height='1' fill='%238e2457'/><rect x='10' y='8' width='2' height='1' fill='%238e2457'/><rect x='9' y='9' width='2' height='1' fill='%238e2457'/><rect x='8' y='10' width='2' height='1' fill='%238e2457'/><rect x='7' y='11' width='2' height='1' fill='%238e2457'/><rect x='8' y='3' width='1' height='5' fill='%23e45b9c'/><rect x='7' y='8' width='1' height='5' fill='%23e45b9c'/><rect x='7' y='1' width='2' height='1' fill='%23ffc7e0'/><rect x='7' y='14' width='2' height='1' fill='%23ffc7e0'/></svg>");
 }
 
 :root:is([data-theme="bubblegum"]) .tool-launcher-group-heading[data-shape="community"]::before {

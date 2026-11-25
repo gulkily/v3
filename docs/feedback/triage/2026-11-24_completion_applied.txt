@@ -1,0 +1,554 @@
+Title: Applied feedback completion reconciliation
+Status: applied
+Intake-Date: 2026-11-24
+Authorization: Maintainer asked to update task statuses wherever the agent is confident, after reviewing PR #404; specifically named PF-20261021-B02 and PF-20261021-F05.
+Application-Commit: caab1dadbede99945162af53788d1d283b67193b
+Live-Version: c4205ea43d5eadb245c95dff61319800cae5aa5c
+History: Entire history through audited main, including pre-migration commits and later corrective/rejection records; supplements the full search inventory in 2026-11-24_proposals.txt.
+Import-Window: not applicable; history-only
+Import-Commit: not applicable
+Posts-Screened: not applicable; no new feedback intake
+Current-Workflow-Counts: 47 blocked, 3 declined, 53 done, 2 duplicate, 1 planned, 3 ready, 254 untriaged
+Updated-Items: 93
+Closed-Items: 47
+Open-Built-Items-Updated: 46
+New-Items: 0
+Deleted-Items: 0
+Review-Required: no per-item review requested; uncertain work remains open with a concrete next action in its canonical record
+Predecessor: https://github.com/gulkily/v3/pull/404
+
+Results:
+PF-20261021-B02 is done: its actual fix and current 42-case geometry replay were reconciled.
+PF-20261021-F05 is built and deployed, but remains blocked: the later recorded rejection of its appearance has no established resolution. It is no longer untriaged/missing-implementation work.
+The prior sweep searched every record but did not establish these two outcomes. Its raw mention search was not a sufficient completion audit for them.
+This follow-up applies checked closures directly, promotes additional cases where code/tests/live evidence meets the outcome, and does not manufacture generic phone or visual review gates.
+A new Preferences/Beside browser timeout prevented blindly applying that earlier done proposal. Beside code deployment is separated from its absent live toggle/feature availability.
+Historical item prose and acceptance/rejection records remain preserved; the dated reconciliation note states the current result and supersedes stale merge/deployment blockers.
+
+Checks:
+./v3 test --smoke FeedbackItemCheckTest FeedbackBacklogTest: 509 run, 505 passed, four unchanged authored-text/Unicode protocol failures. Full suite not run.
+./v3 test PostActionThemeTest ThemeRegistryTest ApplicationVersionTest AppUpdateTest::testInspectListsIncomingCommitsAndSizeAfterACheck AppUpdateTest::testIncomingLeavesOutMergeCommits DeployPageTest WriteApiSmokeTest::testLlmExchangeLinksAppearOnlyOnTheirPostDetailPages: 39/39 passed.
+node tests/browser/invitation_issuance.cjs and node tests/browser/theme_cycle.cjs: passed.
+Live Chrome: 42 textarea expansion cases passed, covering 21 themes at phone/desktop widths; first-level fingerprint labels; quiet composer; actual Bubblegum selected More state; desktop Account/Invite icon metrics; 23 Tools captions at both 320/390px without word splitting or page overflow.
+Current allowed source paths, implementation commit ancestry, unchanged Request/Sources/Done when sections and generated feedback index are checked before commit.
+
+Browser limits, not hidden successes:
+Used the existing approved Playwright 1.58.1 installation from /home/wsl/agent/v3-codex/node_modules through NODE_PATH or a disposable loader. No packages, manifests or repository node_modules were added.
+All three warning-fixture runners were executed. offline_card_extra_line passed. absent_retraction_snapshot timed out taking its screenshot; offline_board_toolbar timed out clicking sort. None emitted the reported undefined-variable warning. The PHP include replay independently reproduced old warning -> current no warning, and the real renderer flag regression passed.
+Preferences browser runner twice timed out clicking its Beside toggle, and reading_margins timed out clicking a ruler stop. Preferences remains blocked; gallery pinch/margins were not closed from those incomplete runs.
+Live wide-screen Gallery had no Beside toggle/root activation; a clicked thread navigated normally. No claim of live Beside acceptance or regression is made while the feature is unavailable.
+No production posts, imports, key changes, flag changes or deployments were performed. No physical camera, iPhone installation or privileged operator acceptance was fabricated.
+
+Applied item transitions:
+PF-20261021-B02: Textarea edge alignment
+  State: untriaged/unknown -> done/deployed
+  Commit: 74b6beccf2a940b622b35ebeb0ae97aa99809ae8; https://github.com/gulkily/v3/commit/74b6beccf2a940b622b35ebeb0ae97aa99809ae8
+  Evidence: Direct geometry fix 74b6beccf keeps editor padding and hidden identity status stable. Fresh live Chrome measurements passed all 42 combinations: 21 themes at 390px and 1280px, with top/left/right relative to the card unchanged within one pixel, the same focused textarea expanding, and no horizontal overflow. Later 87c94639c and inline/offline composer changes retain one editor.
+
+PF-20261021-B03: Saved draft starts collapsed
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 1ea89c026e89868587c45e2e6a2bf6c1b71deb39; https://github.com/gulkily/v3/commit/1ea89c026e89868587c45e2e6a2bf6c1b71deb39
+  Evidence: Home-page-only implementation survives in inline_reply_form.js; board_compose_focus.mjs retains text/selection and compact-until-focus checks. Later dedicated-composer changes do not broaden that evidence.
+  Next: Maintainer: on iPhone, reopen a saved home-page draft, focus it, and check text/selection and failed-send retry.
+
+PF-20261021-F01: Reply focus
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: b438fe9d9198f29999b1fa112ed7b9f94a3f500f; https://github.com/gulkily/v3/commit/b438fe9d9198f29999b1fa112ed7b9f94a3f500f
+  Evidence: Reply continuation exists, but the item retains a Nov 10 contrary report. Later reply_bare_card fixes card hydration; reply_composer_focus_layout explicitly excludes changing post-send navigation. No fresh physical Safari/Firefox failure/retry replay establishes recovery.
+  Next: Agent: reconcile the contrary focus report against the current continuation path in an isolated write replay; then use the retained physical-phone checklist. Do not rebuild the entire feature.
+
+PF-20261021-F02: Identity-ready notice
+  State: blocked/locally-verified -> done/deployed
+  Commit: d1e523de4bec384fd738c94eeb608179654f2784; https://github.com/gulkily/v3/commit/d1e523de4bec384fd738c94eeb608179654f2784
+  Evidence: Current browser_signing.js suppresses routine ready status while retaining pending/error handling. Live New post shows no readiness notice or visible empty identity-status row. No source-thread reply is part of Done when.
+
+PF-20261021-F04: Simple recent activity
+  State: blocked/locally-verified -> done/deployed
+  Commit: 11e76faeca6e02f1cf3f89db2bd66867a1c0bd23; https://github.com/gulkily/v3/commit/11e76faeca6e02f1cf3f89db2bd66867a1c0bd23
+  Evidence: Live navigation opens /recent/ with individual new-thread/reply previews, author/time and exact-post links. RecentPostTest and current route smoke pass. Later navigation and preview work retains this basic requested outcome.
+
+PF-20261021-F05: QR appearance
+  State: untriaged/unknown -> blocked/deployed
+  Commit: d52c39997faa8a44492d64336e02f2f6970335a8; https://github.com/gulkily/v3/commit/d52c39997faa8a44492d64336e02f2f6970335a8
+  Evidence: Found and reconciled the actual implementation: d52c39997 adds safe theme colors, 7ee61aadd redraws on appearance changes, e0f326345 merges the work. Later 07925324c explicitly records the maintainer rejecting the black/white appearance and white edge. Later pitch/size, signing and shared-canvas work do not replace the conservative color policy or record acceptance of that visual goal. Current invitation_issuance.cjs and theme_cycle.cjs pass. Code is built/deployed; the original visual-fit condition is not established.
+  Next: Agent: follow up the recorded QR appearance rejection while preserving the four-module quiet zone and scanning contrast. Do not rebuild QR issuance or infer visual acceptance from a color-unit-test pass.
+
+PF-20261021-F06: LCD color choices
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: f0816f71cb4c3c1bb7887fc543175d023bbfab7a; https://github.com/gulkily/v3/commit/f0816f71cb4c3c1bb7887fc543175d023bbfab7a
+  Evidence: Persistent LCD palettes and later rotation/recovery fixes remain in the current theme selector. Existing contrast/browser record covers local readability; no fresh physical-phone palette acceptance is recorded.
+  Next: Maintainer: cycle the LCD palettes on the phone, reload, and judge readability of the retained choice.
+
+PF-20261021-F07: Default port fallback
+  State: blocked/locally-verified -> done/deployed
+  Commit: 53a2dd91b70273a20c7cc38813a7c380b0c5a1e9; https://github.com/gulkily/v3/commit/53a2dd91b70273a20c7cc38813a7c380b0c5a1e9
+  Evidence: DevServerStartTest passes real launcher checks: occupied ports advance, actual listener serves/registers, ten-port exhaustion fails without a worker, release/retry succeeds, explicit collisions fail, shutdown releases the socket. Covers PCNTL disabled too.
+
+PF-20261030-B03: Submitted draft stays in composer
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 438bcc89953163c473be909132f8eeb7be1cc0e5; https://github.com/gulkily/v3/commit/438bcc89953163c473be909132f8eeb7be1cc0e5
+  Evidence: Rebased implementation and PR #145 are ancestors of main/live. Current ComposeAttemptReplayTest passes, including refused attempt recovery and re-sent removed reply staying a reply. Nov 10 contrary report predates merge.
+  Next: Maintainer: on iPhone, send then immediately use New post/Back; repeat the lost-response recovery checklist and confirm the accepted draft does not return.
+
+PF-20261030-B18: Content hash labeled as app version
+  State: blocked/locally-verified -> done/deployed
+  Commit: c92c1ab31bcc337f1f0ca55ffd6fa6bf959fddf9; https://github.com/gulkily/v3/commit/c92c1ab31bcc337f1f0ca55ffd6fa6bf959fddf9
+  Evidence: c92c1ab31b identifies application code separately from content; live /api/version reports code commit c4205ea43d and current ApplicationVersionTest passes. Cached-page code/content stamps are implemented and covered by the predecessor checks. Re-enabling an optional notification is not a missing implementation of the requested version labels.
+
+PF-20261030-B25: Posting helper wrong uncertain-write message
+  State: blocked/locally-verified -> done/deployed
+  Commit: 70989b6b5137163b4e82b94c16c4a78f4af8fae6; https://github.com/gulkily/v3/commit/70989b6b5137163b4e82b94c16c4a78f4af8fae6
+  Evidence: The live Quill Python download retains rejected-state guidance from frm.py. QuillClientTest::testMemberDenialAndSigningFailurePreserveWork passes refusal/no-Resume assertions; lost-response and busy retry tests pass. Later Quill rename preserves this distinction.
+
+PF-20261030-B26: llms.txt character rules mismatch
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: c90eea844fa9652e21e9024e5ab9d19b6ffcd380; https://github.com/gulkily/v3/commit/c90eea844fa9652e21e9024e5ab9d19b6ffcd380
+  Evidence: Live text_rules and llms.txt agree on Unicode symbols and emoji refusal, but UnicodeTextPolicyTest fails emoji rejection on this environment. Associated API/bundle cases also fail. Deployment is established; completion is not.
+  Next: Agent: reproduce and resolve the existing PCRE/emoji portability item PF-20261111-B29 before proposing closure.
+
+PF-20261030-F07: LLM exchanges under Details
+  State: untriaged/unknown -> done/deployed
+  Commit: 04395a6f0623d9f4db8835f4a442775809a8b413; https://github.com/gulkily/v3/commit/04395a6f0623d9f4db8835f4a442775809a8b413
+  Evidence: 04395a6f0 removes exchange links from ordinary root/reply cards and places them on post details. Later file-window and ported-post changes preserve this separation. Fresh WriteApiSmokeTest::testLlmExchangeLinksAppearOnlyOnTheirPostDetailPages passes the thread/detail/visibility cases.
+
+PF-20261030-F08: Trim fingerprints in user displays
+  State: untriaged/unknown -> done/deployed
+  Commit: 206143aea0010bf700adca4771154e8b82e77a39; https://github.com/gulkily/v3/commit/206143aea0010bf700adca4771154e8b82e77a39
+  Evidence: 206143aea merges the short fingerprint format on Account and person pages. Fresh live /user/ilyag?tab=identities shows short openpgp-... labels for the first-level key rows, with the full slug retained only in title/target metadata. Current username.php uses the canonical shortenProfileSlug formatter.
+
+PF-20261030-F29: Restore query buttons on System State
+  State: untriaged/unknown -> done/deployed
+  Commit: 2f305d0586aa7b2085422daa1907de0a0ee2b39c; https://github.com/gulkily/v3/commit/2f305d0586aa7b2085422daa1907de0a0ee2b39c
+  Evidence: Current System status template includes visible query controls through the shared viewer; the restoration commit and later query-dialog integration preserve the requested buttons.
+
+PF-20261030-F31: Single-request client-signed posting
+  State: untriaged/unknown -> blocked/deployed
+  Commit: 3a21fab67708c07ef77712790218e12a92c61bcd; https://github.com/gulkily/v3/commit/3a21fab67708c07ef77712790218e12a92c61bcd
+  Evidence: Single-request signed posting is on main/live and documented with a runnable example. This environment fails current Unicode/staging/bundle smoke cases, so endpoint existence alone does not establish the complete recovery contract.
+  Next: Agent: replay the failing signed-post/staging cases after resolving the known text-policy portability issue; no new endpoint design is needed.
+
+PF-20261030-F46: Rounder corners in modern themes
+  State: blocked/locally-verified -> done/deployed
+  Commit: 52e52071b716bf2a573994b0137a0abfefb9d3dd; https://github.com/gulkily/v3/commit/52e52071b716bf2a573994b0137a0abfefb9d3dd
+  Evidence: 52e52071b7 completes rounded cards, fields and navigation, beyond the original partial edge rule. Live Gloss card radius is 16px. Gloss/Gloss Dark were subsequently chosen as site defaults; the requested modern rounded theme is delivered, without inventing another subjective acceptance gate.
+
+PF-20261030-F54: Small posting helper
+  State: untriaged/unknown -> done/deployed
+  Commit: 447f1f2f3baa09547826125d06a2541051f97340; https://github.com/gulkily/v3/commit/447f1f2f3baa09547826125d06a2541051f97340
+  Evidence: Live /llms.txt links downloadable Quill; /quill.py and legacy /frm.py are available. Current Quill read/retry/member-denial/image tests demonstrate the helper exists and is usable, without claiming every Quill test passes.
+
+PF-20261030-F57: Author and signature in get_thread
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: e15886d03292da166d9987015f85a4059d7825e8; https://github.com/gulkily/v3/commit/e15886d03292da166d9987015f85a4059d7825e8
+  Evidence: Live include_authors=1 returns Author and Author-Identity-ID; ThreadAuthorDetailsTest passes. Its source-presence test explicitly does not verify cryptographic signatures. The implementation record excludes signature-status reporting. This proves the author slice, not the entire author-and-signature request.
+  Next: Maintainer: decide whether the identity headers satisfy the original signature-information request; otherwise scope the missing signature information.
+
+PF-20261103-F01: Retitle thread by reply; visible likes and flags
+  State: blocked/locally-verified -> done/deployed
+  Commit: f87b302b735c4d95d2470b64a743bfbec3f4c266; https://github.com/gulkily/v3/commit/f87b302b735c4d95d2470b64a743bfbec3f4c266
+  Evidence: Title directive authorization, retitle propagation, withdrawal and downstream consumers pass LocalWriteServiceTitleDirectiveTest, ReadModelThreadTitleRebuildTest and ThreadTitleWithdrawalAndConsumersTest. Later consumer/withdrawal checks are retained, rather than relying on the original merge alone.
+
+PF-20261104-B11: Composer keystrokes trigger profile requests
+  State: untriaged/unknown -> done/deployed
+  Commit: 7eaff3382f4ea7634a508289c3f9941d34e7f44e; https://github.com/gulkily/v3/commit/7eaff3382f4ea7634a508289c3f9941d34e7f44e
+  Evidence: Read-only live Chrome replay with two composer tabs: ten body input events produced zero get_profile fetches in the typing and receiving tab. Current storage listener ignores draft autosaves. Focus/visibility lookups are separate from the keystroke defect.
+
+PF-20261104-B12: Word97 action fonts and underlines
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 7289d86c97b6f67b81c1962bfecf0b0862fdd058; https://github.com/gulkily/v3/commit/7289d86c97b6f67b81c1962bfecf0b0862fdd058
+  Evidence: PostActionThemeTest passes the expanded Word97 summary selectors; live Like/Flag compute to Tahoma with no underline. This run cannot authenticate as the reporter to expose every author/operator-only toggle.
+  Next: Maintainer: on the phone in Word97, open a post you own and check Reply, Like, Flag, More, …, analysis and retraction Details typography.
+
+PF-20261104-B18: Draft-empty message font
+  State: blocked/locally-verified -> done/deployed
+  Commit: 7289d86c97b6f67b81c1962bfecf0b0862fdd058; https://github.com/gulkily/v3/commit/7289d86c97b6f67b81c1962bfecf0b0862fdd058
+  Evidence: Live empty Outbox status computes to the theme UI font in Word97, Midnight, Light, Chicago, Bubblegum, Gloss and Console, with no horizontal overflow. The shared site.css rule also covers loading status. PostActionThemeTest passes.
+
+PF-20261104-B21: Empty space below textarea
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 1220a49992cc6bea511cdc84dd13172abe5c2e5e; https://github.com/gulkily/v3/commit/1220a49992cc6bea511cdc84dd13172abe5c2e5e
+  Evidence: Dedicated-compose reserved image space was removed; later attachment-only visibility work remains. The old report concerns a phone screenshot, not just a source-text assertion.
+  Next: Maintainer: check the textarea-to-Post gap on /compose/thread and /compose/reply with the phone keyboard open.
+
+PF-20261104-F05: Console color selector
+  State: untriaged/unknown -> blocked/deployed
+  Commit: 8b72318afdb2ecb90a603774ee317ec88372021e; https://github.com/gulkily/v3/commit/8b72318afdb2ecb90a603774ee317ec88372021e
+  Evidence: Console palette selector shipped before this intake; later selector work retains its phosphor palettes. This is not an unstarted theme-control build.
+  Next: Maintainer: try the Console palette selector on the phone and judge the offered colors/readability.
+
+PF-20261104-F06: Tweet bookmarklet captures images
+  State: untriaged/unknown -> blocked/deployed
+  Commit: 1086764be4f42c603cff34587112b28550c5302f; https://github.com/gulkily/v3/commit/1086764be4f42c603cff34587112b28550c5302f
+  Evidence: Tweet clipping and later image-transfer/attachment work are deployed; original bookmarklet image request still needs its real target-browser round trip.
+  Next: Maintainer: clip a tweet with an image in the phone browser and inspect the resulting draft image before sending.
+
+PF-20261104-F13: Modern theme with icons
+  State: blocked/locally-verified -> done/deployed
+  Commit: e1139dad19b28934de72e12d7c1476004258450c; https://github.com/gulkily/v3/commit/e1139dad19b28934de72e12d7c1476004258450c
+  Evidence: e1139dad19 and smooth-line icon commits deliver the modern Gloss theme with navigation and Tools icons. The theme is selected on the live site and was subsequently chosen as the default in 0ab50e508d. No further generic theme review is required by this request.
+
+PF-20261104-F14: Agent retraction recipe and readback
+  State: untriaged/unknown -> done/deployed
+  Commit: 63dd2d4182f2db78120ec7297c141cb93a798d0e; https://github.com/gulkily/v3/commit/63dd2d4182f2db78120ec7297c141cb93a798d0e
+  Evidence: Live llms.txt has prepare/create retraction recipe, exact retry, cleanup_status pending explanation and get_post Retracted confirmation. Current get_thread output includes Retracted. Later simplification/Target-ID changes preserve the recipe and durable-record behavior.
+
+PF-20261104-F27: Discover code repository URLs
+  State: blocked/locally-verified -> done/deployed
+  Commit: 9063cb80cad9983eafa44b17120f46fb5c3a335f; https://github.com/gulkily/v3/commit/9063cb80cad9983eafa44b17120f46fb5c3a335f
+  Evidence: Live /llms.txt Source code section and /api/ second line both name https://github.com/gulkily/v3. LlmsTxtRendererTest passes after the prose moved to prompts/. Related About/meta links were never this slice.
+
+PF-20261104-F48: Word97 Like and Flag bevel spacing
+  State: untriaged/unknown -> blocked/deployed
+  Commit: f24b38f3eed21d8d09538b9bbe273acf64e3e02d; https://github.com/gulkily/v3/commit/f24b38f3eed21d8d09538b9bbe273acf64e3e02d
+  Evidence: Word97 padding/bevel commit is on main/live; later 7289d86c97 extends typography without undoing the bevel. Current PostActionThemeTest passes.
+  Next: Maintainer: include Word97 Like/Flag spacing and pressed bevel in the same phone action-style session as B12.
+
+PF-20261104-F49: Deploy shows commits and queue delay
+  State: blocked/locally-verified -> done/deployed
+  Commit: 29895d7dde68e025edfe3dafa15fabccbd8cce2a; https://github.com/gulkily/v3/commit/29895d7dde68e025edfe3dafa15fabccbd8cce2a
+  Evidence: 29895d7dde remains on main/live. Fresh AppUpdate incoming-commit/merge-exclusion checks and DeployPageTest pass, including queue display. Current deploy_control.js updates queued elapsed time. No production deployment was triggered; code/tests satisfy this implementation request without a new operator acceptance gate.
+
+PF-20261104-F50: Import selected nested HN discussion
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 5d009adf790a1ad4422d55834833e28bc2d05915; https://github.com/gulkily/v3/commit/5d009adf790a1ad4422d55834833e28bc2d05915
+  Evidence: Thread port implementation and later Ochre/expanded-preview correction are in main/live. The retained acceptance is an actual iPhone Safari HN selection/bookmarklet round trip.
+  Next: Maintainer: use Port HN on one selected nested discussion in iPhone Safari and inspect the preview and posted nesting.
+
+PF-20261104-F54: Shared Tools navigation on tool pages
+  State: blocked/deployed -> done/deployed
+  Commit: f28d3d56624def1cd8199b786e2a6cef2f205d23; https://github.com/gulkily/v3/commit/f28d3d56624def1cd8199b786e2a6cef2f205d23
+  Evidence: Current shared tools_nav_card.php emits one ordinary Tools h2. Live Preferences includes the bottom card exactly once. The launcher is intentionally not a tools-detail page; the core-route smoke covers the shared consumers.
+
+PF-20261104-F60: Board and Recent image thumbnails
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 043f879066ff06ecf5bb860ac955cee8db63b74b; https://github.com/gulkily/v3/commit/043f879066ff06ecf5bb860ac955cee8db63b74b
+  Evidence: Initial natural-proportion thumbnails were followed by a deliberate square-cover crop. The later Nov 14 attached refinement still asks natural proportions/max height. Both histories exist; a merged thumbnail feature does not resolve this retained acceptance conflict.
+  Next: Maintainer: choose natural-proportion previews or the shipped filled squares; then reconcile this item with that choice.
+
+PF-20261104-F66: Apply Word97 repairs to Chicago
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: defa308f47c090c8e660c2f213fee2a90460344f; https://github.com/gulkily/v3/commit/defa308f47c090c8e660c2f213fee2a90460344f
+  Evidence: Canonical Chicago post-action repair is on main/live; 1132defd6b is remote-only broader styling, not evidence to substitute for this scope. Live Like/Flag use Chicago UI font, no underline; PostActionThemeTest passes.
+  Next: Maintainer: check the repaired Chicago post-action controls and a signed save on Linux, as retained in this item.
+
+PF-20261104-F68: Ctrl+Enter submits from tags
+  State: blocked/locally-verified -> done/deployed
+  Commit: 665aaccc5b61b04529d41e154d40d8018657ae95; https://github.com/gulkily/v3/commit/665aaccc5b61b04529d41e154d40d8018657ae95
+  Evidence: Current browser_signing.js handles Ctrl+Enter on title, tags and event inputs through the existing form submit path, retaining body handling. BrowserSigningNormalizationTest passes in smoke.
+
+PF-20261104-F72: Identities tab on user page
+  State: blocked/locally-verified -> done/deployed
+  Commit: f39074b7b61b8bf6c4a4aea49517382e85ddabbb; https://github.com/gulkily/v3/commit/f39074b7b61b8bf6c4a4aea49517382e85ddabbb
+  Evidence: Live /user/ilyag?tab=identities exposes Threads/Replies/Identities and 78 key rows with Active time and latest-post text. Current username template sorts the key view by latest activity; keys are not placed in Threads/Replies. Later account grouping retains these tabs.
+
+PF-20261104-F78: Clickable hashtags in post bodies
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 33c2b1c890e8d3f32e329b9620742bda558d4cd0; https://github.com/gulkily/v3/commit/33c2b1c890e8d3f32e329b9620742bda558d4cd0
+  Evidence: Body-hashtag flag, always-linked metadata and offline body handling are present in current renderers. Later offline fixture corrections explicitly supply the flag instead of bypassing it. The item explicitly requires production verification including offline reading.
+  Next: Maintainer: open a hashtagged plain/Markdown thread, save it offline, and verify body and metadata tag links there.
+
+PF-20261105-F01: Image gallery page
+  State: blocked/locally-verified -> done/deployed
+  Commit: 84748ce933e2359e9c7e1148fac01ae818275f64; https://github.com/gulkily/v3/commit/84748ce933e2359e9c7e1148fac01ae818275f64
+  Evidence: Live /gallery/ displays image tiles; current implementation reuses ThumbnailStore, with later WebP and Word97/Midnight corrections. Ordinary Gallery route smoke passes. Zoom/margins requests remain separate.
+
+PF-20261108-B01: Sent reply briefly shows without header and footer
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 4c4ffc3b22dc7b20d6ff1b3841f7f99d8b795567; https://github.com/gulkily/v3/commit/4c4ffc3b22dc7b20d6ff1b3841f7f99d8b795567
+  Evidence: reply_continuation.js retains the pending card until full canonical card hydration, including the later complete-card path. A public read cannot exercise the sending transition without a write.
+  Next: Maintainer: send one reply from the thread and one from the reply page on the phone; check pending status changes directly to a bylined card.
+
+PF-20261108-F02: Only approved members put events on the calendar
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 028c9989e2c234a4cff14d6e9fc7fffef54761c3; https://github.com/gulkily/v3/commit/028c9989e2c234a4cff14d6e9fc7fffef54761c3
+  Evidence: Original author-approval calendar gate exists and CalendarPageTest passes, but later 28ec471844 intentionally admits guest events labeled #approved by a member. The literal author-only Done when was superseded by PF-20261118-F01.
+  Next: Maintainer: approve reconciling the older Done when with the later approved-label exception before closure.
+
+PF-20261109-F01: Composer settings fold into an expandable section of the ... menu
+  State: blocked/locally-verified -> done/deployed
+  Commit: 5af404a12f15873f6fbcb98ca8b9ab21cbd4e5f8; https://github.com/gulkily/v3/commit/5af404a12f15873f6fbcb98ca8b9ab21cbd4e5f8
+  Evidence: Live New post has collapsed Options outside the actions menu, containing Markdown, Formatting help and Theme. Later 5ff0a5474d turns it into a settings list without moving settings back to the menu. Current shared composer covers inline/reply too.
+
+PF-20261111-B01: Compose menu cut off near viewport top
+  State: untriaged/unknown -> done/deployed
+  Commit: 09a94e8437077be64f76b6edbef1d1d7783d6cba; https://github.com/gulkily/v3/commit/09a94e8437077be64f76b6edbef1d1d7783d6cba
+  Evidence: Current compose menu placement uses available space and downward opening at the viewport top. Later settings move to Options removes those entries from the menu without removing placement recovery. Live shared composer remains usable.
+
+PF-20261111-B02: Favicon odd in light theme
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 2b5254edc7b916550d626fc7f985cbefccca6149; https://github.com/gulkily/v3/commit/2b5254edc7b916550d626fc7f985cbefccca6149
+  Evidence: Current favicon has 16/32/48px tiles; the muddy-glow source asset was replaced. New app icons are a separate slice.
+  Next: Maintainer: inspect the favicon in a real light browser tab strip and a dark one.
+
+PF-20261111-B10: Untitled posts show their first line twice
+  State: untriaged/unknown -> done/deployed
+  Commit: b493d58d599f9086648a2d784b945650a5ef48b5; https://github.com/gulkily/v3/commit/b493d58d599f9086648a2d784b945650a5ef48b5
+  Evidence: ThreadRootCardRepeatedTitleTest passes titled/untitled deduplication and current template removes the repeated opening line. Later leading-blank-line correction is retained.
+
+PF-20261111-B11: Post stays disabled after Back
+  State: untriaged/unknown -> blocked/deployed
+  Commit: 24f6f10ba6a4ffaa6573fb5276186c0ed38ae9a1; https://github.com/gulkily/v3/commit/24f6f10ba6a4ffaa6573fb5276186c0ed38ae9a1
+  Evidence: The current anonymous-submit pageshow/Back recovery is in the rebased merged implementation; server replay/refusal tests pass. Same phone Back flow as B03, not a separate rebuild.
+  Next: Maintainer: during the B03 phone Back check, confirm Post becomes enabled and can send a new draft.
+
+PF-20261111-B15: Offline compose for threads and replies
+  State: untriaged/unknown -> done/deployed
+  Commit: f1f62b93404e056cb4c6f425b1c9cf00ed030ed1; https://github.com/gulkily/v3/commit/f1f62b93404e056cb4c6f425b1c9cf00ed030ed1
+  Evidence: Offline thread/reply composer and Outbox path are retained through later reconnect work. OfflineOutboxComposeTest passes in this run. The existing item additionally records maintainer offline acceptance; it is corroborating history, not a new device replay.
+
+PF-20261111-B16: Like needs two taps on iOS
+  State: untriaged/unknown -> blocked/deployed
+  Commit: 1e8b2498d3718118ffa63fe562542b28a94e5562; https://github.com/gulkily/v3/commit/1e8b2498d3718118ffa63fe562542b28a94e5562
+  Evidence: Later touch rule deliberately restores permalink tap reveal while keeping Like immediately tappable; do not close from the earlier broad hover-only change alone. Retained item notes record a successful maintainer trial.
+  Next: Maintainer: include a one-tap Like on a continuation reply in the phone session; this confirms the current later touch rule.
+
+PF-20261111-B17: Thread links redirect to a trailing slash
+  State: untriaged/unknown -> blocked/deployed
+  Commit: 15190d196e195509b2d03807c8d3e708f952d9b3; https://github.com/gulkily/v3/commit/15190d196e195509b2d03807c8d3e708f952d9b3
+  Evidence: The slashless canonical-route implementation and later 0f7461944 high-traffic refresh correction are on main/live. However this run received HTTP 503 for both forms of thread-20261121093059-ab28d30a; the browser successfully opened a different current thread. That does not establish recovery for this tested route, so no done proposal.
+  Next: Agent/operator: investigate or replay the 503 route and then verify slashless 200 plus slash-to-slashless redirect; do not infer success from another thread.
+
+PF-20261111-B18: Reload keeps extra parameters on a new post
+  State: untriaged/unknown -> done/deployed
+  Commit: 8254064dadbd2df1105b4fb0f1febdb336efc7b3; https://github.com/gulkily/v3/commit/8254064dadbd2df1105b4fb0f1febdb336efc7b3
+  Evidence: Current url_hints.js strips hints on reload, independently of version-notification enablement. Earlier move-only PRs are not enough; the later reload-specific correction is the relevant implementation.
+
+PF-20261111-B21: Gloss SQLite viewer cells clipped
+  State: untriaged/unknown -> done/deployed
+  Commit: 1b2e5cdbfd6c986e1dfbf4cd95c75a74e2e89f6d; https://github.com/gulkily/v3/commit/1b2e5cdbfd6c986e1dfbf4cd95c75a74e2e89f6d
+  Evidence: Merged cell-toggle correction explicitly removes Gloss pill radius and fixes cell sizing. Current sqlite.css/theme-gloss.css retain the narrower cell rule after later theme updates; it is not a global change to rounded controls.
+
+PF-20261111-B23: llms.txt ambiguous about Markdown default
+  State: blocked/locally-verified -> done/deployed
+  Commit: f34699a18cb69c67e474b65519b04293b1ce6267; https://github.com/gulkily/v3/commit/f34699a18cb69c67e474b65519b04293b1ce6267
+  Evidence: Live llms.txt states route-specific Markdown defaults and direct-signed Body-Format behavior. Current LlmsTxtRendererTest passes. This is documentation, not proof that Quill has a --format option.
+
+PF-20261111-F01: Describe an event's date in words
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 8bd54735336a23854eb44a1c64b111a329a92ccb; https://github.com/gulkily/v3/commit/8bd54735336a23854eb44a1c64b111a329a92ccb
+  Evidence: Event phrases shipped, but bb89f48bf0 records maintainer review: feature needs refinement, flag should stay off. Later merge does not erase that explicit nonacceptance.
+  Next: Maintainer: provide one phrase/interaction that needs refinement, or accept the current Event phrases behavior.
+
+PF-20261111-F02: The new post form is busy below Post
+  State: blocked/locally-verified -> done/deployed
+  Commit: 1c10fe21ea758b1360347944169b0cf9a0d9045a; https://github.com/gulkily/v3/commit/1c10fe21ea758b1360347944169b0cf9a0d9045a
+  Evidence: 1c10fe21ea remains in the live composer. At 390px, Tags/Event/Options and photo controls are collapsed, the title has no top border and a one-pixel underline, and the page has no horizontal overflow. Shared composer behavior tests passed in the predecessor run. This directly checks the requested quiet initial presentation.
+
+PF-20261111-F03: Gloss and Gloss Dark are the ZenMemes defaults
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 0ab50e508de1deef906904b659bdb8912d0a0d10; https://github.com/gulkily/v3/commit/0ab50e508de1deef906904b659bdb8912d0a0d10
+  Evidence: Current profile and inline first-paint code map Auto to Gloss/Gloss Dark. Live fresh Chrome starts Gloss. A CDP scheme toggle changed matchMedia.matches but emitted no change event, even to an independent listener; retaining Gloss in that harness is not evidence of an application regression. Full live-system-change acceptance remains unverified.
+  Next: Maintainer: with Auto/System selected, change the actual device light/dark setting while the page is open and confirm Gloss follows it; retain an explicit choice to check it stays put.
+
+PF-20261111-F05: Formatting help outside the ... menu
+  State: untriaged/unknown -> done/deployed
+  Commit: 5af404a12f15873f6fbcb98ca8b9ab21cbd4e5f8; https://github.com/gulkily/v3/commit/5af404a12f15873f6fbcb98ca8b9ab21cbd4e5f8
+  Evidence: Live collapsed Options contains Markdown and Formatting help outside the … menu. Later settings-list layout retains the relocation. This is the same implementation as F01, not a second build.
+
+PF-20261111-F18: Friendly 404 page
+  State: untriaged/unknown -> done/deployed
+  Commit: a0fa5b9b10af9f624aa52fed4c59c7bb31352982; https://github.com/gulkily/v3/commit/a0fa5b9b10af9f624aa52fed4c59c7bb31352982
+  Evidence: Live unknown-route browser page says there is no page at this address, offers recovery and recent threads, and omits local test slice wording. Current core-route smoke passes.
+
+PF-20261111-F19: Midnight Like and Flag match Word 97
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: a69a363221824dd9444bab3535c76760986478af; https://github.com/gulkily/v3/commit/a69a363221824dd9444bab3535c76760986478af
+  Evidence: PostActionThemeTest passes Midnight font/bevel selectors; live Like/Flag are Tahoma with no underline. This report expressly asks for visual parity with Word97 on the phone.
+  Next: Maintainer: check Midnight Like/Flag and other post actions on the phone against Word97.
+
+PF-20261111-F25: More color variants for the glass theme
+  State: untriaged/unknown -> done/deployed
+  Commit: 0f35274fbd1839987911af7d795312184a0abced; https://github.com/gulkily/v3/commit/0f35274fbd1839987911af7d795312184a0abced
+  Evidence: 0f35274fb adds Violet, Blue, Teal and Rose palettes to Gloss and Gloss Dark, with persistence and independent LCD choices. ThemeRegistryTest and theme_cycle.cjs pass freshly. Later theme-menu layout preserves the palette menu. This supplies the requested extra glass/Gloss color variants.
+
+PF-20261111-F32: Close the ... menu on outside click
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: ed723babfedb0ef8b7d3e238655c88027bf08e60; https://github.com/gulkily/v3/commit/ed723babfedb0ef8b7d3e238655c88027bf08e60
+  Evidence: Current post_retraction.js closes post More actions on outside activation, including another post menu; composer behavior stays separate. Production phone check is the retained next action.
+  Next: Maintainer: open a post … menu, tap outside it, then open another post menu; the old one should close.
+
+PF-20261111-F37: frm.py prints the thread link
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: d2987c290ca0e00bbfe10c947d6b34bf66a29de3; https://github.com/gulkily/v3/commit/d2987c290ca0e00bbfe10c947d6b34bf66a29de3
+  Evidence: Live Quill downloads carry version 2026-11-22.1 and thread-link output, including reply anchors and old-server post-link fallback. This run made no production posts.
+  Next: Maintainer/agent with posting authority: make one ordinary Quill post and follow the printed thread link.
+
+PF-20261111-F38: frm.py attaches images
+  State: untriaged/unknown -> done/deployed
+  Commit: 40c49e765a4e7e634d0d96902364171fddfd0820; https://github.com/gulkily/v3/commit/40c49e765a4e7e634d0d96902364171fddfd0820
+  Evidence: Live Quill download provides --image; QuillClientTest::testImageAttachmentNeedsApprovalThenPublishesTheSignedBytes passes across the ports, preserving approval refusal and exact signed bytes. Later rename/downloads retain the option.
+
+PF-20261111-F41: User and client preferences
+  State: untriaged/unknown -> done/deployed
+  Commit: 4e14d687d56ce77ff85d2ee3e63363fa946fe9ea; https://github.com/gulkily/v3/commit/4e14d687d56ce77ff85d2ee3e63363fa946fe9ea
+  Evidence: Live Preferences page and passing PreferencesPageTest deliver browser settings in one place. This shared-source request and PF-20261114-F01 describe the same shipped page; no duplicate decision is proposed.
+
+PF-20261111-F48: API for keys awaiting approval
+  State: untriaged/unknown -> done/deployed
+  Commit: b5e42af3ac95eb2cdfb1e29eb2197c052e465697; https://github.com/gulkily/v3/commit/b5e42af3ac95eb2cdfb1e29eb2197c052e465697
+  Evidence: Current /api/pending_keys route supplies username, post count, recent titles and exact approval label to an approved signed-in key. QuillClientTest::testPendingKeysNeedsAnApprovedSessionAndMatchesThePendingPage passes all ports, including refusal without approval.
+
+PF-20261111-F52: PHP and Perl versions of frm.py
+  State: untriaged/unknown -> blocked/deployed
+  Commit: 5bd11a23517dc824744fa2578cf06eb2e6a7c9f7; https://github.com/gulkily/v3/commit/5bd11a23517dc824744fa2578cf06eb2e6a7c9f7
+  Evidence: PHP and Perl ports are downloadable under Quill names, with legacy frm aliases retained. Same production-post acceptance as PF-20261116-F04; no need to build two more clients under the old name.
+  Next: Agent: diagnose the two failing Quill staging/redirect-replay checks on this environment before the retained PHP/Perl live-post acceptance. No new ports are needed.
+
+PF-20261114-B01: Bubblegum: You menu buttons and wrapping tool labels
+  State: blocked/locally-verified -> done/deployed
+  Commit: a1ddcdf6f7d425819db5c6938a3195313109b842; https://github.com/gulkily/v3/commit/a1ddcdf6f7d425819db5c6938a3195313109b842
+  Evidence: a1ddcdf6f7 is deployed. Live desktop Account and Invite icons compute to 16px with 4.8px label spacing. At both 320px and 390px, all 23 live Bubblegum Tools captions keep each word on one line and the page does not overflow. This checks both halves of the request.
+
+PF-20261114-F01: Client-side preferences page
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 4e14d687d56ce77ff85d2ee3e63363fa946fe9ea; https://github.com/gulkily/v3/commit/4e14d687d56ce77ff85d2ee3e63363fa946fe9ea
+  Evidence: The core Preferences page is deployed and its PHP tests pass. A newly available real browser runner repeatedly times out clicking the Beside ruler toggle at preferences.mjs:152 with that feature enabled. This run does not establish that extended setting path; keep the task open rather than claim a completely passing browser flow.
+  Next: Agent: replay the Preferences/Beside shared-toggle case with the feature enabled and determine why the toggle is not actionable. This is an agent verification step, not a request for maintainer review.
+
+PF-20261114-F02: Gallery zoom
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: babec93bb8ba8aeea194a2e0aeafdf3c49f1ec0d; https://github.com/gulkily/v3/commit/babec93bb8ba8aeea194a2e0aeafdf3c49f1ec0d
+  Evidence: Gallery zoom and all three later caption/scroll corrections are on main/live. The pinch requirement needs actual touch acceptance, not just the existence of Smaller/Larger.
+  Next: Maintainer: pinch Gallery tiles on the phone, reload, then reset Gallery size in Preferences.
+
+PF-20261114-F03: Deploy celebration
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 89faaed0a08cd4ccae701c04483813841945f475; https://github.com/gulkily/v3/commit/89faaed0a08cd4ccae701c04483813841945f475
+  Evidence: Celebration code retains once-only, no-change/failure exclusions and reduced-motion handling. No production deploy was triggered by this audit.
+  Next: Operator: on the next ordinary deploy, observe one banner/celebration; repeat with reduced motion to see banner only.
+
+PF-20261114-F04: Deploy page buttons: one row, clearer main action
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: a5a9d6c74ed439da6d66c3f47050b5b79b85fc69; https://github.com/gulkily/v3/commit/a5a9d6c74ed439da6d66c3f47050b5b79b85fc69
+  Evidence: Deploy button row/main-action styles are on main/live. Renumbering from F01 is an ID collision correction, not evidence that Preferences implements this item.
+  Next: Maintainer: inspect Deploy actions on desktop and phone, including Bubblegum, for one clear main action and sensible wrapping.
+
+PF-20261115-B01: Bubblegum: open More tab label invisible on phones
+  State: blocked/locally-verified -> done/deployed
+  Commit: 4c170dd8a3466d3bdc6cf29f73d515d7b21b1ab2; https://github.com/gulkily/v3/commit/4c170dd8a3466d3bdc6cf29f73d515d7b21b1ab2
+  Evidence: 4c170dd8a3 is deployed. Fresh live Bubblegum phone-width check opened the actual More menu: the selected trigger computes to rgb(184,40,108) berry background and rgb(255,255,255) white text. That is the exact retained Done when, so no additional phone judgement is being manufactured.
+
+PF-20261116-B01: Agent posts land as guest with run-together tags and nothing says so
+  State: blocked/locally-verified -> done/deployed
+  Commit: a22bf4ead27b7844fcc30d051190a289e48cd907; https://github.com/gulkily/v3/commit/a22bf4ead27b7844fcc30d051190a289e48cd907
+  Evidence: Current write responses return author/tags, comma-separated board tags parse as a list, get_post includes Board-Tags, and live llms.txt explains guest posting/readback/repair. Later e3e4a6abba keeps the requested guest-then-repair policy instead of stopping agents.
+
+PF-20261116-F04: PHP and Perl versions of Quill
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 5bd11a23517dc824744fa2578cf06eb2e6a7c9f7; https://github.com/gulkily/v3/commit/5bd11a23517dc824744fa2578cf06eb2e6a7c9f7
+  Evidence: Both live /quill.pl and /quill.php download successfully, with distinct User-Agents. QuillClientTest exercises all three ports and several HTTP paths pass, but staging/redirect cases fail on this environment. No production write was made.
+  Next: Agent: diagnose the two failing Quill staging/redirect-replay checks on this environment before the retained PHP/Perl live-post acceptance. No new ports are needed.
+
+PF-20261117-B01: Task worker logs "unable to open database file" on a fresh ./v3 start
+  State: blocked/locally-verified -> done/deployed
+  Commit: 3c481a34d3a3193bd7553b265f4056ce6a325efa; https://github.com/gulkily/v3/commit/3c481a34d3a3193bd7553b265f4056ce6a325efa
+  Evidence: TaskQueueCommandTest::testWorkerOnAFreshInstanceRunsCleanlyBeforeTheFirstPageRequest passes on an empty instance, before any page request, without discovery/run errors or creating an empty repository/read model.
+
+PF-20261117-F01: Useful local first page and browser import
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 817332dadb35e24c26b43e16f016e3dbb8f46215; https://github.com/gulkily/v3/commit/817332dadb35e24c26b43e16f016e3dbb8f46215
+  Evidence: Local page/import shipped in #284 and later worker/progress integration. Existing local browser recovery record and current import-progress tests support the implementation, not the maintainer environment. No new site import was run.
+  Next: Maintainer: launch the fetched code on your own machine, explore the local page, and open imported threads through ordinary navigation.
+
+PF-20261117-F02: Offer known public instances as import sources
+  State: blocked/locally-verified -> done/deployed
+  Commit: c9c2dde2398d87fe21530261196a3ad0208f28ba; https://github.com/gulkily/v3/commit/c9c2dde2398d87fe21530261196a3ad0208f28ba
+  Evidence: KnownInstancesTest passes named-host resolution, expandable block list and self exclusion. Current shipped resources/known_instances.txt lists ZenMemes; both import entry points use KnownInstances.
+
+PF-20261117-F06: One import path on a fresh local install
+  State: untriaged/unknown -> done/deployed
+  Commit: a8bef8ea134293aa33b22bf6836658ccf05ce7ab; https://github.com/gulkily/v3/commit/a8bef8ea134293aa33b22bf6836658ccf05ce7ab
+  Evidence: The later local-progress cycle replaces request-held import with the queued worker/progress path, reusing import progress views. Current LocalDevelopmentPageController dispatches the same queue task; ImportProgressViewTest passes. This narrower unification request does not require a new real site import.
+
+PF-20261117-F10: Second pane: open a link beside the current page on wide screens
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 1c878b7612b6e5f894d5852fe4222350761fb11e; https://github.com/gulkily/v3/commit/1c878b7612b6e5f894d5852fe4222350761fb11e
+  Evidence: Open beside implementation is on main/live; later toggle-state and offline corrections are also deployed. Flag availability and retained wide-screen browser matrix are distinguished from physical acceptance. Fresh live Gallery at 2048px exposes neither the Beside root attribute nor toggle, and a thread click navigates normally. Deployed code is not proof that its feature flag is enabled.
+  Next: Operator: enable/configure Open beside if wanted; then an agent can run the wide-screen/toggle/offline acceptance appropriate to this item. No new build is required.
+
+PF-20261118-B01: Offline reader browser tests print an undefined-variable warning
+  State: blocked/locally-verified -> done/deployed
+  Commit: f176bd006350d62b46c3db961591beab762538ae; https://github.com/gulkily/v3/commit/f176bd006350d62b46c3db961591beab762538ae
+  Evidence: f176bd0063 supplies tagLinksEnabled in all three affected browser fixtures and adds a real renderer flag regression. Replaying the old PHP include emits the exact undefined-variable warning; all three current includes use the tested warning-free declaration. Current LocalAppSmokeTest::testOfflineReaderFallbackRouteUsesLocalSnapshotShell passes flag-on and flag-off assertions. Actual runners: offline_card_extra_line passes; absent_retraction_snapshot times out taking its screenshot and offline_board_toolbar times out clicking sort, both without the reported PHP warning. Closure is limited to the repaired warning/flag regression, not a claim all browser checks pass.
+
+PF-20261118-F01: An approved member's #approved label puts a guest's event on the calendar
+  State: blocked/locally-verified -> done/deployed
+  Commit: 28ec4718445d5932af1f937f2c29a81f309b28a1; https://github.com/gulkily/v3/commit/28ec4718445d5932af1f937f2c29a81f309b28a1
+  Evidence: CalendarPageTest::testAnApprovedMembersApprovedLabelPutsAGuestEventOnTheCalendar passes, including removal/revocation conditions. Current CalendarQuery and ApprovalLabel implement guest label approval without weakening author approval elsewhere.
+
+PF-20261118-F02: Reading margins on the gallery
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: ed6714a3184d92c06bf3a7ae039b77c249779991; https://github.com/gulkily/v3/commit/ed6714a3184d92c06bf3a7ae039b77c249779991
+  Evidence: Gallery uses the shared reading-margins ruler and constrained tile styles. Main/live include the Word97/Midnight display correction.
+  Next: Maintainer: change the Gallery reading column on the phone and desktop; confirm the ruler works and tiles stay inside it.
+
+PF-20261118-F03: Home-screen app icons (apple-touch-icon and manifest PNGs)
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: f8957f5d7be15a8f728096beafd59e4406b8f334; https://github.com/gulkily/v3/commit/f8957f5d7be15a8f728096beafd59e4406b8f334
+  Evidence: Apple-touch and 192/512 PNG assets are in main/live, with manifest and layout links. Headless install evidence cannot prove the iPhone home-screen result.
+  Next: Maintainer: add ZenMemes to the iPhone home screen and check that the icon is the Z.
+
+PF-20261118-F04: Beside button does not show clearly when it is on
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 7124875fe41e417d4b0311c67277adf7041c3a3c; https://github.com/gulkily/v3/commit/7124875fe41e417d4b0311c67277adf7041c3a3c
+  Evidence: The actual Beside indicator commit is 7124875fe4. f033c6bb56 used the colliding historical ID for Recently released and is not this fix. Current indicator adds filled checked on-state. Fresh live Gallery at 2048px exposes neither the Beside root attribute nor toggle, and a thread click navigates normally. Deployed code is not proof that its feature flag is enabled.
+  Next: Operator: enable/configure Open beside if wanted; then an agent can run the wide-screen/toggle/offline acceptance appropriate to this item. No new build is required.
+
+PF-20261118-F05: Post file links open in small themed windows
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: fd361ad060d9f240612ac58eb8c39c5bfc2c9ee7; https://github.com/gulkily/v3/commit/fd361ad060d9f240612ac58eb8c39c5bfc2c9ee7
+  Evidence: Current post details have file-window data hooks and file_windows.js preserves modified/raw/no-JS links. The live root thread used for font inspection did not expose these post-details links, so that observation is not claimed as a pass.
+  Next: Maintainer: open a post details page and try Source, Commit, Signature and Public key; judge the small themed windows and follow Raw.
+
+PF-20261118-F06: Recently released section on the Feature Flags page
+  State: blocked/locally-verified -> done/deployed
+  Commit: f033c6bb565f2df5c78d8856f786a6295a2ae075; https://github.com/gulkily/v3/commit/f033c6bb565f2df5c78d8856f786a6295a2ae075
+  Evidence: Live Feature Flags opens with RECENTLY RELEASED, dated Backlog and Direct image serving links. Current registry carries release dates; later 1560279207 fixes landing below the sticky toolbar rather than reverting the feature.
+
+PF-20261118-F07: Open beside does not work offline
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: b71d1c426912abe8e4f4ef4670715ffdba099e5b; https://github.com/gulkily/v3/commit/b71d1c426912abe8e4f4ef4670715ffdba099e5b
+  Evidence: Offline Beside port and worker hooks are on main/live; retained browser record covers Chrome and explicitly excludes offline Firefox. No live offline navigation acceptance is asserted. Fresh live Gallery at 2048px exposes neither the Beside root attribute nor toggle, and a thread click navigates normally. Deployed code is not proof that its feature flag is enabled.
+  Next: Operator: enable/configure Open beside if wanted; then an agent can run the wide-screen/toggle/offline acceptance appropriate to this item. No new build is required.
+
+PF-20261121-B01: Keep the Arena header Deploy now button readable on hover
+  State: blocked/unknown -> blocked/deployed
+  Commit: a2fcb9e94c7f3e66420e8eebdf30f487d60b0b3c; https://github.com/gulkily/v3/commit/a2fcb9e94c7f3e66420e8eebdf30f487d60b0b3c
+  Evidence: Arena hover rule now pins the light deployment-button background; browser regression case exists. Triggering the pending production-deploy state is an operator action.
+  Next: Operator: during the next pending deployment in Arena, hover the header Deploy now button and check its label.
+
+PF-20261122-B04: Recent text shows through the Pending author summary in Ochre
+  State: blocked/unknown -> blocked/deployed
+  Commit: 3b4797da61348ac32f33219b3ddd4b238526d1de; https://github.com/gulkily/v3/commit/3b4797da61348ac32f33219b3ddd4b238526d1de
+  Evidence: Opaque Ochre Pending summary CSS is on main/live. The older publisher B04 trailers are a documented ID collision and do not count as this fix.
+  Next: Maintainer: open a Pending chip on Recent in Ochre on phone and desktop; check that underlying text does not show through.
+
+PF-20261122-F01: Local start page import shows what it is doing
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: a8bef8ea134293aa33b22bf6836658ccf05ce7ab; https://github.com/gulkily/v3/commit/a8bef8ea134293aa33b22bf6836658ccf05ce7ab
+  Evidence: Local import uses queued worker jobs with steps/counts/timing and recovery. ImportProgressViewTest passes. No real site import was run in this history-only sweep.
+  Next: Maintainer: perform the retained real zenmemes.com import on your own machine and check progress, responsive other pages and final result.
+
+PF-20261122-F02: Local start page reports the last import and offers one re-import
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: 3d8aa7a7706548b07bd387656f2eb0d54a2068b0; https://github.com/gulkily/v3/commit/3d8aa7a7706548b07bd387656f2eb0d54a2068b0
+  Evidence: PR #370 and current local status/re-import card are on main/live. Earlier progress work alone was not taken as proof of this follow-up.
+  Next: Maintainer: on your existing local copy, check source/age/counts and run its one re-import action.
+
+PF-20261123-B02: Publisher CLI conventions and direct execution
+  State: blocked/locally-verified -> done/deployed
+  Commit: c6e73b7d1f2b293722eb678af6ca5d1af6481e28; https://github.com/gulkily/v3/commit/c6e73b7d1f2b293722eb678af6ca5d1af6481e28
+  Evidence: Publisher PR #387 is merged and deployed by ancestry. Ordinary ./v3 publish-keys --help matches the requested input/source conventions. PublishKeysCommandTest, PublicKeyPublisherTest and PublicKeyPublishHttpTest pass 26/26: dry-run makes no writes, source/name/retirement/destination refusals remain, selected publication and duplicate-free retry work. Per-key production approval/private history are expressly separate from this CLI Done when.
+
+PF-20261123-F01: Backlog page: sort the open items and start work on one or several
+  State: blocked/deployed -> done/deployed
+  Commit: 7289d86c97b6f67b81c1962bfecf0b0862fdd058; https://github.com/gulkily/v3/commit/7289d86c97b6f67b81c1962bfecf0b0862fdd058
+  Evidence: The exact two-item Start request is preserved in word97_action_fonts_one_shot.md and its resulting PR #380 exists and is merged. Item notes already record the maintainer phone Start/Copy acceptance. Live text backlog and current feedback CLI tests pass. #381 preserves clone/PR wording.
+
+PF-20261123-F02: Backlog claims: Start claims the picked items and the page shows who holds them
+  State: blocked/locally-verified -> blocked/deployed
+  Commit: da0513f1d38c88287924b26603bb5771c1fa3a69; https://github.com/gulkily/v3/commit/da0513f1d38c88287924b26603bb5771c1fa3a69
+  Evidence: PR #395 is deployed at the live version itself. A read-only GET /backlog/claims.txt returns 404, consistent with no configured claims thread, not proof of the two-session flow. Retained local two-session evidence is not live acceptance.
+  Next: Operator: configure the claims thread and perform the recorded phone/two-session Start, hold, release and post-merge-clear acceptance session.
+
+Attribution: Codex; 2026-11-24 UTC.

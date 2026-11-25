@@ -1,9 +1,9 @@
 ID: PF-20261021-B02
 Title: Textarea edge alignment
 Kind: bug
-Workflow: untriaged
+Workflow: done
 Created: 2026-10-21
-Evidence: unknown
+Evidence: deployed
 Estimate: 0.25
 Aliases: 2026-10-21/B02, 2026-10-30/B10
 
@@ -24,3 +24,4 @@ Estimate 0.25 is inherited from October 21 feedback-only triage. Recommended wor
 Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
 History: docs/plans/production_feedback_register.md#pf-20261021-b02
 October 30 summary row B10: Keep textarea top/left/right edges fixed during expansion. Status there: Open — resolution not verified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 74b6beccf2 is on audited main and deployed ancestry (live c4205ea43d). Direct geometry fix 74b6beccf keeps editor padding and hidden identity status stable. Fresh live Chrome measurements passed all 42 combinations: 21 themes at 390px and 1280px, with top/left/right relative to the card unchanged within one pixel, the same focused textarea expanding, and no horizontal overflow. Later 87c94639c and inline/offline composer changes retain one editor. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

@@ -1,9 +1,9 @@
 ID: PF-20261104-B11
 Title: Composer keystrokes trigger profile requests
 Kind: bug
-Workflow: untriaged
+Workflow: done
 Created: 2026-11-04
-Evidence: unknown
+Evidence: deployed
 
 Request:
 Every composer keystroke results in /api/get_profile requests, creating an unintended tracking signal.
@@ -17,3 +17,4 @@ Sources:
 Notes:
 Agent follow-up traces it to other tabs’ storage listeners; PR #10, a deployment report and an agent browser replay report zero per-keystroke requests after deployment. Same follow-up reports remaining focus/visibility profile lookups. These are reported evidence only; do not mark verified here or silently add throttling as a requirement.
 Intake: docs/feedback/triage/2026-11-04_proposals.txt (approved by maintainer 2026-11-04). Local snapshot review only; reported runtime/device conditions were not replayed.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 7eaff3382f is on audited main and deployed ancestry (live c4205ea43d). Read-only live Chrome replay with two composer tabs: ten body input events produced zero get_profile fetches in the typing and receiving tab. Current storage listener ignores draft autosaves. Focus/visibility lookups are separate from the keystroke defect. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

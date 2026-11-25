@@ -4,6 +4,8 @@ Working checklist for one story told in three Railspike cycles. It is not a
 Railspike artifact and approves no implementation. Each item runs as its own
 cycle, following AGENTS.md. Record progress, checks and limitations here.
 
+Checklist merged in [PR #265](https://github.com/gulkily/v3/pull/265); updated 2026-11-23.
+
 Requested by the maintainer on 2026-11-14: a ZenMemes reader gets tree
 history and tree bookmarks, as in the Mosaic browser, and a filmstrip of
 recent screens. Cached HTML pages cost almost nothing to show again, so v3
@@ -32,14 +34,17 @@ can offer many screens at once.
   change the address with `history.pushState` and listen for `popstate`.
 - `public/assets/browser_signing.js` already detects back and forward through
   the navigation entry type `back_forward`.
-- `public/service_worker.js` fetches pages network-first and caches only the
-  offline reader, compose pages and assets. Other pages are not cached by the
-  worker, which matters for the filmstrip. It now also keeps
-  navbar pages in its `nav-copy` cache and answers early fetches started on
-  tap by `fast_navigation.js`; neither is a visit.
-- `public/assets/open_beside.js` shows a real page in a frame named
-  `forum-open-beside`. Pane pages are visits with their own cursor (nav_tree
-  Step 1).
+- `public/service_worker.js` fetches pages network-first. Since
+  [nav cached copy](nav_cached_copy/nav_cached_copy_one_shot.md), it also
+  keeps a last copy of each navbar page (cache `nav-copy`, behind its flag).
+  Thread and other content pages are still not cached by the worker, which
+  matters for the filmstrip. [Nav quick wins](nav_quick_wins/nav_quick_wins_one_shot.md)
+  added an early fetch when a finger goes down on a navbar link. Neither the
+  nav-copy answer nor the early fetch is a visit (nav_tree Step 1).
+- `public/assets/open_beside.js` (the [open beside](open_beside/open_beside_step3_development_plan.md)
+  mode) already shows a same-origin page in a frame beside the column and
+  tracks its title and address. It is the precedent for live frames in the
+  filmstrip. Its pane pages are visits with their own cursor (nav_tree).
 - `templates/tour/page.php` already shows saved pages in scaled-down frames,
   a precedent for live filmstrip frames (item 3).
 
@@ -100,6 +105,8 @@ under protocol P2.
   empty in Chromium, Firefox and WebKit; `window.open` copies the opener's
   `sessionStorage`, which gives the right parent (item 1).
 - Later: sync across devices, and in-page changes as visits.
+- Answered 2026-11-24 (nav_tree Step 1): a page opened in the open beside
+  pane is a visit, under the page in the column it was opened from (item 1).
 - Whether the filmstrip and the pane list in the
   [open beside design notes](open_beside_design_notes.md) are one control:
   a strip of open panes is also the reader's recent path (item 3).

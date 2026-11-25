@@ -222,6 +222,82 @@ final class FeedbackBacklogTest
         }
     }
 
+    public function testClaimAndReleaseCommandsReadTheSiteAndPostThroughQuill(): void
+    {
+        $root = sys_get_temp_dir() . '/v3-claim-cli-' . bin2hex(random_bytes(4));
+        mkdir($root);
+        // A stand-in site that answers /backlog/claims.txt, and a stand-in Quill that records what it was asked to post.
+        $free = "Claims-Thread: thread-claims\nStale-After-Days: 3\n\nID: PF-20261104-B18\nClaim-State: free\n\nID: PF-20261104-B12\nClaim-State: none\nGuest-Claims: 1\n";
+        $held = "Claims-Thread: thread-claims\n\nID: PF-20261104-B18\nClaim-State: held\nClaimed-By: mara\nClaimed-Since: 2026-11-23T08:00:00Z\nClaim-Post: post-claim-1\n\nID: PF-20261104-B12\nClaim-State: free\n";
+        file_put_contents($root . '/router.php', '<?php $mode = trim((string) @file_get_contents(__DIR__ . "/mode")); header("Content-Type: text/plain");'
+            . ' if (parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH) !== "/backlog/claims.txt" || $mode === "none") { http_response_code(404); echo "This site keeps no backlog claims.\n"; return; }'
+            . ' file_put_contents(__DIR__ . "/asked", $_SERVER["REQUEST_URI"]); echo file_get_contents(__DIR__ . "/" . $mode . ".txt");');
+        file_put_contents($root . '/free.txt', $free);
+        file_put_contents($root . '/held.txt', $held);
+        file_put_contents($root . '/quill.php', '<?php $args = array_slice($argv, 1); $file = $args[array_search("--body-file", $args) + 1];'
+            . ' file_put_contents(__DIR__ . "/posted", implode(" ", $args) . "\n" . file_get_contents($file) . "---\n", FILE_APPEND); echo "Post-ID: post-new\n";');
+        $socket = stream_socket_server('tcp://127.0.0.1:0');
+        $port = (int) substr(strrchr((string) stream_socket_get_name($socket, false), ':'), 1);
+        fclose($socket);
+        $server = proc_open(['php', '-S', '127.0.0.1:' . $port, $root . '/router.php'], [['pipe', 'r'], ['file', '/dev/null', 'w'], ['file', '/dev/null', 'w']], $pipes);
+        $site = 'http://127.0.0.1:' . $port;
+        // The harness may route http through a proxy; a loopback site must not go through it.
+        $v3 = 'NO_PROXY=127.0.0.1 no_proxy=127.0.0.1 http_proxy= HTTP_PROXY= V3_QUILL=' . escapeshellarg('php ' . $root . '/quill.php') . ' ' . escapeshellarg(dirname(__DIR__) . '/v3') . ' feedback ';
+        $run = static function (string $mode, string $arguments) use ($root, $v3): array {
+            file_put_contents($root . '/mode', $mode);
+            @unlink($root . '/posted');
+            exec($v3 . $arguments . ' 2>&1', $output, $code);
+            return [$code, implode("\n", $output), is_file($root . '/posted') ? (string) file_get_contents($root . '/posted') : ''];
+        };
+        try {
+            for ($i = 0; $i < 50 && @file_get_contents($site . '/') === false && !isset($http_response_header); $i++) {
+                usleep(100000);
+            }
+
+            // Free items (a guest claim does not hold one): the state is printed, then one claim line for both is posted.
+            [$code, $output, $posted] = $run('free', "claim --site={$site}/ PF-20261104-B18 PF-20261104-B12 --note='Branch fix/fonts'");
+            assertSame(0, $code, $output);
+            assertSame('/backlog/claims.txt?items=PF-20261104-B18,PF-20261104-B12', file_get_contents($root . '/asked'));
+            assertSame(true, str_contains($output, "ID: PF-20261104-B12\nClaim-State: none\nGuest-Claims: 1"));
+            assertSame(1, preg_match('/^--site ' . preg_quote($site, '/') . ' reply --thread thread-claims --parent thread-claims --body-file \S+\nclaim: PF-20261104-B18, PF-20261104-B12\n\nBranch fix\/fonts\n---\n$/', $posted), $posted);
+
+            // A counted claim by someone else: say who, post nothing, exit 1. --anyway posts regardless.
+            [$code, $output, $posted] = $run('held', "claim --site={$site} PF-20261104-B18 PF-20261104-B12");
+            assertSame(1, $code, $output);
+            assertSame(true, str_contains($output, 'Held: PF-20261104-B18 by mara since 2026-11-23T08:00:00Z'));
+            assertSame(true, str_contains($output, 'Nothing was posted.'));
+            assertSame('', $posted);
+            [$code, , $posted] = $run('held', "claim --site={$site} PF-20261104-B18 --anyway");
+            assertSame(0, $code);
+            assertSame(true, str_contains($posted, "\nclaim: PF-20261104-B18, PF-20261104-B12\n"));
+
+            // Release answers the claim post and names the item; an item with no counted claim is skipped with a reason.
+            [$code, $output, $posted] = $run('held', "release --site={$site} PF-20261104-B18 PF-20261104-B12");
+            assertSame(0, $code, $output);
+            assertSame(true, str_contains($output, 'Nothing to release for PF-20261104-B12'));
+            assertSame(1, preg_match('/ reply --thread thread-claims --parent post-claim-1 --body-file \S+\nrelease: PF-20261104-B18\n---\n$/', $posted), $posted);
+            // --post names the claim to answer (the stand-in site lists both items whatever it is asked).
+            [$code, , $posted] = $run('held', "release --site={$site} PF-20261104-B12 --post=post-mine");
+            assertSame(0, $code);
+            assertSame(1, preg_match('/ --parent post-mine --body-file \S+\nrelease: PF-20261104-B18, PF-20261104-B12\n---\n$/', $posted), $posted);
+
+            // A site with no claims thread, and a missing site or item: nothing posted, a reason, a failing exit.
+            [$code, $output, $posted] = $run('none', "claim --site={$site} PF-20261104-B18");
+            assertSame(1, $code);
+            assertSame(true, str_contains($output, 'keeps no backlog claims'));
+            assertSame('', $posted);
+            [$code] = $run('free', 'claim PF-20261104-B18');
+            assertSame(2, $code);
+            [$code] = $run('free', "claim --site={$site}");
+            assertSame(2, $code);
+        } finally {
+            proc_terminate($server);
+            proc_close($server);
+            array_map('unlink', glob($root . '/*'));
+            rmdir($root);
+        }
+    }
+
     private function item(string $suffix, string $created, string $workflow = 'untriaged', string $kind = 'feature', ?string $estimate = null, ?string $impact = null, string $notes = ''): FeedbackItem
     {
         $headers = ['ID' => $suffix, 'Title' => 'Item ' . $suffix, 'Kind' => $kind, 'Workflow' => $workflow, 'Created' => $created];

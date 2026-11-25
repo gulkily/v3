@@ -1,9 +1,9 @@
 ID: PF-20261111-B18
 Title: Reload keeps extra parameters on a new post
 Kind: bug
-Workflow: untriaged
+Workflow: done
 Created: 2026-11-11
-Evidence: unknown
+Evidence: deployed
 
 Request:
 We recently made a change to remove extra parameters from the URL of a newly made post on reload, but it doesn't seem to work anymore.
@@ -14,3 +14,4 @@ Sources:
 Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 PRs #116 and #117 (merged) move the stripping into url_hints.js; not verified here.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 8254064dad is on audited main and deployed ancestry (live c4205ea43d). Current url_hints.js strips hints on reload, independently of version-notification enablement. Earlier move-only PRs are not enough; the later reload-specific correction is the relevant implementation. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

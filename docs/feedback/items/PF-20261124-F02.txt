@@ -1,0 +1,19 @@
+ID: PF-20261124-F02
+Title: Offer to confirm a new operator's earlier cross-account approvals
+Kind: feature
+Workflow: untriaged
+Created: 2026-11-24
+Evidence: unknown
+
+Request:
+When someone becomes an operator ("Make root"), show the keys they approved in other accounts while they were an ordinary member, and offer to confirm any of them for private access. Becoming an operator must not grant that access by itself: private access trusts only the operator status an approval receipt recorded at the time (docs/concepts/private_key_access.md). This saves hunting for those keys one by one without making a promotion change who can read other people's messages.
+
+Sources:
+- Session: Claude session, 2026-11-24, discussion after private_key_access (PR #403); the maintainer agreed promotion should not be retroactive and asked to log this middle ground
+
+Done when:
+- Granting operator status shows the new operator's earlier member-made cross-account approvals that are still public only, each with Confirm.
+- Nothing is confirmed without an explicit Confirm.
+
+Notes:
+2026-11-24: follow-up to v3/private_key_access (docs/plans/private_key_access/private_key_access_step4_implementation_summary.md). Tracked in docs/plans/private_group_chats_checklist.md (Later).

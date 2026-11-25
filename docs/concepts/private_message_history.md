@@ -1,7 +1,7 @@
 # Private-message history
 
 Name: History recovery
-Purpose: Let approved devices read older originals using retained encrypted access from eligible devices.
+Purpose: Let approved devices with [private access](private_key_access.md) read older originals using retained encrypted access from eligible devices.
 Scenario: A newly approved device visits Messages, validates a donor transfer and the original signature, and can still read after a reload. Private keys and plaintext stay browser-side.
 Sources: [service](../../src/ForumRewrite/Messaging/PrivateMessageHistorySyncService.php), [browser crypto](../../public/assets/private_message_history_crypto.js), [operations and API](../plans/private_message_history_sync/private_message_history_sync_rollout.md).
 
@@ -9,6 +9,11 @@ Name: Sender assistance
 Purpose: Let original senders contribute access to their outgoing messages for approved recipient keys.
 Scenario: A sender visits an ordinary page and supplies encrypted access; subsequent combined checks omit that donor's retained contribution without consulting recipient read or recovery receipts. Another donor and explicit legacy repair remain possible.
 Sources: [service](../../src/ForumRewrite/Messaging/PrivateMessageHistorySyncService.php), [contribution store](../../src/ForumRewrite/Messaging/PrivateMessageHistorySyncStore.php).
+
+Name: Pulled history
+Purpose: Keep history access working after a member pulls their mail into a local clone.
+Scenario: The clone stores pulled transfers under their original IDs. The browser verifies them like any target device, then confirms them on the source through the local relay, so later donors stop redoing that work. See [local development import](local_development_import.md).
+Sources: [import methods](../../src/ForumRewrite/Messaging/PrivateMessageHistorySyncStore.php), [relay actions](../../src/ForumRewrite/Http/LocalDevelopmentRemoteController.php).
 
 Name: Messaging history eligibility
 Purpose: Avoid dedicated background history synchronization for accounts with no messages.
@@ -27,8 +32,8 @@ Sources: [activity and schedule store](../../src/ForumRewrite/Messaging/PrivateM
 
 Name: Bounded history continuation
 Purpose: Finish useful recovery during an ordinary visible visit, then stop repeated work.
-Scenario: Ten-original, sixteen-attempt background turns yield between batches and honor admission delays. Foreground readers take priority between turns. Settled revision-aware passes use one small response; new relevant data reopens recovery. A recorded submitting key is a verification hint, not proof of the original encrypted signer; bounded fallback preserves other approved signers and existing send acceptance.
-Sources: [coordinator](../../public/assets/private_message_history_sync.js), [service](../../src/ForumRewrite/Messaging/PrivateMessageHistorySyncService.php), [acceptance](../plans/message_sync_activity/acceptance.txt).
+Scenario: Ten-original, twelve-attempt background turns yield between batches and honor admission delays. Every tab of a key shares one pacing record in browser storage (backoff and sends in the last 10 s, at most 14), so tabs, foreground reads and receipts never spend the same server budget twice; the next turn waits until the window has room for a full turn, and a receipt deferred by backoff stays queued. A `public_only` refusal stops sync for the page. Foreground readers take priority between turns. Settled revision-aware passes use one small response; new relevant data reopens recovery. A recorded submitting key is a verification hint, not proof of the original encrypted signer; bounded fallback preserves other approved signers and existing send acceptance.
+Sources: [coordinator](../../public/assets/private_message_history_sync.js), [service](../../src/ForumRewrite/Messaging/PrivateMessageHistorySyncService.php), [acceptance](../plans/message_sync_activity/acceptance.txt), [pacing](../plans/history_sync_pacing/history_sync_pacing_one_shot.md).
 
 Name: Saved message copies
 Purpose: Let a conversation this browser has already read open without decrypting it again.

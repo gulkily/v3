@@ -486,6 +486,86 @@ NODE;
         assertSame('outbox', $result['shell']);
     }
 
+    public function testNotificationTapOpensItsPageInTheOpenWindowOrANewOne(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs'), vm = require('vm');
+const listeners = {};
+const log = [];
+let windows = [];
+const self = {
+  location: { href: 'https://forum.test/service_worker.js', origin: 'https://forum.test' },
+  navigator: { onLine: true },
+  addEventListener(type, listener) { listeners[type] = listener; },
+  clients: { matchAll: async () => windows, openWindow: async (url) => { log.push(['open', url]); return null; } }
+};
+vm.runInNewContext(fs.readFileSync(process.argv[1], 'utf8'), { self, URL, Response, caches: {}, fetch, console });
+const win = (url, navigate) => {
+  const client = { url, focus: async () => { log.push(['focus', client.url]); return client; }, postMessage: (message) => log.push(['message', message.type, message.url]) };
+  if (navigate === 'works') client.navigate = async (to) => { log.push(['navigate', to]); return { url: to }; };
+  if (navigate === 'fails') client.navigate = async () => { throw new TypeError('not controlled'); };
+  return client;
+};
+const tap = (url) => new Promise((done) => listeners.notificationclick({ notification: { data: { url }, close() {} }, waitUntil: (promise) => promise.then(done) }));
+const reply = '/threads/root-1#post-reply-2';
+(async () => {
+  const results = {};
+  windows = [];
+  await tap(reply); results.closed = log.splice(0);
+  windows = [win('https://forum.test/tags/', 'works')];
+  await tap(reply); results.navigates = log.splice(0);
+  windows = [win('https://forum.test/tags/', 'fails')];
+  await tap('/messages/conversation/alice'); results.asksThePage = log.splice(0);
+  windows = [win('https://forum.test/tags/')];
+  await tap('/unread/'); results.noNavigate = log.splice(0);
+  windows = [win('https://forum.test/', 'works'), win('https://forum.test/unread/', 'works')];
+  await tap('/unread/'); results.alreadyThere = log.splice(0);
+  windows = [win('https://other.test/', 'works')];
+  await tap('https://evil.test/x'); results.otherOrigin = log.splice(0);
+  self.navigator.onLine = false;
+  windows = [];
+  await tap('/messages/conversation/alice'); await tap('/unread/'); await tap(reply); results.offline = log.splice(0);
+  process.stdout.write(JSON.stringify(results));
+})().catch((error) => { console.error(error); process.exitCode = 1; });
+NODE;
+        $output = [];
+        exec('node -e ' . escapeshellarg($script) . ' ' . escapeshellarg(__DIR__ . '/../public/service_worker.js') . ' 2>&1', $output, $code);
+        assertSame(0, $code, implode("\n", $output));
+        $r = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+
+        assertSame([['open', 'https://forum.test/threads/root-1#post-reply-2']], $r['closed']);
+        assertSame([['focus', 'https://forum.test/tags/'], ['navigate', 'https://forum.test/threads/root-1#post-reply-2']], $r['navigates']);
+        assertSame([['focus', 'https://forum.test/tags/'], ['message', 'open-url', '/messages/conversation/alice']], $r['asksThePage']);
+        assertSame([['focus', 'https://forum.test/tags/'], ['message', 'open-url', '/unread/']], $r['noNavigate']);
+        assertSame([['focus', 'https://forum.test/unread/']], $r['alreadyThere'], 'a window already on the page is only focused');
+        assertSame([['open', 'https://forum.test/']], $r['otherOrigin'], 'another site is never opened, and its windows are not used');
+        assertSame([['open', 'https://forum.test/'], ['open', 'https://forum.test/'], ['open', 'https://forum.test/threads/root-1#post-reply-2']], $r['offline'],
+            'offline, pages with no offline copy open the home page; a thread still opens');
+    }
+
+    public function testPageFollowsOnlySameSiteOpenUrlMessages(): void
+    {
+        $script = <<<'NODE'
+const fs = require('fs'), vm = require('vm');
+let listener = null;
+const assigned = [];
+const window = {
+  forumBrowserRuntime: { offlineDiagnosticKey: 'diag' },
+  location: { origin: 'https://forum.test', href: 'https://forum.test/tags/', assign: (url) => assigned.push(url) },
+  addEventListener() {}, localStorage: { setItem() {}, removeItem() {} }
+};
+const navigator = { serviceWorker: { addEventListener(type, fn) { if (type === 'message') listener = fn; }, startMessages() {} } };
+vm.runInNewContext(fs.readFileSync(process.argv[1], 'utf8'), { window, navigator, URL, console });
+for (const data of [{ type: 'open-url', url: '/threads/t#post-p' }, { type: 'open-url', url: '//evil.test/x' }, { type: 'open-url', url: 'https://evil.test/' },
+  { type: 'open-url', url: '/tags/' }, { type: 'other', url: '/unread/' }, null]) listener({ data });
+process.stdout.write(JSON.stringify(assigned));
+NODE;
+        $output = [];
+        exec('node -e ' . escapeshellarg($script) . ' ' . escapeshellarg(__DIR__ . '/../public/assets/pwa_registration.js') . ' 2>&1', $output, $code);
+        assertSame(0, $code, implode("\n", $output));
+        assertSame(['https://forum.test/threads/t#post-p'], json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR));
+    }
+
     public function testActivationRefreshesOnlyTheActiveProfileCacheFamily(): void
     {
         $script = <<<'NODE'
@@ -539,6 +619,76 @@ NODE;
 
             assertSame([$runtime['offlineCachePrefix'] . 'v13'], json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR));
         }
+    }
+
+    /** @return array{fetched: list<string>, stored: list<string>, skipped: bool} */
+    private function installWithExistingCaches(array $cacheNames): array
+    {
+        $script = <<<'NODE'
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const cacheNames = JSON.parse(process.argv[2]);
+const listeners = {};
+const fetched = [];
+const stored = [];
+let skipped = false;
+const context = {
+  URL, Request, Response, Promise, TextEncoder, crypto: require('crypto').webcrypto, console: { info() {}, error() {} },
+  self: {
+    location: { href: 'https://forum.test/service_worker.js', origin: 'https://forum.test' },
+    navigator: { onLine: true },
+    addEventListener(type, listener) { listeners[type] = listener; },
+    skipWaiting() { skipped = true; return Promise.resolve(); },
+    clients: { claim() { return Promise.resolve(); } }
+  },
+  caches: {
+    open() { return Promise.resolve({ put(request) { stored.push(new URL(request.url || request).pathname); return Promise.resolve(); }, match() { return Promise.resolve(undefined); } }); },
+    keys() { return Promise.resolve(cacheNames); }, delete() { return Promise.resolve(true); }
+  },
+  fetch: async function (request) {
+    const pathname = new URL(request.url).pathname;
+    fetched.push(pathname);
+    return new Response(pathname === '/offline/reader/' ? '<script src="/assets/offline_reader.js"></script>' : 'asset', { status: 200 });
+  }
+};
+vm.runInNewContext(source, context);
+let completion;
+listeners.install({ waitUntil(promise) { completion = promise; } });
+completion.then(() => process.stdout.write(JSON.stringify({ fetched, stored, skipped })));
+NODE;
+        $command = sprintf(
+            'node -e %s %s %s',
+            escapeshellarg($script),
+            escapeshellarg(__DIR__ . '/../public/service_worker.js'),
+            escapeshellarg(json_encode($cacheNames, JSON_THROW_ON_ERROR)),
+        );
+        exec($command . ' 2>&1', $output, $exitCode);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Worker install contract failed: ' . implode("\n", $output));
+        }
+
+        return json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    public function testFirstInstallCachesOnlyTheReaderShellSoTheWorkerActivatesAtOnce(): void
+    {
+        // Another site's cache on the same origin does not count as this site's install.
+        $outcome = $this->installWithExistingCaches(['someone-elses-cache']);
+
+        assertSame(['/offline/reader/'], $outcome['fetched']);
+        assertSame(['/offline/reader/'], $outcome['stored']);
+        assertTrue($outcome['skipped'], 'A first install should activate without waiting.');
+    }
+
+    public function testUpdateInstallKeepsTheFullRefreshSoTheSnapshotIsNeverLost(): void
+    {
+        $outcome = $this->installWithExistingCaches(['zenmemes-offline-reader-v15']);
+
+        assertTrue(in_array('/offline/snapshot.sqlite3', $outcome['fetched'], true), 'An update should refetch the snapshot.');
+        assertTrue(in_array('/compose/reply', $outcome['stored'], true), 'An update should recache the compose pages.');
+        assertTrue(in_array('/assets/offline_reader.js', $outcome['stored'], true), 'An update should recache reader assets.');
+        assertTrue($outcome['skipped'], 'An update should activate without waiting.');
     }
 
     public function testFourthProfileFixtureUsesTheSameWorkerMatrix(): void

@@ -1,9 +1,9 @@
 ID: PF-20261111-B16
 Title: Like needs two taps on iOS
 Kind: bug
-Workflow: untriaged
+Workflow: blocked
 Created: 2026-11-11
-Evidence: unknown
+Evidence: deployed
 
 Request:
 On iOS the Like button sometimes only activates the second time I tap; it visibly reacts to the first tap, and it is always twice.
@@ -19,3 +19,4 @@ Sources:
 Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 Claude traced it to the hover-revealed action row on continuation posts and opened a fix; the maintainer replied "It works!" Merge and deployment not checked here.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 1e8b2498d3 is on audited main and deployed ancestry (live c4205ea43d). Later touch rule deliberately restores permalink tap reveal while keeping Like immediately tappable; do not close from the earlier broad hover-only change alone. Retained item notes record a successful maintainer trial. Current next action: Maintainer: include a one-tap Like on a continuation reply in the phone session; this confirms the current later touch rule. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

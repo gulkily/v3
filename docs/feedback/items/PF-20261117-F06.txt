@@ -1,9 +1,9 @@
 ID: PF-20261117-F06
 Title: One import path on a fresh local install
 Kind: feature
-Workflow: untriaged
+Workflow: done
 Created: 2026-11-17
-Evidence: unknown
+Evidence: deployed
 
 Request:
 A fresh ./v3 start has two import paths: the /local/ start page (from #284) runs the import inside the page request, while Tools → Import hands it to the task worker and shows steps, elapsed time and time left.
@@ -16,3 +16,4 @@ The local start page's Import uses the same worker-run path and progress display
 
 Notes:
 2026-11-17: filed from the import-instance GUI thread at the maintainer's request ("file anything we have not finished or addressed yet"). Found while merging #290 with #284.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation a8bef8ea13 is on audited main and deployed ancestry (live c4205ea43d). The later local-progress cycle replaces request-held import with the queued worker/progress path, reusing import progress views. Current LocalDevelopmentPageController dispatches the same queue task; ImportProgressViewTest passes. This narrower unification request does not require a new real site import. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

@@ -148,6 +148,32 @@ final class ViewerSessionStore
         return new ViewerSession($token, '', $lobby, $session->expiresAt, $session->deviceFingerprint, $session->keyBootstrappedAt);
     }
 
+    /**
+     * A stable key for the session a token stands for (its current row's hash), or '' when the
+     * token stands for nothing. Other private stores tie per-device state to it.
+     */
+    public function sessionKey(string $token): string
+    {
+        return $this->currentHash($token) ?? '';
+    }
+
+    /**
+     * The identity a session key is still signed in as: '' once it was signed out, replaced by
+     * another sign-in, or expired.
+     */
+    public function signedInIdentityForKey(string $sessionKey): string
+    {
+        if ($sessionKey === '') {
+            return '';
+        }
+        $row = $this->row($sessionKey);
+        if ($row === null || (int) $row['expires_at'] <= $this->now() || (string) $row['replaced_by_hash'] !== '') {
+            return '';
+        }
+
+        return (string) $row['identity_id'];
+    }
+
     /** Forgets the Lobby identity of a signed-out session (its profile no longer exists). */
     public function forgetLobbyIdentity(string $token): void
     {

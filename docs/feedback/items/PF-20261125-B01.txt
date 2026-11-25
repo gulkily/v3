@@ -1,0 +1,19 @@
+ID: PF-20261125-B01
+Title: New key registration fails the first time with "Couldn't publish your key."
+Kind: bug
+Workflow: blocked
+Created: 2026-11-25
+Evidence: locally-verified
+
+Request:
+During a user study, a new user pressing Continue on the Account page got "Couldn't publish your key." on the first try. Failures that clear on their own must not reach the person.
+
+Sources:
+- https://zenmemes.com/threads/thread-20261125011746-cb08ff65
+
+Done when:
+- A busy write lock, a lost create_identity response or a dropped connection during Continue is retried without showing an error.
+- Final refusals are still reported, with the technical cause available under the message.
+
+Notes:
+2026-11-25: one-shot v3/key_publish_first_try on fix/key_publish_first_try (docs/plans/key_publish_first_try/key_publish_first_try_one_shot.md). Awaiting review and deployment.

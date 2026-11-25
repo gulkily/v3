@@ -127,6 +127,25 @@ Options are validated before recovery. Stop the launcher with Ctrl+C or SIGTERM.
 - `--verbose` / `--quiet` — show all requests / server errors only
 - `--log-file=...` — append plain request logs to the chosen file
 
+## Start local Contacts
+
+```bash
+./v3 contacts [--data-dir=/private/path] [--port=PORT]
+```
+
+Starts a private address book on `127.0.0.1`. Open the full URL printed by the
+launcher in a browser on the same computer. Stop it with Ctrl+C or SIGTERM.
+
+- `--data-dir` selects a dedicated owner-only directory outside the checkout
+  and forum data. The default is `$XDG_DATA_HOME/v3/contacts` or
+  `$HOME/.local/share/v3/contacts`.
+- `--port` requests a loopback port. If it cannot bind there, the launcher
+  tries an available port. The printed URL uses the bound port.
+
+Import a LinkedIn ZIP with PHP's ZIP extension or choose `Connections.csv`
+directly. See [Local Contacts](../runbooks/local_contacts.md) for import,
+recovery, backup, and restore.
+
 ## Check local-server prerequisites
 
 ```
@@ -1028,11 +1047,15 @@ Runs the local (non-live) agent-reply test suite: `AgentReplyGenerationTest`,
 ```bash
 ./v3 feedback list [--sort=salient|entered|touched|effort|impact] [--order=newest|oldest] [--show=can-start|waiting|open|<workflow>] [--kind=all|bug|feature|other]
 ./v3 feedback start <ID>... [--mode=auto|one-shot|staged]
+./v3 feedback claim --site=<address> <ID>... [--note=<text>] [--anyway]
+./v3 feedback release --site=<address> <ID>... [--post=<claim post ID>]
 ```
 
 `list` prints the open [feedback items](../concepts/feedback_items.md) as `Key: value` blocks, in the same order as the Backlog page and `/backlog.txt` for the same words. The defaults are `salient`, `newest`, `can-start` (ready and untriaged) and `all`. An unknown word falls back to its default, is named on standard error, and the command exits 2.
 
 `start` prints the short prompt that starts an agent on the named items as one cycle. The mode defaults to `auto`, which leaves one-shot or staged to the agent. The prompt asks for work in a clone and an open pull request, not patch files; for several items it also asks the agent to say so first when they do not belong in one pull request. Unknown and closed IDs are named on standard error and left out; with no open item left it exits 1. The agent's side is [backlog to pull request](../agents/backlog_to_pr.md).
+
+`claim --site=<address> <ID>...` reads `<address>/backlog/claims.txt` for the named items and prints it. If a counted, unstale claim holds any of them, it names the holder, posts nothing and exits 1; `--anyway` claims regardless. Otherwise it posts one signed reply in the site's claims thread whose first line is `claim: <ID>, <ID>`, followed by `--note=<text>` when given. `release --site=<address> <ID>...` replies to the holder's claim post on each item with `release: <ID>`; `--post=<claim post ID>` names another claim, such as your own when someone else holds the item. Both post with `public/quill.py`; set `V3_QUILL` to use another client, such as `V3_QUILL="php public/quill.php"`. A site whose profile names no claims thread answers that it keeps no claims, and the commands exit 1. A release by anyone but the claim's author or an operator has no effect.
 
 ## Seed an approved identity (shorthand)
 
@@ -1074,6 +1097,19 @@ is resolved.
 - `repository_root` — canonical records checkout to write the approval to
 - `database_path` — SQLite file to rebuild after approving
 - `artifact_root` — static HTML output directory to rebuild after approving
+
+## Private access report
+
+```
+./v3 approval private-access-report [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--public-only] [--json]
+```
+
+Read-only. Lists every approved key with why it may read its account's private
+messages: `root`, `first`, `own_account`, `operator`, `confirmed` or
+`public_only` ([private access](../concepts/private_key_access.md)). Use
+`--public-only` before turning on `FORUM_PRIVATE_KEY_ACCESS_ENFORCED` to see
+which keys would lose access; confirm them from Tools → User Access or the
+account's own devices.
 
 ## Standalone scripts (not wired into `./v3`)
 

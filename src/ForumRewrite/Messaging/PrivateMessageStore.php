@@ -51,6 +51,11 @@ final class PrivateMessageStore
         return $this->readState->token(strtolower(trim($viewer)), strtolower(trim($counterpart)), $position['snapshot']);
     }
 
+    public function isSeenBy(string $viewer, string $counterpart, string $messageId): bool
+    {
+        return $this->readState->isSeen($viewer, $counterpart, $messageId);
+    }
+
     public function acknowledgeRead(string $viewer, string $counterpart, string $readToken): void
     {
         $this->readState->acknowledge($viewer, $counterpart, $readToken);
@@ -282,6 +287,95 @@ final class PrivateMessageStore
         $stmt->execute(['username_token' => strtolower(trim($usernameToken))]);
 
         return $stmt->fetchAll();
+    }
+
+    public const EXPORT_PAGE_SIZE = 25;
+
+    /**
+     * Stores a pulled envelope under its original ID without ever replacing a local one.
+     * @param array<string, mixed> $row one message from exportPage()
+     * @return 'added'|'existing'|'mismatch'
+     */
+    public function importEnvelope(array $row): string
+    {
+        $fields = ['message_id', 'created_at', 'sender_username_token', 'recipient_username_token', 'sender_identity_id', 'encrypted_envelope'];
+        $attempt = [];
+        foreach ($fields as $field) {
+            if (!is_string($row[$field] ?? null) || $row[$field] === '') throw new InvalidArgumentException('Pulled message is missing ' . $field . '.');
+            $attempt[$field] = $row[$field];
+        }
+        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/D', $attempt['message_id']) !== 1) throw new InvalidArgumentException('Pulled message ID is invalid.');
+        $stmt = $this->pdo->prepare('INSERT INTO private_messages (' . implode(', ', $fields) . ')
+            VALUES (:' . implode(', :', $fields) . ') ON CONFLICT(message_id) DO NOTHING');
+        $stmt->execute($attempt);
+        if ($stmt->rowCount() === 1) return 'added';
+        $existing = $this->pdo->prepare('SELECT ' . implode(', ', $fields) . ' FROM private_messages WHERE message_id = ?');
+        $existing->execute([$attempt['message_id']]);
+        $local = $existing->fetch();
+        foreach ($fields as $field) {
+            if (!is_array($local) || !hash_equals((string) $local[$field], $attempt[$field])) return 'mismatch';
+        }
+        return 'existing';
+    }
+
+    /** @return list<string> distinct identities that signed this account's messages */
+    public function senderIdentitiesFor(string $account): array
+    {
+        $q = $this->pdo->prepare('SELECT DISTINCT sender_identity_id FROM private_messages
+            WHERE (sender_username_token = :a OR recipient_username_token = :a) AND sender_identity_id LIKE \'openpgp:%\' ORDER BY 1');
+        $q->execute(['a' => strtolower(trim($account))]);
+        return $q->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    /** Copies "already read" for a pulled received message; boundaries only move forward. */
+    public function importReadMark(string $viewer, string $sender, string $messageId): void
+    {
+        $this->readState->mark($viewer, $sender, $messageId);
+    }
+
+    /**
+     * The account's own sent and received envelopes, oldest first, after a readable
+     * (created_at, message_id) position. A received message is read when it sits at or
+     * below the tracking baseline or the viewer's seen boundary for its sender.
+     *
+     * @return array{messages:list<array<string, mixed>>,next:?array{after_time:string,after_id:string}}
+     */
+    public function exportPage(string $account, string $afterTime = '', string $afterId = '', int $limit = self::EXPORT_PAGE_SIZE): array
+    {
+        $account = strtolower(trim($account));
+        $limit = min(self::EXPORT_PAGE_SIZE, max(1, $limit));
+        $q = $this->pdo->prepare(
+            'SELECT m.message_id, m.created_at, m.sender_username_token, m.recipient_username_token,
+                    m.sender_identity_id, m.encrypted_envelope,
+                    CASE WHEN m.recipient_username_token != :account THEN 1
+                         WHEN m.sender_username_token = :account THEN 1
+                         WHEN m.rowid <= t.baseline_row THEN 1
+                         WHEN m.rowid <= COALESCE(s.seen_row, 0) THEN 1 ELSE 0 END AS is_read
+             FROM private_messages m
+             JOIN private_message_tracking t ON t.singleton = 1
+             LEFT JOIN private_message_seen s ON s.viewer = :account AND s.counterpart = m.sender_username_token
+             WHERE (m.sender_username_token = :account OR m.recipient_username_token = :account)
+               AND (m.created_at > :after_time OR (m.created_at = :after_time AND m.message_id > :after_id))
+             ORDER BY m.created_at, m.message_id LIMIT ' . ($limit + 1)
+        );
+        $q->execute(['account' => $account, 'after_time' => $afterTime, 'after_id' => $afterId]);
+        $rows = $q->fetchAll();
+        $more = count($rows) > $limit;
+        $messages = [];
+        $bytes = 0;
+        foreach (array_slice($rows, 0, $limit) as $row) {
+            if ($messages !== [] && $bytes + strlen((string) $row['encrypted_envelope']) > 2097152) {
+                $more = true;
+                break;
+            }
+            $row['read'] = (int) $row['is_read'] === 1;
+            unset($row['is_read']);
+            $messages[] = $row;
+            $bytes += strlen((string) $row['encrypted_envelope']);
+        }
+        $last = $messages[count($messages) - 1] ?? null;
+        return ['messages' => $messages, 'next' => $more && $last !== null
+            ? ['after_time' => (string) $last['created_at'], 'after_id' => (string) $last['message_id']] : null];
     }
 
     /** Bounded account-wide enumeration; durable references use IDs, not rowids. */

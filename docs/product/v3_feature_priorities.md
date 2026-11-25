@@ -34,6 +34,8 @@ These are comparative scope estimates, not delivery commitments. Confirm depende
 
 This is a product and authorization design requirement. It should be decided before adding group messages or advertising private messaging to a wider audience.
 
+**Progress (2026-11-24).** [Private key access](../concepts/private_key_access.md), behind `FORUM_PRIVATE_KEY_ACCESS_ENFORCED`, splits approval from message access. A same-name key approved by another account is public only until the account or an operator confirms it, and the account's devices are shown such keys. It meets "cannot silently add it to recipients" and "removing it prevents future delivery". Showing correspondents their recipients' devices remains. [Plan](../plans/private_key_access/private_key_access_step4_implementation_summary.md)
+
 ## 1 Personal notifications and unread state
 
 **Current behavior.** Activity pages and RSS exist. The app-version notification announces software changes. The inspected application routes and stores do not provide a personal reply/mention inbox, followed-thread notifications, or per-member read cursors. [Routes](../../src/ForumRewrite/Application.php) and [RSS](../../src/ForumRewrite/Http/RssFeed.php)

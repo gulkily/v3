@@ -13,10 +13,13 @@
 <?php if (($stagedCount ?? 0) > 0): ?>
   <p class="card inbox-staged"><a href="/staged/">Staged (<?= $e((string) $stagedCount) ?>)</a> <span class="chip chip--pending">Held</span></p>
 <?php endif; ?>
+<?= $partial('partials/private_access_waiting.php', ['waitingKeys' => $waitingKeys ?? [], 'accountName' => $accountName ?? '']) ?>
 <?php if ($messages['enabled']): ?>
   <article class="card inbox-section" id="inbox-messages-section" aria-labelledby="inbox-messages">
     <h2 id="inbox-messages">Messages</h2>
-<?php if ($messages['failed']): ?>
+<?php if (!empty($messages['public_only'])): ?>
+    <p>This device can't read messages yet. <a href="/messages">Confirm it</a></p>
+<?php elseif ($messages['failed']): ?>
     <p class="message-list-alert" role="alert">Couldn’t check messages. <a href="/unread">Retry</a></p>
 <?php elseif ($messages['conversations'] === []): ?>
     <p class="meta">No unread messages</p>

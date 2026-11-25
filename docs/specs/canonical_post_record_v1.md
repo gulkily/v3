@@ -53,13 +53,15 @@ The first supported typed root is `Thread-Type: task`. Task roots add:
 
 ## Event Headers
 
-A thread root may describe an event. All five headers are optional, root-only, and
+A thread root may describe an event. These headers are optional, root-only, and
 written only while event support is on; replies must not include them.
 
 - `Event-Date`: the event's first day, `YYYY-MM-DD`
 - `Event-End-Date`: the inclusive last day of a multi-day event, `YYYY-MM-DD`; requires
   `Event-Date` and must not be before it. Absent means the event is one day.
 - `Event-Time`: start time, 24-hour `HH:MM`
+- `Event-End-Time`: end time, 24-hour `HH:MM`; requires `Event-Time`. For a
+  one-day event, an end at or before the start falls on the following day.
 - `Event-Location`: one line of free text naming the place
 - `Event-Link`: one line, usually a URL
 - `Event-When`: the poster's own words for when the event happens, such as
@@ -68,7 +70,7 @@ written only while event support is on; replies must not include them.
   authority: the calendar reads them, and the phrase is shown beside them.
 
 Writers emit them after `Subject` in this order: `Event-Date`, `Event-End-Date`,
-`Event-Time`, `Event-Location`, `Event-Link`, `Event-When`. Parsers ignore root headers
+`Event-Time`, `Event-End-Time`, `Event-Location`, `Event-Link`, `Event-When`. Parsers ignore root headers
 they do not know, so a release that predates `Event-End-Date` reads a span as a one-day
 event on `Event-Date`, and one that predates `Event-When` shows the dates without the
 phrase.

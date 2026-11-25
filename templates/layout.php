@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= $e($title) ?></title>
+  <meta name="apple-mobile-web-app-title" content="<?= $e($appName) ?>">
   <link id="theme-stylesheet" rel="stylesheet" href="<?= $e($initialThemeStylesheetPath) ?>" fetchpriority="high">
   <script>
     (function () {
@@ -277,7 +278,7 @@
   <link rel="apple-touch-icon" href="<?= $e($touchIconPath) ?>">
 <?php endif; ?>
 <?php if (!$approvedMembersOnlyEnabled): ?>
-  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="manifest" href="<?= $e($manifestPath) ?>">
 <?php endif; ?>
   <link rel="alternate" type="text/plain" href="/llms.txt" title="Agent guide">
   <script>

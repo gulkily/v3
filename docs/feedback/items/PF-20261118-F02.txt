@@ -3,7 +3,7 @@ Title: Reading margins on the gallery
 Kind: feature
 Workflow: blocked
 Created: 2026-11-18
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 please add margin support to gallery view #meta go straight to pr
@@ -16,3 +16,4 @@ With reading margins on, /gallery/ shows the margins ruler and a chosen column n
 
 Notes:
 2026-11-18: one-shot on feat/gallery_reading_margins (record docs/plans/gallery_reading_margins/gallery_reading_margins_one_shot.md); verified locally; awaiting review and deployment.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation ed6714a318 is on audited main and deployed ancestry (live c4205ea43d). Gallery uses the shared reading-margins ruler and constrained tile styles. Main/live include the Word97/Midnight display correction. Current next action: Maintainer: change the Gallery reading column on the phone and desktop; confirm the ruler works and tiles stay inside it. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

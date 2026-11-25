@@ -907,6 +907,11 @@
         },
         threadId: threadId
       }) && mountComposer("reply", threadId);
+      // The thread is drawn after load, so the browser's own jump to #post-<id> (a notification tap) found nothing.
+      var postMatch = String(window.location.hash || "").match(/^#(post-.+)$/);
+      var target = null;
+      try { target = postMatch ? document.getElementById(decodeURIComponent(postMatch[1])) : null; } catch (error) { target = null; }
+      if (target) target.scrollIntoView({ block: "start" });
     }
 
     window.addEventListener("online", function () {

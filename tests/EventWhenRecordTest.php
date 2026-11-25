@@ -26,6 +26,40 @@ final class EventWhenRecordTest
             'Replies must not include typed root header: Event-When');
     }
 
+    public function testEndTimeRequiresAStartAndIsRootOnly(): void
+    {
+        $this->assertRejected($this->root("Event-Date: 2026-11-25\nEvent-End-Time: 16:00\n"), 'Event-End-Time requires Event-Time.');
+        $this->assertRejected($this->root("Event-Date: 2026-11-25\nEvent-Time: 13:00\nEvent-End-Time: 25:00\n"), 'Event-End-Time must be a valid 24-hour time.');
+        $this->assertRejected("Post-ID: r1\nCreated-At: 2026-11-04T12:00:00Z\nBoard-Tags: general\nThread-ID: t1\nParent-ID: t1\nEvent-End-Time: 16:00\n\nhi\n",
+            'Replies must not include typed root header: Event-End-Time');
+    }
+
+    public function testEndTimeSurvivesIncrementalWriteAndSchema56Rebuild(): void
+    {
+        [$root, $application] = $this->environment(true);
+        $this->post($application, [
+            'body' => 'Lecture', 'subject' => 'Lecture', 'event_date' => '2026-11-25',
+            'event_time' => '13:00', 'event_end_time' => '16:00',
+        ]);
+        $record = $this->latestRecord($root);
+        eventWhenAssertContains("Event-Time: 13:00\nEvent-End-Time: 16:00\n", $record);
+        eventWhenAssertSame('16:00', (new PostRecordParser())->parse($record)->eventEndTime);
+
+        $database = $root . '.sqlite3';
+        $pdo = new PDO('sqlite:' . $database);
+        $threadId = (string) $pdo->query("SELECT root_post_id FROM threads WHERE subject = 'Lecture'")->fetchColumn();
+        eventWhenAssertSame('16:00', $pdo->query("SELECT event_end_time FROM threads WHERE subject = 'Lecture'")->fetchColumn());
+        $pdo->exec('ALTER TABLE threads DROP COLUMN event_end_time');
+        $pdo->exec("UPDATE metadata SET value = '56' WHERE key = 'schema_version'");
+        $pdo = null;
+
+        $fresh = new Application(dirname(__DIR__), $root, $database, $root . '-public');
+        eventWhenAssertContains('at 13:00–16:00</span>', $this->get($fresh, '/threads/' . $threadId));
+        $rebuilt = new PDO('sqlite:' . $database);
+        eventWhenAssertSame('57', $rebuilt->query("SELECT value FROM metadata WHERE key = 'schema_version'")->fetchColumn());
+        eventWhenAssertSame('16:00', $rebuilt->query("SELECT event_end_time FROM threads WHERE subject = 'Lecture'")->fetchColumn());
+    }
+
     public function testFormPostKeepsThePhraseWhenTheFlagIsOn(): void
     {
         [$root, $application] = $this->environment(true);
@@ -93,9 +127,9 @@ final class EventWhenRecordTest
         [$root, $application] = $this->environment(true);
         $head = trim((string) shell_exec('cd ' . escapeshellarg($root) . ' && git rev-parse HEAD'));
         $query = 'board_tags=general&subject=Prepared&body=Prepared%20body&author_identity_id=' . rawurlencode('openpgp:0168ff20eb09c3ea6193bd3c92a73aa7d20a0954');
-        $payload = json_decode($this->request($application, 'POST', '/api/prepare_thread?' . $query . '&event_date=2027-01-08&event_when=' . rawurlencode('Friday, after work')), true, 512, JSON_THROW_ON_ERROR);
+        $payload = json_decode($this->request($application, 'POST', '/api/prepare_thread?' . $query . '&event_date=2027-01-08&event_time=13%3A00&event_end_time=16%3A00&event_when=' . rawurlencode('Friday, after work')), true, 512, JSON_THROW_ON_ERROR);
         eventWhenAssertSame('ok', $payload['status']);
-        eventWhenAssertContains("Event-Date: 2027-01-08\nEvent-When: Friday, after work\n", $payload['canonical_record']);
+        eventWhenAssertContains("Event-Date: 2027-01-08\nEvent-Time: 13:00\nEvent-End-Time: 16:00\nEvent-When: Friday, after work\n", $payload['canonical_record']);
 
         $refused = json_decode($this->request($application, 'POST', '/api/prepare_thread?' . $query . '&event_when=Friday'), true, 512, JSON_THROW_ON_ERROR);
         eventWhenAssertSame('Add a date for the event, or press Fill.', $refused['error'] ?? null);

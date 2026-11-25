@@ -1,3 +1,16 @@
+<?php if (!empty($publicOnly)): ?>
+<?php /* An approved key without private access: posting works, messages need a confirm (docs/concepts/private_key_access.md). */ ?>
+<section class="stack private-message-access private-message-access--public-only" data-private-access-device data-confirm-path="<?= $e((string) $confirmPath) ?>">
+  <article class="card">
+    <h1>Messages</h1>
+    <p>This device can't read messages yet. Confirm it from another of your devices, or ask an operator.</p>
+    <p class="private-access-code">Code <strong><?= $e((string) $shortCode) ?></strong></p>
+    <p data-role="show-confirm-qr-row" hidden><button type="button" data-action="show-confirm-qr">Show QR</button></p>
+    <canvas class="private-access-qr" data-role="confirm-qr" hidden></canvas>
+    <p class="private-access-link"><code data-role="confirm-url"><?= $e((string) $confirmPath) ?></code></p>
+  </article>
+</section>
+<?php return; endif; ?>
 <?php $featureName = $featureName ?? 'Messages'; ?>
 <section class="stack private-message-access" data-private-message-access data-access-state="checking" data-viewer-identity-id="<?= $e($viewerIdentityId) ?>" data-viewer-approved="0">
   <article class="card">

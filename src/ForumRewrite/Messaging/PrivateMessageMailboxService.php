@@ -15,6 +15,8 @@ final class PrivateMessageMailboxService
         private readonly PDO $readPdo,
         private readonly ApprovedUserKeyResolver $keyResolver = new ApprovedUserKeyResolver(),
         private readonly ?string $repositoryRoot = null,
+        /** @var (\Closure(string, string, string): mixed)|null message ID, sender, recipient; after a new message is accepted */
+        private readonly ?\Closure $onMessageAccepted = null,
     ) {
     }
 
@@ -25,10 +27,23 @@ final class PrivateMessageMailboxService
      */
     public function send(array $viewer, array $input): array
     {
-        $accept = fn (): array => $this->sendAccepted($viewer, $input);
-        return $this->repositoryRoot === null ? $accept() : \ForumRewrite\Support\PublicationLock::withLock($this->repositoryRoot, $accept);
+        $isNew = false;
+        $accept = function () use ($viewer, $input, &$isNew): array {
+            return $this->sendAccepted($viewer, $input, $isNew);
+        };
+        $message = $this->repositoryRoot === null ? $accept() : \ForumRewrite\Support\PublicationLock::withLock($this->repositoryRoot, $accept);
+        if ($isNew && $this->onMessageAccepted !== null) {
+            // After the lock; only who wrote to whom, never the envelope (PushNotices).
+            try {
+                ($this->onMessageAccepted)((string) $message['message_id'], (string) $message['sender_username_token'], (string) $message['recipient_username_token']);
+            } catch (\Throwable $error) {
+                error_log('Push notice after an accepted message failed: ' . $error->getMessage());
+            }
+        }
+
+        return $message;
     }
-    private function sendAccepted(array $viewer, array $input): array
+    private function sendAccepted(array $viewer, array $input, bool &$isNew = false): array
     {
         $viewer = $this->approvedViewer($viewer);
         $messageId = trim((string) ($input['message_id'] ?? ''));
@@ -60,7 +75,10 @@ final class PrivateMessageMailboxService
             throw new InvalidArgumentException('Recipient has no approved profile keys.');
         }
 
-        return $this->store->acceptEnvelope($attempt);
+        $message = $this->store->acceptEnvelope($attempt);
+        $isNew = true;
+
+        return $message;
     }
 
     /** @param array<string, mixed> $viewer @return list<array<string, string>> */
@@ -73,6 +91,32 @@ final class PrivateMessageMailboxService
     public function sent(array $viewer): array
     {
         return $this->store->sentBy((string) $this->approvedViewer($viewer)['username_token']);
+    }
+
+    /**
+     * The signed-in member's own mail, for pulling into another clone. The account always
+     * comes from the authenticated viewer, never from the request.
+     *
+     * @param array<string, mixed> $viewer
+     * @return array<string, mixed>
+     */
+    public function export(array $viewer, string $afterTime = '', string $afterId = '', ?PrivateMessageHistorySyncStore $historySync = null): array
+    {
+        $viewer = $this->approvedViewer($viewer);
+        if ($afterTime !== '' && preg_match('/^\d{4}-\d{2}-\d{2}[0-9T:.Z+-]{0,24}$/D', $afterTime) !== 1) {
+            throw new InvalidArgumentException('Export position is invalid.');
+        }
+        if ($afterId !== '' && preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/D', $afterId) !== 1) {
+            throw new InvalidArgumentException('Export position is invalid.');
+        }
+        if (($afterTime === '') !== ($afterId === '')) {
+            throw new InvalidArgumentException('Export position needs both after_time and after_id.');
+        }
+        $account = (string) $viewer['username_token'];
+        $page = $this->store->exportPage($account, $afterTime, $afterId);
+        $page['transfers'] = $historySync === null ? []
+            : $historySync->transfersFor($account, array_column($page['messages'], 'message_id'));
+        return ['account' => $account] + $page;
     }
 
     /** @param array<string, mixed> $viewer @return array<string, mixed> */
@@ -146,6 +190,10 @@ final class PrivateMessageMailboxService
             || trim((string) ($viewer['identity_id'] ?? '')) === ''
             || trim((string) ($viewer['username_token'] ?? '')) === '') {
             throw new RuntimeException('An approved authenticated identity is required.');
+        }
+        if (\ForumRewrite\Security\PrivateKeyAccess::enforced($this->repositoryRoot)
+            && !(new \ForumRewrite\Security\PrivateKeyAccess($this->readPdo, $this->repositoryRoot))->hasAccess((string) $viewer['identity_id'])) {
+            throw new \ForumRewrite\Security\PublicOnlyKeyException();
         }
 
         return $viewer;

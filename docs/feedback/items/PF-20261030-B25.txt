@@ -1,9 +1,9 @@
 ID: PF-20261030-B25
 Title: Posting helper wrong uncertain-write message
 Kind: bug
-Workflow: blocked
+Workflow: done
 Created: 2026-10-30
-Evidence: locally-verified
+Evidence: deployed
 Aliases: 2026-10-30/B25
 
 Request:
@@ -19,3 +19,4 @@ Notes:
 2026-11-07: 42c09640 already recorded rejected operations (State: rejected), but the error path still printed Resume and Check lines, and resuming then failed with "This operation was rejected". Now a rejected write prints a Rejected line instead, and a resumed rejected operation prints no Resume line; FRM_VERSION 2026-11-07. Covered in FrmClientTest::testMemberDenialAndSigningFailurePreserveWork. Next action: deploy so /frm.py serves the new version.
 Status in the October 30 summary: Open — resolution not verified
 Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row B25; that summary is a local snapshot review and its request wording is preserved here.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 70989b6b51 is on audited main and deployed ancestry (live c4205ea43d). The live Quill Python download retains rejected-state guidance from frm.py. QuillClientTest::testMemberDenialAndSigningFailurePreserveWork passes refusal/no-Resume assertions; lost-response and busy retry tests pass. Later Quill rename preserves this distinction. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

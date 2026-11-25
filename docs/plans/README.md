@@ -9,10 +9,14 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
+- [Key publish first try](key_publish_first_try/key_publish_first_try_one_shot.md) — Continue on Account retries a registration that fails for a passing reason instead of showing "Couldn't publish your key."
+- [Read model rebuild memory](read_model_post_memory/read_model_post_memory_one_shot.md) — a full rebuild holds the post corpus once, so qdb rebuilds fit in 128 MB.
+- [LinkedIn Contacts CRM](linkedin_contacts_crm/linkedin_contacts_crm_step3_development_plan.md) — a local companion imports a LinkedIn archive into a private address book.
 - [Publish local public keys](publish_local_public_keys/publish_local_public_keys_step4_implementation_summary.md) — original publisher verified locally; saved-plan flow superseded by the direct-publication follow-up.
 - [Publisher CLI conventions](publish_keys_cli_conventions/publish_keys_cli_conventions_one_shot.md) — hostname handling, visible source repository and help consistency follow-up.
 - [Direct key publication](publish_keys_direct/publish_keys_direct_one_shot.md) — publish by default, preview with --dry-run; remove mandatory review files and fingerprint copying.
 - [Publisher PR handoff](publisher_pr_handoff/publisher_pr_handoff_one_shot.md) — epic checklist, main integration and public-key publisher PR.
+- [Raw agent image attachments](raw_agent_images/raw_agent_images_one_shot.md) — document prepared image requests without Quill.
 - [Post format defaults](post_format_default_docs/post_format_default_docs_one_shot.md) — clarify prepared, unsigned and direct-signed posting defaults.
 - [Zen gallery accessibility intake](zen_gallery_accessibility_intake/zen_gallery_accessibility_intake_one_shot.md) — record the generic names on two image-only links.
 - [Zen meme gallery](zen_meme_gallery/zen_meme_gallery_one_shot.md) — the homepage thumbnail row opens a gallery of the same collection.
@@ -34,6 +38,10 @@ checklists, and proposals remain at the top level or in the collections below.
 [QDB moderated submissions](qdb_moderated_submissions/qdb_moderated_submissions_step3_development_plan.md) — new qdb quotes wait on a public `/queue` until an operator approves them, behind `FORUM_QDB_QUEUE_ENABLED`; Steps 1–3 approved.
 
 [Calendar iCal feed](calendar_ics_feed/calendar_ics_feed_step3_development_plan.md) — `/calendar.ics`, tag feeds, a Subscribe panel and per-event "Add to Google Calendar" links, behind `FORUM_CALENDAR_FEED_ENABLED`; Stages 1–6 done ([summary](calendar_ics_feed/calendar_ics_feed_step4_implementation_summary.md)), the production phone check pending.
+
+[Private key access](private_key_access/private_key_access_step3_development_plan.md) — approval lets a key post; reading an account's private messages needs the first key, a same-username key or an operator, or a signed confirm; behind `FORUM_PRIVATE_KEY_ACCESS_ENFORCED`. Steps 1–3 approved; first cycle of the [private group chats checklist](private_group_chats_checklist.md).
+
+[History sync pacing](history_sync_pacing/history_sync_pacing_one_shot.md) — one-shot: tabs share history-sync backoff and a 12-per-10 s request limit; receipts survive a 429.
 
 [Key approval agent API](key_approval_api/key_approval_api_step3_development_plan.md) — `GET /api/pending_keys`, `Author-Identity-ID` on post reads, and `quill.py pending` / `quill.py approve` so agents approve the right key; Stages 1–5 done ([summary](key_approval_api/key_approval_api_step4_implementation_summary.md)), the post-deploy check pending.
 
@@ -98,6 +106,18 @@ checklists, and proposals remain at the top level or in the collections below.
 [Notifications checklist](notifications_checklist.md) — notifications for the installed app (owa): MVP of five cycles (`owa_start_url`, `push_subscribe`, `push_ios_guide`, `push_on_events`, `push_tap_routing`) after the built `app_icons`, then post-MVP candidates. Written in the [notifications checklist one-shot](notifications_checklist/notifications_checklist_one_shot.md).
 
 [Installed app start page](owa_start_url/owa_start_url_one_shot.md) — the installed app opens the home page (offline: the cached reader) and is named "ZenMemes"; cycle 1 of the notifications checklist.
+
+[Quick first install of the offline worker](owa_quick_install/owa_quick_install_one_shot.md) — a first visit caches only the reader shell so the worker activates at once and Chrome can offer Install; the full offline cache fills in the background.
+
+[Push subscription](push_subscribe/push_subscribe_step1_solution_assessment.md) — staged: a member turns notifications on for a device in Preferences and gets a test notification; cycle 2 of the notifications checklist.
+
+[Push on events](push_on_events/push_on_events_step1_solution_assessment.md) — staged: a DM or a reply to your post notifies each of your devices, with held follow-ups and a per-member cap; cycle 4 of the notifications checklist.
+
+[Notification taps](push_tap_routing/push_tap_routing_one_shot.md) — a tap on a notice opens its thread reply, DM conversation or Unread, in the open app window if there is one; cycle 5 of the notifications checklist.
+
+[Push tap routing handoff](push_tap_routing_handoff.md) — notifications cycle 5: a tap opens the DM or reply, in an open window or offline.
+
+[Installed app name and fresh manifest](owa_app_title/owa_app_title_one_shot.md) — pages name the app in their own HTML for browsers that skip the manifest, and the manifest link carries its hash so a deploy replaces a cached copy; follow-up to `owa_start_url`.
 
 [Guestbook](guestbook/guestbook_step3_development_plan.md) — a `/guestbook/` page shows the guestbook thread's top-level replies as a paper book with numbered pages and a "Sign the book" form; the thread stays available as an ordinary thread.
 
@@ -206,6 +226,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Key bootstrap test button](key_bootstrap_test_button/key_bootstrap_test_button_one_shot.md) — one-shot: Account → Key → Advanced button that clears the site's local storage and keeps cookies, to test session key bootstrap.
 - [Session key bootstrap](session_key_bootstrap/session_key_bootstrap_step3_development_plan.md) — a browser with a live session but no key (iPhone Safari's storage wipe) gets a new approved key from the session, with a coarse fingerprint as tie-breaker; the lost key shows a Replaced pill and waits in a queue; behind two flags; Stages 1–6 committed, iPhone Safari replay (Stage 7) pending deploy.
 - [Thread activity drawer](thread_activity_drawer/thread_activity_drawer_step3_development_plan.md) — tag-only reply leaves move out of the conversation into a collapsed "Activity (N)" drawer on the thread page, which also lists likes and flags by post; follows Pollyanna's `#notext`; behind a new flag; Step 4 complete, release pending.
+- [Private message local pull](private_message_local_pull/private_message_local_pull_step3_development_plan.md) — a local clone registers its browser key on zenmemes.com, then pulls the member's own DMs and history-sync transfers with original IDs and confirms verified transfers; relayed sign-in, no key leaves the browser; Step 4 in progress.
 - [Usage reports UI](usage_reports_ui/usage_reports_ui_step3_development_plan.md) — readable page and control names, phone-first Usage Reports with shortcut-idea cards, and a readable Usage Log with the exact upload text behind a disclosure; follow-up to the local usage log; Step 4 in progress.
 - [Local usage log](local_telemetry/local_telemetry_step3_development_plan.md) — opt-in, browser-only log of page views and clicks that a visitor reviews and uploads to a private report store kept out of exports; a root-only summary shows click counts and multi-click journeys that could be one click; behind a flag; Step 4 in progress.
 - [Post records](post_records/post_records_step3_development_plan.md) — a post's Records section lists every record that targets it, each with its own `/records/<Record-ID>` page, and members (or operators) can retract likes through the existing signed retraction with `Target-ID`; behind a flag; Step 4 complete, release pending.
@@ -421,6 +442,7 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Compact unavailable private messages](private_message_unavailable/)
 - [Event feature gating](event_feature_gating/)
 - [Event time](event_time/)
+- [Event end time](event_end_time/event_end_time_one_shot.md) — one-shot: events get an end time (`Event-End-Time`, composer Ends, ranges like "1-4pm") and an `event-time:` reply to correct an event's times; calendar exports stop assuming one hour.
 - [Extension improvement cookbook](extension_improvement_cookbook/)
 - [Fast LLM post scoring](fast_llm_post_scoring/)
 - [Fast post scoring batch runner](fast_post_scoring_batch_runner/)
@@ -680,6 +702,7 @@ and repair its navigation and affected references. See the
 - [Zen hero](zen_hero/zen_hero_step1_solution_assessment.md) — staged: the front page shows one top-liked Zen meme with a row of tiny thumbnails that opens All, on the home page only.
 - [Board nav to /threads/](board_nav_threads/board_nav_threads_one_shot.md) — one-shot: Board links to /threads/, so the Zen hero only greets the home page.
 - [Underground theme](underground_theme/underground_theme_one_shot.md) — one-shot: a lavender-and-ultramarine halftone theme from the MIT Rap Club "underground concert" flyer; default on the mitrapclub profile.
+- [MIT Rap Club About and Underground Dark](rapclub_about_dark/rapclub_about_dark_one_shot.md) — one-shot: socials-only About page on mitrapclub and a dark partner for the Underground theme.
 - [Image loading](image_loading/image_loading_step1_solution_assessment.md) — staged: images load faster through browser caching, a lighter serving path and home page tweaks.
 
 - [Calendar export timezone](calendar_export_timezone/calendar_export_timezone_one_shot.md)
@@ -700,8 +723,17 @@ and repair its navigation and affected references. See the
 - [Backlog view](backlog_view/backlog_view_step1_solution_assessment.md) — staged: a `/backlog` page under Tools lists open feedback items with five sorts and filters, and Start gives a short agent prompt for one item or several.
 - [Backlog start follow-ups](backlog_start_followups/backlog_start_followups_one_shot.md) — one-shot: an opaque Start bar in see-through themes, an Agent decides mode as the default, and "Please" in the prompt.
 - [Backlog prompt access](backlog_prompt_access/backlog_prompt_access_one_shot.md) — one-shot: the backlog prompt asks for a clone and a pull request instead of patch files, and for a word before building items that do not belong together.
+- [Backlog claims](backlog_claims/backlog_claims_step3_development_plan.md) — staged: Start claims the picked items with a `claim:` line in a signed reply in one thread, rows show who holds them, agents claim and release.
+- [Tools Developer group](tools_developer_group/tools_developer_group_one_shot.md) — one-shot: a Developer group on the Tools launcher holding Platform Docs and Backlog.
 - [Favicon in light theme](favicon_light_theme/favicon_light_theme_one_shot.md) — one-shot: the ZenMemes tab icon redrawn so it looks clean on light tabs (PF-20261111-B02).
 - [Word 97 action fonts](word97_action_fonts/word97_action_fonts_one_shot.md) — one-shot: post-action toggles in Word 97 and the Outbox status line use the UI font (PF-20261104-B12, PF-20261104-B18).
 - [Midnight action fonts](midnight_action_fonts/midnight_action_fonts_one_shot.md) — one-shot: Midnight post actions get Word 97’s UI font, no underline and Like/Flag bevel (PF-20261111-F19).
 - [Zen hero fits the screen](zen_hero_fit/zen_hero_fit_one_shot.md) — one-shot: the featured Zen meme on the home page fits the viewport on wide screens, with thumbnails beside upright images.
 - [Zen hero square on phones](zen_hero_square/zen_hero_square_one_shot.md) — one-shot: on phones the featured Zen meme sits whole in a square box so it fits the first screen.
+- [DM verify reason](dm_verify_reason/dm_verify_reason_one_shot.md) — one-shot: a DM that fails signature verification says why (clock ahead, unknown key, or OpenPGP's error) instead of a bare "couldn't verify".
+
+- [Feedback completion sweep, 2026-11-24](feedback_completion_20261124/feedback_completion_20261124_one_shot.md)
+
+- [Apply feedback completion reconciliation](feedback_completion_apply/feedback_completion_apply_one_shot.md)
+
+- [Save the completion reconciliation prompt](feedback_completion_prompt/feedback_completion_prompt_one_shot.md)

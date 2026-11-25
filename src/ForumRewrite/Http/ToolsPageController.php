@@ -199,11 +199,12 @@ final class ToolsPageController
                 'draggableWindowsEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::DRAGGABLE_WINDOWS_ENABLED),
                 'openBesideEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::OPEN_BESIDE_ENABLED),
                 'usageLogEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::USAGE_REPORTS_ENABLED),
+                'pushEnabled' => $pushEnabled = $this->featureFlags->isEnabled(FeatureFlagRegistry::PUSH_ENABLED),
                 'toolNavOptions' => ToolsPageSupport::navOptions('preferences'),
             ],
             'Preferences',
             'tools',
-            ['/assets/preferences.js'],
+            $pushEnabled ? ['/assets/preferences.js', '/assets/push_preferences.js'] : ['/assets/preferences.js'],
         );
     }
 

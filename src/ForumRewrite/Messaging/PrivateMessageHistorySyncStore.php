@@ -178,6 +178,97 @@ final class PrivateMessageHistorySyncStore
             $this->pdo->commit();
         } catch (\Throwable $e) { $this->pdo->rollBack();throw $e; }
     }
+    /**
+     * Stores a pulled transfer under its original ID. Local transfers and items always win.
+     * @param array{transfer_id:string,source:string,target:string,ciphertext:string,items:list<array{message_id:string,digest:string}>} $transfer
+     * @return 'added'|'existing'|'mismatch'
+     */
+    public function importTransfer(string $account, array $transfer): string
+    {
+        foreach (['transfer_id', 'source', 'target', 'ciphertext'] as $field) {
+            if (!is_string($transfer[$field] ?? null) || $transfer[$field] === '') throw new \InvalidArgumentException('Pulled transfer is missing ' . $field . '.');
+        }
+        if (preg_match('/^[a-f0-9]{64}$/D', $transfer['transfer_id']) !== 1 || !is_array($transfer['items'] ?? null)) {
+            throw new \InvalidArgumentException('Pulled transfer is malformed.');
+        }
+        $this->pdo->beginTransaction();
+        try {
+            $q = $this->pdo->prepare('INSERT INTO history_sync_transfers (transfer_id, account, source, target, ciphertext) VALUES (?,?,?,?,?) ON CONFLICT(transfer_id) DO NOTHING');
+            $q->execute([$transfer['transfer_id'], $account, $transfer['source'], $transfer['target'], $transfer['ciphertext']]);
+            $outcome = $q->rowCount() === 1 ? 'added' : 'existing';
+            if ($outcome === 'existing') {
+                $q = $this->pdo->prepare('SELECT 1 FROM history_sync_transfers WHERE transfer_id=? AND account=? AND source=? AND target=? AND ciphertext=?');
+                $q->execute([$transfer['transfer_id'], $account, $transfer['source'], $transfer['target'], $transfer['ciphertext']]);
+                if ($q->fetchColumn() === false) { $this->pdo->rollBack(); return 'mismatch'; }
+            }
+            $q = $this->pdo->prepare('INSERT INTO history_sync_items (account, source, target, message_id, digest, transfer_id) VALUES (?,?,?,?,?,?) ON CONFLICT(account,source,target,message_id) DO NOTHING');
+            foreach ($transfer['items'] as $item) {
+                if (!is_string($item['message_id'] ?? null) || !is_string($item['digest'] ?? null)) throw new \InvalidArgumentException('Pulled transfer item is malformed.');
+                $q->execute([$account, $transfer['source'], $transfer['target'], $item['message_id'], $item['digest'], $transfer['transfer_id']]);
+            }
+            $this->pdo->commit();
+            return $outcome;
+        } catch (\Throwable $e) { if ($this->pdo->inTransaction()) $this->pdo->rollBack(); throw $e; }
+    }
+
+    /** @return list<string> donor key fingerprints of transfers to this target */
+    public function sourcesFor(string $account, string $target): array
+    {
+        $q = $this->pdo->prepare('SELECT DISTINCT source FROM history_sync_transfers WHERE account = ? AND target = ? ORDER BY source');
+        $q->execute([$account, $target]);
+        return $q->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    /**
+     * Transfers to this target key that still hold items without matching coverage, by transfer ID.
+     * @return array{transfers:list<array<string, mixed>>,next:?string}
+     */
+    public function unverifiedFor(string $account, string $target, string $after = '', int $limit = 10): array
+    {
+        $q = $this->pdo->prepare('SELECT DISTINCT t.transfer_id, t.source, t.target, t.ciphertext FROM history_sync_transfers t
+            JOIN history_sync_items i ON i.transfer_id = t.transfer_id AND i.account = t.account
+            WHERE t.account = ? AND t.target = ? AND t.transfer_id > ?
+              AND NOT EXISTS (SELECT 1 FROM history_sync_coverage c WHERE c.account = i.account AND c.target = i.target
+                AND c.message_id = i.message_id AND c.digest = i.digest AND c.transfer_id = i.transfer_id)
+            ORDER BY t.transfer_id LIMIT ' . (max(1, min(25, $limit)) + 1));
+        $q->execute([$account, $target, $after]);
+        $rows = $q->fetchAll();
+        $more = count($rows) > $limit;
+        $rows = array_slice($rows, 0, $limit);
+        $items = $this->pdo->prepare('SELECT message_id, digest FROM history_sync_items WHERE account = ? AND transfer_id = ? ORDER BY message_id');
+        foreach ($rows as &$row) {
+            $items->execute([$account, $row['transfer_id']]);
+            $row['items'] = $items->fetchAll();
+        }
+        unset($row);
+        return ['transfers' => $rows, 'next' => $more && $rows !== [] ? (string) $rows[count($rows) - 1]['transfer_id'] : null];
+    }
+
+    /**
+     * Transfers whose destination is this account, for the given messages. Each carries
+     * only the items for those messages; a transfer spanning pages repeats on each page.
+     *
+     * @param list<string> $messageIds
+     * @return list<array{transfer_id:string,source:string,target:string,ciphertext:string,items:list<array{message_id:string,digest:string}>}>
+     */
+    public function transfersFor(string $account, array $messageIds): array
+    {
+        if ($messageIds === []) return [];
+        $marks = implode(',', array_fill(0, count($messageIds), '?'));
+        $q = $this->pdo->prepare("SELECT t.transfer_id, t.source, t.target, t.ciphertext, i.message_id, i.digest
+            FROM history_sync_items i JOIN history_sync_transfers t ON t.transfer_id = i.transfer_id
+            WHERE i.account = ? AND t.account = i.account AND i.message_id IN ($marks)
+            ORDER BY t.transfer_id, i.message_id");
+        $q->execute(array_merge([$account], array_values($messageIds)));
+        $transfers = [];
+        foreach ($q->fetchAll() as $row) {
+            $id = $row['transfer_id'];
+            $transfers[$id] ??= ['transfer_id' => $id, 'source' => $row['source'], 'target' => $row['target'],
+                'ciphertext' => $row['ciphertext'], 'items' => []];
+            $transfers[$id]['items'][] = ['message_id' => $row['message_id'], 'digest' => $row['digest']];
+        }
+        return array_values($transfers);
+    }
     public function candidate(string $account, string $target, string $id, string $digest, string $transfer): ?array
     {
         $q=$this->pdo->prepare('SELECT t.* FROM history_sync_items i JOIN history_sync_transfers t ON t.transfer_id=i.transfer_id WHERE i.account=? AND i.target=? AND i.message_id=? AND i.digest=? AND i.transfer_id=?');

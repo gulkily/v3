@@ -33,7 +33,7 @@ $backlogLinks = static function (array $options) use ($e): string {
     <form class="backlog-form" method="get" action="/backlog/start" data-backlog-form>
     <ul class="backlog-list">
 <?php foreach ($backlogItems as $item): ?>
-      <li class="backlog-row" data-workflow="<?= $e($item['workflow']) ?>">
+      <li class="backlog-row" data-workflow="<?= $e($item['workflow']) ?>"<?= $backlogClaimsThread !== null ? ' data-backlog-row="' . $e($item['id']) . '"' : '' ?>>
         <input class="backlog-row__pick" type="checkbox" name="items[]" value="<?= $e($item['id']) ?>" id="pick-<?= $e($item['id']) ?>">
         <label class="backlog-row__title" for="pick-<?= $e($item['id']) ?>"><?= $e($item['title']) ?></label>
         <span class="backlog-row__meta meta">
@@ -46,6 +46,9 @@ $backlogLinks = static function (array $options) use ($e): string {
 <?php endif; ?>
           <span class="backlog-row__numbers">effort <?= $e($item['effort'] ?? '—') ?> · impact <?= $e($item['impact'] ?? '—') ?></span>
         </span>
+<?php if ($item['claim_lines'] !== []): ?>
+        <span class="backlog-row__claim meta"><span data-role="backlog-claim"><?= $e(implode(' · ', $item['claim_lines'])) ?></span><?php if ($item['release_post'] !== null): ?> <button type="submit" class="backlog-release requires-script" form="release-<?= $e($item['id']) ?>">Release</button><span data-role="backlog-claim-feedback" data-feedback-for="release-<?= $e($item['id']) ?>" role="status" aria-live="polite" hidden></span><?php endif; ?></span>
+<?php endif; ?>
       </li>
 <?php endforeach; ?>
     </ul>
@@ -54,6 +57,11 @@ $backlogLinks = static function (array $options) use ($e): string {
       <button type="submit">Start</button>
     </div>
     </form>
+<?= $backlogClaimsThread === null ? '' : $partial('partials/backlog_release.php', [
+    'backlogClaimsThread' => $backlogClaimsThread,
+    'releases' => array_values(array_filter(array_map(static fn (array $item): ?array => $item['release_post'] === null ? null : [$item['id'], $item['release_post']], $backlogItems))),
+    'refresh' => static fn (string $id): string => '[data-backlog-row="' . $id . '"], #release-' . $id,
+]) ?>
 <?php endif; ?>
   </article>
 </section>
@@ -77,6 +85,10 @@ $backlogLinks = static function (array $options) use ($e): string {
       var ids = picked();
       if (ids.length === 0) return;
       event.preventDefault();
+<?php if ($backlogClaimsThread !== null): ?>
+      // Tell the start page it was reached by pressing Start, so it claims these items.
+      try { sessionStorage.setItem('backlog-claim-intent', ids.join(',')); } catch (error) {}
+<?php endif; ?>
       location.href = form.getAttribute('action') + '?items=' + ids.join(',');
     });
     show();

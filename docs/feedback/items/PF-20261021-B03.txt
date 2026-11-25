@@ -3,7 +3,7 @@ Title: Saved draft starts collapsed
 Kind: bug
 Workflow: blocked
 Created: 2026-10-21
-Evidence: locally-verified
+Evidence: deployed
 Estimate: 0.15
 Aliases: 2026-10-21/B03, 2026-10-30/B11
 
@@ -25,3 +25,4 @@ Source: public/assets/inline_reply_form.js
 Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
 History: docs/plans/production_feedback_register.md#pf-20261021-b03
 October 30 summary row B11: Keep composer collapsed on initial load even with saved text. Status there: Existing home-page local verification; see PF-20261021-B03 (docs/plans/production_feedback_register.md#pf-20261021-b03), production unverified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 1ea89c026e is on audited main and deployed ancestry (live c4205ea43d). Home-page-only implementation survives in inline_reply_form.js; board_compose_focus.mjs retains text/selection and compact-until-focus checks. Later dedicated-composer changes do not broaden that evidence. Current next action: Maintainer: on iPhone, reopen a saved home-page draft, focus it, and check text/selection and failed-send retry. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

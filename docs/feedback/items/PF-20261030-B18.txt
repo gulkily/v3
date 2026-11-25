@@ -1,9 +1,9 @@
 ID: PF-20261030-B18
 Title: Content hash labeled as app version
 Kind: bug
-Workflow: blocked
+Workflow: done
 Created: 2026-10-30
-Evidence: locally-verified
+Evidence: deployed
 Aliases: 2026-10-30/B18
 
 Request:
@@ -17,3 +17,4 @@ Notes:
 Status in the October 30 summary: Open — resolution not verified
 Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row B18; that summary is a local snapshot review and its request wording is preserved here.
 2026-11-21: Implemented in v3/application_version_source. /api/version and forum metadata now use the code checkout; System status already showed code and content independently. Cached-navbar page freshness has separate code/content metadata and pending state; Docs versions stay separate. Local endpoint, Git checkout modes, desktop/phone notification recovery and cached navigation verified. Deployment, re-enabling the production notification flag and production acceptance remain pending. See docs/plans/application_version_source/application_version_source_one_shot.md for checks and baseline failures.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation c92c1ab31b is on audited main and deployed ancestry (live c4205ea43d). c92c1ab31b identifies application code separately from content; live /api/version reports code commit c4205ea43d and current ApplicationVersionTest passes. Cached-page code/content stamps are implemented and covered by the predecessor checks. Re-enabling an optional notification is not a missing implementation of the requested version labels. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

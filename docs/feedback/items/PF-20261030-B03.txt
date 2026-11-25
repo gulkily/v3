@@ -3,7 +3,7 @@ Title: Submitted draft stays in composer
 Kind: bug
 Workflow: blocked
 Created: 2026-10-30
-Evidence: locally-verified
+Evidence: deployed
 Aliases: 2026-10-30/B03
 
 Request:
@@ -30,3 +30,4 @@ Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row B03
 2026-11-10: Rebased onto main as fix/duplicate-post-submissions-rebased. Fixed two recovery gaps from a second review: a refused attempt ID no longer blocks posting, and reconcile clears only text the server holds. Not deployed; check production after deployment.
 2026-11-14: Triage 2026-11-11 attached 6 source(s): New repeat reports: mashing Post or resubmitting an old draft makes duplicates; a reproduction (Post, then New post before redirect); ask that the server clear the stored draft on success; a suggestion for exact-text hash matching; the maintainer's reviewed prevention spec (stable submission ID plus a normalized content hash); and "drafts bug is still here" on Nov 10 at 11:55 EST, before PR #145 merged.
 2026-11-14: Triage 2026-11-11 (docs/feedback/triage/2026-11-11_proposals.txt): PR #145 merged as 0cc23a5a on 2026-11-10; next is deploy and a production check (iPhone Back and lost-response cases). The Nov 10 "still here" report predates the merge.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 438bcc8995 is on audited main and deployed ancestry (live c4205ea43d). Rebased implementation and PR #145 are ancestors of main/live. Current ComposeAttemptReplayTest passes, including refused attempt recovery and re-sent removed reply staying a reply. Nov 10 contrary report predates merge. Current next action: Maintainer: on iPhone, send then immediately use New post/Back; repeat the lost-response recovery checklist and confirm the accepted draft does not return. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

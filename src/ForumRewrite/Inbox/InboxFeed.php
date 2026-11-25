@@ -15,12 +15,17 @@ final class InboxFeed
 {
     public const PAGE_SIZE = 50;
 
-    /** @param list<string> $identityIds every key of the member's username */
+    /**
+     * @param list<string> $identityIds every key of the member's username
+     * @param string|null $claimsThread the site's backlog claims thread, whose line-only claim and
+     *     release replies are bookkeeping and stay out of "other new posts"
+     */
     public function __construct(
         private readonly PDO $readPdo,
         private readonly InboxMarkStore $marks,
         private readonly string $viewer,
         private readonly array $identityIds,
+        private readonly ?string $claimsThread = null,
     ) {
     }
 
@@ -69,8 +74,20 @@ final class InboxFeed
         $in = implode(',', array_fill(0, count($keys), '?'));
         $replyToMe = "posts.parent_id IN (SELECT post_id FROM posts WHERE author_identity_id IN ($in))";
         $notMine = "COALESCE(posts.author_identity_id, '') NOT IN ($in)";
-        return $section === 'replies'
-            ? ["$replyToMe AND $notMine", [...$keys, ...$keys]]
-            : ["(posts.parent_id IS NULL OR NOT $replyToMe) AND $notMine", [...$keys, ...$keys]];
+        if ($section === 'replies') {
+            // A reply to the member's own post always reaches them, a release of their claim included.
+            return ["$replyToMe AND $notMine", [...$keys, ...$keys]];
+        }
+        $other = "(posts.parent_id IS NULL OR NOT $replyToMe) AND $notMine";
+        if ($this->claimsThread === null) {
+            return [$other, [...$keys, ...$keys]];
+        }
+        // A reply in the claims thread whose whole body is one claim or release line. A claim with a
+        // note, and any other reply there, still shows. The thread itself keeps every post.
+        $body = "LOWER(TRIM(posts.body, ' ' || CHAR(9) || CHAR(10) || CHAR(13)))";
+        $bareLine = "(posts.thread_id = ? AND posts.post_id != posts.thread_id AND INSTR($body, CHAR(10)) = 0"
+            . " AND ($body LIKE 'claim:%' OR $body = 'release' OR $body LIKE 'release:%'))";
+
+        return ["$other AND NOT $bareLine", [...$keys, ...$keys, $this->claimsThread]];
     }
 }

@@ -1,9 +1,9 @@
 ID: PF-20261021-F07
 Title: Default port fallback
 Kind: feature
-Workflow: blocked
+Workflow: done
 Created: 2026-10-21
-Evidence: locally-verified
+Evidence: deployed
 Estimate: 0.2
 Aliases: 2026-10-21/F07, 2026-10-30/F35
 
@@ -25,3 +25,4 @@ Estimate 0.2 is inherited from October 21 feedback-only triage. Recommended work
 Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
 History: docs/plans/production_feedback_register.md#pf-20261021-f07
 October 30 summary row F35: Have local ./v3 start try successive ports after 8000 by default. Status there: Open — resolution not verified (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 53a2dd91b7 is on audited main and deployed ancestry (live c4205ea43d). DevServerStartTest passes real launcher checks: occupied ports advance, actual listener serves/registers, ten-port exhaustion fails without a worker, release/retry succeeds, explicit collisions fail, shutdown releases the socket. Covers PCNTL disabled too. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

@@ -3,7 +3,7 @@ Title: LCD color choices
 Kind: feature
 Workflow: blocked
 Created: 2026-10-21
-Evidence: locally-verified
+Evidence: deployed
 Estimate: 0.4
 Aliases: 2026-10-21/F06, 2026-10-30/F39
 
@@ -24,3 +24,4 @@ Estimate 0.4 is inherited from October 21 feedback-only triage. Recommended work
 Historical triage: docs/plans/zenmemes_meta_feedback_2026-10-21_mini_triage.md
 History: docs/plans/production_feedback_register.md#pf-20261021-f06
 October 30 summary row F39: Offer several LCD theme colors. Status there: Locally verified in existing record; see PF-20261021-F06 (docs/plans/production_feedback_register.md#pf-20261021-f06), no new production check (docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md)
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation f0816f71cb is on audited main and deployed ancestry (live c4205ea43d). Persistent LCD palettes and later rotation/recovery fixes remain in the current theme selector. Existing contrast/browser record covers local readability; no fresh physical-phone palette acceptance is recorded. Current next action: Maintainer: cycle the LCD palettes on the phone, reload, and judge readability of the retained choice. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

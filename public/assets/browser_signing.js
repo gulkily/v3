@@ -736,6 +736,7 @@
       event_date: composeFormFieldValue(form, "event_date"),
       event_end_date: composeFormFieldValue(form, "event_end_date"),
       event_time: composeFormFieldValue(form, "event_time"),
+      event_end_time: composeFormFieldValue(form, "event_end_time"),
       event_location: composeFormFieldValue(form, "event_location"),
       event_link: composeFormFieldValue(form, "event_link"),
       event_when: composeFormFieldValue(form, "event_when"),
@@ -1982,17 +1983,9 @@
     return error;
   }
 
-  function isRetryableIdentityBootstrapFailure(technicalDetails) {
-    const message = String(technicalDetails || "").trim();
-    return message.indexOf("Unable to inspect OpenPGP public key.") === 0
-      || message === "OpenPGP public key is missing a fingerprint or user ID."
-      || message === "Identity bootstrap signature verification failed: signature_verification_failed";
-  }
-
   function identityBootstrapFailureError(rawMessage, diagnosticContext) {
     const failure = classifyIdentityBootstrapFailure(rawMessage, diagnosticContext);
     const error = buildFriendlyError(failure.friendlyMessage, failure.technicalDetails);
-    error.retryableIdentityBootstrapFailure = isRetryableIdentityBootstrapFailure(rawMessage);
     return error;
   }
 
@@ -2629,32 +2622,52 @@
     renderSavedState(root);
   }
 
+  // A first registration can fail for reasons that clear on their own: a dropped
+  // connection, a busy write lock, a slow server response, or a write that committed
+  // before its response was lost. Each attempt first asks whether the server already
+  // has the key, so retrying is safe; only refusals that cannot change are final.
+  const identityPublishRetryDelaysMilliseconds = [1000, 2000, 4000, 8000];
+
+  function isFinalIdentityPublishFailure(error) {
+    const details = error instanceof Error
+      ? [error.technicalDetails, error.message].filter(function (part) { return typeof part === "string"; }).join("\n")
+      : String(error || "");
+    return /This key is retired\.|public_key is required\.|public_key must be ASCII only\.|No browser public key is available to publish\.|Write APIs are disabled|Writable repository must be a git checkout|The browser identity changed|Browser OpenPGP is unavailable|OpenPGP\.js failed to load/.test(details);
+  }
+
+  function waitMilliseconds(milliseconds) {
+    return new Promise(function (resolve) { setTimeout(resolve, milliseconds); });
+  }
+
   async function publishPublicKeyWithRetry(root, timing) {
     const bootstrapAttemptId = newIdentityBootstrapAttemptId();
     const openPgpBundleVersion = selectedOpenPgpBundleVersion();
-    try {
-      await publishPublicKey(root, timing, {
-        bootstrapAttemptId: bootstrapAttemptId,
-        bootstrapRetryIndex: 0,
-        openPgpBundleVersion: openPgpBundleVersion,
-      });
-      return;
-    } catch (error) {
-      const technicalDetails = error instanceof Error && typeof error.technicalDetails === "string"
-        ? error.technicalDetails
-        : "";
-      const retryable = error instanceof Error && error.retryableIdentityBootstrapFailure === true;
-      if (!retryable && !isRetryableIdentityBootstrapFailure(technicalDetails)) {
-        throw error;
+    const publicKeyAtStart = localStorage.getItem(storageKeys.publicKey) || "";
+    let lastError = null;
+    for (let retryIndex = 0; retryIndex <= identityPublishRetryDelaysMilliseconds.length; retryIndex += 1) {
+      if (retryIndex > 0) {
+        await waitMilliseconds(identityPublishRetryDelaysMilliseconds[retryIndex - 1]);
+        // Another tab may have replaced the key; publishing that one is its job.
+        if ((localStorage.getItem(storageKeys.publicKey) || "") !== publicKeyAtStart) {
+          throw lastError;
+        }
+        await ensureStoredFingerprint();
+      }
+      try {
+        await publishPublicKey(root, timing, {
+          bootstrapAttemptId: bootstrapAttemptId,
+          bootstrapRetryIndex: retryIndex,
+          openPgpBundleVersion: openPgpBundleVersion,
+        });
+        return;
+      } catch (error) {
+        lastError = error;
+        if (isFinalIdentityPublishFailure(error)) {
+          throw error;
+        }
       }
     }
-
-    await ensureStoredFingerprint();
-    await publishPublicKey(root, timing, {
-      bootstrapAttemptId: bootstrapAttemptId,
-      bootstrapRetryIndex: 1,
-      openPgpBundleVersion: openPgpBundleVersion,
-    });
+    throw lastError;
   }
 
   async function serverKnowsCurrentIdentity(fingerprint) {
@@ -3139,7 +3152,9 @@
         await publishPublicKeyWithRetry(root);
         await authenticatePrivateSiteIfAvailable();
       } catch (error) {
-        setStatus(statusNode, "Couldn't publish your key.", "error", { technicalDetails: error instanceof Error ? error.message : "" });
+        setStatus(statusNode, "Couldn't publish your key.", "error", {
+          technicalDetails: error instanceof Error ? [error.message, error.technicalDetails].filter(Boolean).join("\n") : "",
+        });
         offerRetry(function () { return publishNewKey(username); });
         return;
       }

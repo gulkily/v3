@@ -30,10 +30,22 @@ final class PrivateMessageHistorySyncService
         if (is_string($key) && strlen($key)>1048576) throw new RuntimeException('Public key exceeds the canonical armor limit.');
         return $this->keyCache[$id]=$key===false || trim($key)===''?null:$key;
     }
+    /** A current (non-historical) key: not retired and, when enforced, with private access. */
     private function active(string $fingerprint): bool
     {
-        return $this->repositoryRoot === null || !preg_match('/^[a-f0-9]{40}$/D', $fingerprint)
-            || \ForumRewrite\Security\KeyRetirement::read($this->repositoryRoot, 'openpgp:'.$fingerprint) === null;
+        return ($this->repositoryRoot === null || !preg_match('/^[a-f0-9]{40}$/D', $fingerprint)
+            || \ForumRewrite\Security\KeyRetirement::read($this->repositoryRoot, 'openpgp:'.$fingerprint) === null)
+            && $this->privateAccess($fingerprint);
+    }
+    private ?\ForumRewrite\Security\PrivateKeyAccess $access = null;
+    private ?bool $enforced = null;
+    private function privateAccess(string $fingerprint): bool
+    {
+        $this->enforced ??= \ForumRewrite\Security\PrivateKeyAccess::enforced($this->repositoryRoot);
+        if (!$this->enforced) return true;
+        if (!preg_match('/^[a-f0-9]{40}$/D', $fingerprint)) return false;
+        $this->access ??= new \ForumRewrite\Security\PrivateKeyAccess($this->profiles, $this->repositoryRoot);
+        return $this->access->hasAccess('openpgp:'.$fingerprint);
     }
     private function nextKey(string $account, string $after = '', bool $historical = false): ?string
     {
@@ -166,6 +178,7 @@ final class PrivateMessageHistorySyncService
         $account=strtolower(trim((string)($viewer['username_token']??'')));
         $source=strtolower(substr((string)($viewer['identity_id']??''),8));
         $key=$this->hasKey($account,$source);
+        if (($viewer['is_approved']??0)==1 && str_starts_with((string)($viewer['identity_id']??''),'openpgp:') && !$key && !$this->privateAccess($source)) throw new \ForumRewrite\Security\PublicOnlyKeyException();
         if (($viewer['is_approved']??0)!=1 || !str_starts_with((string)($viewer['identity_id']??''),'openpgp:') || !$key) throw new RuntimeException('An approved authenticated account key is required.');
         return [$account,$source];
     }

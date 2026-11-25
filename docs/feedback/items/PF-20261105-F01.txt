@@ -1,9 +1,9 @@
 ID: PF-20261105-F01
 Title: Image gallery page
 Kind: feature
-Workflow: blocked
+Workflow: done
 Created: 2026-11-05
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 A dedicated images-focused page with an image-board-style grid, where attached images are the main thing people browse; each image leads to its post, with a short title and reply count, recognizable proportions and appropriately sized previews.
@@ -18,3 +18,4 @@ Notes:
 2026-11-06: tile previews measured at up to 306 KB live (truecolor PNG); thumbnails now encode as WebP (about 30 KB for the same tiles), palette PNG fallback without WebP; on fix/smaller-thumbnails, awaiting review and deployment.
 2026-11-06: Word97 and Midnight themes style the gallery as a figure table on a document page (fixed 4:3 cropped thumbnails, trial; one variable switches to letterboxed) and pagination as raised dialog buttons; on style/word97-gallery, awaiting review.
 2026-11-14: Triage 2026-11-11 (docs/feedback/triage/2026-11-11_proposals.txt): PRs #33, #42, #46 (186a255e, ead3e263, d6a5e7a5) merged 2026-11-06; deployment and acceptance not checked.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 84748ce933 is on audited main and deployed ancestry (live c4205ea43d). Live /gallery/ displays image tiles; current implementation reuses ThumbnailStore, with later WebP and Word97/Midnight corrections. Ordinary Gallery route smoke passes. Zoom/margins requests remain separate. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

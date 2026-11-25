@@ -8,6 +8,7 @@ if [[ -z "${COMMAND}" || "${COMMAND}" == "help" || "${COMMAND}" == "--help" || "
   cat <<'EOF'
 Usage:
   ./v3 start [--listen-all|port|host:port] [--verbose|--quiet] [--no-worker] [--log-file=/path/dev.log]
+  ./v3 contacts [--data-dir=/private/path] [--port=PORT]
   ./v3 check-dependencies [--install|--help] (alias: dependency-check)
   ./v3 test [--smoke] [--all] [--jobs=N] [Class[::method] ...]
   ./v3 fulltest [--jobs=N] (full suite on every core)
@@ -20,6 +21,7 @@ Usage:
   ./v3 deploy [--check|--status] [--timeout=SECONDS]
   ./v3 feedback check|index [--dir=PATH] (feedback items; docs/specs/feedback_item_record_v1.md)
   ./v3 feedback list|start (the backlog and the prompt that starts an agent; docs/agents/backlog_to_pr.md)
+  ./v3 feedback claim|release --site=URL ID... (say who holds backlog items on a site; claim or release them)
   ./v3 railspike sync [--repository-root=/path/repository] [--remote-url=https://github.com/rlspk/railspike.git] [--ref=v0.6.1-beta.1]
   ./v3 fdp sync ... (deprecated alias)
   ./v3 rebuild [repository_root] [database_path]
@@ -70,6 +72,7 @@ Usage:
   ./v3 approval receipts inspect|convert|readiness [--dry-run] [--repository-root=/path/repository] [--database-path=/path/cache.sqlite3] [--json]
   ./v3 approval audit [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--review-only] [--summary] [--json]
   ./v3 approval suggest-roots [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--json]
+  ./v3 approval private-access-report [--repository-root=/path/repository] [--database-path=/path/read-model.sqlite3] [--public-only] [--json]
   ./v3 approval approve <approver_identity_id> <target_identity_id> [repository_root] [database_path] [artifact_root]
 
 Terminal startup can review missing dependencies on Ubuntu 22.04/PHP 8.1 or
@@ -121,6 +124,11 @@ case "${COMMAND}" in
     shift
     exec php "${ROOT}/scripts/restore_images.php" "$@"
     ;;
+  contacts)
+    shift
+    source "${ROOT}/scripts/local_server_start.sh"
+    local_server_start "${ROOT}/scripts/contacts.php" "$@"
+    ;;
   start)
     shift
     source "${ROOT}/scripts/local_server_dependencies.sh"
@@ -166,7 +174,7 @@ case "${COMMAND}" in
       printf '%s\n' 'Dependencies recovered; continuing the original startup request.'
     fi
     source "${ROOT}/scripts/local_server_start.sh"
-    local_server_start "--address=${ADDRESS}" ${DEV_SERVER_ARGS[@]+"${DEV_SERVER_ARGS[@]}"}
+    local_server_start "${ROOT}/scripts/dev_server.php" "--address=${ADDRESS}" ${DEV_SERVER_ARGS[@]+"${DEV_SERVER_ARGS[@]}"}
     ;;
   check-dependencies|dependency-check)
     shift
@@ -425,6 +433,9 @@ EOF
     elif [[ "${1:-}" == "suggest-roots" ]]; then
       shift
       php "${ROOT}/scripts/suggest_approval_roots.php" "$@"
+    elif [[ "${1:-}" == "private-access-report" ]]; then
+      shift
+      php "${ROOT}/scripts/private_access_report.php" "$@"
     else
       php "${ROOT}/scripts/inject_approval.php" "$@"
     fi

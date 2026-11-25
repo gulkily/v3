@@ -128,7 +128,7 @@ if (isset($pledgeCampaign['used_lines'][(string) $post['post_id']])) {
   <div class="body<?= $isMarkdownPost($post) ? ' post-markdown' : '' ?>"><?= $renderPostBody($post, (string) $postBodyDisplay) ?></div>
 <?php endif; ?>
 <?php endif; ?>
-<?= $partial('partials/event_block.php') ?>
+<?= $partial('partials/event_block.php', ['showEventTimeRange' => true]) ?>
 <?= $isRetracted ? '' : $partial('partials/event_calendar_links.php') ?>
 <?php if ($isQdbQuoteRoot): ?>
 <?= $partial('partials/pledge_totals.php') ?>

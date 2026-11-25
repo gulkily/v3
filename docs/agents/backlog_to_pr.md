@@ -26,7 +26,17 @@ For each item file the prompt names:
 - If its `Workflow` is `planned`, `in-progress` or `blocked`, someone has been on it. Read its `Notes:` for the branch or PR.
 - Look for work already under way: `git ls-remote --heads origin`, and open PRs that name the item's ID. If you find some, build on it or stop and report; do not start a second copy.
 
-Claims are not recorded on the site yet, so these checks are the only guard against two agents doing the same work.
+Then check who holds the items. A prompt made by a site that keeps claims has a `Claims:` line; open that address, or run `./v3 feedback claim --site=<the site> <ID>...`, which reads it for you and then claims.
+
+- `Claim-State: held`: someone has a counted claim that is not stale. Do not build that item. Tell the person who started you who holds it and since when, and continue with the other items; if none is left, stop.
+- `Claim-State: stale`, or `none` with a guest claim or a claim waiting for approval: nobody holds it for certain. Look for the branch or pull request as above before deciding, and say what you found.
+- `Claim-State: free`: nobody has claimed it.
+
+Claim the items you will build before you build them: `./v3 feedback claim --site=<the site> <ID>... --note="branch <name>"`. It posts one signed reply in the site's claims thread whose first line is `claim: <ID>, <ID>`; you can post that reply yourself with Quill instead. If your key is not approved, the claim shows as waiting; if you can only post as a guest, it shows as a guest claim and does not count. Post it anyway: it still tells the next agent where to look.
+
+Release a claim when you stop short of a pull request: `./v3 feedback release --site=<the site> <ID>...`, or reply to your claim post with `release`. You do not release when the pull request opens: the item becomes `blocked` in that commit, and a blocked or closed item shows no claim after the next deploy. A claim nobody releases reads as stale after three days.
+
+A prompt with no `Claims:` line comes from a checkout or from a site that keeps no claims; then the branch and pull request search is the only guard against two agents doing the same work.
 
 ## 3. Treat the item file as the brief
 

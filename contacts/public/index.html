@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contacts</title>
+  <link rel="stylesheet" href="/contacts.css">
+  <script src="/contacts.js" defer></script>
+</head>
+<body>
+  <header class="shell"><h1>Contacts</h1></header>
+  <main class="shell">
+    <p id="status" role="status" hidden></p>
+    <section aria-labelledby="import-title" class="card" id="intake" hidden>
+      <h2 id="import-title">Import LinkedIn connections</h2>
+      <form id="import-form">
+        <label id="drop-zone" for="file">Choose or drop a LinkedIn ZIP or Connections.csv</label>
+        <input id="file" name="file" type="file" accept=".csv,.zip" required>
+        <button type="submit">Preview import</button>
+      </form>
+    </section>
+    <section aria-labelledby="preview-title" class="card" id="preview" hidden>
+      <h2 id="preview-title" tabindex="-1">Review import</h2>
+      <dl id="counts"></dl>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Row</th><th scope="col">Contact</th><th scope="col">Details</th><th scope="col">Result</th></tr></thead>
+          <tbody id="preview-rows"></tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button id="more-preview" type="button" hidden>Show more rows</button>
+        <button id="cancel-preview" class="secondary" type="button">Cancel</button>
+        <button id="confirm-preview" type="button">Import contacts</button>
+      </div>
+    </section>
+    <div id="book" class="book" hidden>
+      <section class="card" aria-labelledby="book-title">
+        <h2 id="book-title">Address book</h2>
+        <form id="search-form" role="search">
+          <label for="search">Search contacts</label>
+          <input id="search" type="search" autocomplete="off">
+        </form>
+        <p id="contact-count" role="status"></p>
+        <ul id="contact-list"></ul>
+        <button id="more-contacts" type="button" class="secondary" hidden>Show more contacts</button>
+      </section>
+      <section class="card" id="detail" aria-labelledby="contact-name" hidden>
+        <h2 id="contact-name" tabindex="-1"></h2>
+        <dl id="contact-fields"></dl>
+        <form id="edit-form">
+          <label for="note">Note</label>
+          <textarea id="note" rows="5" maxlength="16384"></textarea>
+          <label for="date">Last contacted</label>
+          <input id="date" type="date">
+          <p id="edit-status" role="status" hidden></p>
+          <button type="submit">Save changes</button>
+        </form>
+      </section>
+    </div>
+  </main>
+  <noscript><p class="shell">Enable JavaScript to open the local Contacts book.</p></noscript>
+</body>
+</html>

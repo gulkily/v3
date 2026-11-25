@@ -1,0 +1,44 @@
+Title: Completion reconciliation prompt
+Repository: https://github.com/gulkily/v3
+Procedure: docs/agents/feedback_triage.md, especially sections 2 and 6
+Use: Copy the Prompt section into an agent session, or ask the agent to run this prompt.
+When: After a batch of deployments, or periodically to catch stale task records. New-feedback intake is separate.
+
+Prompt:
+Run a history-only completion reconciliation of gulkily/v3's feedback backlog.
+Follow AGENTS.md and docs/agents/feedback_triage.md.
+
+You are authorized to apply status updates and close items whose completion
+conditions you can establish confidently. Do not stop at a proposals file or
+ask me to approve every item individually.
+
+Work in a clone on a new branch from freshly fetched origin/main. Open the
+pull request yourself. If clone, push or PR access is unavailable, stop before
+writing and say what needs connecting; do not return patch files or pasted code.
+
+Review blocked items and work since the last applied reconciliation. For
+unresolved older items, search implementation history before their intake
+dates, including source paths and linked plans. Find the actual implementation,
+verify Git ancestry against main and the deployed version, and read later
+corrections or rejected acceptance. A mention or merged PR alone is insufficient.
+
+Perform available code, test and read-only live checks yourself. Leave uncertain
+outcomes open with a precise remaining action and actor. Do not invent additional
+human review requirements. Preserve genuine unmet completion conditions and
+record unavailable device or privileged checks honestly.
+
+Record the audited application version, deployed version and history range.
+Keep the dated reconciliation record under docs/feedback/triage/. Update each
+item's Workflow, Evidence and dated Notes with the implementation commit and
+checked outcome. Preserve its identity, request, sources and completion conditions.
+Run ./v3 feedback check and ./v3 feedback index, plus the appropriate smoke and
+focused checks required by AGENTS.md. Record failures and say the full suite
+was not run. Commit the record and item/index updates together under the triage
+procedure, then push and open the new PR.
+
+Do not build fixes, import feedback, post to the site, change production settings,
+merge or deploy. This is status maintenance, not a new implementation queue.
+
+Report only the PR link, counts changed and a few material exceptions. Distinguish
+an open PR from merged and deployed updates: the site's backlog reflects its
+deployed records, not an unmerged status-update branch.

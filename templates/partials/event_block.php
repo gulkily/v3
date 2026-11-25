@@ -1,7 +1,9 @@
 <?php
 $eventDate = (string) ($thread['event_date'] ?? '');
 $eventEndDate = (string) ($thread['event_end_date'] ?? '');
-$eventTime = (string) ($thread['event_time'] ?? '');
+$eventTime = ($showEventTimeRange ?? false)
+    ? \ForumRewrite\Calendar\EventTimes::display($thread)
+    : (string) ($thread['event_time'] ?? '');
 $eventLocation = (string) ($thread['event_location'] ?? '');
 $eventLink = (string) ($thread['event_link'] ?? '');
 // The poster's own words ("next Friday at 7"), shown beside the dates they filled while Event phrases is on.

@@ -43,6 +43,17 @@
     window.caches.delete(runtime.offlineCachePrefix + "nav-copy").catch(function () {});
   }
 
+  // Notification taps: when the worker can't move an open window itself, it asks the page.
+  navigator.serviceWorker.addEventListener("message", function (event) {
+    var data = event.data;
+    if (!data || data.type !== "open-url" || typeof data.url !== "string" || data.url.charAt(0) !== "/" || data.url.charAt(1) === "/") return;
+    var target;
+    try { target = new URL(data.url, window.location.origin); } catch (error) { return; }
+    if (target.origin !== window.location.origin || target.href === window.location.href) return;
+    window.location.assign(target.href);
+  });
+  if (typeof navigator.serviceWorker.startMessages === "function") navigator.serviceWorker.startMessages();
+
   window.addEventListener("load", function () {
     applyNavigationPreload();
     dropNavCopiesWhenOff();
@@ -59,6 +70,8 @@
         if (!navigator.onLine) return registration;
         return registration.update().then(function () { return registration; });
       })
+      // A first visit has no active worker until its quick install finishes.
+      .then(function () { return navigator.serviceWorker.ready; })
       .then(function (registration) {
         clearRegistrationError();
         if (navigator.onLine && registration.active && !registration.installing && !registration.waiting) {

@@ -16,9 +16,17 @@ const COMPOSE_REPLY_URL = "/compose/reply";
 const BOOTSTRAP_QUERY_PARAMETER = "__offline_bootstrap";
 const REVISION_KEY = "/__offline_reader_revision__";
 
+// A first install caches only the reader shell so the worker activates at once (Chrome's
+// install offer waits for it); the page then asks for the full refresh. An update keeps
+// the full refresh here so an installed copy never loses its snapshot.
 self.addEventListener("install", (event) => event.waitUntil((async () => {
   try {
-    await refreshOfflineReader([]);
+    if ((await caches.keys()).some(isOwnedCacheName)) {
+      await refreshOfflineReader([]);
+    } else {
+      const shell = await fetchOfflineResource(OFFLINE_READER_URL, "offline reader shell");
+      await (await caches.open(CACHE_NAME)).put(cacheKey(OFFLINE_READER_URL), shell);
+    }
     await self.skipWaiting();
   } catch (error) {
     console.error("[offline reading] worker install failed", Object.assign(workerDetails(), errorDetails(error)));
@@ -369,4 +377,64 @@ self.addEventListener("fetch", (event) => {
     const cached = await cachedResponse(await caches.open(CACHE_NAME), event.request.url);
     return cached || fetch(event.request);
   })());
+});
+
+// Notifications (push_subscribe): show every push, because iPhone stops delivering to a site
+// that receives a push without showing one. The payload is the server's JSON (title, body,
+// url, tag); anything unreadable still shows a plain notice.
+function pushNotice(event) {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (error) { data = {}; }
+  if (!data || typeof data !== "object") data = {};
+  let url = "/";
+  try {
+    const target = new URL(typeof data.url === "string" ? data.url : "/", self.location.origin);
+    if (target.origin === self.location.origin) url = target.pathname + target.search + target.hash;
+  } catch (error) { url = "/"; }
+  const options = {
+    body: typeof data.body === "string" ? data.body : "Something new",
+    icon: "/assets/app-icon-192.png",
+    data: { url }
+  };
+  if (typeof data.tag === "string" && data.tag) options.tag = data.tag;
+  return { title: typeof data.title === "string" && data.title ? data.title : "ZenMemes", options };
+}
+self.addEventListener("push", (event) => {
+  const notice = pushNotice(event);
+  event.waitUntil(self.registration.showNotification(notice.title, notice.options));
+});
+// The page a tap opens. With no network, a page that has no offline copy (a DM conversation,
+// Unread) gives way to the home page, which is the offline reader.
+function noticeTapUrl(data) {
+  let url;
+  try { url = new URL((data && data.url) || "/", self.location.origin); } catch (error) { url = new URL("/", self.location.origin); }
+  if (url.origin !== self.location.origin) url = new URL("/", self.location.origin);
+  if (self.navigator && self.navigator.onLine === false && !supportsOfflineNavigation(url)) url = new URL("/", self.location.origin);
+  return url.href;
+}
+
+// An open app window is brought to the front and sent to the page; navigate() is not
+// available everywhere (nor for a window this worker doesn't control), so the page is
+// asked to go there itself (pwa_registration.js). With no window, a new one opens there.
+async function openNoticePage(url) {
+  const windows = (await self.clients.matchAll({ type: "window", includeUncontrolled: true }))
+    .filter((client) => new URL(client.url).origin === self.location.origin && "focus" in client);
+  if (!windows.length) return self.clients.openWindow(url);
+  const open = windows.find((client) => client.url === url) || windows[0];
+  let client = open;
+  try { client = (await open.focus()) || open; } catch (error) { client = open; }
+  if (client.url === url) return client;
+  if (typeof client.navigate === "function") {
+    try {
+      const moved = await client.navigate(url);
+      if (moved) return moved;
+    } catch (error) { /* fall through to asking the page */ }
+  }
+  client.postMessage({ type: "open-url", url: new URL(url).pathname + new URL(url).search + new URL(url).hash });
+  return client;
+}
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(openNoticePage(noticeTapUrl(event.notification.data)));
 });

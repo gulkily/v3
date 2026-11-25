@@ -192,8 +192,8 @@ final class ReadModelBuilder
              VALUES (:post_id, :created_at, :thread_id, :parent_id, :subject, :body, :board_tags_json, :thread_type, :agent_response_json, :body_format, :theme, :author_identity_id, :retracted_at, :retraction_class, :retraction_attribution, :ported_from, :ported_author, :ported_created_at, :ported_by, :author_label, :sequence_number)'
         );
         $insertThread = $pdo->prepare(
-            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link, event_time, event_end_date, event_when, retracted_at, retraction_class, retraction_attribution)
-             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link, :event_time, :event_end_date, :event_when, :retracted_at, :retraction_class, :retraction_attribution)'
+            'INSERT INTO threads (root_post_id, root_post_created_at, last_activity_at, subject, body_preview, reply_count, last_post_id, board_tags_json, thread_labels_json, score_total, vote_count, event_date, event_location, event_link, event_time, event_end_date, event_when, event_end_time, retracted_at, retraction_class, retraction_attribution)
+             VALUES (:root_post_id, :root_post_created_at, :last_activity_at, :subject, :body_preview, :reply_count, :last_post_id, :board_tags_json, :thread_labels_json, :score_total, :vote_count, :event_date, :event_location, :event_link, :event_time, :event_end_date, :event_when, :event_end_time, :retracted_at, :retraction_class, :retraction_attribution)'
         );
 
         $removals = \ForumRewrite\Canonical\AcceptedRemoval::all($this->repositoryRoot);
@@ -234,6 +234,7 @@ final class ReadModelBuilder
                 'event_time' => $isRetracted ? null : $record->eventTime,
                 'event_end_date' => $isRetracted ? null : $record->eventEndDate,
                 'event_when' => $isRetracted ? null : $record->eventWhen,
+                'event_end_time' => $isRetracted ? null : $record->eventEndTime,
                 'author_label' => (!$isRetracted ? $record->ported?->authorLabel() : null) ?? 'guest',
             ] + \ForumRewrite\Canonical\PortedSource::columns($isRetracted ? null : $record->ported) + [
                 'source_path' => $relativePath,
@@ -256,7 +257,7 @@ final class ReadModelBuilder
                 'retracted_at' => $removal['accepted_at'], 'retraction_class' => $removal['classification'] ?? 'operator', 'retraction_attribution' => $removal['attribution'] ?? 'operator',
                 'board_tags_json' => '[]', 'thread_type' => $meta['thread_type'] ?? null, 'agent_response_json' => null, 'body_format' => null, 'theme' => null,
                 'author_identity_id' => $meta['author_identity_id'], 'imported_score_seed' => 0, 'imported_vote_count_seed' => 0,
-                'event_date' => null, 'event_location' => null, 'event_link' => null, 'event_time' => null, 'event_end_date' => null, 'event_when' => null,
+                'event_date' => null, 'event_location' => null, 'event_link' => null, 'event_time' => null, 'event_end_date' => null, 'event_when' => null, 'event_end_time' => null,
                 'source_path' => isset($removal['signed_request']) ? \ForumRewrite\Canonical\AcceptedRetraction::path($id) : \ForumRewrite\Canonical\LabelRemoval::path($id), 'source_commit_sha' => null, 'source_order' => $low + 0.5,
             ];
         }
@@ -281,12 +282,16 @@ final class ReadModelBuilder
             });
         });
 
+        // Peak memory is the post corpus, so keep one copy of it: move each post out of
+        // $parsedPosts before changing it, keep only the fields later phases read, and
+        // write each thread summary as soon as its thread ends (posts are sorted by
+        // thread). qdb's tens of thousands of single-post threads exhausted 128 MB.
         $posts = [];
-        $threadSummaries = [];
-        foreach ($this->progressItems('writing_post_records', $parsedPosts) as $index => $post) {
+        $summary = null;
+        foreach ($this->progressItems('writing_post_records', array_keys($parsedPosts)) as $index) {
+            $post = $parsedPosts[$index];
+            unset($parsedPosts[$index]);
             $post['sequence_number'] = $index + 1;
-            unset($post['source_order']);
-            $posts[] = $post;
             $insertPost->execute([
                 'post_id' => $post['post_id'],
                 'created_at' => $post['created_at'],
@@ -311,8 +316,12 @@ final class ReadModelBuilder
                 'sequence_number' => $post['sequence_number'],
             ]);
 
-            if (!isset($threadSummaries[$post['thread_id']])) {
-                $threadSummaries[$post['thread_id']] = [
+            if ($summary !== null && $summary['root_post_id'] !== $post['thread_id']) {
+                $insertThread->execute($summary);
+                $summary = null;
+            }
+            if ($summary === null) {
+                $summary = [
                     'root_post_id' => $post['thread_id'],
                     'root_post_created_at' => $post['created_at'],
                     'last_activity_at' => $post['created_at'],
@@ -330,13 +339,12 @@ final class ReadModelBuilder
                     'event_time' => $post['event_time'],
                     'event_end_date' => $post['event_end_date'],
                     'event_when' => $post['event_when'],
+                    'event_end_time' => $post['event_end_time'],
                     'retracted_at' => $post['retracted_at'],
                     'retraction_class' => $post['retraction_class'],
                     'retraction_attribution' => $post['retraction_attribution'],
                 ];
             }
-
-            $summary = &$threadSummaries[$post['thread_id']];
             if ($post['post_id'] !== $post['thread_id']) {
                 $summary['reply_count']++;
             }
@@ -344,10 +352,26 @@ final class ReadModelBuilder
                 $summary['last_activity_at'] = $post['created_at'];
             }
             $summary['last_post_id'] = $post['post_id'];
-            unset($summary);
-        }
 
-        foreach ($this->progressItems('writing_thread_summaries', $threadSummaries) as $summary) {
+            $posts[] = [
+                'post_id' => $post['post_id'],
+                'created_at' => $post['created_at'],
+                'thread_id' => $post['thread_id'],
+                'parent_id' => $post['parent_id'],
+                'subject' => $post['subject'],
+                'body' => $post['body'],
+                'body_format' => $post['body_format'],
+                'board_tags_json' => $post['board_tags_json'],
+                'thread_type' => $post['thread_type'],
+                'author_identity_id' => $post['author_identity_id'],
+                'author_label' => $post['author_label'] ?? 'guest',
+                'retracted_at' => $post['retracted_at'],
+                'source_path' => $post['source_path'],
+                'source_commit_sha' => $post['source_commit_sha'],
+                'sequence_number' => $post['sequence_number'],
+            ];
+        }
+        if ($summary !== null) {
             $insertThread->execute($summary);
         }
 
@@ -380,11 +404,10 @@ final class ReadModelBuilder
      */
     private function indexThreadLabels(PDO $pdo, array $approvalState): void
     {
-        $rootThreadRows = $pdo->query('SELECT root_post_id, score_total, vote_count FROM threads')->fetchAll();
         $knownRootThreads = [];
         $seedScoreByThread = [];
         $seedVoteCountByThread = [];
-        foreach ($rootThreadRows as $row) {
+        foreach ($pdo->query('SELECT root_post_id, score_total, vote_count FROM threads') as $row) {
             $rootPostId = (string) $row['root_post_id'];
             $knownRootThreads[$rootPostId] = true;
             $seedScoreByThread[$rootPostId] = (int) $row['score_total'];
@@ -606,9 +629,8 @@ final class ReadModelBuilder
      */
     private function indexPostReactions(PDO $pdo, array $approvalState): void
     {
-        $postRows = $pdo->query('SELECT post_id, thread_id, author_label, board_tags_json FROM posts')->fetchAll();
         $knownPosts = [];
-        foreach ($postRows as $row) {
+        foreach ($pdo->query('SELECT post_id, thread_id, author_label, board_tags_json FROM posts') as $row) {
             $knownPosts[(string) $row['post_id']] = [
                 'thread_id' => (string) $row['thread_id'],
                 'author_label' => (string) $row['author_label'],

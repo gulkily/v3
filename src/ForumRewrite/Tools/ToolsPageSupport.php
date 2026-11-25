@@ -27,6 +27,8 @@ final class ToolsPageSupport
             'device' => 'Your device',
             'reading' => 'Reading',
             'community' => 'Community',
+            // People and agents who change the software, as opposed to the operator who runs this site.
+            'developer' => 'Developer',
             'operator' => 'Operator',
         ];
     }
@@ -38,7 +40,7 @@ final class ToolsPageSupport
      * can't drift apart. `group` places the tool under one of groups();
      * `tone` is its stable theme hook (`data-tone`). `standalone` marks pages
      * that render as full-page views with no Tools bar of their own (Activity,
-     * Forte, Offline reading, Platform docs) - they still appear in the
+     * Forte, Offline reading, Platform docs, Backlog) - they still appear in the
      * launcher and the bar, but never receive `toolNavOptions`.
      *
      * @return list<array{key:string,label:string,href:string,group:string,tone:string,standalone:bool}>
@@ -55,11 +57,11 @@ final class ToolsPageSupport
             ['key' => 'history', 'label' => 'History', 'href' => '/tools/history/', 'group' => 'device', 'tone' => 'history', 'standalone' => false],
             ['key' => 'activity', 'label' => 'Activity', 'href' => '/activity/', 'group' => 'reading', 'tone' => 'activity', 'standalone' => true],
             ['key' => 'forte', 'label' => 'Forte', 'href' => '/forte', 'group' => 'reading', 'tone' => 'forte', 'standalone' => true],
-            ['key' => 'docs', 'label' => 'Platform Docs', 'href' => '/docs/', 'group' => 'reading', 'tone' => 'docs', 'standalone' => true],
-            ['key' => 'backlog', 'label' => 'Backlog', 'href' => '/backlog', 'group' => 'reading', 'tone' => 'backlog', 'standalone' => true],
             ['key' => 'user-access', 'label' => 'User Access', 'href' => '/tools/user-access/', 'group' => 'community', 'tone' => 'access', 'standalone' => false],
             ['key' => 'visitor-statistics', 'label' => 'Visitor Statistics', 'href' => '/tools/visitor-statistics/', 'group' => 'community', 'tone' => 'statistics', 'standalone' => false],
             ['key' => 'tag-unlocks', 'label' => 'Tag Unlocks', 'href' => '/tools/tag-unlocks/', 'group' => 'community', 'tone' => 'unlocks', 'standalone' => false],
+            ['key' => 'docs', 'label' => 'Platform Docs', 'href' => '/docs/', 'group' => 'developer', 'tone' => 'docs', 'standalone' => true],
+            ['key' => 'backlog', 'label' => 'Backlog', 'href' => '/backlog', 'group' => 'developer', 'tone' => 'backlog', 'standalone' => true],
             ['key' => 'feature-flags', 'label' => 'Feature Flags', 'href' => '/tools/feature-flags/', 'group' => 'operator', 'tone' => 'flags', 'standalone' => false],
             ['key' => 'codebase', 'label' => 'System status', 'href' => '/tools/codebase/', 'group' => 'operator', 'tone' => 'status', 'standalone' => false],
             ['key' => 'sqlite', 'label' => 'SQLite Viewer', 'href' => '/tools/sqlite/', 'group' => 'operator', 'tone' => 'database', 'standalone' => false],

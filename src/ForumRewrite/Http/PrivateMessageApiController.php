@@ -22,6 +22,7 @@ final class PrivateMessageApiController
         private readonly \Closure $authenticatedViewerProfile,
         private readonly \Closure $privateMessageStore,
         private readonly ?\Closure $recordHistoryActivity = null,
+        private readonly ?\Closure $historySyncStore = null,
     ) {
     }
 
@@ -58,6 +59,31 @@ final class PrivateMessageApiController
     public function sent(string $method, array $query): void
     {
         $this->listMailbox($method, $query, 'sent');
+    }
+
+    /** @param array<string, mixed> $query */
+    public function export(string $method, array $query): void
+    {
+        if ($method !== 'GET') {
+            $this->methodNotAllowed();
+            return;
+        }
+        $viewer = $this->viewer();
+        if ($viewer === null) {
+            return;
+        }
+        try {
+            foreach (['after_time', 'after_id'] as $field) {
+                if (isset($query[$field]) && !is_string($query[$field])) throw new InvalidArgumentException('Export position is invalid.');
+            }
+            $page = $this->service()->export($viewer, (string) ($query['after_time'] ?? ''), (string) ($query['after_id'] ?? ''),
+                $this->historySyncStore === null ? null : ($this->historySyncStore)());
+            $this->routeServices->sendJson(['status' => 'ok'] + $page, 200, $this->routeServices->noStoreHeaders());
+        } catch (InvalidArgumentException $exception) {
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $this->routeServices->noStoreHeaders());
+        } catch (RuntimeException $exception) {
+            $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 403, $this->routeServices->noStoreHeaders());
+        }
     }
 
     /** @param array<string, mixed> $query */
@@ -189,7 +215,7 @@ final class PrivateMessageApiController
         } catch (InvalidArgumentException $error) {
             $this->routeServices->sendJson(['status' => 'error', 'error' => $error->getMessage()], 400, $this->routeServices->noStoreHeaders());
         } catch (RuntimeException $error) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $error->getMessage()], 403, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($error), 403, $this->routeServices->noStoreHeaders());
         }
     }
 
@@ -214,7 +240,7 @@ final class PrivateMessageApiController
         } catch (InvalidArgumentException $error) {
             $this->routeServices->sendJson(['status' => 'error', 'error' => $error->getMessage(), 'reopen' => true], 400, $this->routeServices->noStoreHeaders());
         } catch (RuntimeException $error) {
-            $this->routeServices->sendJson(['status' => 'error', 'error' => $error->getMessage()], 403, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson($this->routeServices->errorPayload($error), 403, $this->routeServices->noStoreHeaders());
         }
     }
 
@@ -225,6 +251,10 @@ final class PrivateMessageApiController
             $this->routeServices->pdo(),
             new ApprovedUserKeyResolver($this->routeServices->repositoryRoot()),
             $this->routeServices->repositoryRoot(),
+            $this->routeServices->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PUSH_ENABLED)
+                ? fn (string $messageId, string $sender, string $recipient): int => $this->routeServices->recordPushNotices(
+                    static fn (\ForumRewrite\Push\PushNotices $notices): int => $notices->recordMessage($messageId, $sender, $recipient))
+                : null,
         );
     }
 

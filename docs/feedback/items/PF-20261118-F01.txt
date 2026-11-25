@@ -1,9 +1,9 @@
 ID: PF-20261118-F01
 Title: An approved member's #approved label puts a guest's event on the calendar
 Kind: feature
-Workflow: blocked
+Workflow: done
 Created: 2026-11-18
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 Add an approve or approved hashtag to a post as a general way of approving things made by unsigned posts, starting with putting a guest's event on the calendar.
@@ -16,3 +16,4 @@ A thread labeled #approved or #approve by an approved, unretired member is liste
 
 Notes:
 2026-11-18: one-shot on feat/post_approval_label (record docs/plans/post_approval_label/post_approval_label_one_shot.md); verified locally; awaiting review and deployment. Related: PF-20261116-F01 (move a guest post onto an identity), PF-20261108-F02 (approval-gated calendar).
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 28ec471844 is on audited main and deployed ancestry (live c4205ea43d). CalendarPageTest::testAnApprovedMembersApprovedLabelPutsAGuestEventOnTheCalendar passes, including removal/revocation conditions. Current CalendarQuery and ApprovalLabel implement guest label approval without weakening author approval elsewhere. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

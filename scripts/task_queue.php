@@ -383,6 +383,16 @@ try {
                     $store->enqueue(SqliteTaskQueueStore::LOCAL_SCORE_SWEEP, \ForumRewrite\Scoring\LocalMetaSweep::DEDUPLICATION_KEY);
                     return $report;
                 },
+                runPushNotify: static function () use ($projectRoot, $repositoryRoot, $databasePath): array {
+                    // With the flag off, notices already waiting stay unsent and expire after a day.
+                    if (!\ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator::forApplication($repositoryRoot, $projectRoot)->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::PUSH_ENABLED)) {
+                        return ['disabled' => true];
+                    }
+                    $readPdo = new PDO('sqlite:' . $databasePath);
+                    $counts = \ForumRewrite\Push\PushNotifierFactory::forProject($projectRoot, $readPdo)->sendDue(time(), 'queue');
+
+                    return $counts + ['remaining' => \ForumRewrite\Push\PushNotifierFactory::hasPending($projectRoot)];
+                },
                 runInstanceImport: static fn (array $task): array => \ForumRewrite\Import\InstanceImportTask::forQueue($queuePath)->run(
                     $task,
                     $projectRoot,

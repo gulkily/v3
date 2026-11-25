@@ -2,6 +2,8 @@
 
 This release adds explicit approval review, durable acceptance receipts, account key history, and authenticated operator correlation. The cross-account flag defaults to **enabled** for compatibility. Setting `FORUM_ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL=false` restricts future grants by ordinary members; it does not remove existing access.
 
+Private messages have a stricter rule than approval: a key reads its account's messages only with [private access](../concepts/private_key_access.md), behind `FORUM_PRIVATE_KEY_ACCESS_ENFORCED`. To release it without locking members out, set `FORUM_PRIVATE_KEY_ACCESS_ENFORCED=false` in the server environment before the deploy that adds it (Tools → Feature Flags lists only flags the running code knows, so a new flag can't be turned off there beforehand), deploy, run `./v3 approval private-access-report --public-only`, confirm legitimate devices from Tools → User Access (or have members confirm from their own devices), then remove the environment override so the default (on) applies.
+
 ## Operate and investigate
 
 Use Tools → Feature Flags to inspect the effective setting and its source. An environment override takes precedence over site settings. In restricted mode, members may sponsor a new username or add a key to their own username. A canonically root-seeded operator can authorize another existing account. A display label of “root” does not confer this authority.

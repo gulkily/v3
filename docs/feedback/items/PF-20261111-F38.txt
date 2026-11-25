@@ -1,9 +1,9 @@
 ID: PF-20261111-F38
 Title: frm.py attaches images
 Kind: feature
-Workflow: untriaged
+Workflow: done
 Created: 2026-11-11
-Evidence: unknown
+Evidence: deployed
 
 Request:
 frm.py has no way to attach an image; agents must run prepare_reply and create_prepared_post by hand.
@@ -14,3 +14,4 @@ Sources:
 Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 PR #130 (merged 40c49e76) adds --image; an agent tested it live on Nov 10 and Manus on Nov 11.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 40c49e765a is on audited main and deployed ancestry (live c4205ea43d). Live Quill download provides --image; QuillClientTest::testImageAttachmentNeedsApprovalThenPublishesTheSignedBytes passes across the ports, preserving approval refusal and exact signed bytes. Later rename/downloads retain the option. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

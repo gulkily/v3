@@ -6,6 +6,7 @@ namespace ForumRewrite\View;
 
 use ForumRewrite\BrowserRuntimeProfile;
 use ForumRewrite\Host\AssetFingerprint;
+use ForumRewrite\Host\BrowserRuntimeAssetRenderer;
 use ForumRewrite\PresentationSlotRegistry;
 use ForumRewrite\Qdb\QdbPresentation;
 use ForumRewrite\SiteConfig;
@@ -42,7 +43,9 @@ final class TemplateRenderer
         'username.php' => ['/assets/identity.css', '/assets/account.css', '/assets/thread-list.css'],
         'users.php' => ['/assets/account.css'],
         'preferences.php' => ['/assets/account.css', '/assets/preferences.css'],
-        'private_message_list.php' => ['/assets/private_message_list.css'],
+        'private_message_list.php' => ['/assets/private_message_list.css', '/assets/private_access.css'],
+        'private_access_confirm.php' => ['/assets/private_access.css'],
+        'inbox.php' => ['/assets/private_access.css'],
         'private_message_access.php' => ['/assets/private_message_list.css'],
         'private_message_conversation.php' => ['/assets/private_message_conversation.css'],
         'board.php' => ['/assets/thread-list.css', '/assets/compose.css'],
@@ -76,7 +79,7 @@ final class TemplateRenderer
         'fastmod.php' => ['/assets/tools.css'],
         'visitor_statistics.php' => ['/assets/visitor_statistics.css'],
         'sqlite_viewer.php' => ['/assets/sqlite.css'],
-        'user_access.php' => ['/assets/tools.css', '/assets/access-history.css'],
+        'user_access.php' => ['/assets/tools.css', '/assets/access-history.css', '/assets/private_access.css'],
         'user_access_account.php' => ['/assets/tools.css', '/assets/identity.css'],
         'user_access_profile.php' => ['/assets/tools.css', '/assets/identity.css'],
         'users_pending.php' => ['/assets/pending-approvals.css'],
@@ -292,6 +295,10 @@ final class TemplateRenderer
             'faviconPath' => $this->versionEndpoint === '/api/docs-version'
                 ? '/docs/_assets/' . basename(FaviconRegistry::resolve($profile)) : FaviconRegistry::resolve($profile),
             'touchIconPath' => $this->versionEndpoint === '/api/docs-version' ? null : FaviconRegistry::touchIcon($profile),
+            // Named in the page itself for browsers that skip the manifest when adding to the home screen.
+            'appName' => BrowserRuntimeProfile::fromProfile($profile)['manifestName'],
+            // The hash makes a browser that cached an older manifest fetch the current one.
+            'manifestPath' => '/manifest.webmanifest?v=' . substr(hash('sha256', BrowserRuntimeAssetRenderer::manifest($profile)), 0, 12),
             'browserRuntimeAssetPaths' => [
                 'openpgpV6' => $this->assetPath('/assets/openpgp.min.js'),
                 'openpgpV5' => $this->assetPath('/assets/openpgp.v5.11.3.min.js'),
@@ -712,6 +719,7 @@ final class TemplateRenderer
             'siteCssPath' => $this->assetPath('/assets/site.css'),
             'faviconPath' => FaviconRegistry::resolve($profile),
             'touchIconPath' => FaviconRegistry::touchIcon($profile),
+            'appName' => BrowserRuntimeProfile::fromProfile($profile)['manifestName'],
             'additionalCssPaths' => $assetAdditionalCssPaths,
             'themeStorageKey' => BrowserRuntimeProfile::fromProfile($profile)['themeStorageKey'],
             'defaultTheme' => $this->defaultThemeName($profile, array_column($themes, 'name')),

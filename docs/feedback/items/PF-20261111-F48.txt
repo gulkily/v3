@@ -1,9 +1,9 @@
 ID: PF-20261111-F48
 Title: API for keys awaiting approval
 Kind: feature
-Workflow: untriaged
+Workflow: done
 Created: 2026-11-11
-Evidence: unknown
+Evidence: deployed
 
 Request:
 A list_pending route returning each waiting key's username, real post count, recent titles and approval label.
@@ -14,3 +14,4 @@ Sources:
 Notes:
 Intake: docs/feedback/triage/2026-11-11_proposals.txt (approved by maintainer 2026-11-14). Local snapshot review only; reported runtime/device conditions were not replayed.
 Point 5 of the same report.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation b5e42af3ac is on audited main and deployed ancestry (live c4205ea43d). Current /api/pending_keys route supplies username, post count, recent titles and exact approval label to an approved signed-in key. QuillClientTest::testPendingKeysNeedsAnApprovedSessionAndMatchesThePendingPage passes all ports, including refusal without approval. Done when/request is satisfied by the checked evidence; prior merge/deployment-only blockers are historical. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

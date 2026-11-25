@@ -59,6 +59,9 @@ use RuntimeException;
 use ForumRewrite\Security\KeyRetirement;
 use ForumRewrite\Security\KeyBootstrapReplay;
 use ForumRewrite\Security\KeyRetirementPolicy;
+use ForumRewrite\Security\PrivateAccessConfirmation;
+use ForumRewrite\Security\PrivateAccessConfirmationPolicy;
+use ForumRewrite\Security\PrivateKeyAccess;
 use ForumRewrite\Images\ImageReference;
 use ForumRewrite\Images\ImageStore;
 
@@ -72,6 +75,8 @@ class LocalWriteService
 
     /** @var (callable():void)|null */
     private $enqueueOfflineSnapshotPublication;
+    /** @var (callable(string): void)|null called with a new post's ID after its write lock is released */
+    private $onPostPublished;
     private $enqueueRetractionSweep;
     /** @var array<string,int|string> */
     private array $identityUpdateMetrics = [];
@@ -87,9 +92,11 @@ class LocalWriteService
         private readonly array $additionalArtifactRoots = [],
         ?callable $enqueueOfflineSnapshotPublication = null,
         ?callable $enqueueRetractionSweep = null,
+        ?callable $onPostPublished = null,
     ) {
         $this->enqueueOfflineSnapshotPublication = $enqueueOfflineSnapshotPublication;
         $this->enqueueRetractionSweep = $enqueueRetractionSweep;
+        $this->onPostPublished = $onPostPublished;
         Tagsets::useRepository($repositoryRoot);
     }
 
@@ -140,6 +147,7 @@ class LocalWriteService
             $eventTime = $this->normalizeEventTime((string) ($input['event_time'] ?? ''));
             $eventEndDate = $this->normalizeEventEndDate((string) ($input['event_end_date'] ?? ''), $eventDate);
             $eventWhen = $this->normalizeEventWhen($input, $eventDate);
+            $eventEndTime = $this->normalizeEventEndTime((string) ($input['event_end_time'] ?? ''), $eventTime);
 
             $bodyFormat = $this->normalizeBodyFormat($input, $isQdbQuote ? PostRecord::FORMAT_PLAIN : PostRecord::FORMAT_MARKDOWN);
             $attemptId = !$isQdbQuote && $authorIdentityId === null ? $this->composeAttemptPostId('thread', $input) : null;
@@ -147,7 +155,7 @@ class LocalWriteService
                 $postId = $attemptId;
                 $createdAt = $this->composeAttemptCreatedAt($postId) ?? $createdAt;
             }
-            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat, $eventEndDate, $this->normalizeTheme($input), $eventWhen);
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat, $eventEndDate, $this->normalizeTheme($input), $eventWhen, $eventEndTime);
 
             $record = (new PostRecordParser())->parse($contents);
             $recordPath = $attemptId !== null ? CanonicalPathResolver::post($postId) : CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -488,8 +496,9 @@ class LocalWriteService
             $eventTime = $this->normalizeEventTime((string) ($input['event_time'] ?? ''));
             $eventEndDate = $this->normalizeEventEndDate((string) ($input['event_end_date'] ?? ''), $eventDate);
             $eventWhen = $this->normalizeEventWhen($input, $eventDate);
+            $eventEndTime = $this->normalizeEventEndTime((string) ($input['event_end_time'] ?? ''), $eventTime);
             $bodyFormat = $this->normalizeBodyFormat($input, $isQdbQuote ? PostRecord::FORMAT_PLAIN : PostRecord::FORMAT_MARKDOWN);
-            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat, $eventEndDate, $this->normalizeTheme($input), $eventWhen);
+            $contents = $this->buildThreadPostRecord($postId, $createdAt, $boardTags, $subject, $body, $authorIdentityId, $eventDate, $eventLocation, $eventLink, $eventTime, $bodyFormat, $eventEndDate, $this->normalizeTheme($input), $eventWhen, $eventEndTime);
 
             (new PostRecordParser())->parse($contents);
             $recordPath = CanonicalPathResolver::datedPost($postId, $createdAt);
@@ -951,7 +960,8 @@ class LocalWriteService
         ?string $bodyFormat = null,
         string $eventEndDate = '',
         ?string $theme = null,
-        string $eventWhen = ''
+        string $eventWhen = '',
+        string $eventEndTime = ''
     ): string {
         return "Post-ID: {$postId}\n"
             . "Created-At: {$createdAt}\n"
@@ -961,6 +971,7 @@ class LocalWriteService
             . ($eventDate !== '' ? "Event-Date: {$eventDate}\n" : '')
             . ($eventEndDate !== '' ? "Event-End-Date: {$eventEndDate}\n" : '')
             . ($eventTime !== '' ? "Event-Time: {$eventTime}\n" : '')
+            . ($eventEndTime !== '' ? "Event-End-Time: {$eventEndTime}\n" : '')
             . ($eventLocation !== '' ? "Event-Location: {$eventLocation}\n" : '')
             . ($eventLink !== '' ? "Event-Link: {$eventLink}\n" : '')
             . ($eventWhen !== '' ? "Event-When: {$eventWhen}\n" : '')
@@ -1003,7 +1014,7 @@ class LocalWriteService
             return;
         }
 
-        foreach (['event_date', 'event_end_date', 'event_location', 'event_link', 'event_time'] as $field) {
+        foreach (['event_date', 'event_end_date', 'event_location', 'event_link', 'event_time', 'event_end_time'] as $field) {
             if (trim((string) ($input[$field] ?? '')) !== '') {
                 throw new RuntimeException('Event support is disabled for this site.');
             }
@@ -2615,6 +2626,90 @@ class LocalWriteService
                 // The accepted signature is authoritative even when presentation repair fails.
                 return $result+['refresh'=>'pending','warning'=>'Retirement accepted. Refresh failed; retry the same signed request or rebuild the read model.'];
             }
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function preparePrivateAccessConfirmation(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $actor = $this->requireOpenPgpIdentityId((string) ($input['actor_identity_id'] ?? ''), 'actor_identity_id');
+            $target = $this->requireOpenPgpIdentityId((string) ($input['target_identity_id'] ?? ''), 'target_identity_id');
+            $context = (new PrivateAccessConfirmationPolicy($this->readModelPdo(), $this->repositoryRoot))->evaluate($actor, $target);
+            $id = 'private-access-confirmation-' . bin2hex(random_bytes(16));
+            $created = $this->canonicalTimestampNow();
+            $hash = PrivateAccessConfirmationPolicy::hash($context);
+            $record = "Version: 1\nAction-ID: {$id}\nCreated-At: {$created}\nActor-Identity-ID: {$actor}\nTarget-Identity-ID: {$target}\n"
+                . "Account: {$context['account']}\nAuthority: {$context['authority']}\nContext-SHA256: {$hash}\n\n";
+            PrivateAccessConfirmation::parse($record);
+            $path = PrivateAccessConfirmation::path($target);
+
+            return $this->storePreparedPost($path, $record, ['kind' => 'private-access-confirmation', 'confirmation_context' => $context])
+                + ['status' => 'ok', 'canonical_record' => $record, 'record_path' => $path, 'confirmation_context' => $context];
+        });
+    }
+
+    /** @return array<string, mixed> */
+    public function privateAccessStatus(string $target): array
+    {
+        $target = $this->requireOpenPgpIdentityId($target, 'target_identity_id');
+        $access = new PrivateKeyAccess($this->readModelPdo(), $this->repositoryRoot);
+        $record = PrivateAccessConfirmation::read($this->repositoryRoot, $target);
+
+        return ['status' => 'ok', 'target_identity_id' => $target, 'reason' => $access->reason($target), 'has_access' => $access->hasAccess($target)]
+            + ($record === null ? [] : ['confirmed_at' => $record['Accepted-At'], 'actor_identity_id' => $record['Actor-Identity-ID'], 'record_path' => $record['source_path']]);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function finalizePrivateAccessConfirmation(array $input): array
+    {
+        return $this->withTimedWriteLock(function () use ($input): array {
+            $this->assertWritableRepository();
+            $bytes = (string) ($input['canonical_record'] ?? '');
+            $record = PrivateAccessConfirmation::parse($bytes);
+            $target = $record['Target-Identity-ID'];
+            $signature = (string) ($input['detached_signature'] ?? '');
+            if (strlen($signature) > 65536 || $signature === '') {
+                throw new RuntimeException('Invalid confirmation signature.');
+            }
+            $existing = PrivateAccessConfirmation::read($this->repositoryRoot, $target);
+            if ($existing !== null) {
+                // A repeat of the accepted request is a no-op; any other confirm for the target is refused.
+                if (!hash_equals($existing['canonical_record'], $bytes)
+                    || !hash_equals((string) file_get_contents($this->repositoryRoot . '/' . $existing['source_path'] . '.asc'), $signature)) {
+                    throw new RuntimeException('This key already has a different accepted confirmation.');
+                }
+                $sha = ReadModelMetadata::repositoryHead($this->repositoryRoot);
+            } else {
+                $token = $this->requireHexToken((string) ($input['prepare_token'] ?? ''), 'prepare_token');
+                $prepared = $this->loadPreparedPost($token);
+                if (($prepared['kind'] ?? '') !== 'private-access-confirmation' || strtotime($prepared['expires_at']) < time()
+                    || !hash_equals($prepared['canonical_sha256'], hash('sha256', $bytes))) {
+                    throw new RuntimeException('Confirmation review changed or expired. Prepare it again.');
+                }
+                $context = (new PrivateAccessConfirmationPolicy($this->readModelPdo(), $this->repositoryRoot))->evaluate($record['Actor-Identity-ID'], $target);
+                if (!hash_equals(PrivateAccessConfirmationPolicy::hash($context), $record['Context-SHA256'])
+                    || $context !== $prepared['confirmation_context']) {
+                    throw new RuntimeException('Confirmation authority changed. Prepare it again.');
+                }
+                [$key, $fingerprint] = $this->publicKeyForIdentity($record['Actor-Identity-ID']);
+                if (!$this->signatureVerifier->verifyDetached($key, $bytes, $signature, $fingerprint)['ok']) {
+                    throw new RuntimeException('Confirmation signature verification failed.');
+                }
+                $path = PrivateAccessConfirmation::path($target);
+                $sha = (new SignedPostTransaction($this->repositoryRoot))->accept([$path => $bytes, $path . '.asc' => $signature,
+                    PrivateAccessConfirmation::acceptancePath($target) => PrivateAccessConfirmation::acceptance($bytes, $signature, $this->canonicalTimestampNow())]);
+                $this->deletePreparedPost($token);
+            }
+
+            return $this->privateAccessStatus($target) + ['commit_sha' => $sha, 'recovered' => $existing !== null];
         });
     }
 
@@ -4813,6 +4908,15 @@ class LocalWriteService
                 $timings['high_traffic_refresh'] = $this->elapsedMilliseconds($refreshStartedAt);
             }
         }
+        if ($refreshThreadPage && $this->onPostPublished !== null && ($result['status'] ?? null) === 'ok' && is_string($result['post_id'] ?? null)
+            && empty($result['already_posted']) && empty($result['already_applied']) && empty($result['existing'])) {
+            // After the lock, like the refresh above: push notices for the new post (PushNotices).
+            try {
+                ($this->onPostPublished)($result['post_id']);
+            } catch (\Throwable $error) {
+                error_log('Push notice after a successful write failed: ' . $error->getMessage());
+            }
+        }
         $result['timings'] = array_merge($locked['timings'], $timings);
 
         return $result;
@@ -5698,7 +5802,7 @@ class LocalWriteService
         return $value === $eventDate ? '' : $value;
     }
 
-    private function normalizeEventTime(string $value): string
+    private function normalizeEventTime(string $value, string $field = 'event_time'): string
     {
         $value = trim($value);
         if ($value === '') {
@@ -5706,12 +5810,23 @@ class LocalWriteService
         }
 
         if (preg_match('/^\d{2}:\d{2}$/', $value) !== 1) {
-            throw new RuntimeException('event_time must use 24-hour HH:MM format like 19:00.');
+            throw new RuntimeException($field . ' must use 24-hour HH:MM format like 19:00.');
         }
 
         $time = \DateTimeImmutable::createFromFormat('!H:i', $value);
         if ($time === false || $time->format('H:i') !== $value) {
-            throw new RuntimeException('event_time must be a valid 24-hour time.');
+            throw new RuntimeException($field . ' must be a valid 24-hour time.');
+        }
+
+        return $value;
+    }
+
+    /** An end time needs a start time; one at or before the start means the next day. */
+    private function normalizeEventEndTime(string $value, string $eventTime): string
+    {
+        $value = $this->normalizeEventTime($value, 'event_end_time');
+        if ($value !== '' && $eventTime === '') {
+            throw new RuntimeException('event_end_time requires event_time.');
         }
 
         return $value;

@@ -3,7 +3,7 @@ Title: PHP and Perl versions of Quill
 Kind: feature
 Workflow: blocked
 Created: 2026-11-16
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 The maintainer wants PHP and Perl versions of the posting client too, like the other multi-language scripts (docs/reference/multi_language_scripts.md).
@@ -14,3 +14,4 @@ Sources:
 Notes:
 2026-11-16: stated in an earlier session when the name Quill was chosen; not started. Each version should send its own User-Agent so the update notice can tell them apart.
 2026-11-22: implemented in quill_ports (docs/plans/quill_ports/quill_ports_one_shot.md): public/quill.pl (Pollyanna Perl style) and public/quill.php, served at /quill.pl and /quill.php, User-Agents quill-pl/ and quill-php/ with per-file update notices. QuillClientTest runs every HTTP test against all three versions. Blocked on deployment; next action: after deploy, fetch /quill.pl and /quill.php from zenmemes.com and post once with each.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 5bd11a2351 is on audited main and deployed ancestry (live c4205ea43d). Both live /quill.pl and /quill.php download successfully, with distinct User-Agents. QuillClientTest exercises all three ports and several HTTP paths pass, but staging/redirect cases fail on this environment. No production write was made. Current next action: Agent: diagnose the two failing Quill staging/redirect-replay checks on this environment before the retained PHP/Perl live-post acceptance. No new ports are needed. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

@@ -3,7 +3,7 @@ Title: llms.txt character rules mismatch
 Kind: bug
 Workflow: blocked
 Created: 2026-10-30
-Evidence: locally-verified
+Evidence: deployed
 Aliases: 2026-10-30/B26
 
 Request:
@@ -16,3 +16,4 @@ Notes:
 Status in the October 30 summary: Open — resolution not verified
 Catalogued in docs/plans/zenmemes_meta_feedback_2026-10-30_summary.md as row B26; that summary is a local snapshot review and its request wording is preserved here.
 2026-11-06: Unicode mode now accepts all symbol categories (Sm/Sc/Sk/So: arrows, ∈, °, currency); with emoji disabled only Emoji_Presentation characters and U+FE0F stay rejected. Server policy, browser compose check, llms.txt and agent API docs aligned. Unit and HTTP tests pass locally; awaiting review and deployment.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation c90eea844f is on audited main and deployed ancestry (live c4205ea43d). Live text_rules and llms.txt agree on Unicode symbols and emoji refusal, but UnicodeTextPolicyTest fails emoji rejection on this environment. Associated API/bundle cases also fail. Deployment is established; completion is not. Current next action: Agent: reproduce and resolve the existing PCRE/emoji portability item PF-20261111-B29 before proposing closure. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

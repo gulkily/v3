@@ -3,7 +3,7 @@ Title: Only approved members put events on the calendar
 Kind: feature
 Workflow: blocked
 Created: 2026-11-08
-Evidence: locally-verified
+Evidence: deployed
 
 Request:
 Adding items that show up on the calendar is its own permission, separate from posting.
@@ -17,3 +17,4 @@ Done when:
 Notes:
 2026-11-08: one-shot on feat/calendar_approved_events (record docs/plans/calendar_approved_events/calendar_approved_events_one_shot.md); first slice uses member approval as the permission. A separate per-feature grant is a follow-up: https://zenmemes.com/threads/thread-20261109011357-ce8c5503. Verified locally; awaiting review and deployment.
 2026-11-14: Triage 2026-11-11 (docs/feedback/triage/2026-11-11_proposals.txt): PR #79 (2c468492) merged 2026-11-08; deployment and acceptance not checked.
+2026-11-24: Completion reconciliation authorized by the maintainer after PR #404. Implementation 028c9989e2 is on audited main and deployed ancestry (live c4205ea43d). Original author-approval calendar gate exists and CalendarPageTest passes, but later 28ec471844 intentionally admits guest events labeled #approved by a member. The literal author-only Done when was superseded by PF-20261118-F01. Current next action: Maintainer: approve reconciling the older Done when with the later approved-label exception before closure. Reconciliation: docs/feedback/triage/2026-11-24_completion_applied.txt.

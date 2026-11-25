@@ -198,6 +198,18 @@ final class Application
         }
         $this->ensureReadModel();
 
+        if ($path === '/local/remote' && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {
+            (new \ForumRewrite\Http\LocalDevelopmentRemoteController($this->routeServices(), $this->localDevelopmentImport(),
+                pullFactory: fn (): \ForumRewrite\Support\LocalMessagePull => new \ForumRewrite\Support\LocalMessagePull(
+                    $this->privateMessageStore(),
+                    new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore(\ForumRewrite\Messaging\PrivateMessageHistorySyncDatabaseConfig::open($this->projectRoot, PrivateConfig::load($this->projectRoot))),
+                    dirname(PrivateMessageDatabaseConfig::path($this->projectRoot, PrivateConfig::load($this->projectRoot))) . '/local_pull_progress.json',
+                ),
+                localStores: fn (): array => [$this->privateMessageStore(),
+                    new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore(\ForumRewrite\Messaging\PrivateMessageHistorySyncDatabaseConfig::open($this->projectRoot, PrivateConfig::load($this->projectRoot)))],
+            ))->handle($method);
+            return;
+        }
         if (\ForumRewrite\Support\LocalDevelopmentImport::isEntry($requestUri) && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {
             (new \ForumRewrite\Http\LocalDevelopmentPageController($this->routeServices(),
                 new \ForumRewrite\Support\LocalDevelopmentImport($this->repositoryRoot),
@@ -289,7 +301,9 @@ final class Application
         }
 
         if ($path === '/api/clear_identity') {
+            $sessionKey = $method === 'POST' ? $this->viewerSessions()->sessionKey() : '';
             $this->identityHintController()->clearIdentity($method);
+            $this->forgetPushDevicesForSession($sessionKey);
             return;
         }
 
@@ -337,6 +351,11 @@ final class Application
             return;
         }
 
+        if ($path === '/api/private_messages/export') {
+            $this->privateMessageApiController()->export($method, $query);
+            return;
+        }
+
         if ($path === '/api/private_messages/sent') {
             $this->privateMessageApiController()->sent($method, $query);
             return;
@@ -376,6 +395,21 @@ final class Application
                 return;
             }
             $this->inboxPageController()->apiCatchUp($method, $query);
+            return;
+        }
+
+        if (in_array($path, ['/api/push/key', '/api/push/subscribe', '/api/push/unsubscribe', '/api/push/test'], true)) {
+            if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::PUSH_ENABLED)) {
+                $this->sendJson(['status' => 'error', 'code' => 'push_disabled', 'error' => 'Notifications are off on this server.'], 404, $this->routeServices()->noStoreHeaders());
+                return;
+            }
+            $controller = $this->pushApiController();
+            match ($path) {
+                '/api/push/key' => $controller->key($method),
+                '/api/push/subscribe' => $controller->subscribe($method, $query),
+                '/api/push/unsubscribe' => $controller->unsubscribe($method, $query),
+                default => $controller->test($method, $query),
+            };
             return;
         }
 
@@ -434,6 +468,11 @@ final class Application
 
         if (preg_match('#^/messages/conversation/([^/]+)/?$#', $path, $matches) === 1) {
             $this->privateMessagePageController()->conversation($method, $matches[1]);
+            return;
+        }
+
+        if (preg_match('#^/account/confirm/([a-f0-9]{40})/?$#D', $path, $matches) === 1) {
+            $this->privateMessagePageController()->confirmPage($method, $matches[1]);
             return;
         }
 
@@ -619,6 +658,11 @@ final class Application
             return;
         }
 
+        if (in_array($path,['/api/prepare_private_access_confirmation','/api/confirm_private_access','/api/private_access_status'],true)) {
+            $action = $path === '/api/private_access_status' ? 'status' : ($path === '/api/prepare_private_access_confirmation' ? 'prepare' : 'finalize');
+            $this->identityApprovalAndInvitationApiController()->privateAccessConfirmation($method,$query,$action);
+            return;
+        }
         if (in_array($path,['/api/prepare_key_retirement','/api/finalize_key_retirement','/api/key_retirement_status'],true)) {
             $action = $path === '/api/key_retirement_status' ? 'status' : ($path === '/api/prepare_key_retirement' ? 'prepare' : 'finalize');
             $this->identityApprovalAndInvitationApiController()->keyRetirement($method,$query,$action);
@@ -966,22 +1010,24 @@ final class Application
                 $this->routeServices()->notFound();
                 return;
             }
-            $this->sendHtml((new \ForumRewrite\Http\BacklogPageController($this->routeServices(), $this->projectRoot))->list($query), 200);
+            $this->sendHtml((new \ForumRewrite\Http\BacklogPageController($this->routeServices(), $this->projectRoot))->list($query, $this->resolveViewerProfileFromIdentityHint()), 200);
             return;
         }
 
-        if ($path === '/backlog.txt' || $path === '/backlog/start.txt') {
+        if ($path === '/backlog.txt' || $path === '/backlog/start.txt' || $path === '/backlog/claims.txt') {
             if (!$this->featureFlags()->isEnabled(\ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry::BACKLOG_ENABLED)) {
                 $this->routeServices()->notFound();
                 return;
             }
             $backlog = new \ForumRewrite\Http\BacklogPageController($this->routeServices(), $this->projectRoot);
+            // These answers change as claims are posted, so a browser or proxy must ask again each time.
+            $fresh = ['Cache-Control: no-cache'];
             if ($path === '/backlog.txt') {
-                $this->sendText($backlog->listText($query), 200);
+                $this->sendText($backlog->listText($query), 200, $fresh);
                 return;
             }
-            $prompt = $backlog->startText($query);
-            $this->sendText($prompt['text'], $prompt['status'], $prompt['headers']);
+            $answer = $path === '/backlog/claims.txt' ? $backlog->claimsText($query) : $backlog->startText($query);
+            $this->sendText($answer['text'], $answer['status'], [...$fresh, ...$answer['headers']]);
             return;
         }
 
@@ -995,7 +1041,7 @@ final class Application
                 $this->sendRedirect($tidy, $tidy === '/backlog' ? 'Pick at least one item to start.' : 'Opening the start page.', 303, [], 'tools');
                 return;
             }
-            $this->sendHtml((new \ForumRewrite\Http\BacklogPageController($this->routeServices(), $this->projectRoot))->start($query), 200);
+            $this->sendHtml((new \ForumRewrite\Http\BacklogPageController($this->routeServices(), $this->projectRoot))->start($query, $this->resolveViewerProfileFromIdentityHint()), 200);
             return;
         }
 
@@ -1936,6 +1982,39 @@ final class Application
         );
     }
 
+    private function pushApiController(): \ForumRewrite\Http\PushApiController
+    {
+        $config = PrivateConfig::load($this->projectRoot);
+        $keys = new \ForumRewrite\Push\PushVapidKeys(\ForumRewrite\Push\PushStorageConfig::vapidKeyPath($this->projectRoot, $config));
+        $host = strtolower((string) preg_replace('/[^A-Za-z0-9.\-:\[\]]/', '', (string) ($_SERVER['HTTP_HOST'] ?? 'localhost')));
+
+        return new \ForumRewrite\Http\PushApiController(
+            $this->routeServices(),
+            $this->authenticatedViewerProfile(...),
+            fn (): \ForumRewrite\Push\PushSubscriptionStore => \ForumRewrite\Push\PushSubscriptionStore::open(\ForumRewrite\Push\PushStorageConfig::databasePath($this->projectRoot, $config)),
+            $keys,
+            // The VAPID contact is the site's own https address (Step 1, question 3).
+            fn (): \ForumRewrite\Push\PushSender => new \ForumRewrite\Push\PushSender($keys, 'https://' . ($host !== '' ? $host : 'localhost')),
+        );
+    }
+
+    /** Signing out turns off notifications on every device this session subscribed. Best effort. */
+    private function forgetPushDevicesForSession(string $sessionKey): void
+    {
+        if ($sessionKey === '') {
+            return;
+        }
+        $path = \ForumRewrite\Push\PushStorageConfig::databasePath($this->projectRoot, PrivateConfig::load($this->projectRoot));
+        if (!is_file($path)) {
+            return;
+        }
+        try {
+            \ForumRewrite\Push\PushSubscriptionStore::open($path)->deleteForSession($sessionKey);
+        } catch (\Throwable) {
+            // A send still checks the session, so a missed delete never delivers.
+        }
+    }
+
     private function usageReportStore(): \ForumRewrite\UsageReports\UsageReportStore
     {
         $path = \ForumRewrite\UsageReports\UsageReportDatabaseConfig::path($this->projectRoot, PrivateConfig::load($this->projectRoot));
@@ -2176,7 +2255,7 @@ final class Application
         $stmt = $this->pdo()->prepare(
             'SELECT threads.root_post_id, threads.root_post_created_at, threads.last_activity_at, threads.subject, threads.body_preview, threads.retracted_at, threads.retraction_class, threads.retraction_attribution,
                     threads.reply_count, threads.last_post_id, threads.score_total, threads.vote_count, threads.board_tags_json, threads.thread_labels_json, posts.author_label, posts.ported_from, posts.ported_created_at, posts.author_profile_slug, posts.attribution_counted,
-                    threads.event_date, threads.event_location, threads.event_link, threads.event_time, threads.event_end_date, threads.event_when,
+                    threads.event_date, threads.event_location, threads.event_link, threads.event_time, threads.event_end_date, threads.event_when, threads.event_end_time,
                     profiles.username_token AS author_username_token, COALESCE(CASE WHEN profiles.retired_at IS NOT NULL THEN profiles.was_approved ELSE profiles.is_approved END, 0) AS author_is_approved
              FROM threads
              JOIN posts ON posts.post_id = threads.root_post_id
@@ -2188,6 +2267,10 @@ final class Application
 
         if ($thread === false) {
             return null;
+        }
+
+        if ($thread['event_date'] !== null) {
+            [$thread] = \ForumRewrite\Calendar\EventTimes::apply($this->pdo(), $this->repositoryRoot, [$thread]);
         }
 
         return $this->hydrateThreadRow($thread);
@@ -2639,6 +2722,7 @@ final class Application
             || $path === '/api/auth_challenge' || $path === '/api/authenticate_identity' || $path === '/api/auth_status'
             || $path === '/api/set_identity_hint' || $path === '/api/clear_identity'
             || in_array($path,['/api/prepare_key_retirement','/api/finalize_key_retirement','/api/key_retirement_status'],true)
+            || in_array($path,['/api/prepare_private_access_confirmation','/api/confirm_private_access','/api/private_access_status'],true)
             || $path === '/api/link_identity'
             || $path === '/api/prepare_identity' || $path === '/api/create_identity'
             || $path === '/api/prepare_profile_name' || $path === '/api/finalize_profile_name'
@@ -2670,7 +2754,7 @@ final class Application
 
     private function isApplicationRoute(string $path): bool
     {
-        if (str_starts_with($path, '/images/') || str_starts_with($path, '/messages/conversation/') || str_starts_with($path, '/port/') || $path === '/port') {
+        if (str_starts_with($path, '/images/') || str_starts_with($path, '/messages/conversation/') || str_starts_with($path, '/account/confirm/') || str_starts_with($path, '/port/') || $path === '/port') {
             return true;
         }
 
@@ -2719,7 +2803,7 @@ final class Application
             '/api/analyze_post', '/api/score_post', '/api/generate_agent_reply', '/api/scripture_reply_status', '/api/expand_agent_reply', '/api/agent_expansion_status',
             '/api/apply_thread_tag', '/api/apply_post_tag', '/api/apply_signed_reaction',
             '/api/prepare_profile_name', '/api/finalize_profile_name',
-            '/api/prepare_key_retirement', '/api/finalize_key_retirement', '/api/key_retirement_status',
+            '/api/prepare_key_retirement', '/api/finalize_key_retirement', '/api/key_retirement_status', '/api/prepare_private_access_confirmation', '/api/confirm_private_access', '/api/private_access_status',
             '/api/inspect_invitation', '/api/prepare_invitation', '/api/create_prepared_invitation', '/api/prepare_invitation_redemption',
             '/api/preview_tagsets', '/api/prepare_tagsets_change', '/api/finalize_tagsets_change',
             '/api/prepare_fastmod_rubrics', '/api/finalize_fastmod_rubrics', '/api/feature_flags/navigation', '/api/read_event_phrase', '/api/set_feature_flag', '/api/prepare_feature_flag_change', '/api/finalize_feature_flag_change', '/api/prepare_attribution_cutoff', '/api/finalize_attribution_cutoff', '/api/prepare_operator_grant', '/api/finalize_operator_grant', '/api/link_identity', '/api/approve_user',
@@ -2934,6 +3018,11 @@ final class Application
         );
     }
 
+    private function localDevelopmentImport(): \ForumRewrite\Support\LocalDevelopmentImport
+    {
+        return new \ForumRewrite\Support\LocalDevelopmentImport($this->repositoryRoot);
+    }
+
     private function privateMessageApiController(): PrivateMessageApiController
     {
         return new PrivateMessageApiController(
@@ -2941,6 +3030,8 @@ final class Application
             $this->authenticatedViewerProfile(...),
             $this->privateMessageStore(...),
             $this->recordHistoryActivity(...),
+            fn (): \ForumRewrite\Messaging\PrivateMessageHistorySyncStore => new \ForumRewrite\Messaging\PrivateMessageHistorySyncStore(
+                \ForumRewrite\Messaging\PrivateMessageHistorySyncDatabaseConfig::open($this->projectRoot, PrivateConfig::load($this->projectRoot))),
         );
     }
 
