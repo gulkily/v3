@@ -8,6 +8,8 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.70**
 
+**Retrospective: 0.72**
+
 Branch: `feat/nav-tree` from `origin/main` `2d7805c`. Planning commit: `f585d60`.
 
 ## Stage 1 - Flag and risk probes
@@ -141,6 +143,33 @@ Branch: `feat/nav-tree` from `origin/main` `2d7805c`. Planning commit: `f585d60`
 
 *— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
 
+## Stage 7 - Acceptance and documentation
+
+**Original estimate: 0.10**
+
+**Retrospective: 0.10**
+
+- Changes:
+  - New concept entry `docs/concepts/visit_tree.md`; `open_beside.md` and `tools_launcher.md` updated.
+  - New browser test `tests/browser/visit_history_offline.mjs`: offline, the board and a thread opened from it are recorded as a branch, and the visit takes the title the offline reader gives the page.
+  - `ToolsRegistryTest` expects 24 tools; `tools_launcher.mjs` turns the History flag on so every registry tool is listed.
+  - Browsing tree checklist, plans index and effort ledger updated.
+- Verification (Completion Contract):
+  - Vertical slice, three engines: `node tests/browser/visit_history.mjs` with Chromium, Firefox and WebKit: passed. Covers the Step 2 user flow, Beside on a 2048px window, a second tab, Clear and flag off.
+  - Offline: `node tests/browser/visit_history_offline.mjs` (Chromium): passed. Firefox and WebKit offline: not run; the offline tests in this repository run in Chromium only.
+  - Recovery: full storage that throws, a damaged key and flag off are covered in `visit_history.mjs`: passed.
+  - `node tests/browser/tools_launcher.mjs` (Chromium, all themes, History on): passed, 46 theme and width cases.
+  - `node tests/browser/open_beside.mjs` (flag off and on) and `open_beside_offline.mjs`: passed in Stage 4; `open_beside.js` is unchanged since.
+  - `./v3 test --smoke VisitHistoryPageTest ToolsRegistryTest NavIconSetsTest UsageNamesTest UsagePageKindTest UsageReportsPageTest FeatureFlagEvaluatorTest ForteBoardReaderTest PreferencesPageTest`: passed, 506 run. Full suite not run.
+  - One earlier smoke run had `DevServerStartTest::testFallbackServesRequestsRegistersActualPortAndStopsWithoutPcntl` fail once; it passed alone and in every later smoke run. It looks like a port-timing flake under load, not caused by this cycle; recorded here, not fixed.
+  - Deployment: no schema change, no server state and no new dependency; the flag is off by default, so a deploy changes nothing until it is turned on. Production check pending deploy.
+  - Final diff review: 18 source and test files changed against `2d7805c`; no duplicated components (History follows the Usage log page and styles; storage follows `nav_slots.js`). `git diff --check`: passed. Concept and plan links resolve.
+- Notes:
+  - Not verified: iPhone Safari on a real device, and Safari's seven-day storage wipe (accepted in Step 2).
+- Estimate details: original scope as planned; no revision.
+
+*— Claude · 2026-11-25 UTC · Model: claude-opus-5-5*
+
 ## Enhancement Requests
 
 - Sync, in-page changes as visits, `tree_history` and `filmstrip`: unchanged from Step 2, all deferred or separate.
@@ -150,3 +179,8 @@ Branch: `feat/nav-tree` from `origin/main` `2d7805c`. Planning commit: `f585d60`
 2026-11-25T07:45Z; scope v2; starting revision `2d7805c8`; planning commit `f585d60`; reference R1, hashes not re-verified. Claude, single exposed rater.
 
 - Step 4 entry: **0.70 projected total**, reaffirmed from Step 3. Stage estimates copied from Step 3, not re-rated.
+
+2026-11-25T09:30Z; Step 4 closeout. Delivered scope v2 as planned, plus two in-scope refinements: Forte pages load the recorder, and the History page's branch bars. Starting revision `2d7805c8`; final stage commit on `feat/nav-tree`. Seven stages, all committed; no stage split or skipped.
+
+- **Retrospective cycle assessment: 0.72**, against the 0.70 projection. Drivers: the Forte layout, Firefox's reload quirk and the visual pass on the History page. Not measured labor.
+- Maintainer comfortable-fit judgment: pending.

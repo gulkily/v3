@@ -74,6 +74,11 @@ under protocol P2.
     drafted in seven stages; estimate 0.70; awaiting Approved Step 3._
   - _Approved Step 3 on 2026-11-25. Step 4 on `feat/nav-tree`; plans in
     [nav_tree/](nav_tree/nav_tree_step4_implementation_summary.md)._
+  - _Step 4 done 2026-11-25 on `feat/nav-tree`, behind
+    `FORUM_VISIT_HISTORY_ENABLED`: recorder (`visit_history.js`), Beside pane
+    lane, Forte pages, Tools → History. Passed in Chromium, Firefox and WebKit;
+    offline in Chromium. Review, merge and deploy pending. Concept:
+    [visit tree](../concepts/visit_tree.md)._
 - [ ] **2. `tree_history`: history and bookmark views.**
   **Estimate: 0.50**
   A richer tree view of history, with branches that fold and a way back to
