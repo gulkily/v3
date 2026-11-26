@@ -10,7 +10,7 @@ Extended estimates: disabled
 
 **Cycle estimate: 0.15 (intake)**
 
-Status: planned; next permitted action: implement.
+Status: implemented and verified locally; PR pending; next permitted action: maintainer review.
 
 ## Original request
 
@@ -50,14 +50,27 @@ Concepts touched: none.
 
 Starting revisions and branch: `origin/main` `b926c9a9f`; branch `feat/rapclub-about-copy`.
 
-Planning commit: pending.
+Planning commit: `5cf6e7b8d`.
 
 ## Dated execution history
 
-- 2026-11-25: pulled `main` (`b926c9a9f`) first, as asked; record written.
+- 2026-11-25: pulled `main` (`b926c9a9f`) first, as asked; record written; planning commit `5cf6e7b8d`.
+- 2026-11-25: `socials` variant renamed `short` (it now carries copy); copy added as `shortAboutParagraphs` on the club's editorial entry; template renders it in the intro section above Find us.
+- 2026-11-25, gap: no Messenger chat invite link was given, so the cyphers line names the chat without linking it.
+
+## Verification
+
+- `./v3 test --smoke ProfilePresentationContentTest PresentationSlotRegistryTest SiteProfileRegistryTest`: 513 run, 509 passed; the 4 failures are the same ones that fail on `origin/main` (see the rapclub_about_dark record). Full suite not run.
+- Rendered `/about/` with `FORUM_SITE_ID=mitrapclub`: intro with the four lines, then Find us; zenmemes, chouse, qdb About pages unchanged (test).
+- Not checked: browser rendering.
+
+## Outcome
+
+Delivered: short About copy on `mitrapclub`. Follow-ups offered: Messenger invite link; replacing the hard-coded show line with upcoming calendar events so it does not go stale after Dec 4.
 
 ## Study history
 
 - 2026-11-25 UTC, intake: **0.15**. Claude, single exposed rater.
+- 2026-11-25 UTC, closeout: scope unchanged; **0.15**. Maintainer judgment pending.
 
 Attribution: Claude · 2026-11-25 UTC · Model: claude-opus-5-5

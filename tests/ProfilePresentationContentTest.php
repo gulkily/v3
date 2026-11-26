@@ -26,8 +26,9 @@ final class ProfilePresentationContentTest
         assertSame('About qdb', $qdb['title']);
         assertSame(false, $qdb['showHackableSection']);
         $rapClub = ProfilePresentationContent::about($profiles['mitrapclub']);
-        assertSame(true, $rapClub['socialsOnly']);
-        assertSame(false, $zenmemes['socialsOnly']);
+        assertSame(true, $rapClub['short']);
+        assertSame(false, $zenmemes['short']);
+        assertSame(4, count($rapClub['shortParagraphs']));
         assertSame(['YouTube', 'Instagram', 'Facebook'], array_column($rapClub['socialLinks'], 'label'));
         assertSame('Meme Oven Is Busy', ProfilePresentationContent::busy($profiles['zenmemes'])['heading']);
         assertSame('Temporarily Busy', ProfilePresentationContent::busy($profiles['chouse'])['heading']);
@@ -56,10 +57,11 @@ final class ProfilePresentationContentTest
                 assertStringContains('<h1>' . $profile['displayName'] . ' Platform Docs</h1>', $docs);
                 assertStringContains('<ol class="docs-flow" aria-label="' . htmlspecialchars($profile['displayName'], ENT_QUOTES) . ' public architecture">', $docs);
                 assertSame($profileId === 'chouse', str_contains($about, 'Hackable by design'));
-                $socialsOnly = $profileId === 'mitrapclub';
-                assertSame($socialsOnly, str_contains($about, 'data-about-section="social-links"'));
-                assertSame(!$socialsOnly, str_contains($about, 'data-about-section="intro"'));
-                assertSame(!$socialsOnly, str_contains($about, 'data-about-section="graph"'));
+                $short = $profileId === 'mitrapclub';
+                assertSame($short, str_contains($about, 'data-about-section="social-links"'));
+                assertSame(true, str_contains($about, 'data-about-section="intro"'));
+                assertSame(!$short, str_contains($about, 'data-about-section="graph"'));
+                assertSame($short, str_contains($about, 'href="mailto:rap_club_exec@mit.edu"'));
             } finally {
                 putenv('FORUM_SITE_ID');
             }

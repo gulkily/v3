@@ -82,7 +82,7 @@ final class SiteProfileRegistry
                 'gettingStarted' => false,
                 // The home page (/) shows Gallery; the board stays at /threads/.
                 'homePage' => 'gallery',
-                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'socials', 'editorial' => 'mitrapclub', 'brandedStylesheet' => 'underground', 'toolsNav' => 'hidden', 'favicon' => 'mitrapclub'],
+                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'short', 'editorial' => 'mitrapclub', 'brandedStylesheet' => 'underground', 'toolsNav' => 'hidden', 'favicon' => 'mitrapclub'],
             ],
         ];
 
