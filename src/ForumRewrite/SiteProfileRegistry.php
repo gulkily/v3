@@ -84,7 +84,7 @@ final class SiteProfileRegistry
                 'homePage' => 'gallery',
                 // A Music page (/music/) where people share tracks, tagged #music.
                 'musicSection' => true,
-                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'socials', 'editorial' => 'mitrapclub', 'brandedStylesheet' => 'underground', 'toolsNav' => 'hidden', 'favicon' => 'mitrapclub'],
+                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'short', 'editorial' => 'mitrapclub', 'brandedStylesheet' => 'underground', 'toolsNav' => 'hidden', 'favicon' => 'mitrapclub'],
             ],
         ];
 
