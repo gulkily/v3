@@ -752,3 +752,4 @@ and repair its navigation and affected references. See the
 - [Authenticated users on the visitor statistics graph](visitor_stats_user_line/visitor_stats_user_line_one_shot.md) — one-shot: a line of authenticated users over the request bars on Tools → Visitor Statistics.
 - [System status Admin line matches its query](system_status_admins/system_status_admins_one_shot.md)
 - [MIT Rap Club music](mitrapclub_music/mitrapclub_music_step1_solution_assessment.md) — staged: a Music page on mitrapclub with a share box and playable #music tracks; fetched titles for every supported embed, first-line titles behind a flag.
+- [MIT Rap Club About merge fix](rapclub_about_merge_fix/rapclub_about_merge_fix_one_shot.md) — one-shot: restores the `short` About slot the #439 merge reverted to `socials`, which made every mitrapclub request a 500.
