@@ -5,7 +5,7 @@ Extended estimates: enabled
 
 **Cycle estimate: 0.08**
 
-Status: Fixed in serving checkout; live recovery and required tests passed; push and PR next.
+Status: Fixed in serving checkout; live recovery and required tests passed; PR #440 open.
 Original request: please help me fix the 500 caused by recent merge
 Authorization: 2026-11-26 user requests the outage fix, supplies ~/logs/, and confirms all pages return 500. Bounded correction in this serving checkout, verification and new follow-up PR; no unrelated production settings, data changes or main merge.
 Predecessor: PR #439, rapclub_about_copy; integration with PR #438 left the old profile value.
@@ -45,3 +45,5 @@ Outcome: Reported outage recovered through ordinary live page requests. Leave se
 Commit status: Planning aeaefc24c; completion commit pending at record creation. Push explicitly authorized; follow-up PR pending. Main has not been merged.
 
 *— Codex · 2026-11-26 UTC*
+
+Publication: Completion commit c99c706736e2b7ecdce5b52650066051c9076c7d pushed to origin/fix/merge-about-slot. Follow-up PR: https://github.com/gulkily/v3/pull/440 (open). Initial push lacked credentials; authenticated retry succeeded without storing credentials. Main merge remains pending.

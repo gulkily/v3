@@ -1,7 +1,7 @@
 # Cycle v3/merge_about_slot
 
 Cycle: v3/merge_about_slot
-Status: Correction applied; live recovery and 509 checks passed; PR pending.
+Status: Correction applied; live recovery and 509 checks passed; PR #440 open.
 Scope/reference/protocol: v1 / R1 / P2
 Projected total: 0.08
 Canonical checkpoints: [one-shot record](../merge_about_slot/merge_about_slot_one_shot.md)
