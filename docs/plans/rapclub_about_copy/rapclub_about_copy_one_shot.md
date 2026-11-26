@@ -74,3 +74,5 @@ Delivered: short About copy on `mitrapclub`. Follow-ups offered: Messenger invit
 - 2026-11-25 UTC, closeout: scope unchanged; **0.15**. Maintainer judgment pending.
 
 Attribution: Claude · 2026-11-25 UTC · Model: claude-opus-5-5
+
+Commit/merge/publication status: planning `5cf6e7b8d`, implementation `d30a25b3a`, [PR #439](https://github.com/gulkily/v3/pull/439) open; not merged or deployed.
