@@ -25,7 +25,7 @@ final class ToolsRegistryTest
         }
         assertSame(['device', 'reading', 'community', 'developer', 'operator'], $groups);
         $in = static fn (string $group): array => array_column(array_values(array_filter($tools, static fn (array $tool): bool => $tool['group'] === $group)), 'key');
-        assertSame(['activity', 'forte'], $in('reading'));
+        assertSame(['activity', 'forte', 'history'], $in('reading'));
         // Platform Docs first: it has no flag, so the bar's divider for the group never lands on a hidden tool.
         assertSame(['docs', 'backlog'], $in('developer'));
     }

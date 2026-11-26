@@ -51,19 +51,7 @@ $titleRepeatsBody = trim((string) ($thread['subject'] ?? '')) === ''
     && trim($postBody) !== ''
     && $postBodyDisplay === $postBody
     && !in_array($title, ['Untitled', 'Image'], true);
-$bareMediaEmbedWarmBeacon = '';
-if (($mediaEmbedsEnabled ?? false) && $title === 'Untitled') {
-    $bareMediaEmbedMatch = \ForumRewrite\Support\ThreadTitle::bareMediaEmbedMatch(
-        (string) ($thread['subject'] ?? ''),
-        $postBody
-    );
-    if ($bareMediaEmbedMatch !== null) {
-        $bareMediaEmbedWarmBeaconUrl = '/internal/media-embeds/warm-preview?provider=' . rawurlencode($bareMediaEmbedMatch['provider'])
-            . '&url=' . rawurlencode($bareMediaEmbedMatch['url'])
-            . '&thread_id=' . rawurlencode((string) $thread['root_post_id']);
-        $bareMediaEmbedWarmBeacon = '<img class="media-embed-card__warm-beacon" data-media-embed-warm-beacon src="' . $e($bareMediaEmbedWarmBeaconUrl) . '" alt="" width="0" height="0" style="display:none" loading="eager">';
-    }
-}
+$bareMediaEmbedWarmBeacon = $partial('partials/media_embed_warm_beacon.php', ['thread' => $thread, 'beaconBody' => $postBody]);
 $quoteRootId = (string) $thread['root_post_id'];
 $quoteRootNumber = \ForumRewrite\Qdb\QdbQuoteNumbers::fromThreadId($quoteRootId);
 $isQdbQuoteRoot = \ForumRewrite\SiteConfig::siteName() === 'qdb' && $quoteRootNumber !== null;

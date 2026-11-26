@@ -6,9 +6,11 @@ namespace ForumRewrite\Http;
 
 use DateTimeImmutable;
 use Exception;
+use ForumRewrite\View\BandcampPagePlayerFetcher;
 use ForumRewrite\View\InstagramPagePreviewFetcher;
 use ForumRewrite\View\MediaEmbedDetector;
 use ForumRewrite\View\MediaEmbedPreviewCacheStore;
+use ForumRewrite\View\OembedTitleFetcher;
 use ForumRewrite\View\YoutubeOembedTitleFetcher;
 
 /**
@@ -36,6 +38,8 @@ final class MediaEmbedPreviewController
         private readonly MediaEmbedDetector $detector = new MediaEmbedDetector(),
         private readonly InstagramPagePreviewFetcher $fetcher = new InstagramPagePreviewFetcher(),
         private readonly YoutubeOembedTitleFetcher $youtubeFetcher = new YoutubeOembedTitleFetcher(),
+        private readonly OembedTitleFetcher $oembedFetcher = new OembedTitleFetcher(),
+        private readonly BandcampPagePlayerFetcher $bandcampFetcher = new BandcampPagePlayerFetcher(),
     ) {
     }
 
@@ -65,6 +69,12 @@ final class MediaEmbedPreviewController
 
             if ($classified !== null && $classified['provider'] === 'youtube') {
                 $this->warmYoutubePreview($classified['embedId'], $url, $threadId);
+            }
+        } elseif (in_array($provider, ['spotify', 'soundcloud', 'tiktok', 'bandcamp'], true)) {
+            $classified = $this->detector->classify($url);
+
+            if ($classified !== null && $classified['provider'] === $provider) {
+                $this->warmMusicTitle($classified, $url, $threadId);
             }
         }
 
@@ -99,6 +109,42 @@ final class MediaEmbedPreviewController
         // Normalize supported video forms for oEmbed without changing the post's source link.
         $result = $this->youtubeFetcher->fetch('https://www.youtube.com/watch?v=' . $embedId);
         $store->put('youtube', $embedId, $result['title'] ?? null, $result['thumbnailUrl'] ?? null);
+        $this->backfillThreadSubject($threadId, $result['title'] ?? null);
+    }
+
+    /**
+     * Spotify, SoundCloud and TikTok answer oEmbed; Bandcamp's title comes from
+     * the release page its player lookup already reads. Same cache, backoff and
+     * empty-subject-only write as YouTube.
+     *
+     * @param array{provider: string, embedId: string, contentKind?: string} $classified
+     */
+    private function warmMusicTitle(array $classified, string $url, ?string $threadId): void
+    {
+        $provider = $classified['provider'];
+        $cacheId = isset($classified['contentKind']) && $provider === 'spotify'
+            ? $classified['contentKind'] . ':' . $classified['embedId']
+            : $classified['embedId'];
+        $store = $this->cacheStore();
+        $existing = $store->get($provider, $cacheId);
+
+        if ($existing !== null && !$this->shouldRetry($existing)) {
+            $this->backfillThreadSubject($threadId, $existing['title']);
+            return;
+        }
+
+        if ($provider === 'bandcamp') {
+            $title = $this->bandcampFetcher->fetchTitle($classified['embedId']);
+            $result = $title === null ? null : ['title' => $title, 'thumbnailUrl' => null];
+        } else {
+            $source = match ($provider) {
+                'spotify' => 'https://open.spotify.com/' . ($classified['contentKind'] ?? 'track') . '/' . $classified['embedId'],
+                'soundcloud' => 'https://soundcloud.com/' . $classified['embedId'],
+                default => $url,
+            };
+            $result = $this->oembedFetcher->fetch($provider, $source);
+        }
+        $store->put($provider, $cacheId, $result['title'] ?? null, $result['thumbnailUrl'] ?? null);
         $this->backfillThreadSubject($threadId, $result['title'] ?? null);
     }
 

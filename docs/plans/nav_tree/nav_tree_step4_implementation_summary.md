@@ -192,3 +192,7 @@ Branch: `feat/nav-tree` from `origin/main` `2d7805c`. Planning commit: `f585d60`
 
 - **Retrospective cycle assessment: 0.72**, against the 0.70 projection. Drivers: the Forte layout, Firefox's reload quirk and the visual pass on the History page. Not measured labor.
 - Maintainer comfortable-fit judgment: pending.
+
+2026-11-25T18:58Z; outcome. Merged in PR #420, deployed and accepted by the maintainer.
+
+- Maintainer comfortable-fit judgment: **comfortable fit**.

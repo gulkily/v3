@@ -448,6 +448,10 @@ final class ComposeAndAccountKeyController
         if (preg_match('#^/forte(?:\?(.*))?$#', $requestedReturnTo, $matches) === 1) {
             return $this->buildForteBoardReturnTo($matches[1] ?? '', $newThreadId);
         }
+        // A track shared from the Music page lands back on the page, newest first.
+        if ($requestedReturnTo === '/music/' && \ForumRewrite\SiteProfileRegistry::musicSection()) {
+            return '/music/';
+        }
 
         return '/threads/' . $newThreadId;
     }

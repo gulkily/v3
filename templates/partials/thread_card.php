@@ -5,19 +5,7 @@ $showLabels ??= false;
 $isPinned = $showPinnedMarker && in_array('pinned', $thread['thread_labels'] ?? [], true);
 $previewDuplicatesTitle = trim((string) $thread['body_preview']) === trim($subject)
     && !$hasMediaEmbed($thread['body_preview']);
-$bareMediaEmbedWarmBeacon = '';
-if (($mediaEmbedsEnabled ?? false) && $subject === 'Untitled') {
-    $bareMediaEmbedMatch = \ForumRewrite\Support\ThreadTitle::bareMediaEmbedMatch(
-        (string) ($thread['subject'] ?? ''),
-        (string) ($thread['body_preview'] ?? $thread['body'] ?? '')
-    );
-    if ($bareMediaEmbedMatch !== null) {
-        $bareMediaEmbedWarmBeaconUrl = '/internal/media-embeds/warm-preview?provider=' . rawurlencode($bareMediaEmbedMatch['provider'])
-            . '&url=' . rawurlencode($bareMediaEmbedMatch['url'])
-            . '&thread_id=' . rawurlencode((string) $thread['root_post_id']);
-        $bareMediaEmbedWarmBeacon = '<img class="media-embed-card__warm-beacon" data-media-embed-warm-beacon src="' . $e($bareMediaEmbedWarmBeaconUrl) . '" alt="" width="0" height="0" style="display:none" loading="eager">';
-    }
-}
+$bareMediaEmbedWarmBeacon = $partial('partials/media_embed_warm_beacon.php', ['thread' => $thread, 'beaconBody' => (string) ($thread['body_preview'] ?? $thread['body'] ?? '')]);
 ?>
 <article id="post-<?= $e($thread['root_post_id']) ?>" class="card thread-card" data-heat="<?= $heat($thread['last_activity_at'] ?? null, (int) ($thread['reply_count'] ?? 0)) ?>">
   <h2><a href="/threads/<?= $e($thread['root_post_id']) ?>"><?= $e($subject) ?></a><?php if ($isPinned): ?> <span class="pinned-thread-marker">Pinned</span><?php endif; ?></h2>

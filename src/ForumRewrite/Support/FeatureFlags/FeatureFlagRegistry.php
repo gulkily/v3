@@ -42,6 +42,7 @@ final class FeatureFlagRegistry
     public const VAPORGEIST_THEME_ENABLED = 'FORUM_VAPORGEIST_THEME_ENABLED';
     public const MEDIA_EMBEDS_ENABLED = 'FORUM_MEDIA_EMBEDS_ENABLED';
     public const MEDIA_EMBEDS_INLINE_PLAYER_ENABLED = 'FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED';
+    public const MEDIA_EMBEDS_FIRST_LINE_TITLES_ENABLED = 'FORUM_MEDIA_EMBEDS_FIRST_LINE_TITLES_ENABLED';
     public const TAG_LINKS_ENABLED = 'FORUM_TAG_LINKS_ENABLED';
     public const POST_MARKDOWN_ENABLED = 'FORUM_POST_MARKDOWN_ENABLED';
     public const STATIC_PROFILE_PAGES_ENABLED = 'FORUM_STATIC_PROFILE_PAGES_ENABLED';
@@ -81,7 +82,7 @@ final class FeatureFlagRegistry
         'ACCESS' => [self::PRIVATE_MESSAGES_ENABLED, self::PRIVATE_KEY_ACCESS_ENFORCED, self::ALLOW_NON_OPERATOR_CROSS_ACCOUNT_APPROVAL,
             self::APPROVED_MEMBERS_ONLY, self::AUTOMATIC_GUEST_KEYPAIR_ENABLED, self::USERNAME_CHANGES_ENABLED,
             self::VERIFIED_ATTRIBUTION, self::SESSION_KEY_BOOTSTRAP_ENABLED, self::SESSION_KEY_BOOTSTRAP_HTTP_ENABLED],
-        'AUTHORING' => [self::IMAGE_CONTENT_ENABLED, self::IMAGE_DIRECT_SERVING_ENABLED, self::LIST_THUMBNAILS_ENABLED, self::IMAGE_GALLERY_ENABLED, self::UNICODE_AUTHORED_TEXT,
+        'AUTHORING' => [self::IMAGE_CONTENT_ENABLED, self::IMAGE_DIRECT_SERVING_ENABLED, self::LIST_THUMBNAILS_ENABLED, self::IMAGE_GALLERY_ENABLED, self::INSTAGRAM_CLIP_ENABLED, self::UNICODE_AUTHORED_TEXT,
             self::EMOJI_AUTHORED_TEXT, self::EVENT_SUPPORT_ENABLED, self::EVENT_WHEN_ENABLED,
             self::CALENDAR_FEED_ENABLED],
         'EXPERIENCE' => [self::APP_VERSION_NOTIFICATION, self::THREAD_DENSITY_TOGGLE_ENABLED,
@@ -90,10 +91,10 @@ final class FeatureFlagRegistry
             self::ZALGO_THEME_ENABLED, self::VAPORGEIST_THEME_ENABLED, self::PRIVATE_MESSAGE_CACHE_ENABLED,
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED, self::AGENT_CHECKIN_ENABLED,
             self::READING_MARGINS_ENABLED, self::DRAGGABLE_WINDOWS_ENABLED, self::OPEN_BESIDE_ENABLED, self::GUESTBOOK_ENABLED, self::ZEN_STRIP_ENABLED, self::POST_RECORDS_ENABLED,
-            self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::VISIT_HISTORY_ENABLED, self::PLEDGES_ENABLED, self::THREAD_PORT_ENABLED, self::THREAD_PORT_GUESTS_ENABLED, self::INSTAGRAM_CLIP_ENABLED,
+            self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::VISIT_HISTORY_ENABLED, self::PLEDGES_ENABLED, self::THREAD_PORT_ENABLED, self::THREAD_PORT_GUESTS_ENABLED,
             self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED, self::QDB_QUEUE_ENABLED, self::BACKLOG_ENABLED, self::PUSH_ENABLED, self::OWA_RESUME_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
-            self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
+            self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::MEDIA_EMBEDS_FIRST_LINE_TITLES_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
             self::THREAD_ACTIVITY_DRAWER_ENABLED],
         'BACKUP' => [self::IMAGE_BACKUP_ENABLED, self::TEXT_BACKUP_ENABLED],
         'FASTMOD' => [self::FAST_SCORING_ENABLED, self::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED,
@@ -598,6 +599,17 @@ final class FeatureFlagRegistry
                 releasedOn: '2026-10-09',
             ),
             new FeatureFlagDefinition(
+                self::MEDIA_EMBEDS_FIRST_LINE_TITLES_ENABLED,
+                'Media embed first-line titles',
+                'Fetch the title for an untitled post whose first line is one music or video link, even with text after it. Off: only a post that is just the link gets a fetched title. Turning it on retitles existing untitled posts of that shape as they are viewed. Requires Media embed cards.',
+                false,
+                self::MEDIA_EMBEDS_FIRST_LINE_TITLES_ENABLED,
+                siteMutable: true,
+                requiresEnabledFlag: self::MEDIA_EMBEDS_ENABLED,
+                group: 'RENDERING',
+                releasedOn: '2026-11-25',
+            ),
+            new FeatureFlagDefinition(
                 self::POST_RECORDS_ENABLED,
                 'Post records',
                 'Show a Records section on post pages listing every signed record that targets the post (likes, flags, labels, title and format changes), each with its own page, and let members retract their own likes and operators any like.',
@@ -705,7 +717,7 @@ final class FeatureFlagRegistry
                 self::INSTAGRAM_CLIP_ENABLED,
                 siteMutable: true,
                 requiresEnabledFlag: self::IMAGE_CONTENT_ENABLED,
-                group: 'EXPERIENCE',
+                group: 'AUTHORING',
                 releasedOn: '2026-11-25',
             ),
             new FeatureFlagDefinition(

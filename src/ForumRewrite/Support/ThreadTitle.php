@@ -16,7 +16,9 @@ final class ThreadTitle
             return $subject;
         }
 
-        if ($mediaEmbedsEnabled && self::bareMediaEmbedMatch($subject, $body) !== null) {
+        // Untitled until the fetch lands only where that was always so; music
+        // links keep showing the link itself, so a failed fetch still reads well.
+        if ($mediaEmbedsEnabled && in_array(self::bareMediaEmbedMatch($subject, $body)['provider'] ?? null, ['youtube', 'instagram'], true)) {
             return 'Untitled';
         }
 
@@ -48,7 +50,17 @@ final class ThreadTitle
      *
      * @return ?array{provider: string, embedId: string, url: string}
      */
-    public static function bareMediaEmbedMatch(string $subject, string $body): ?array
+    /** Providers whose titles can be fetched and back-filled into an empty subject. */
+    public const TITLE_PROVIDERS = ['youtube', 'instagram', 'spotify', 'soundcloud', 'tiktok', 'bandcamp'];
+
+    /**
+     * The one embed whose fetched title may fill an empty subject: the whole body
+     * is that link, or, with $firstLine (FORUM_MEDIA_EMBEDS_FIRST_LINE_TITLES_ENABLED),
+     * its first line is that link and the post has no other embed.
+     *
+     * @return ?array{provider: string, embedId: string, url: string}
+     */
+    public static function bareMediaEmbedMatch(string $subject, string $body, bool $firstLine = false): ?array
     {
         if (trim($subject) !== '') {
             return null;
@@ -65,10 +77,13 @@ final class ThreadTitle
         }
 
         $match = $matches[0];
-        if (!in_array($match['provider'], ['youtube', 'instagram'], true)) {
+        if (!in_array($match['provider'], self::TITLE_PROVIDERS, true) || $match['offset'] !== 0) {
             return null;
         }
-        if ($match['offset'] !== 0 || $match['offset'] + $match['length'] !== strlen($trimmedBody)) {
+        $end = $match['offset'] + $match['length'];
+        $wholeBody = $end === strlen($trimmedBody);
+        $wholeFirstLine = $firstLine && preg_match('/\A[ \t]*\n/', substr($trimmedBody, $end)) === 1;
+        if (!$wholeBody && !$wholeFirstLine) {
             return null;
         }
 

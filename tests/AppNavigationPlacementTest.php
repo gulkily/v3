@@ -119,6 +119,22 @@ final class AppNavigationPlacementTest
         }
     }
 
+    public function testMusicFollowsGalleryOnlyOnSitesWithTheMusicPage(): void
+    {
+        $this->withSite('mitrapclub', function (): void {
+            $hrefs = array_column($this->renderer([FeatureFlagRegistry::IMAGE_GALLERY_ENABLED => true, FeatureFlagRegistry::IMAGE_CONTENT_ENABLED => true])->navigationItems(self::VIEWERS['approved']), 'href');
+            assertSame(array_search('/gallery/', $hrefs, true) + 1, array_search('/music/', $hrefs, true), 'Music right after Gallery');
+            $withoutGallery = array_column($this->renderer()->navigationItems(self::VIEWERS['approved']), 'href');
+            assertSame(array_search('/recent/', $withoutGallery, true) + 1, array_search('/music/', $withoutGallery, true), 'after Recent when Gallery is off');
+        });
+        foreach (['zenmemes', 'chouse', 'qdb'] as $site) {
+            $this->withSite($site, function () use ($site): void {
+                $hrefs = array_column($this->renderer([FeatureFlagRegistry::IMAGE_GALLERY_ENABLED => true, FeatureFlagRegistry::IMAGE_CONTENT_ENABLED => true])->navigationItems(self::VIEWERS['approved']), 'href');
+                assertSame(false, in_array('/music/', $hrefs, true), $site);
+            });
+        }
+    }
+
     public function testAppHeaderSplitsDestinationsBetweenTheBarAndTheAccountMenu(): void
     {
         $this->withSite('zenmemes', function (): void {

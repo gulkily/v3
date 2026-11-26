@@ -222,7 +222,7 @@ checklists, and proposals remain at the top level or in the collections below.
 
 ## Feature folders
 
-- [Visit tree](nav_tree/nav_tree_step3_development_plan.md) — item 1 of the [browsing tree checklist](browsing_tree_checklist.md): record each page change in this browser as a tree (tab and Beside pane cursors, the referrer as fallback) and list it on Tools → History; behind `FORUM_VISIT_HISTORY_ENABLED`; Steps 1–7 committed, PR pending. Concept: [visit tree](../concepts/visit_tree.md).
+- [Visit tree](nav_tree/nav_tree_step3_development_plan.md) — item 1 of the [browsing tree checklist](browsing_tree_checklist.md): record each page change in this browser as a tree (tab and Beside pane cursors, the referrer as fallback) and list it on Tools → History; behind `FORUM_VISIT_HISTORY_ENABLED`; merged in PR #420, deployed and accepted 2026-11-25. Concept: [visit tree](../concepts/visit_tree.md).
 - [Guest name visibility](guest_name_visibility/guest_name_visibility_one_shot.md) — one-shot: every composer says "Posting as guest · Choose a name" while this browser is a guest, and Account makes choosing a first name obvious; PR pending.
 - [Title-only activity](title_only_activity/title_only_activity_one_shot.md) — one-shot: a reply that is only a `title:` line (with or without labels) joins tag-only replies in the thread Activity drawer; PR pending.
 - [Thread activity record links](thread_activity_record_links/thread_activity_record_links_one_shot.md) — one-shot follow-up to the thread activity drawer: with Post records on, each name in the drawer's like and flag lists links to the record that added it; one `git grep` per thread view; PR pending.
@@ -735,6 +735,7 @@ and repair its navigation and affected references. See the
 - [Backlog prompt access](backlog_prompt_access/backlog_prompt_access_one_shot.md) — one-shot: the backlog prompt asks for a clone and a pull request instead of patch files, and for a word before building items that do not belong together.
 - [Backlog claims](backlog_claims/backlog_claims_step3_development_plan.md) — staged: Start claims the picked items with a `claim:` line in a signed reply in one thread, rows show who holds them, agents claim and release.
 - [Tools Developer group](tools_developer_group/tools_developer_group_one_shot.md) — one-shot: a Developer group on the Tools launcher holding Platform Docs and Backlog.
+- [Tools History in Reading](tools_history_reading/tools_history_reading_one_shot.md) — one-shot: History moves from Your device to Reading so every tool fits a 1280×720 window again.
 - [Favicon in light theme](favicon_light_theme/favicon_light_theme_one_shot.md) — one-shot: the ZenMemes tab icon redrawn so it looks clean on light tabs (PF-20261111-B02).
 - [Word 97 action fonts](word97_action_fonts/word97_action_fonts_one_shot.md) — one-shot: post-action toggles in Word 97 and the Outbox status line use the UI font (PF-20261104-B12, PF-20261104-B18).
 - [Midnight action fonts](midnight_action_fonts/midnight_action_fonts_one_shot.md) — one-shot: Midnight post actions get Word 97’s UI font, no underline and Like/Flag bevel (PF-20261111-F19).
@@ -750,3 +751,4 @@ and repair its navigation and affected references. See the
 
 - [Authenticated users on the visitor statistics graph](visitor_stats_user_line/visitor_stats_user_line_one_shot.md) — one-shot: a line of authenticated users over the request bars on Tools → Visitor Statistics.
 - [System status Admin line matches its query](system_status_admins/system_status_admins_one_shot.md)
+- [MIT Rap Club music](mitrapclub_music/mitrapclub_music_step1_solution_assessment.md) — staged: a Music page on mitrapclub with a share box and playable #music tracks; fetched titles for every supported embed, first-line titles behind a flag.
