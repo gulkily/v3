@@ -4,7 +4,7 @@ Working checklist for one story told in three Railspike cycles. It is not a
 Railspike artifact and approves no implementation. Each item runs as its own
 cycle, following AGENTS.md. Record progress, checks and limitations here.
 
-Checklist merged in [PR #265](https://github.com/gulkily/v3/pull/265); updated 2026-11-23.
+Checklist merged in [PR #265](https://github.com/gulkily/v3/pull/265); updated 2026-11-25.
 
 Requested by the maintainer on 2026-11-14: a ZenMemes reader gets tree
 history and tree bookmarks, as in the Mosaic browser, and a filmstrip of
@@ -58,7 +58,7 @@ under protocol P2.
 
 ## Checklist
 
-- [ ] **1. `nav_tree`: record visits as a tree.**
+- [x] **1. `nav_tree`: record visits as a tree.**
   **Estimate: 0.55**
   Each tab remembers its current visit, so a new visit's parent is the page
   the reader came from in that tab. A tab with no current visit falls back
@@ -82,8 +82,13 @@ under protocol P2.
   - _Step 4 done 2026-11-25 on `feat/nav-tree`, behind
     `FORUM_VISIT_HISTORY_ENABLED`: recorder (`visit_history.js`), Beside pane
     lane, Forte pages, Tools → History. Passed in Chromium, Firefox and WebKit;
-    offline in Chromium. Review, merge and deploy pending. Concept:
-    [visit tree](../concepts/visit_tree.md)._
+    offline in Chromium. Concept: [visit tree](../concepts/visit_tree.md)._
+  - _Merged in [PR #420](https://github.com/gulkily/v3/pull/420) on
+    2026-11-25 and deployed; the maintainer accepted it the same day and
+    judged it a comfortable fit for one cycle. The 1280×720 Tools launcher
+    check that failed after the merge is fixed in
+    [tools_history_reading](tools_history_reading/tools_history_reading_one_shot.md)
+    (History moves to the Reading group)._
 - [ ] **2. `tree_history`: history and bookmark views.**
   **Estimate: 0.50**
   A richer tree view of history, with branches that fold and a way back to
