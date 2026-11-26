@@ -8,7 +8,7 @@ Extended estimates: enabled. No alternatives or work units, so no unit estimates
 
 **Cycle estimate: 0.03**
 
-Status: planned; next permitted action: implementation.
+Status: implemented and committed; push failed (token rejected); next permitted action: push, then maintainer merge and Deploy now.
 
 Feedback item: none matches (searched `docs/feedback/items/` for 500, presentation slot and About; PF-20261030-B17 is an unrelated code-heavy-post 500).
 
@@ -34,9 +34,31 @@ Verification and recovery plan: `./v3 test --smoke PresentationSlotRegistryTest 
 
 Starting revisions and branch: `fix/rapclub_about_merge` from `origin/main` `64331adc0`.
 
-Planning commit: pending.
+Planning commit: `424704057` (plan and index entry only, before any implementation).
 
 Study history:
 - 2026-11-26 UTC, intake and execution entry: **0.03**. Recorded after diagnosis, so not a clean intake. Claude, single exposed rater. Scope v1. Reference R1, hashes not re-verified.
+
+Dated execution history:
+- 2026-11-26: `SiteProfileRegistry.php`: mitrapclub `'about' => 'socials'` back to `'short'`; `homePage()`'s docblock moved back above `homePage()`. Correction only.
+- 2026-11-26: the maintainer stopped the test run: "don't bother with the tests, commit and push please."
+
+Study history, closeout:
+- 2026-11-26 UTC: retrospective scope assessment **0.03**, as projected. Claude, single exposed rater. Maintainer judgment pending; measured time unknown.
+
+Outcome: delivered as planned, not verified. Production stays on 500 until this is merged and deployed.
+
+Verification:
+- Before the fix: `./v3 test PresentationSlotRegistryTest` failed 4 of 5 with the production error.
+- After the fix: one `./v3 test --smoke PresentationSlotRegistryTest SiteProfileRegistryTest ProfilePresentationContentTest MusicPageTest MusicMediaEmbedTest` run listed failures, including several `LocalAppSmokeTest` cases and `SiteProfileRegistryTest::testActiveDefaultsToZenmemesWhenUnset`. Its summary was not read and the failures were not investigated; a rerun was stopped at the maintainer's request. Unverified whether they come from this change or were already failing.
+- `git diff --check`: passed. Local render and `./v3 status` after deploy: not done. Full suite not run.
+
+Final review: the diff touches one source file (two lines changed) plus plan records. No dependency, schema or flag change; Deploy now is enough.
+
+Commit/merge/publication status: completion commit on local `fix/rapclub_about_merge`; push failed because GitHub rejected the supplied token (HTTP 401); no PR opened; not merged or deployed.
+
+Debug: [debug log](./rapclub_about_merge_fix_debug_log.md).
+
+Enhancement requests: none.
 
 Attribution: Claude · 2026-11-26 UTC · Model: claude-opus-5-5

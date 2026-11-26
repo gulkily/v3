@@ -84,7 +84,7 @@ final class SiteProfileRegistry
                 'homePage' => 'gallery',
                 // A Music page (/music/) where people share tracks, tagged #music.
                 'musicSection' => true,
-                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'socials', 'editorial' => 'mitrapclub', 'brandedStylesheet' => 'underground', 'toolsNav' => 'hidden', 'favicon' => 'mitrapclub'],
+                'presentationSlots' => ['navigation' => 'forum', 'boardCard' => 'thread', 'compose' => 'thread', 'about' => 'short', 'editorial' => 'mitrapclub', 'brandedStylesheet' => 'underground', 'toolsNav' => 'hidden', 'favicon' => 'mitrapclub'],
             ],
         ];
 
@@ -163,13 +163,13 @@ final class SiteProfileRegistry
         return (self::active()['gettingStarted'] ?? true) !== false;
     }
 
-    /** What the active site's home page (/) shows: 'board' (default) or 'gallery'. */
     /** Whether this site has the Music page (/music/): shared tracks tagged #music and a share box. */
     public static function musicSection(): bool
     {
         return (self::active()['musicSection'] ?? false) === true;
     }
 
+    /** What the active site's home page (/) shows: 'board' (default) or 'gallery'. */
     public static function homePage(): string
     {
         return (string) (self::active()['homePage'] ?? 'board');
