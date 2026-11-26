@@ -11,7 +11,7 @@ final class PresentationSlotRegistry
         'navigation' => ['fallback' => 'forum', 'choices' => ['forum', 'qdb', 'app']],
         'boardCard' => ['fallback' => 'thread', 'choices' => ['thread', 'quote', 'list']],
         'compose' => ['fallback' => 'thread', 'choices' => ['thread', 'qdb']],
-        'about' => ['fallback' => 'default', 'choices' => ['default', 'chouse', 'socials']],
+        'about' => ['fallback' => 'default', 'choices' => ['default', 'chouse', 'short']],
         'editorial' => ['fallback' => 'zenmemes', 'choices' => ['zenmemes', 'boston', 'qdb', 'mitrapclub']],
         'brandedStylesheet' => ['fallback' => 'site', 'choices' => ['site', 'chouse', 'qdb', 'mitrapclub', 'underground']],
         'toolsNav' => ['fallback' => 'visible', 'choices' => ['visible', 'hidden']],

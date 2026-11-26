@@ -712,6 +712,7 @@ and repair its navigation and affected references. See the
 - [Underground theme](underground_theme/underground_theme_one_shot.md) — one-shot: a lavender-and-ultramarine halftone theme from the MIT Rap Club "underground concert" flyer; default on the mitrapclub profile.
 - [MIT Rap Club chalkboard theme](mitrapclub_chalkboard_theme/mitrapclub_chalkboard_theme_one_shot.md) — one-shot: takes the Underground theme (the club site's default) to the club's own marks: cube wordmark, margin notes in flyer ink, Polaroids; clearer feature-flag switches.
 - [MIT Rap Club About and Underground Dark](rapclub_about_dark/rapclub_about_dark_one_shot.md) — one-shot: socials-only About page on mitrapclub and a dark partner for the Underground theme.
+- [MIT Rap Club About copy](rapclub_about_copy/rapclub_about_copy_one_shot.md) — one-shot: short About copy (Friday cyphers, next show, contact) above the club's socials.
 - [Image loading](image_loading/image_loading_step1_solution_assessment.md) — staged: images load faster through browser caching, a lighter serving path and home page tweaks.
 
 - [Calendar export timezone](calendar_export_timezone/calendar_export_timezone_one_shot.md)

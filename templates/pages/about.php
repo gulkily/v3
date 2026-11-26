@@ -1,7 +1,14 @@
 <section class="stack">
   <h1 class="visually-hidden"><?= $e($aboutContent['title']) ?></h1>
   <article class="card about-sections">
-<?php if (!$aboutContent['socialsOnly']): ?>
+<?php if ($aboutContent['short']): ?>
+<?php // Trusted inline markup from ProfilePresentationContent::EDITORIAL; see the note below. ?>
+    <section class="about-section" data-about-section="intro">
+<?php foreach ($aboutContent['shortParagraphs'] as $paragraph): ?>
+      <p><?= $paragraph ?></p>
+<?php endforeach; ?>
+    </section>
+<?php else: ?>
     <section class="about-section" data-about-section="intro">
 <?php if ($aboutContent['description'] !== ''): ?>
       <p data-site-description><?= $e($aboutContent['description']) ?></p>
@@ -41,7 +48,7 @@
       </ul>
     </section>
 <?php endif; ?>
-<?php if (!$aboutContent['socialsOnly']): ?>
+<?php if (!$aboutContent['short']): ?>
 <?php
 // graph/participation/portable paragraphs below are rendered without $e()
 // because they carry trusted inline <a> markup (links to /users/,

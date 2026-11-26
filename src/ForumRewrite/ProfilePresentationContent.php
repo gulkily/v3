@@ -141,6 +141,13 @@ final class ProfilePresentationContent
             'busyTitle' => 'Cypher\'s Full',
             'busyHeading' => 'The Cypher\'s Full',
             'busyMessage' => 'The mic\'s getting passed around right now. This page will reload on its own.',
+            // The `short` About copy: trusted inline HTML, rendered raw.
+            'shortAboutParagraphs' => [
+                'We write, cypher and put on shows. Everyone is welcome, from MIT or not, whether you have never rapped or you have a full set.',
+                '<strong>Cyphers:</strong> Fridays at 6 pm. Join our Facebook Messenger chat for the location.',
+                '<strong>Next show:</strong> <a href="/threads/thread-20261117053927-61637885">The Underground Showcase</a>, Friday Dec 4, 6–9 pm, City Arena (W41-1306).',
+                '<strong>Contact:</strong> <a href="mailto:rap_club_exec@mit.edu">rap_club_exec@mit.edu</a>',
+            ],
             'socialLinks' => [
                 ['label' => 'YouTube', 'url' => 'https://www.youtube.com/@MITRAPCLUB'],
                 ['label' => 'Instagram', 'url' => 'https://www.instagram.com/mitrapclub/'],
@@ -151,10 +158,11 @@ final class ProfilePresentationContent
 
     /**
      * @param array<string, mixed> $profile
-     * The `socials` About variant keeps only the profile's social links; its
-     * editorial entry need not carry the other About copy.
+     * The `short` About variant shows the profile's `shortAboutParagraphs`
+     * and social links only; its editorial entry need not carry the other
+     * About copy.
      *
-     * @return array{title:string, socialsOnly:bool, description:string, buildExample:?array{text:string, threadHref:string, changeHref:string}, introduction:string, communityHeading:string, communityParagraphs:list<string>, showHackableSection:bool, socialLinks:list<array{label:string, url:string}>, graphHeading:string, graphParagraphs:list<string>, participationHeading:string, participationParagraphs:list<string>, portableHeading:string, portableParagraphs:list<string>}
+     * @return array{title:string, short:bool, shortParagraphs:list<string>, description:string, buildExample:?array{text:string, threadHref:string, changeHref:string}, introduction:string, communityHeading:string, communityParagraphs:list<string>, showHackableSection:bool, socialLinks:list<array{label:string, url:string}>, graphHeading:string, graphParagraphs:list<string>, participationHeading:string, participationParagraphs:list<string>, portableHeading:string, portableParagraphs:list<string>}
      */
     public static function about(array $profile): array
     {
@@ -162,10 +170,11 @@ final class ProfilePresentationContent
         $displayName = (string) $profile['displayName'];
         $variant = PresentationSlotRegistry::resolve($profile, 'about');
 
-        if ($variant === 'socials') {
+        if ($variant === 'short') {
             return [
                 'title' => 'About ' . $displayName,
-                'socialsOnly' => true,
+                'short' => true,
+                'shortParagraphs' => $editorial['shortAboutParagraphs'] ?? [],
                 'description' => '',
                 'buildExample' => null,
                 'introduction' => '',
@@ -184,7 +193,8 @@ final class ProfilePresentationContent
 
         return [
             'title' => 'About ' . $displayName,
-            'socialsOnly' => false,
+            'short' => false,
+            'shortParagraphs' => [],
             'description' => self::siteDescription($profile),
             'buildExample' => $editorial['buildExample'] ?? null,
             'introduction' => sprintf($editorial['introText'], $displayName),
