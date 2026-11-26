@@ -11,22 +11,25 @@ final class MediaEmbedBeaconTemplatesTest
 {
     private const BARE_YOUTUBE_URL = 'https://www.youtube.com/watch?v=mNLeVUCLrLo';
 
-    public function testTikTokThreadsKeepTheirCardsWithoutTitleFetchBeacons(): void
+    public function testTikTokThreadsKeepTheirCardsAndRequestATitle(): void
     {
         $url = 'https://www.tiktok.com/@scout2015/video/6718335390845095173';
         foreach ([$this->renderThreadCard(true, '', $url, 'tiktok-thread'), $this->renderThreadRootCard(true, '', $url, 'tiktok-thread')] as $html) {
             assertSame(true, str_contains($html, 'data-provider="tiktok"'));
-            assertSame(false, str_contains($html, 'data-media-embed-warm-beacon'));
+            assertSame(true, str_contains($html, 'provider=tiktok&amp;url=' . rawurlencode($url) . '&amp;thread_id=tiktok-thread'));
+            assertSame(false, str_contains($html, '>Untitled<'));
         }
+        // A subject that is set never asks for a title.
+        assertSame(false, str_contains($this->renderThreadCard(true, 'Set by hand', $url, 'tiktok-thread'), 'data-media-embed-warm-beacon'));
     }
 
-    public function testSpotifyThreadsRenderCardsWithoutTitleFetchBeacons(): void
+    public function testSpotifyThreadsRenderCardsAndRequestATitleWhileShowingTheLink(): void
     {
         foreach (['track', 'album', 'playlist'] as $kind) {
             $url = 'https://open.spotify.com/' . $kind . '/11dFghVXANMlKmJXsNCbNl';
             foreach ([$this->renderThreadCard(true, '', $url, 'spotify-thread'), $this->renderThreadRootCard(true, '', $url, 'spotify-thread')] as $html) {
                 assertSame(true, str_contains($html, 'data-provider="spotify"'));
-                assertSame(false, str_contains($html, 'data-media-embed-warm-beacon'));
+                assertSame(true, str_contains($html, 'provider=spotify&amp;'));
                 assertSame(false, str_contains($html, '>Untitled<'));
             }
         }
@@ -92,6 +95,19 @@ final class MediaEmbedBeaconTemplatesTest
         assertSame(true, str_contains($html, 'provider=youtube'));
         assertSame(true, str_contains($html, 'thread_id=thread-bare-url'));
         assertSame(true, str_contains($html, rawurlencode(self::BARE_YOUTUBE_URL)));
+    }
+
+    public function testFirstLineBeaconOnlyWithItsFlag(): void
+    {
+        $body = self::BARE_YOUTUBE_URL . "\nthis one goes hard";
+        assertSame(false, str_contains($this->renderThreadCard(true, '', $body, 'note-thread'), 'data-media-embed-warm-beacon'));
+        putenv('FORUM_MEDIA_EMBEDS_FIRST_LINE_TITLES_ENABLED=true');
+        try {
+            assertSame(true, str_contains($this->renderThreadCard(true, '', $body, 'note-thread'), 'thread_id=note-thread'));
+            assertSame(true, str_contains($this->renderThreadRootCard(true, '', $body, 'note-thread'), 'thread_id=note-thread'));
+        } finally {
+            putenv('FORUM_MEDIA_EMBEDS_FIRST_LINE_TITLES_ENABLED');
+        }
     }
 
     private function renderThreadCard(bool $flagEnabled, string $subject, string $bodyPreview, string $rootPostId): string

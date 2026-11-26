@@ -12,7 +12,7 @@ import { resolve } from 'node:path';
 const project = resolve(new URL('../..', import.meta.url).pathname);
 const pages = {};
 const render = section => pages[section] ??= execFileSync('php', [`${project}/tests/Support/app_layout_fixture.php`, section], { encoding: 'utf8', maxBuffer: 1 << 26 });
-const paths = { '/': 'board', '/recent/': 'recent', '/users/': 'profiles', '/search': 'search', '/about/': 'about', '/tools/': 'tools', '/messages': 'messages', '/calendar': 'calendar' };
+const paths = { '/': 'board', '/threads/': 'board', '/recent/': 'recent', '/users/': 'profiles', '/search': 'search', '/about/': 'about', '/tools/': 'tools', '/messages': 'messages', '/calendar': 'calendar' };
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/google/chrome/chrome', headless: true, args: ['--no-sandbox'] });
 const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 390, height: 844 } });

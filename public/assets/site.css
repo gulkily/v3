@@ -970,6 +970,7 @@ pre {
   html[data-nav-slots~="recent"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="recent"],
   html[data-nav-slots~="calendar"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="calendar"],
   html[data-nav-slots~="gallery"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="gallery"],
+  html[data-nav-slots~="music"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="music"],
   html[data-nav-slots~="agent"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="agent"],
   html[data-nav-slots~="profiles"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="profiles"],
   html[data-nav-slots~="messages"] [data-shell="app"] .site-header--app .nav > .nav-link[data-tab="messages"],
@@ -1007,6 +1008,7 @@ pre {
   html[data-nav-slots~="recent"] [data-shell="app"] .account-menu[data-current="recent"],
   html[data-nav-slots~="calendar"] [data-shell="app"] .account-menu[data-current="calendar"],
   html[data-nav-slots~="gallery"] [data-shell="app"] .account-menu[data-current="gallery"],
+  html[data-nav-slots~="music"] [data-shell="app"] .account-menu[data-current="music"],
   html[data-nav-slots~="agent"] [data-shell="app"] .account-menu[data-current="agent"],
   html[data-nav-slots~="profiles"] [data-shell="app"] .account-menu[data-current="profiles"],
   html[data-nav-slots~="messages"] [data-shell="app"] .account-menu[data-current="messages"],
@@ -1300,6 +1302,19 @@ pre {
 .thread-row__pledge .pledge-status {
   margin-left: 0.25rem;
   font-size: 0.75rem;
+}
+
+/* A row with a player (the Music page): the embed spans the row under the meta
+   and never widens it. */
+.thread-row__player {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0.4rem 0 0;
+}
+
+.thread-row__player .media-embed-card {
+  max-width: 100%;
+  margin: 0;
 }
 
 /* A row with an attached image: the thumbnail fills a narrow first column as

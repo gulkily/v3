@@ -33,7 +33,8 @@ meaningful parameters and fragments while removing known tracking parameters.
 - [x] Load YouTube, Spotify, TikTok, SoundCloud, and Bandcamp players only when the reader expands them; keep source links visible outside collapsed players.
 - [x] Use a sandboxed `youtube-nocookie.com` player with responsive 16:9 sizing.
 - [x] Fetch and cache Instagram title and thumbnail metadata, with a plain-card fallback.
-- [x] Fetch titles for untitled threads containing exactly one YouTube/Shorts or Instagram URL, preserving existing subjects. Spotify/TikTok/SoundCloud/Bandcamp retain ordinary body-derived titles.
+- [x] Fetch titles for untitled threads whose body is exactly one YouTube/Shorts, Instagram, Spotify, SoundCloud, TikTok or Bandcamp URL, preserving existing subjects (music providers since 2026-11-25, [mitrapclub_music](mitrapclub_music/mitrapclub_music_step4_implementation_summary.md)). YouTube and Instagram show "Untitled" until the title lands; music links keep showing the link. Spotify, SoundCloud and TikTok use oEmbed; Bandcamp reads `og:title` from its release page.
+- [x] `FORUM_MEDIA_EMBEDS_FIRST_LINE_TITLES_ENABLED` (off by default): also fetch a title when the link stands alone on the first line and a note follows, with no other embed in the post.
 - [x] Gate cards behind `FORUM_MEDIA_EMBEDS_ENABLED` and players/previews behind
       `FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED`; both default off, and the second requires the first.
 - [x] Pass the expanded focused embed/title/presentation suites: 98 tests passed, 0 failed on October 15, 2026; current browser and full-suite results are recorded in the [music implementation summary](music_media_embeds/music_media_embeds_step4_implementation_summary.md). Earlier coverage remains in the [top-five summary](top_five_media_embeds/top_five_media_embeds_step4_implementation_summary.md).

@@ -17,7 +17,7 @@ final class MusicMediaEmbedTest
         $html = (new MediaEmbedRenderer())->render($url, true, true);
         assertSame(true, str_contains($html, 'media-embed-card--track'));
         assertSame(true, str_contains($html, rawurlencode($url)));
-        assertSame(null, \ForumRewrite\Support\ThreadTitle::bareMediaEmbedMatch('', $url));
+        assertSame('bandcamp', \ForumRewrite\Support\ThreadTitle::bareMediaEmbedMatch('', $url)['provider']);
         assertSame($url, \ForumRewrite\Support\ThreadTitle::displayTitle('', $url, 'id', 200, true));
     }
 
@@ -34,7 +34,7 @@ final class MusicMediaEmbedTest
         assertSame(true, str_contains($html, '?tag=music'));
         assertSame(false, str_contains($r->render($url, true, false), 'data-resolve-src'));
         assertSame(false, str_contains($r->render($url, false, true), '<details'));
-        assertSame(null, \ForumRewrite\Support\ThreadTitle::bareMediaEmbedMatch('', $url));
+        assertSame('bandcamp', \ForumRewrite\Support\ThreadTitle::bareMediaEmbedMatch('', $url)['provider']);
     }
 
     public function testSoundcloudSetsRetainCollectionContext(): void
@@ -58,7 +58,7 @@ final class MusicMediaEmbedTest
         foreach (['https://soundcloud.com/discover/sets', 'https://soundcloud.com/artist/tracks', 'https://soundcloud.com/a/b/s-secret', 'https://soundcloud.com/a/b?secret_token=x', 'https://soundcloud.com/a/b#token=x', 'https://soundcloud.com/a/b/extra', 'https://soundcloud.com.evil.test/a/b', 'https://on.soundcloud.com/example', 'https://soundcloud.com/a/%62'] as $bad) {
             assertSame(null, $d->classify($bad));
         }
-        assertSame(null, \ForumRewrite\Support\ThreadTitle::bareMediaEmbedMatch('', $url));
+        assertSame('soundcloud', \ForumRewrite\Support\ThreadTitle::bareMediaEmbedMatch('', $url)['provider']);
         assertSame(false, \ForumRewrite\Support\ThreadTitle::displayTitle('', $url, 'id', 200, true) === 'Untitled');
         $html = $r->render($url, true, true);
         assertSame(true, str_contains($html, 'url=https%3A%2F%2Fsoundcloud.com%2Fforss%2Fflickermood&amp;auto_play=false'));
