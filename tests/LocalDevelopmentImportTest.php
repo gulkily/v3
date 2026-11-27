@@ -252,6 +252,14 @@ final class LocalDevelopmentImportTest
         $normal = new ImportHttpServer(realpath(__DIR__ . '/../public/router.php'), $w->root . '/normal.log', array_merge($environment, ['V3_DEV_LOG' => '0']));
         assertTrue($this->request($normal->url, '/local/remote', $base + ['action' => 'prepare_identity', 'public_key' => 'k'])[0] !== 200);
 
+        // /local without the slash reaches the same page, keeping its query.
+        [$code, , $headers] = $this->request($server->url, '/local?source=example.com', null, [], false);
+        assertSame(301, $code);
+        assertTrue(in_array('Location: /local/?source=example.com', $headers, true), implode("\n", $headers));
+        assertSame(200, $this->request($server->url, '/local')[0]);
+        assertSame(404, $this->request($normal->url, '/local')[0]);
+        assertSame(404, $this->request($normal->url, '/local/')[0]);
+
         [$code, $body] = $this->request($server->url, '/local/remote', $base + ['action' => 'prepare_identity', 'public_key' => 'k']);
         assertSame(200, $code, $body);
         assertSame('record', json_decode($body, true)['canonical_record']);
