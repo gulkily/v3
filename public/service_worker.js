@@ -263,18 +263,55 @@ const NAV_COPY_CACHE = CACHE_PREFIX + "nav-copy";
 const NAV_COPY_PATHS_KEY = "/__nav_copy_paths__";
 const navCopyRefreshes = new Map();
 
+// Installed app opens instantly (owa_instant_launch): the installed app writes this marker
+// into the copy cache. With it, every route the offline reader serves is answered from its
+// kept copy like a navbar page, and one with no copy that the network has not answered
+// within INSTANT_FALLBACK_MS gets the reader, so a slow connection never shows a blank app.
+const INSTANT_LAUNCH_KEY = "/__instant_launch__";
+const INSTANT_FALLBACK_MS = 3000;
+const INSTANT_KEPT_LIMIT = 150;
+
 async function navCopyTarget(request) {
   if (request.method !== "GET" || self.navigator.onLine === false) return null;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || url.search) return null;
   if (!(await caches.has(NAV_COPY_CACHE))) return null;
   const cache = await caches.open(NAV_COPY_CACHE);
+  const instant = Boolean(await cache.match(cacheKey(INSTANT_LAUNCH_KEY)));
   const listed = await cache.match(cacheKey(NAV_COPY_PATHS_KEY));
-  if (!listed) return null;
-  const paths = (await listed.text()).split("\n");
-  if (!paths.includes(url.pathname)) return null;
+  const paths = listed ? (await listed.text()).split("\n") : [];
+  const reader = instant && supportsOfflineNavigation(url);
+  if (!paths.includes(url.pathname) && !reader) return null;
   url.hash = "";
-  return { cache, key: url.href, path: url.pathname };
+  return { cache, key: url.href, path: url.pathname, reader };
+}
+
+function isCopyControlKey(url) {
+  const path = new URL(url).pathname;
+  return path === NAV_COPY_PATHS_KEY || path === INSTANT_LAUNCH_KEY;
+}
+
+// Keep a fresh copy; past the limit, drop the copies stored longest ago.
+async function keepCopy(target, response) {
+  await target.cache.put(target.key, response);
+  const pages = (await target.cache.keys()).filter((request) => !isCopyControlKey(request.url));
+  for (const request of pages.slice(0, Math.max(0, pages.length - INSTANT_KEPT_LIMIT))) await target.cache.delete(request);
+}
+
+// The network answer, or the cached reader if none came within the limit. The network
+// request goes on either way and becomes the kept copy for next time.
+async function networkOrReader(event, target, network) {
+  if (!target || !target.reader) return { response: await network, reader: false };
+  const shell = await cachedResponse(await caches.open(CACHE_NAME), OFFLINE_READER_URL);
+  if (!shell) return { response: await network, reader: false };
+  let timer;
+  const late = new Promise((done) => { timer = setTimeout(() => done(null), INSTANT_FALLBACK_MS); });
+  const outcome = await Promise.race([network.then((response) => ({ response }), (error) => ({ error })), late]);
+  clearTimeout(timer);
+  if (outcome && outcome.error) throw outcome.error; // the usual offline fallback follows
+  if (outcome) return { response: outcome.response, reader: false };
+  event.waitUntil(network.then((response) => keepable(response) ? keepCopy(target, response.clone()) : null).catch(() => {}));
+  return { response: shell, reader: true };
 }
 
 function keepable(response) {
@@ -303,7 +340,7 @@ async function networkFirstNavigation(event) {
         let fresh = (await earlyFetch) || (await preload);
         if (!fresh) fresh = await fetch(target.key, { credentials: "same-origin", headers: { Accept: "text/html" } });
         if (!keepable(fresh)) return null;
-        await target.cache.put(target.key, fresh.clone());
+        await keepCopy(target, fresh.clone());
         return pageVersion(fresh);
       })().catch(() => null);
       navCopyRefreshes.set(target.path, refresh);
@@ -314,8 +351,9 @@ async function networkFirstNavigation(event) {
     }
     // This page comes from the network, so an older background refresh says nothing about it.
     if (target) navCopyRefreshes.delete(target.path);
-    const response = (await earlyFetch) || (await preload) || (await fetch(request));
-    if (target && keepable(response)) event.waitUntil(target.cache.put(target.key, response.clone()).catch(() => {}));
+    const network = (async () => (await earlyFetch) || (await preload) || (await fetch(request)))();
+    const { response, reader } = await networkOrReader(event, target, network);
+    if (target && !reader && keepable(response)) event.waitUntil(keepCopy(target, response.clone()).catch(() => {}));
     return response;
   } catch (error) {
     const url = new URL(request.url);

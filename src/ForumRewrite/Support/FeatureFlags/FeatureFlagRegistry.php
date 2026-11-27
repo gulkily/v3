@@ -76,6 +76,7 @@ final class FeatureFlagRegistry
     public const SESSION_KEY_BOOTSTRAP_HTTP_ENABLED = 'FORUM_SESSION_KEY_BOOTSTRAP_HTTP_ENABLED';
     public const FAST_NAVIGATION_ENABLED = 'FORUM_FAST_NAVIGATION_ENABLED';
     public const NAV_CACHED_COPY_ENABLED = 'FORUM_NAV_CACHED_COPY_ENABLED';
+    public const OWA_INSTANT_LAUNCH_ENABLED = 'FORUM_OWA_INSTANT_LAUNCH_ENABLED';
 
     /** Stable UI order, independent of definition insertion order. See CONTRIBUTING.md. */
     public const PRESENTATION_ORDER = [
@@ -92,7 +93,7 @@ final class FeatureFlagRegistry
             self::TAG_UNLOCKS_ENABLED, self::AGENT_PROMPT_ENABLED, self::AGENT_CHECKIN_ENABLED,
             self::READING_MARGINS_ENABLED, self::DRAGGABLE_WINDOWS_ENABLED, self::OPEN_BESIDE_ENABLED, self::GUESTBOOK_ENABLED, self::ZEN_STRIP_ENABLED, self::POST_RECORDS_ENABLED,
             self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::VISIT_HISTORY_ENABLED, self::PLEDGES_ENABLED, self::THREAD_PORT_ENABLED, self::THREAD_PORT_GUESTS_ENABLED,
-            self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED, self::QDB_QUEUE_ENABLED, self::BACKLOG_ENABLED, self::PUSH_ENABLED, self::OWA_RESUME_ENABLED],
+            self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED, self::QDB_QUEUE_ENABLED, self::BACKLOG_ENABLED, self::PUSH_ENABLED, self::OWA_RESUME_ENABLED, self::OWA_INSTANT_LAUNCH_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
             self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::MEDIA_EMBEDS_FIRST_LINE_TITLES_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
             self::THREAD_ACTIVITY_DRAWER_ENABLED],
@@ -678,6 +679,16 @@ final class FeatureFlagRegistry
                 siteMutable: true,
                 group: 'EXPERIENCE',
                 releasedOn: '2026-11-25',
+            ),
+            new FeatureFlagDefinition(
+                self::OWA_INSTANT_LAUNCH_ENABLED,
+                'Installed app opens instantly',
+                'In the app added to the home screen, the board, threads, tags and navbar pages open at once from the copy kept last time while a fresh copy loads in the background; if it changed, the new-version notice offers Reload. A page with no kept copy that the network has not delivered within 3 seconds opens in the offline reader. Browser tabs are not affected.',
+                true,
+                self::OWA_INSTANT_LAUNCH_ENABLED,
+                siteMutable: true,
+                group: 'EXPERIENCE',
+                releasedOn: '2026-11-27',
             ),
             new FeatureFlagDefinition(
                 self::PLEDGES_ENABLED,

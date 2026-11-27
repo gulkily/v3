@@ -295,6 +295,7 @@ final class TemplateRenderer
             'faviconPath' => $this->versionEndpoint === '/api/docs-version'
                 ? '/docs/_assets/' . basename(FaviconRegistry::resolve($profile)) : FaviconRegistry::resolve($profile),
             'touchIconPath' => $this->versionEndpoint === '/api/docs-version' ? null : FaviconRegistry::touchIcon($profile),
+            'launchImages' => $this->versionEndpoint === '/api/docs-version' ? [] : FaviconRegistry::launchImages($profile),
             // Named in the page itself for browsers that skip the manifest when adding to the home screen.
             'appName' => BrowserRuntimeProfile::fromProfile($profile)['manifestName'],
             // The hash makes a browser that cached an older manifest fetch the current one.
@@ -366,7 +367,10 @@ final class TemplateRenderer
             'visitHistoryScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::VISIT_HISTORY_ENABLED) ? $this->assetPath('/assets/visit_history.js') : null,
             'fastNavigationScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::FAST_NAVIGATION_ENABLED) ? $this->assetPath('/assets/fast_navigation.js') : null,
             'owaResumeEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::OWA_RESUME_ENABLED) && !$this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY),
-            'navCachedCopyScriptPath' => $this->featureFlags->isEnabled(FeatureFlagRegistry::NAV_CACHED_COPY_ENABLED) ? $this->assetPath('/assets/nav_cached_copy.js') : null,
+            'navCachedCopyEnabled' => $navCachedCopy = $this->featureFlags->isEnabled(FeatureFlagRegistry::NAV_CACHED_COPY_ENABLED),
+            // Installed app opens instantly (owa_instant_launch) reuses the navbar copy script.
+            'owaInstantLaunchEnabled' => $owaInstantLaunch = $this->featureFlags->isEnabled(FeatureFlagRegistry::OWA_INSTANT_LAUNCH_ENABLED) && !$this->featureFlags->isEnabled(FeatureFlagRegistry::APPROVED_MEMBERS_ONLY),
+            'navCachedCopyScriptPath' => ($navCachedCopy || $owaInstantLaunch) ? $this->assetPath('/assets/nav_cached_copy.js') : null,
             'deployPromptEnabled' => $deployPrompt = $this->featureFlags->isEnabled(FeatureFlagRegistry::DEPLOY_HEADER_PROMPT_ENABLED),
             'deployPromptScriptPath' => $deployPrompt ? $this->assetPath('/assets/deploy_prompt.js') : null,
             'deployCelebrateScriptPath' => $deployPrompt ? $this->assetPath('/assets/deploy_celebrate.js') : null,
