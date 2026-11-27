@@ -197,7 +197,23 @@ try {
   await reader.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]')?.dataset.privateMessageReaderSettled === '1', null, { timeout: 120000 });
   await reader.waitForFunction(count => document.querySelectorAll('[data-private-message-id][data-reader-state="verified"]').length === count, 8, { timeout: 120000 });
   assert.deepEqual(errors, []);
-  console.log('PASS register, approve, import, pull, verify, confirm, repeat, read. Artifacts: ' + root);
+  // 7. Names differ: the clone holds this key under another name. The card says so before Pull, with Details.
+  const index = join(localRoot, 'cache/index.sqlite3');
+  php(`$p=new PDO('sqlite:${index}');$q=$p->prepare('UPDATE profiles SET username=? WHERE identity_id=?');$q->execute(['alice-here','openpgp:${aliceLocal.fingerprint}']);`);
+  await page.goto(local + '/local/?source=' + encodeURIComponent(base));
+  await status(page).filter({ hasText: 'has this key as "alice", this clone as "alice-here"' }).waitFor({ timeout: 60000 });
+  assert.equal(await page.getByRole('button', { name: /Pull my messages/ }).isVisible(), false, 'No Pull while the names differ');
+  const details = page.locator('[data-local-pull-details]');
+  assert.equal(await details.evaluate(node => node.open), false, 'Details start closed');
+  await details.locator('summary').click();
+  const detailText = await details.locator('pre').textContent();
+  for (const line of ['step: local pull: key_status', 'source_username: alice', 'local_username: alice-here', 'key: openpgp:' + aliceLocal.fingerprint, 'browser: ']) {
+    assert(detailText.includes(line), 'Details include ' + line + '\n' + detailText);
+  }
+  assert.doesNotMatch(detailText, /PRIVATE KEY|v3_session|BEGIN PGP MESSAGE/);
+  await details.getByRole('button', { name: 'Copy' }).waitFor();
+  await page.locator('[data-local-pull]').screenshot({ path: join(root, 'mismatch.png') });
+  console.log('PASS register, approve, import, pull, verify, confirm, repeat, read, name mismatch. Artifacts: ' + root);
 } catch (error) {
   console.error(log.split('\n').filter(line => !/Accepted|Closing|\[200\]|V3DEV\t200/.test(line)).slice(-60).join('\n'));
   if (page) console.error('PAGE:\n' + await page.locator('main').innerText().catch(() => '(no page)'));

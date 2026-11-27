@@ -233,7 +233,7 @@ final class LocalDevelopmentImportTest
             header("Content-Type: application/json");
             $exists = is_file(__DIR__ . "/relay-created");
             if ($path === "/api/get_username") { header("Content-Type: text/plain"); echo "Username-Token: ilyag\nApproved-Keys: 1\n"; }
-            elseif ($path === "/api/get_profile") { if (!$exists) { http_response_code(404); echo "profile not found\n"; } else { header("Content-Type: text/plain"); echo "Approved: no\n"; } }
+            elseif ($path === "/api/get_profile") { if (!$exists) { http_response_code(404); echo "profile not found\n"; } else { header("Content-Type: text/plain"); echo "Username: ilyag\nApproved: no\n"; } }
             elseif ($path === "/api/prepare_identity") { echo $exists ? json_encode(["status" => "error", "error" => "Identity already exists for this fingerprint."]) : json_encode(["status" => "ok", "prepare_token" => "t", "canonical_record" => "record"]); }
             elseif ($path === "/api/create_identity") { touch(__DIR__ . "/relay-created"); echo json_encode(["status" => "ok", "signature" => $_POST["detached_signature"] ?? ""]); }
             else { http_response_code(418); echo "{}"; }');
@@ -284,10 +284,19 @@ final class LocalDevelopmentImportTest
         assertSame(['registered' => true, 'approved' => false, 'locally_known' => false, 'locally_approved' => false],
             array_intersect_key($state, array_flip(['registered', 'approved', 'locally_known', 'locally_approved'])));
         assertStringContains('/tools/user-access/profiles/openpgp-', $state['source_key_url']);
+        assertSame('ilyag', $state['source_username']);
+        assertSame(null, $state['local_username']);
 
         [$code, $body] = $this->request($server->url, '/local/remote', $base + ['action' => 'pull', 'identity_id' => $state['identity_id'], 'challenge' => 'c', 'signature' => 's']);
         assertSame(400, $code, $body);
-        assertStringContains('Import public content above', json_decode($body, true)['error']);
+        $failure = json_decode($body, true);
+        assertStringContains('Import public content above', $failure['error']);
+        // Every error carries the step and its conditions for the page's Details disclosure.
+        assertSame('local pull: pull', $failure['step']);
+        assertSame('local pull: pull', $failure['details']['step']);
+        assertSame($state['identity_id'], $failure['details']['key']);
+        assertStringContains('InvalidArgumentException: ', $failure['details']['error']);
+        assertTrue(is_int($failure['details']['waited_ms']));
         assertStringNotContains('authenticate_identity', file_get_contents($w->root . '/relay-requests.log'));
     }
 
@@ -356,7 +365,7 @@ final class LocalDevelopmentImportTest
         $unapproved = $remote(fn () => ['status' => 200, 'headers' => [], 'body' => "status=ok\napproved=0\n"]);
         assertSame(['approved' => false], $unapproved->signIn('openpgp:' . str_repeat('a', 40), 'c', 's'));
         $missing = $remote(fn () => ['status' => 404, 'headers' => [], 'body' => "profile not found\n"]);
-        assertSame(['registered' => false, 'approved' => false], $missing->keyState('openpgp:' . str_repeat('a', 40)));
+        assertSame(['registered' => false, 'approved' => false, 'source_username' => null], $missing->keyState('openpgp:' . str_repeat('a', 40)));
     }
 
     private function environment(ImportTestWorkspace $w, string $target): array

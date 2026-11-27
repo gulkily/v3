@@ -33,8 +33,12 @@ final class LocalMessagePull
             'transfers_mismatched' => 0, 'read_marked' => 0];
         for ($page = 0; $page < $maxPages; $page++) {
             $result = $remote->export($progress['after_time'], $progress['after_id']);
-            if (strtolower((string) ($result['account'] ?? '')) !== $account) {
-                throw new RuntimeException('The source signed this key in as a different account. Nothing was pulled.');
+            $sourceAccount = strtolower((string) ($result['account'] ?? ''));
+            if ($sourceAccount !== $account) {
+                $host = (string) parse_url($remote->source(), PHP_URL_HOST);
+                throw new LocalPullFailure($host . ' has this key as "' . $sourceAccount . '", this clone as "' . $account
+                    . '". Nothing was pulled. This clone shows mail only for its own name, so use a key named "' . $sourceAccount . '" here.',
+                    ['source_account' => $sourceAccount, 'local_account' => $account]);
             }
             foreach ($result['messages'] ?? [] as $row) {
                 $outcome = $this->messages->importEnvelope($row);

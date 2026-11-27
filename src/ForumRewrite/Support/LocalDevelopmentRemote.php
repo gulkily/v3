@@ -61,13 +61,14 @@ final class LocalDevelopmentRemote
         return (int) $match[1];
     }
 
-    /** Whether the source knows this key, and whether it is approved there. @return array{registered:bool,approved:bool} */
+    /** Whether the source knows this key, whether it is approved there, and its name there. @return array{registered:bool,approved:bool,source_username:?string} */
     public function keyState(string $identityId): array
     {
         $response = $this->call('GET', '/api/get_profile', ['profile_slug' => str_replace(':', '-', $identityId)]);
-        if ($response['status'] === 404) return ['registered' => false, 'approved' => false];
+        if ($response['status'] === 404) return ['registered' => false, 'approved' => false, 'source_username' => null];
         $this->assertOk($response, 'Could not check the key on ' . $this->source() . '.');
-        return ['registered' => true, 'approved' => preg_match('/^Approved: (?:yes|1|true)$/mi', $response['body']) === 1];
+        return ['registered' => true, 'approved' => preg_match('/^Approved: (?:yes|1|true)$/mi', $response['body']) === 1,
+            'source_username' => preg_match('/^Username: (.+)$/m', $response['body'], $match) === 1 ? trim($match[1]) : null];
     }
 
     /** @return array<string, mixed> canonical_record and prepare_token, or exists => true */

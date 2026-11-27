@@ -38,6 +38,9 @@ final class LocalDevelopmentRemoteController
             $this->send(['status' => 'error', 'error' => 'Reload the local development page and try again from this local address.'], 403);
             return;
         }
+        $action = is_string($_POST['action'] ?? null) ? substr($_POST['action'], 0, 32) : '';
+        $started = microtime(true);
+        $remote = null;
         try {
             $remote = $this->remote($this->field('source', 2048));
             $result = match ($this->field('action', 32)) {
@@ -55,10 +58,23 @@ final class LocalDevelopmentRemoteController
             };
             $this->send(['status' => 'ok'] + $result + ['source' => $remote->source()], 200);
         } catch (InvalidArgumentException $error) {
-            $this->send(['status' => 'error', 'error' => $error->getMessage()], 400);
+            $this->sendError($error, 400, $action, $remote, $started);
         } catch (Throwable $error) {
-            $this->send(['status' => 'error', 'error' => $error->getMessage()], 502);
+            $this->sendError($error, 502, $action, $remote, $started);
         }
+    }
+
+    /** The short message, plus fields for the page's Details: the step, the error and the conditions. */
+    private function sendError(Throwable $error, int $status, string $action, ?LocalDevelopmentRemote $remote, float $started): void
+    {
+        $details = ['step' => 'local pull: ' . ($action !== '' ? $action : 'request'), 'error' => get_class($error) . ': ' . $error->getMessage(),
+            'local_status' => $status, 'waited_ms' => (int) round((microtime(true) - $started) * 1000),
+            'source' => $remote?->source()];
+        if (is_string($_POST['identity_id'] ?? null) && preg_match('/^openpgp:[a-f0-9]{40}$/D', strtolower($_POST['identity_id'])) === 1) {
+            $details['key'] = strtolower($_POST['identity_id']);
+        }
+        if ($error instanceof \ForumRewrite\Support\LocalPullFailure) $details += $error->details;
+        $this->send(['status' => 'error', 'error' => $error->getMessage(), 'step' => $details['step'], 'details' => $details], $status);
     }
 
     /** What the page needs before registering: who the key says it is, here and on the source. */
@@ -70,6 +86,7 @@ final class LocalDevelopmentRemoteController
         $identityId = 'openpgp:' . strtolower($inspected['fingerprint']);
         $local = ProfileRepository::byIdentityId($this->routes->pdo(), $identityId);
         return $remote->keyState($identityId) + [
+            'local_username' => $local === null ? null : (string) $local['username'],
             'identity_id' => $identityId,
             'source_key_url' => $remote->source() . '/tools/user-access/profiles/' . str_replace(':', '-', $identityId) . '/',
             'username' => $inspected['username'],

@@ -26,10 +26,40 @@
     try { return window.localStorage.getItem(name) || ''; } catch (error) { return ''; }
   }
 
-  function setStatus(message, kind) {
+  // Failures: a short message, then a closed Details disclosure with a Copy button (CONTRIBUTING:
+  // "Error messages and diagnostics"). Details hold public facts only: never keys, cookies or message text.
+  var detailsNode = null;
+  function setStatus(message, kind, error) {
     statusNode.textContent = message;
     statusNode.dataset.kind = kind || 'info';
     statusNode.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+    if (detailsNode) { detailsNode.remove(); detailsNode = null; }
+    if (kind !== 'error') return;
+    var fields = Object.assign({ step: 'local pull' }, (error && error.details) || {}, {
+      page: location.pathname, source: source(), key: (currentState && currentState.identity_id) || (error && error.details && error.details.key) || '',
+      online: navigator.onLine, browser: navigator.userAgent, at: new Date().toISOString()
+    });
+    if (error && !(error.details && error.details.error)) fields.error = (error.name || 'Error') + ': ' + error.message;
+    var text = Object.keys(fields).filter(function (key) { return fields[key] !== null && fields[key] !== ''; })
+      .map(function (key) { return key + ': ' + fields[key]; }).join('\n');
+    detailsNode = document.createElement('details');
+    detailsNode.className = 'local-pull-details';
+    detailsNode.dataset.localPullDetails = '';
+    var summary = document.createElement('summary');
+    summary.textContent = 'Details';
+    var pre = document.createElement('pre');
+    pre.textContent = text;
+    var copy = document.createElement('button');
+    copy.type = 'button';
+    copy.textContent = 'Copy';
+    copy.addEventListener('click', function () {
+      (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject(new Error('Clipboard unavailable'))).then(function () {
+        copy.textContent = 'Copied';
+        window.setTimeout(function () { copy.textContent = 'Copy'; }, 1500);
+      }, function () { copy.textContent = 'Select the text to copy'; });
+    });
+    detailsNode.append(summary, pre, copy);
+    statusNode.after(detailsNode);
   }
 
   function stepText(name, text, done) {
@@ -39,17 +69,32 @@
     return item;
   }
 
+  // Every relayed step has a time limit and names itself when it fails.
+  var RELAY_TIMEOUT_MS = 180000;
   function relay(fields) {
     var body = new URLSearchParams(Object.assign({ token: root.dataset.token, source: source() }, fields));
+    var step = 'local pull: ' + fields.action, started = Date.now();
+    var controller = window.AbortController ? new AbortController() : null;
+    var timer = controller ? window.setTimeout(function () { controller.abort(); }, RELAY_TIMEOUT_MS) : null;
+    function failure(message, details) {
+      var error = new Error(message);
+      error.details = Object.assign({ step: step, waited_ms: Date.now() - started }, details || {});
+      return error;
+    }
     return fetch('/local/remote', {
-      method: 'POST', credentials: 'same-origin',
+      method: 'POST', credentials: 'same-origin', signal: controller ? controller.signal : undefined,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString()
     }).then(function (response) {
-      return response.json().catch(function () { return { status: 'error', error: 'The local server sent an unexpected response.' }; });
+      return response.json().catch(function () {
+        throw failure('The local server sent an unexpected response.', { error: 'HTTP ' + response.status + ' without JSON' });
+      });
+    }, function (error) {
+      throw failure(error.name === 'AbortError' ? 'This step took longer than ' + (RELAY_TIMEOUT_MS / 1000) + ' seconds.'
+        : 'The local server could not be reached. Check that ./v3 start is still running.', { error: error.name + ': ' + error.message });
     }).then(function (result) {
-      if (result.status !== 'ok') throw new Error(result.error || 'The request failed.');
+      if (result.status !== 'ok') throw failure(result.error || 'The request failed.', result.details);
       return result;
-    });
+    }).finally(function () { if (timer) window.clearTimeout(timer); });
   }
 
   function signText(text) {
@@ -67,6 +112,16 @@
     if (state.source_approved_keys === 0) {
       setStatus(host + ' has no approved key named "' + state.username + '". This browser\'s key must use the same username as your account there. Change the username on Account, then reload.', 'error');
       steps.hidden = true;
+      return;
+    }
+    // Both sides must agree on this key's name: the clone shows mail only for its own name.
+    if (state.registered && state.source_username && state.local_username
+        && state.source_username.toLowerCase() !== state.local_username.toLowerCase()) {
+      steps.hidden = true;
+      var mismatch = new Error('Names differ');
+      mismatch.details = { step: 'local pull: key_status', error: 'username on the source differs from this clone', key: state.identity_id, source_username: state.source_username, local_username: state.local_username };
+      setStatus(host + ' has this key as "' + state.source_username + '", this clone as "' + state.local_username
+        + '". This clone shows mail only for its own name, so use a key named "' + state.source_username + '" here.', 'error', mismatch);
       return;
     }
     var registered = state.registered;
@@ -178,7 +233,7 @@
       currentState = state;
       render(state);
       return state;
-    }).catch(function (error) { setStatus(error.message, 'error'); });
+    }).catch(function (error) { setStatus(error.message, 'error', error); });
   }
 
   registerButton.addEventListener('click', function () {
@@ -192,7 +247,7 @@
           canonical_record: String(prepared.canonical_record), detached_signature: signature });
       });
     }).then(refresh).catch(function (error) {
-      setStatus(error.message + ' Press Register to retry.', 'error');
+      setStatus(error.message + ' Press Register to retry.', 'error', error);
     }).then(function () { registerButton.removeAttribute('aria-disabled'); });
   });
 
@@ -216,7 +271,7 @@
         setStatus('Pulled. Trust the listed keys to read your mail here.');
       });
     }).catch(function (error) {
-      setStatus(/Import public content above/.test(error.message) ? error.message : error.message + ' Press Pull to resume.', 'error');
+      setStatus(/Import public content above|use a key named/.test(error.message) ? error.message : error.message + ' Press Pull to resume.', 'error', error);
     }).then(function () { pullButton.removeAttribute('aria-disabled'); });
   });
 
@@ -294,7 +349,7 @@
       trustBox.hidden = true;
       return finish(pending.total);
     }).catch(function (error) {
-      setStatus(error.message + ' Press Trust to continue.', 'error');
+      setStatus(error.message + ' Press Trust to continue.', 'error', error);
     }).then(function () {
       trustButton.removeAttribute('aria-disabled');
       trustButton.removeAttribute('aria-busy');
