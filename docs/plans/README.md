@@ -9,6 +9,7 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
+- [Zalgo post menu layering](zalgo_post_actions_layer/zalgo_post_actions_layer_one_shot.md) — keep the open post menu above Activity and reply cards.
 - [Merge About slot outage](merge_about_slot/merge_about_slot_one_shot.md) — restore startup after the About variant rename.
 - [Browser invitation expiry](invitation_expiry_runbook/invitation_expiry_runbook_one_shot.md) — correct the duration stated in the deployment runbook.
 - [Scrollbar gutter](scrollbar_gutter/scrollbar_gutter_one_shot.md) — Board and Recent no longer shift sideways when the scrollbar appears during load.
