@@ -43,6 +43,7 @@ final class FeatureFlagRegistry
     public const MEDIA_EMBEDS_ENABLED = 'FORUM_MEDIA_EMBEDS_ENABLED';
     public const MEDIA_EMBEDS_INLINE_PLAYER_ENABLED = 'FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED';
     public const MEDIA_EMBEDS_FIRST_LINE_TITLES_ENABLED = 'FORUM_MEDIA_EMBEDS_FIRST_LINE_TITLES_ENABLED';
+    public const MEDIA_EMBEDS_POSTERS_ENABLED = 'FORUM_MEDIA_EMBEDS_POSTERS_ENABLED';
     public const TAG_LINKS_ENABLED = 'FORUM_TAG_LINKS_ENABLED';
     public const POST_MARKDOWN_ENABLED = 'FORUM_POST_MARKDOWN_ENABLED';
     public const STATIC_PROFILE_PAGES_ENABLED = 'FORUM_STATIC_PROFILE_PAGES_ENABLED';
@@ -95,7 +96,7 @@ final class FeatureFlagRegistry
             self::PENDING_CHIP_APPROVAL_ENABLED, self::USAGE_REPORTS_ENABLED, self::VISIT_HISTORY_ENABLED, self::PLEDGES_ENABLED, self::THREAD_PORT_ENABLED, self::THREAD_PORT_GUESTS_ENABLED,
             self::FAST_NAVIGATION_ENABLED, self::NAV_CACHED_COPY_ENABLED, self::QDB_QUEUE_ENABLED, self::BACKLOG_ENABLED, self::PUSH_ENABLED, self::OWA_RESUME_ENABLED, self::OWA_INSTANT_LAUNCH_ENABLED],
         'RENDERING' => [self::COLLAPSE_SAME_AUTHOR_POSTS_ENABLED, self::STATIC_DETAIL_PAGES_ENABLED, self::STATIC_PROFILE_PAGES_ENABLED,
-            self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::MEDIA_EMBEDS_FIRST_LINE_TITLES_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
+            self::MEDIA_EMBEDS_ENABLED, self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED, self::MEDIA_EMBEDS_FIRST_LINE_TITLES_ENABLED, self::MEDIA_EMBEDS_POSTERS_ENABLED, self::POST_MARKDOWN_ENABLED, self::TAG_LINKS_ENABLED,
             self::THREAD_ACTIVITY_DRAWER_ENABLED],
         'BACKUP' => [self::IMAGE_BACKUP_ENABLED, self::TEXT_BACKUP_ENABLED],
         'FASTMOD' => [self::FAST_SCORING_ENABLED, self::FAST_SCORING_AUTOMATIC_ENQUEUE_ENABLED,
@@ -609,6 +610,17 @@ final class FeatureFlagRegistry
                 requiresEnabledFlag: self::MEDIA_EMBEDS_ENABLED,
                 group: 'RENDERING',
                 releasedOn: '2026-11-25',
+            ),
+            new FeatureFlagDefinition(
+                self::MEDIA_EMBEDS_POSTERS_ENABLED,
+                'Media embed posters',
+                'Show a YouTube link\'s poster image with a play button instead of the plain play bar. Each poster is copied from YouTube once and served from this site, so page views never contact YouTube. Off by default; requires Media embed inline player.',
+                false,
+                self::MEDIA_EMBEDS_POSTERS_ENABLED,
+                siteMutable: true,
+                requiresEnabledFlag: self::MEDIA_EMBEDS_INLINE_PLAYER_ENABLED,
+                group: 'RENDERING',
+                releasedOn: '2026-11-27',
             ),
             new FeatureFlagDefinition(
                 self::POST_RECORDS_ENABLED,

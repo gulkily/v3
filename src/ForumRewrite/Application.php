@@ -195,6 +195,11 @@ final class Application
             return;
         }
 
+        if (preg_match('#^/internal/media-embeds/posters/([A-Za-z0-9_-]{11})\.jpg$#', $path, $posterMatch) === 1) {
+            $this->mediaEmbedPreviewController()->poster($method, $posterMatch[1]);
+            return;
+        }
+
         if ($path === '/internal/media-embeds/warm-preview') {
             $this->mediaEmbedPreviewController()->warmPreview($method, $query);
             return;
@@ -3024,7 +3029,15 @@ final class Application
 
     private function mediaEmbedPreviewController(): MediaEmbedPreviewController
     {
-        return new MediaEmbedPreviewController($this->routeServices(), $this->projectRoot);
+        return new MediaEmbedPreviewController($this->routeServices(), $this->projectRoot, posterStore: $this->mediaEmbedPosterStore());
+    }
+
+    /** The poster copies, when Media embed posters (and the flags it needs) are on. */
+    private function mediaEmbedPosterStore(): ?\ForumRewrite\View\MediaEmbedPosterStore
+    {
+        return $this->featureFlags()->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_POSTERS_ENABLED)
+            ? \ForumRewrite\View\MediaEmbedPosterStore::openAt($this->projectRoot)
+            : null;
     }
 
     private function recordHistoryActivity(array $viewer): void

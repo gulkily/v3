@@ -55,3 +55,23 @@ Step 3 approved 2026-11-27 ("approved step 3"). Branch `feat/embed_presentation`
 - Estimate details: original scope: per-provider start rules and one-at-a-time; uncertainty medium. Unchanged.
 
 *— Claude · 2026-11-27 UTC · Model: claude-opus-5-5*
+
+## Stage 3 - Poster store, route and flag
+
+**Original estimate: 0.15**
+**Retrospective: 0.15**
+
+- Changes:
+  - New `View/MediaEmbedPosterStore.php`: keeps `<video id>.jpg` files in a `posters` folder beside the preview cache database. It fetches `hqdefault.jpg` by video ID from `i.ytimg.com` only, keeps only a JPEG under 512 KB, and leaves a `.failed` marker that blocks retries for an hour. Deleting the folder is safe.
+  - `MediaEmbedPreviewController.php`: the warm-preview request gains `kind=poster` for YouTube links the detector accepts; a new `poster()` action serves a stored poster with the one-year header attached images use, or 404.
+  - `Application.php`: route `/internal/media-embeds/posters/<id>.jpg`, answered before the read model loads; the poster store exists only when the flag is on.
+  - `FeatureFlagRegistry.php`: `FORUM_MEDIA_EMBEDS_POSTERS_ENABLED` ("Media embed posters"), off by default, requires the inline player flag, in Rendering.
+  - Posters stay out of `ImageStore`: that store holds signed post content with removal rules; posters are a disposable cache.
+- Verification:
+  - `./v3 test MediaEmbedPosterStoreTest MediaEmbedPreviewControllerTest FeatureFlagEvaluatorTest`: passed (46 run). New tests: one fetch then kept; non-JPEG answer kept as failure with an hour's wait; bad IDs never reach the disk; poster mode ignores non-YouTube links; posters off fetches and serves nothing.
+  - One real fetch from the workspace: 22,712 bytes in 0.2s. DreamHost not tried; pending deploy.
+- Notes:
+  - `FeatureFlagEvaluatorTest` lists every public flag; the new flag was added to both lists.
+- Estimate details: original scope: new store, route and flag; uncertainty medium. Unchanged.
+
+*— Claude · 2026-11-27 UTC · Model: claude-opus-5-5*

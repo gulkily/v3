@@ -9,6 +9,7 @@ use Exception;
 use ForumRewrite\View\BandcampPagePlayerFetcher;
 use ForumRewrite\View\InstagramPagePreviewFetcher;
 use ForumRewrite\View\MediaEmbedDetector;
+use ForumRewrite\View\MediaEmbedPosterStore;
 use ForumRewrite\View\MediaEmbedPreviewCacheStore;
 use ForumRewrite\View\OembedTitleFetcher;
 use ForumRewrite\View\YoutubeOembedTitleFetcher;
@@ -40,6 +41,7 @@ final class MediaEmbedPreviewController
         private readonly YoutubeOembedTitleFetcher $youtubeFetcher = new YoutubeOembedTitleFetcher(),
         private readonly OembedTitleFetcher $oembedFetcher = new OembedTitleFetcher(),
         private readonly BandcampPagePlayerFetcher $bandcampFetcher = new BandcampPagePlayerFetcher(),
+        private readonly ?MediaEmbedPosterStore $posterStore = null,
     ) {
     }
 
@@ -57,6 +59,16 @@ final class MediaEmbedPreviewController
         $url = (string) ($query['url'] ?? '');
         $threadId = trim((string) ($query['thread_id'] ?? ''));
         $threadId = $threadId !== '' ? $threadId : null;
+
+        if ($provider === 'youtube' && ($query['kind'] ?? '') === 'poster') {
+            // Poster copy (MediaEmbedPosterStore); null when Media embed posters is off.
+            $classified = $this->detector->classify($url);
+            if ($this->posterStore !== null && $classified !== null && $classified['provider'] === 'youtube') {
+                $this->posterStore->warm($classified['embedId']);
+            }
+            $this->routeServices->sendText('', 204);
+            return;
+        }
 
         if ($provider === 'instagram') {
             $classified = $this->detector->classify($url);
@@ -79,6 +91,18 @@ final class MediaEmbedPreviewController
         }
 
         $this->routeServices->sendText('', 204);
+    }
+
+    /** A stored poster, kept by the browser for a year (the file never changes); 404 otherwise. */
+    public function poster(string $method, string $videoId): void
+    {
+        $path = $method === 'GET' ? $this->posterStore?->path($videoId) : null;
+        $bytes = $path === null ? false : @file_get_contents($path);
+        if (!is_string($bytes)) {
+            $this->routeServices->sendText("Not found.\n", 404, ['Cache-Control: no-store']);
+            return;
+        }
+        $this->routeServices->sendBinary($bytes, 'image/jpeg', [\ForumRewrite\Http\ImageController::KEEP]);
     }
 
     private function warmInstagramPreview(string $embedId, string $url, ?string $threadId): void
