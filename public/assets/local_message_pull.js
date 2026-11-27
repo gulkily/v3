@@ -292,10 +292,12 @@
           'local pull: connect key_status', state.registered ? 'not approved on the source' : 'not registered on the source');
       }
       if (state.source_username && state.local_username && state.source_username.toLowerCase() !== state.local_username.toLowerCase()) {
-        var mismatch = stepError(host + ' has this key as "' + state.source_username + '", this clone as "' + state.local_username + '".',
+        var mismatch = stepError(host + ' has this key as "' + state.source_username + '", this clone as "' + state.local_username
+          + '". This clone shows mail only for its own name, so use a key named "' + state.source_username + '" here.',
           'local pull: connect key_status', 'username on the source differs from this clone');
         mismatch.details.source_username = state.source_username;
         mismatch.details.local_username = state.local_username;
+        mismatch.final = true; // retrying cannot fix it
         throw mismatch;
       }
       return state;
@@ -348,7 +350,8 @@
 
   function connectFailed(error) {
     fallback.hidden = true;
-    setStatus(error.message + (/Press Connect|Nothing changed/.test(error.message) ? '' : ' Press Connect to continue.'), 'error', error);
+    summaryNode.hidden = true;
+    setStatus(error.message + (error.final || /Press Connect|Nothing changed/.test(error.message) ? '' : ' Press Connect to continue.'), 'error', error);
   }
 
   connectButton.addEventListener('click', function () {

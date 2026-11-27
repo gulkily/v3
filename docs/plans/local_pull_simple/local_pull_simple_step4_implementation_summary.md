@@ -101,3 +101,28 @@ Branch `feature/local_pull_simple` from `origin/main` `fd500820`. Planning commi
 - Notes:
   - **Deviation:** `LocalMessagePull` **still imports transfers**. The plan assumed every message decrypts directly with the handed-over key. But mail from before that key existed reaches it on zenmemes.com only through history-sync transfers, and local Messages already serves pulled transfers for the viewer's key (`PrivateMessageMailboxService` → `transfersFor`), with no verify or confirm needed. Dropping them would make older mail unreadable here. What retired is the verify/confirm round trip, which only reported coverage back to the source.
   - Retrospective stage-work assessment: **0.15**.
+
+## Stage 5 - Two-instance browser check
+
+**Original estimate: 0.15** (unchanged)
+
+- Changes:
+  - Rewrote `tests/browser/local_message_pull.mjs`. One browser holds Alice's key on the source origin only; the clone starts with no key. It checks:
+    1. Before Connect, the card says Press Connect and shows no Pull.
+    2. Connect, then **Use it there** in the source's window, installs the key on the clone.
+    3. The clone does not know the key, so Connect imports. The test reloads the page while the import is queued, then runs the task worker as `./v3 start` would. Connect resumes, survives `import_control.js`'s reload at the end, and finishes: "Connected. Open Messages…". Its `sessionStorage` stage is cleared, 8 messages are in the clone, and the saved-copies flag is on.
+    4. Messages reads all 8 with verified senders, the saved copies hold all 8, and they stay readable over three reloads.
+    5. Back on `/local/`: "Connected as alice", and **Pull new messages** adds 0.
+    6. A name mismatch stops with both names and closed Details, without "Press Connect" and without a stale summary.
+    7. Neither server's log holds a private key.
+  - Screenshots at 1100 and 390 px; no horizontal overflow.
+  - Two fixes from the screenshots:
+    - The name-mismatch error now says what to do instead of "Press Connect to continue".
+    - A failure hides the previous pull summary.
+- Verification:
+  - `local_message_pull.mjs` passes.
+  - `local_development.py` passes (fresh checkout, `./v3 start`, import card at 390/1280, JS on and off).
+- Notes:
+  - Messages read the mail with no separate sign-in step: installing the handed-over key signs the session in, as a backup restore does.
+  - After a reload, the summary covers only the last pass, because a resumed pass pulls again and adds nothing. The test checks the total.
+  - Retrospective stage-work assessment: **0.15**.
