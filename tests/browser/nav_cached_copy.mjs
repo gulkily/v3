@@ -88,6 +88,9 @@ const version = (page) => page.getAttribute('meta[name="page-version"]', 'conten
 const appVersion = (page) => page.getAttribute('meta[name="app-version"]', 'content');
 const bannerShown = (page) => page.evaluate(() => { const banner = document.querySelector('[data-role="app-version-banner"]'); return !!banner && !banner.hidden; });
 const navLink = (page, href) => page.locator(`.site-header .nav > a.nav-link[href="${href}"]`).first();
+// The server may still answer with the page built before a commit; wait until it serves the new one,
+// so the background copy is fresh rather than racing the rebuild.
+const served = (base, href, wanted) => until(async () => (await (await fetch(base + href)).text()).includes(`<meta name="page-version" content="${wanted}">`), `server serves ${href} at ${wanted}`);
 const go = async (page, href) => { await navLink(page, href).click(); await page.waitForURL((url) => url.pathname === href); await page.waitForLoadState('load'); };
 
 try {
@@ -96,7 +99,7 @@ try {
     const off = await site(false); servers.push(off.server);
     const { context, page, errors } = await controlledPage(off.base);
     assert.equal(await page.getAttribute('html', 'data-nav-cached-copy'), '0');
-    await go(page, '/users/'); await go(page, '/');
+    await go(page, '/users/'); await go(page, '/threads/');
     await page.waitForTimeout(500);
     assert.equal(await kept(page), null, 'flag off: no copy cache');
     assert.deepEqual(errors, []);
@@ -107,14 +110,15 @@ try {
   const { context, page, errors } = await controlledPage(on.base);
   assert.equal(await page.getAttribute('html', 'data-nav-cached-copy'), '1');
   await go(page, '/users/');
-  await go(page, '/');
-  await until(async () => JSON.stringify(await kept(page)) === JSON.stringify(['/', '/users/']), 'copies of / and /users/');
+  await go(page, '/threads/');
+  await until(async () => JSON.stringify(await kept(page)) === JSON.stringify(['/threads/', '/users/']), 'copies of /threads/ and /users/');
   const before = await version(page);
   const codeVersion = await appVersion(page);
 
   // New content: the next visit shows the older copy, offers the notice, and keeps the page.
   const after = codeVersion + ':' + on.commit('New post');
   assert.equal(await (await fetch(on.base + '/api/version')).text(), codeVersion + '\n', 'posting leaves application version unchanged');
+  await served(on.base, '/users/', after);
   await go(page, '/users/');
   assert.equal(await version(page), before, 'served from the older copy');
   await until(() => bannerShown(page), 'notice raised by the background copy');
@@ -122,7 +126,7 @@ try {
   assert.equal(new URL(page.url()).search, '', 'the page was not replaced');
 
   // A remembered newer version does not redirect an older copy either.
-  await go(page, '/');
+  await go(page, '/threads/');
   assert.equal(await version(page), before, 'board from its older copy');
   await page.waitForTimeout(2000);
   assert.equal(new URL(page.url()).search, '', 'no ?__v redirect');
@@ -134,9 +138,14 @@ try {
 
   // Reload in the notice opens the current page from the network.
   const latest = codeVersion + ':' + on.commit('Another post');
-  await go(page, '/');
-  assert.equal(await version(page), after, 'board copy refreshed on the previous visit');
-  await until(() => bannerShown(page), 'notice on the board');
+  // Users, not the board: the board is a static page, and the empty commits here add no post to rebuild it.
+  await served(on.base, '/users/', latest);
+  // A fast-navigation early fetch from the last Users click can linger unused for up to 10 s
+  // (EARLY_FETCH_MS) and would answer this visit's refresh with the page from before the commit.
+  await page.waitForTimeout(10500);
+  await go(page, '/users/');
+  assert.equal(await version(page), after, 'Users copy refreshed on the previous visit');
+  await until(() => bannerShown(page), 'notice on Users');
   await page.click('[data-action="reload-for-new-version"]');
   await page.waitForURL((url) => url.searchParams.has('__v'));
   await page.waitForLoadState('load');
@@ -148,8 +157,8 @@ try {
   // A key change drops every copy; the next visits make new ones.
   await page.evaluate(() => window.dispatchEvent(new Event('forum:identity-changed')));
   await until(async () => JSON.stringify(await kept(page)) === '[]', 'copies dropped');
-  await go(page, '/users/'); await go(page, '/');
-  await until(async () => JSON.stringify(await kept(page)) === JSON.stringify(['/', '/users/']), 'copies made again');
+  await go(page, '/users/'); await go(page, '/threads/');
+  await until(async () => JSON.stringify(await kept(page)) === JSON.stringify(['/threads/', '/users/']), 'copies made again');
 
   // Copies answer with the server gone; pages outside the navbar never come from a copy.
   on.server.kill('SIGKILL'); await once(on.server, 'exit');

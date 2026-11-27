@@ -122,6 +122,7 @@ checklists, and proposals remain at the top level or in the collections below.
 [Push tap routing handoff](push_tap_routing_handoff.md) — notifications cycle 5: a tap opens the DM or reply, in an open window or offline.
 
 [Installed app reopens where you were](owa_resume/owa_resume_one_shot.md) — a fresh launch of the installed app at `/` returns to the page and scroll position from the last few hours; a notification tap still opens its own page.
+[Installed app opens instantly](owa_instant_launch/owa_instant_launch_one_shot.md) — in the installed app, the board, threads and tags open from the last kept copy while a fresh one loads; a page never opened gets the offline reader after 3 seconds of slow network; iPhone launch image.
 [Installed app name and fresh manifest](owa_app_title/owa_app_title_one_shot.md) — pages name the app in their own HTML for browsers that skip the manifest, and the manifest link carries its hash so a deploy replaces a cached copy; follow-up to `owa_start_url`.
 
 [Guestbook](guestbook/guestbook_step3_development_plan.md) — a `/guestbook/` page shows the guestbook thread's top-level replies as a paper book with numbered pages and a "Sign the book" form; the thread stays available as an ordinary thread.

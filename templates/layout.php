@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-auto-light-theme="<?= $e($autoThemes['light']) ?>" data-auto-dark-theme="<?= $e($autoThemes['dark']) ?>"<?php if ($pageTheme !== null): ?> data-page-theme="<?= $e($pageTheme) ?>" data-page-path="<?= $e($pagePath) ?>"<?php endif; ?> data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>" data-fast-navigation="<?= ($fastNavigationScriptPath ?? null) !== null ? '1' : '0' ?>" data-nav-cached-copy="<?= ($navCachedCopyScriptPath ?? null) !== null ? '1' : '0' ?>"<?php if (($navSlotCount ?? 0) > 0 && ($navSlotDefaults ?? []) !== []): ?> data-nav-slots="<?= $e(implode(' ', $navSlotDefaults)) ?>"<?php endif; ?><?php if ($usageReportsEnabled ?? false): ?><?php if (($usagePageKind ?? null) !== null): ?> data-usage-page="<?= $e($usagePageKind) ?>"<?php endif; ?> data-usage-words="<?= $e($usagePageWords) ?>"<?php endif; ?>>
+<html lang="en" data-default-theme="<?= $e($defaultTheme) ?>" data-auto-light-theme="<?= $e($autoThemes['light']) ?>" data-auto-dark-theme="<?= $e($autoThemes['dark']) ?>"<?php if ($pageTheme !== null): ?> data-page-theme="<?= $e($pageTheme) ?>" data-page-path="<?= $e($pagePath) ?>"<?php endif; ?> data-theme-hint-cookie="<?= $e($themeHintCookieName) ?>" data-approved-members-only="<?= $approvedMembersOnlyEnabled ? '1' : '0' ?>" data-fast-navigation="<?= ($fastNavigationScriptPath ?? null) !== null ? '1' : '0' ?>" data-nav-cached-copy="<?= ($navCachedCopyEnabled ?? false) ? '1' : '0' ?>"<?php if ($owaInstantLaunchEnabled ?? false): ?> data-owa-instant-launch="1"<?php endif; ?><?php if (($navSlotCount ?? 0) > 0 && ($navSlotDefaults ?? []) !== []): ?> data-nav-slots="<?= $e(implode(' ', $navSlotDefaults)) ?>"<?php endif; ?><?php if ($usageReportsEnabled ?? false): ?><?php if (($usagePageKind ?? null) !== null): ?> data-usage-page="<?= $e($usagePageKind) ?>"<?php endif; ?> data-usage-words="<?= $e($usagePageWords) ?>"<?php endif; ?>>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -41,6 +41,18 @@
       document.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'hidden') remember();
       });
+    })();
+  </script>
+<?php endif; ?>
+<?php if ($owaInstantLaunchEnabled ?? false): ?>
+  <script>
+    // Installed app opens instantly (owa_instant_launch): pages may be kept copies, so in the
+    // installed app they behave as navbar copies (notice instead of reload).
+    (function () {
+      if (window.navigator.standalone === true
+        || (typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches)) {
+        document.documentElement.setAttribute('data-nav-cached-copy', '1');
+      }
     })();
   </script>
 <?php endif; ?>
@@ -319,6 +331,9 @@
 <?php endif; ?>
 <?php if (!$approvedMembersOnlyEnabled): ?>
   <link rel="manifest" href="<?= $e($manifestPath) ?>">
+<?php foreach (($launchImages ?? []) as $launchImage): ?>
+  <link rel="apple-touch-startup-image" media="<?= $e($launchImage['media']) ?>" href="<?= $e($launchImage['href']) ?>">
+<?php endforeach; ?>
 <?php endif; ?>
   <link rel="alternate" type="text/plain" href="/llms.txt" title="Agent guide">
   <script>

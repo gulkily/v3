@@ -40,6 +40,8 @@
   // Navbar pages from last copy: with the flag off, drop any copies kept while it was on.
   function dropNavCopiesWhenOff() {
     if (document.documentElement.getAttribute("data-nav-cached-copy") !== "0" || !window.caches || !runtime.offlineCachePrefix) return;
+    // Installed app opens instantly keeps its copies in the same cache.
+    if (document.documentElement.getAttribute("data-owa-instant-launch") === "1") return;
     window.caches.delete(runtime.offlineCachePrefix + "nav-copy").catch(function () {});
   }
 
