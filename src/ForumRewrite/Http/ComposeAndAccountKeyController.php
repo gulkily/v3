@@ -432,6 +432,10 @@ final class ComposeAndAccountKeyController
         if ($requestedReturnTo === '/guestbook/' && $threadId === \ForumRewrite\SiteProfileRegistry::guestbookThread()) {
             return '/guestbook/';
         }
+        // Pledging from the support wall returns to the wall.
+        if ($requestedReturnTo === '/support/' && $threadId === \ForumRewrite\SiteProfileRegistry::supportThread()) {
+            return '/support/';
+        }
 
         return '/threads/' . $threadId;
     }

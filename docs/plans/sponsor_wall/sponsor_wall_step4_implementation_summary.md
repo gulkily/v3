@@ -58,3 +58,28 @@ Step 4 entry: the Step 3 projection of 0.60 is reaffirmed, unchanged, before imp
 - Estimate details: original scope plus the withdrawn refinement (no material change); uncertainty about wrapping went away once squares, not blocks, became the grid cells.
 
 *— Claude · 2026-11-27 UTC · Model: Claude Opus 5.5*
+
+## Stage 3 - Pledge from the wall
+
+**Original estimate: 0.15**
+
+**Retrospective: 0.18**
+
+- Changes:
+  - `support.php` renders the existing pledge form (`pledge_totals.php`, form part) with `pledgeReturnTo` `/support/` and presets 1, 3, 5, 10. Both are new optional parameters on the partial. The thread page passes neither, so its form is unchanged.
+  - `reply_form.php`: the amount field carries `data-pledge-presets` when presets are given.
+  - `pledge_field.js`: draws a button per preset after the field (only with script). A press fills the field as typing would, so the `pledge: N` line follows, and `aria-pressed` marks the chosen one.
+  - `resolveComposeReplyReturnTo` accepts `/support/` only for the support thread, as it does `/guestbook/`. Signed posts already honor `return_to` client-side (`canonicalReplyUrl`).
+  - The page loads the guestbook's signing scripts plus `pledge_field.js`. A block's first square carries `id="post-<pledge>"`, so the `#post-` anchor after posting lands on the new block.
+  - `support.css`: presets share one row (buttons are full width site-wide).
+  - New browser check `tests/browser/support_wall.mjs`.
+- Verification:
+  - `SupportPageTest::testThePledgeFormOffersPresetsAndReturnsToTheWall`: the field's presets, unit, `return_to` and script on `/support/`; no presets on the thread page; a no-script post returns to `/support/?created_post_id=`; `return_to=/support/` on another thread returns to that thread.
+  - `node tests/browser/support_wall.mjs` passes. At 375 by 667 with script: the Step 2 fixture shows 6.5 of 50, blocks of 3 (delivered), 1, 2 and a pending 1, "Also: sam", and no sideways scroll. Pressing "3" fills the field and the line. A post failed by the browser (a 500 from the reply API) stays on `/support/` with 3 kept, and pressing Post pledge again lands on `/support/?created_post_id=` with one pending 3-square block and the total unchanged. Once its key is approved, the total is 9.5 with two counted 3-square blocks. With no script at 1280: no presets, the field posts and returns to the wall, the unnamed pledge doesn't count, and the thread says why and links to the wall. Then 21 themes at 375 and 1280: no overflow and square squares.
+  - `./v3 test --smoke SupportPageTest SupportWallTest PledgeCampaignTest GuestbookPageTest`: 537 of 537 pass. The full suite was not run. `git diff --check` is clean.
+- Notes:
+  - The first screenshots stacked the presets one per row, because site.css makes every button full width. Fixed in `support.css`.
+  - A visitor without a name still sees "Posting as guest · Choose a name". The prompt that requires a name is the next cycle.
+- Estimate details: original scope; slightly over for the failed-post replay, which needed a route intercept to make a real failure.
+
+*— Claude · 2026-11-27 UTC · Model: Claude Opus 5.5*

@@ -44,6 +44,15 @@ final class SupportPageController
             'supportRoot' => $root,
             'pledgeCampaign' => $campaign,
             'posts' => $posts,
-        ], $title, 'support');
+        ], $title, 'support', [
+            '/assets/openpgp_loader.js',
+            '/assets/browser_signing.js',
+            '/assets/outbox_store.js',
+            '/assets/outbox_storage.js',
+            '/assets/outbox_compose.js',
+            '/assets/outbox_sender.js',
+            '/assets/private_site_auth.js',
+            ...($campaign !== null ? ['/assets/pledge_field.js'] : []),
+        ]);
     }
 }

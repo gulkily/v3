@@ -8,6 +8,8 @@
  *
  * @var array<string, mixed>|null $pledgeCampaign from ForumRewrite\View\PledgeCampaign::fromPosts()
  * @var string|null $pledgePart 'totals' (default) or 'form'
+ * @var string|null $pledgeReturnTo where posting the form returns to; the thread when unset
+ * @var list<int> $pledgePresets amounts offered as buttons beside the field; none when unset
  */
 $pledgeCampaign ??= null;
 $pledgePart = ($pledgePart ?? 'totals') === 'form' ? 'form' : 'totals';
@@ -54,6 +56,8 @@ $pledgeCount = (int) $pledgeCampaign['count'];
     'showBodyLabel' => false,
     'phoneReplyEnabled' => false,
     'pledgePlacement' => true,
+    'pledgePresets' => $pledgePresets ?? [],
+    'returnTo' => $pledgeReturnTo ?? null,
 ]), 1) ?>
 </div>
 <?php endif; ?>

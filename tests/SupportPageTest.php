@@ -67,6 +67,47 @@ final class SupportPageTest
         });
     }
 
+    public function testThePledgeFormOffersPresetsAndReturnsToTheWall(): void
+    {
+        [$root, $database, $service] = $this->environment();
+        $thread = $this->thread($service, 'Support ZenMemes', 'goal: 50 squares');
+        $other = $this->thread($service, 'Another campaign', 'goal: 10 coffees');
+        $app = fn (): Application => new Application(dirname(__DIR__), $root, $database);
+        $post = function (string $threadId, array $fields) use ($app): string {
+            $previous = $_POST;
+            $_POST = $fields + ['thread_id' => $threadId, 'parent_id' => $threadId, 'board_tags' => 'general', 'author_identity_id' => '', 'body_format' => 'plain'];
+            try {
+                return $this->render($app(), 'POST /compose/reply');
+            } finally {
+                $_POST = $previous;
+            }
+        };
+
+        $this->withProfile($thread, function () use ($app, $post, $thread, $other): void {
+            putenv('FORUM_PLEDGES_ENABLED=1');
+            try {
+                $support = $this->render($app(), '/support/');
+                $threadPage = $this->render($app(), '/threads/' . rawurlencode($thread));
+                // Without a script the server writes the line, and the reply lands back on the wall.
+                $back = $post($thread, ['body' => 'From the wall.', 'pledge_amount' => '3', 'return_to' => '/support/']);
+                // Elsewhere, return_to cannot send a reply to the wall.
+                $elsewhere = $post($other, ['body' => 'Not the wall.', 'pledge_amount' => '1', 'return_to' => '/support/']);
+            } finally {
+                putenv('FORUM_PLEDGES_ENABLED');
+            }
+            $form = substr($support, (int) strpos($support, 'data-pledge-form'), 6000);
+            supportAssertContains('data-role="pledge-amount" data-pledge-presets="1,3,5,10">', $form);
+            supportAssertContains('<span class="pledge-field__unit">squares</span>', $form);
+            supportAssertContains('name="return_to" value="/support/"', $form);
+            supportAssertContains('Post pledge', $form);
+            supportAssertContains('/assets/pledge_field.', $support);
+            // The thread's own form has no presets and returns to the thread.
+            supportAssertNotContains('data-pledge-presets', $threadPage);
+            supportAssertContains('/support/?created_post_id=', $back);
+            supportAssertContains('/threads/' . $other . '?created_post_id=', $elsewhere);
+        });
+    }
+
     public function testANamedThreadThatDoesNotExistShowsAnEmptyPage(): void
     {
         [$root, $database] = $this->environment();
@@ -135,8 +176,9 @@ final class SupportPageTest
 
     private function render(Application $application, string $path): string
     {
+        [$method, $path] = str_starts_with($path, 'POST ') ? ['POST', substr($path, 5)] : ['GET', $path];
         ob_start();
-        $application->handle('GET', $path);
+        $application->handle($method, $path);
 
         return (string) ob_get_clean();
     }

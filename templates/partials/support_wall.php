@@ -26,7 +26,7 @@ $squareClasses = 'support-wall__square support-wall__square--claimed'
     . ($square === 0 ? ' support-wall__square--first' : '')
     . ($wallIndex === (int) $supportWall['goal'] ? ' support-wall__square--goal' : '');
 ?>
-    <li class="<?= $squareClasses ?>" data-block="<?= $e((string) $block['post_id']) ?>" data-state="<?= $blockState ?>">
+    <li class="<?= $squareClasses ?>"<?= $square === 0 ? ' id="post-' . $e((string) $block['post_id']) . '"' : '' ?> data-block="<?= $e((string) $block['post_id']) ?>" data-state="<?= $blockState ?>">
       <a href="<?= $e($blockHref) ?>"<?= $square === 0 ? '' : ' tabindex="-1" aria-hidden="true"' ?> title="<?= $e($block['name'] . ' · ' . $block['squares'] . ($block['squares'] === 1 ? ' square' : ' squares')) ?>">
         <span class="support-wall__badge" aria-hidden="true"></span>
 <?php if ($square === 0): ?>
