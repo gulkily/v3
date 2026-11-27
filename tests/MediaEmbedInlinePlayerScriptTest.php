@@ -27,6 +27,16 @@ final class MediaEmbedInlinePlayerScriptTest
         assertSame(true, str_contains($script, 'data-embed-src'));
         assertSame(true, str_contains($script, 'details.open'));
     }
+
+    public function testATapStartsThePlayerAndClosesTheOthersAndClosingClearsTheFrame(): void
+    {
+        $script = (string) file_get_contents(__DIR__ . '/../public/assets/media_embed_inline_player.js');
+
+        assertSame(true, str_contains($script, 'autoplay=1'));
+        assertSame(true, str_contains($script, 'details[data-media-embed-card][open]'));
+        assertSame(true, str_contains($script, 'iframe.setAttribute("src", "")'));
+        // tests/browser/media_embed_browser.mjs checks the behaviour in a browser.
+    }
 }
 
 if (!function_exists('assertSame')) {

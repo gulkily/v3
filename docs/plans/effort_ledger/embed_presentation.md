@@ -11,3 +11,4 @@
 2026-11-27 — Step 2 approved. Step 3 handoff **0.50**, reaffirmed. Stage work: 0.10, 0.10, 0.15, 0.05, 0.10, 0.05 (not summed). Single exposed Claude rater.
 
 2026-11-27 — Step 3 approved. Step 4 entry **0.50**, reaffirmed. Stage 1 retrospective 0.15 (original 0.10): three pre-existing failures in `media_embed_browser.mjs` fixed.
+- Stage 2 retrospective 0.10.

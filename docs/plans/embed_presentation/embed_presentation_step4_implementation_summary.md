@@ -34,3 +34,24 @@ Step 3 approved 2026-11-27 ("approved step 3"). Branch `feat/embed_presentation`
 - Estimate details: original scope: markup and styles for one bar; uncertainty low. Retrospective 0.15: the pre-existing browser test failures took most of the extra work.
 
 *— Claude · 2026-11-27 UTC · Model: claude-opus-5-5*
+
+## Stage 2 - One tap plays, one player at a time
+
+**Original estimate: 0.10**
+**Retrospective: 0.10**
+
+- Changes:
+  - `media_embed_inline_player.js`: a tap on a player's bar marks it tapped and closes every other open player. A tapped player loads with the provider's start request: `autoplay=1` for YouTube and TikTok, `auto_play=true` for SoundCloud. Spotify and Bandcamp have no such setting and load as before.
+  - Closing any player clears its frame, so a hidden player never keeps playing. Reopening loads it again.
+  - Players opened by script (not by a tap) do not close others and do not autostart.
+- Verification:
+  - `./v3 test MediaEmbedInlinePlayerScriptTest`: passed (3 run), with a new check for the start request, closing others, and clearing the frame.
+  - `node tests/browser/media_embed_browser.mjs`: passed twice in a row. It now checks: one open player after each tap; no closed player with a loaded frame; a tapped YouTube player requests `autoplay=1`; closing clears the frame; reopening a Bandcamp player keeps its palette.
+  - iPhone check: pending, Stage 6.
+- Notes:
+  - Changed an earlier rule: "reopening must not reload a player". With the bar now saying Close, closing has to stop the sound, and a hidden frame keeps playing; so reopening loads the player again. The browser test was updated to match.
+  - The Step 3 hint for providers that need a second tap ("Tap play in the player") is not built yet. Spotify and Bandcamp ignore start requests on every platform, so whether to add it waits for the phone check.
+  - A Zalgo layout check failed once and passed twice after the stage's earlier fix also turned off Zalgo's card transition while measuring.
+- Estimate details: original scope: per-provider start rules and one-at-a-time; uncertainty medium. Unchanged.
+
+*— Claude · 2026-11-27 UTC · Model: claude-opus-5-5*
