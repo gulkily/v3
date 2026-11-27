@@ -122,6 +122,14 @@ try {
   await donor.waitForFunction(() => { const s = window.ForumPrivateMessageHistorySync?.state(); return s && !s.pending && s.contributed > 0; }, null, { timeout: 120000 });
   assert.equal(Number(fixture({ action: 'contributions', source: aliceOld.fingerprint, target: aliceLocal.fingerprint })), 8);
   await donor.close();
+  // Bob's device donates too (sender assistance), so Bob's four messages get a second history key.
+  const bobCtx = await device(bob, base);
+  await authenticate(bobCtx, base, bob);
+  const bobDonor = await bobCtx.newPage(); await bobDonor.goto(base + '/');
+  await bobDonor.waitForFunction(() => window.ForumPrivateMessageUnread?.historyEligibility() === true);
+  await bobDonor.waitForFunction(() => { const s = window.ForumPrivateMessageHistorySync?.state(); return s && !s.pending && s.contributed > 0; }, null, { timeout: 120000 });
+  assert(Number(fixture({ action: 'contributions', source: bob.fingerprint, target: aliceLocal.fingerprint })) > 0, 'Bob donated for the new key');
+  await bobDonor.close();
 
   // 3. Approved on the source but not yet here: the page asks for the import.
   await page.getByRole('button', { name: 'Check again' }).click();
@@ -148,11 +156,25 @@ try {
   await page.getByRole('button', { name: /Pull my messages/ }).click();
   // The clone imported keys but no approvals; one click trusts the keys the source approves.
   await page.getByRole('button', { name: 'Trust these keys here' }).waitFor({ timeout: 120000 });
-  const listed = await page.locator('[data-local-pull-trust-list] li').allTextContents();
-  assert.equal(listed.length, 3, listed.join('\n'));
-  assert(listed.some(line => line.includes('(this browser)')));
+  // One row per person, opening to fingerprints.
+  const groups = await page.locator('[data-local-pull-trust-list] > li > details > summary').allTextContents();
+  assert.deepEqual(groups.sort(), ['alice: 2 keys, including this browser', 'bob: 1 key'], groups.join('\n'));
+  await page.locator('[data-local-pull-trust-list] details').first().evaluate(node => { node.open = true; });
+  await page.locator('[data-local-pull-trust]').screenshot({ path: join(root, 'trust-list-desktop.png') });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('[data-local-pull-trust]').screenshot({ path: join(root, 'trust-list-mobile.png') });
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await page.setViewportSize({ width: 1100, height: 800 });
+  // Record the button's text while it works, to see the per-key progress.
+  await page.evaluate(() => {
+    const button = document.querySelector('[data-local-pull-trust-button]');
+    window.__trustTexts = [];
+    new MutationObserver(() => window.__trustTexts.push(button.textContent + (button.getAttribute('aria-busy') === 'true' ? ' [busy]' : ''))).observe(button, { childList: true, characterData: true, subtree: true, attributes: true });
+  });
   await page.getByRole('button', { name: 'Trust these keys here' }).click();
   await status(page).filter({ hasText: 'Pull finished.' }).waitFor({ timeout: 120000 });
+  const trustTexts = await page.evaluate(() => window.__trustTexts);
+  for (const expected of ['Trusting 1 of 3… [busy]', 'Trusting 2 of 3… [busy]', 'Trusting 3 of 3… [busy]']) assert(trustTexts.includes(expected), trustTexts.join('\n'));
   const first = await summary(page).textContent();
   assert.match(first, /0 new · 8 already here/); assert.match(first, /8 confirmed on/); assert.doesNotMatch(first, /not readable/);
   const localCount = php(`echo (new PDO('sqlite:${join(localRoot, 'private/messages.sqlite3')}'))->query('SELECT COUNT(*) FROM private_messages')->fetchColumn();`);

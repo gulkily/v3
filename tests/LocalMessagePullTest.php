@@ -100,4 +100,19 @@ final class LocalMessagePullTest
         try { $pull->run($this->remote($source, $sync, 'bob'), 'alice'); throw new LogicException('Pulled another account'); }
         catch (RuntimeException $expected) { assertStringContains('different account', $expected->getMessage()); }
     }
+
+    public function testAMessageCoveredByOneDonorIsNotOfferedAgainFromAnother(): void
+    {
+        $sync = new PrivateMessageHistorySyncStore(new PDO('sqlite::memory:'));
+        $target = str_repeat('b', 40);
+        $fromOldDevice = $sync->upload('alice', 'old-key', $target, 'bundle-1', [['message_id' => 'm1', 'digest' => 'd1'], ['message_id' => 'm2', 'digest' => 'd2']]);
+        $fromBob = $sync->upload('alice', 'bob-key', $target, 'bundle-2', [['message_id' => 'm1', 'digest' => 'd1']]);
+        assertSame(2, count($sync->unverifiedFor('alice', $target)['transfers']));
+        $sync->acknowledge('alice', $target, [['message_id' => 'm1', 'digest' => 'd1', 'transfer_id' => $fromOldDevice]]);
+        // m2 is still open in the old device's transfer; Bob's only covers m1, which is now done.
+        assertSame([$fromOldDevice], array_column($sync->unverifiedFor('alice', $target)['transfers'], 'transfer_id'));
+        $sync->acknowledge('alice', $target, [['message_id' => 'm2', 'digest' => 'd2', 'transfer_id' => $fromOldDevice]]);
+        assertSame([], $sync->unverifiedFor('alice', $target)['transfers']);
+        assertTrue($fromBob !== $fromOldDevice);
+    }
 }

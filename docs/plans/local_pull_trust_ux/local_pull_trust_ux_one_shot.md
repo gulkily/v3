@@ -8,7 +8,7 @@ Effort study: `railspike-effort` / `v3/local_pull_trust_ux`; host ledger [local_
 
 **Cycle estimate: 0.20**
 
-Status: planned; next permitted action: implement.
+Status: implemented, PR open; next permitted action: maintainer merge, deploy, then pull again.
 
 ## Original request
 
@@ -58,5 +58,45 @@ Application change.
 ## Study checkpoint
 
 Intake 2026-11-27T19:20Z, scope v1, R1, P2 standing enrollment; parent `v3/export_own_key_transfers`. Claude, single exposed rater; diagnosed before rating. **0.20 projected total.**
+
+*— Claude · 2026-11-27 UTC · Model: claude-opus-5-5*
+
+## Changes
+
+Planning commit `56bfc61e`.
+
+- **Confirm once per message.**
+  - `verifyPage()` keeps one verified transfer per message.
+  - The `confirm` action deduplicates by message as well, keeping the first.
+  - `unverifiedFor()` treats a message as done once any transfer covers it with the same digest.
+- **Trust progress.**
+  - The page sends one `trust` request per key, this browser's key first.
+  - The button reads "Trusting N of M…" with `aria-busy`, and the status line follows. A failure keeps what was trusted and says "Press Trust to continue."
+  - The candidate and trust limits went from 50 to 200 keys, because Ilya's account alone has about 60.
+- **Key list.**
+  - One `<details>` per username, for example "alice: 2 keys, including this browser". It opens to the last 16 hex digits of each fingerprint (the full one in `title`), with a `chip` labelled "this browser".
+  - New `.local-pull-keys` rules in `site.css` remove the bullets and keep fingerprints on one line.
+  - The intro text is shorter.
+- The concept entry "Messages pull" is updated.
+
+## Verification
+
+- `./v3 test --smoke LocalMessagePullTest LocalDevelopmentImportTest PrivateMessageExportTest PrivateMessageHistorySyncTest`: 536 run, 536 passed. It includes the new `testAMessageCoveredByOneDonorIsNotOfferedAgainFromAnother`. The full suite was not run.
+- `node tests/browser/local_message_pull.mjs`: passed. The check now has Bob's device donate as well, so his messages carry two history keys for the new key, and the pull still confirms without "Invalid history item". It asserts the two person rows, and the button showing "Trusting 1/2/3 of 3…" while busy. Screenshots of the key list were checked at 390 px and 1100 px, with no overflow.
+- The same check on the code before this fix fails at the new key-list assertion, before it reaches the confirmation, so it doesn't show the old failure on its own. The new store test covers the local side, and the server deduplicates as well.
+- Only the default theme was checked. The list uses plain text, `details` and the existing `chip`.
+- **Unverified:** Ilya's account. That needs a pull after deploy.
+
+## Discovered, not in scope
+
+On Messages, list previews of messages readable only through history show "Couldn't decrypt preview" about half the time after a reload. The conversation page always reads them, and visiting it makes the list previews appear. The list uses only history keys already loaded on the page, and it doesn't appear to keep them cached. This is a separate cycle in the Messages list, proposed to Ilya.
+
+## Outcome
+
+Delivered as planned. Completion commit pending; PR to follow.
+
+## Study closeout
+
+2026-11-27T19:55Z: completion, acceptance pending. Retrospective **0.25**: the key-list styling took another round after the first screenshot.
 
 *— Claude · 2026-11-27 UTC · Model: claude-opus-5-5*

@@ -114,8 +114,8 @@ if ($sameRun && $result['seconds'] !== null) {
         <div class="button-row"><button type="button" data-local-pull-start hidden>Pull my messages from <span data-local-pull-host></span></button></div>
         <p class="meta" data-local-pull-summary role="status" hidden></p>
         <div class="stack" data-local-pull-trust hidden>
-          <p>To read this mail here, this clone needs to approve these keys. <span data-local-pull-host></span> approves each of them. Approval stays in this clone.</p>
-          <ul data-local-pull-trust-list></ul>
+          <p>To read this mail here, trust these keys. <span data-local-pull-host></span> approves each of them; trust stays in this clone.</p>
+          <ul class="local-pull-keys" data-local-pull-trust-list></ul>
           <div class="button-row"><button type="button" data-local-pull-trust-button>Trust these keys here</button></div>
         </div>
       </li>

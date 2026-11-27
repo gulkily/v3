@@ -112,7 +112,7 @@ final class LocalDevelopmentRemoteController
             static fn (string $fingerprint): string => 'openpgp:' . $fingerprint, $sync->sourcesFor($account, substr($identityId, 8))));
         $keys = [];
         $missing = [];
-        foreach (array_slice(array_values(array_unique(array_map('strtolower', $ids))), 0, 50) as $candidate) {
+        foreach (array_slice(array_values(array_unique(array_map('strtolower', $ids))), 0, 200) as $candidate) {
             $profile = ProfileRepository::byIdentityId($pdo, $candidate);
             if ($profile !== null && (int) ($profile['is_approved'] ?? 0) === 1) continue;
             if (!$remote->keyState($candidate)['approved']) continue;
@@ -130,7 +130,7 @@ final class LocalDevelopmentRemoteController
     {
         $identityId = strtolower($this->field('identity_id', 128));
         $requested = json_decode($this->field('keys', 65536), true);
-        if (!is_array($requested) || !array_is_list($requested) || count($requested) > 50) throw new InvalidArgumentException('Send at most 50 keys.');
+        if (!is_array($requested) || !array_is_list($requested) || count($requested) > 200) throw new InvalidArgumentException('Send at most 200 keys.');
         $pdo = $this->routes->pdo();
         $writer = $this->routes->writer();
         $reason = 'Trusted for pulled messages because ' . $remote->source() . ' approves it';
@@ -204,7 +204,12 @@ final class LocalDevelopmentRemoteController
             }
         }
         [, $sync] = $this->stores();
-        $items = array_map(static fn (array $item): array => ['message_id' => $item['message_id'], 'digest' => $item['digest'], 'transfer_id' => $item['transfer_id']], $items);
+        // The source accepts one transfer per message in a batch; keep the first verified one.
+        $unique = [];
+        foreach ($items as $item) {
+            $unique[$item['message_id']] ??= ['message_id' => $item['message_id'], 'digest' => $item['digest'], 'transfer_id' => $item['transfer_id']];
+        }
+        $items = array_values($unique);
         $signedIn = $remote->signIn($identityId, $this->field('challenge', 256), $this->field('signature', 65536));
         if (!$signedIn['approved']) throw new InvalidArgumentException('This key is not approved on ' . $remote->source() . ' yet.');
         $confirmed = 0;
