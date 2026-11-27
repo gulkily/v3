@@ -97,4 +97,19 @@ final class PrivateMessageExportTest
         assertSame([['message_id' => 'a2', 'digest' => 'd2']], array_column($later['transfers'], 'items', 'transfer_id')[$own]);
         assertSame([], $this->service($pdo)->export($this->viewer('alice'))['transfers']);
     }
+
+    public function testExportRouteAnswersOneFieldPerLine(): void
+    {
+        $services = new \ForumRewrite\Http\RouteServices(':memory:', new \ForumRewrite\View\TemplateRenderer(__DIR__ . '/../templates', 'test'), 'test', false,
+            static fn (): ?array => null, __DIR__ . '/fixtures/parity_minimal_v1', dirname(__DIR__), null, null,
+            \ForumRewrite\Support\FeatureFlags\FeatureFlagEvaluator::forApplication(__DIR__ . '/fixtures/parity_minimal_v1', dirname(__DIR__)), static fn (): ?array => null);
+        $payload = ['status' => 'ok', 'messages' => [['message_id' => 'm1', 'encrypted_envelope' => "-----BEGIN PGP MESSAGE-----\nabc\n-----END PGP MESSAGE-----\n"]]];
+        ob_start(); $services->sendJson($payload, 200, [], true); $pretty = (string) ob_get_clean();
+        ob_start(); $services->sendJson($payload, 200); $compact = (string) ob_get_clean();
+        assertSame($payload, json_decode($pretty, true));
+        assertStringContains("\n    \"messages\": [\n", $pretty);
+        assertStringContains('"message_id": "m1"', $pretty);
+        assertSame(1, substr_count($compact, "\n"), 'Other routes stay compact');
+        assertStringContains("sendJson(['status' => 'ok'] + \$page, 200, \$this->routeServices->noStoreHeaders(), true)", (string) file_get_contents(__DIR__ . '/../src/ForumRewrite/Http/PrivateMessageApiController.php'));
+    }
 }

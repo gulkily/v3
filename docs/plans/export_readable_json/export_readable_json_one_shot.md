@@ -8,7 +8,7 @@ Effort study: `railspike-effort` / `v3/export_readable_json`; host ledger [expor
 
 **Cycle estimate: 0.15**
 
-Status: planned; next permitted action: implement.
+Status: implemented, PR open; next permitted action: maintainer merge, deploy, then press Pull again.
 
 ## Original request
 
@@ -59,5 +59,36 @@ Application change.
 ## Study checkpoint
 
 Intake 2026-11-27T18:55Z, scope v1, R1, P2 standing enrollment; parent `v3/private_message_local_pull`. Claude, single exposed rater; inspected the code and replayed production before rating. **0.15 projected total.** Not hours or measured labor.
+
+*— Claude · 2026-11-27 UTC · Model: claude-opus-5-5*
+
+## Changes
+
+Planning commit `29c59538`.
+
+- `RouteServices::sendJson()` takes an optional `$pretty` flag (`JSON_PRETTY_PRINT`). Only `PrivateMessageApiController::export()` passes it, so every other route's bytes are unchanged.
+- `LocalDevelopmentRemote`:
+  - Records the last relayed call.
+  - A body that isn't JSON now raises "sent an unexpected response to <call> (HTTP <status>, <size> bytes): <first 80 characters> … <last 80 characters>", with control characters turned into spaces.
+  - A body that reaches `MAX_RESPONSE_BYTES` (8 MiB, the transport's read limit) raises "too large for the relay".
+- [Participant mailbox export](../../concepts/participant_mailbox_export.md) notes the pretty-printing.
+
+## Verification
+
+- `./v3 test --smoke PrivateMessageExportTest LocalDevelopmentImportTest LocalMessagePullTest`: 508 run, 508 passed. The full suite was not run.
+- `PrivateMessageExportTest::testExportRouteAnswersOneFieldPerLine` checks three things:
+  - The pretty output decodes to the same payload and puts each field on its own line.
+  - Compact output elsewhere stays one line.
+  - The export route passes the flag.
+- `LocalDevelopmentImportTest::testRemoteFailuresNameTheirCauseAndNextStep` covers a body with valid JSON at the start and a warning at the end, which the error now quotes from both ends, and a cut-off body.
+- **Unverified:** the reported failure itself. It needs Ilya's account against production after deploy: pressing Pull either succeeds or now says which call failed and what came back. The likely causes stay unconfirmed until then: text after the JSON, or a page cut at 8 MiB.
+
+## Outcome
+
+Delivered as planned. Commit status: completion commit pending; PR to follow. Next action: merge and deploy, then press Pull and send the new message if it still fails.
+
+## Study closeout
+
+2026-11-27T19:10Z: completion with outcome pending acceptance. Retrospective stage-work assessment **0.15**, unchanged from intake.
 
 *— Claude · 2026-11-27 UTC · Model: claude-opus-5-5*
