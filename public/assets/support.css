@@ -1,0 +1,5 @@
+/* /support/: a pledge campaign as a wall of squares. Theme variables only. */
+.support { max-width: 42rem; }
+.support__title { margin-bottom: 0.4rem; }
+.support__pitch { margin-bottom: 0.8rem; }
+.support__thread-link { margin-top: 1rem; }

@@ -1,4 +1,4 @@
-> **Feature plan:** [Step 1](./sponsor_wall_step1_solution_assessment.md) · [Step 2](./sponsor_wall_step2_feature_description.md) · [Step 3](./sponsor_wall_step3_development_plan.md) · Step 4
+> **Feature plan:** [Step 1](./sponsor_wall_step1_solution_assessment.md) · [Step 2](./sponsor_wall_step2_feature_description.md) · [Step 3](./sponsor_wall_step3_development_plan.md) · [Step 4](./sponsor_wall_step4_implementation_summary.md)
 
 Debug mode: enabled ([debug log](./sponsor_wall_debug_log.md))
 
@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/sponsor_wall`; ledger `../effort_ledger/s
 
 Extended estimates: enabled
 
-Status: Steps 1 (Option A) and 2 approved by the maintainer 2026-11-27. Step 3 written 2026-11-27, approval pending.
+Status: Steps 1 (Option A) and 2 approved by the maintainer 2026-11-27. Step 3 approved by the maintainer 2026-11-27 ("approved step 3").
 
 **Cycle estimate: 0.60**
 

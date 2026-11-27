@@ -33,6 +33,7 @@ final class UsageNames
         '/compose/thread' => 'New thread',
         '/gallery' => 'Gallery',
         '/guestbook' => 'Guestbook',
+        '/support' => 'Support',
         '/hints' => 'Hints',
         '/inbox' => 'Unread',
         '/unread' => 'Unread',
