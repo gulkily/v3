@@ -90,6 +90,11 @@ $tableZoomKeys = array_values(\ForumRewrite\View\ZoomTable::KINDS);
           <button type="button" class="account-row__action" data-push-test hidden>Send a test</button>
           <button type="button" class="account-row__action" data-push-toggle>Turn on</button>
         </span>
+        <details class="preferences-page__details" data-push-details hidden>
+          <summary>Details</summary>
+          <pre data-push-details-text></pre>
+          <button type="button" class="account-row__action" data-push-details-copy>Copy</button>
+        </details>
       </div>
 <?php endif; ?>
 <?php if ($usageLogEnabled): ?>

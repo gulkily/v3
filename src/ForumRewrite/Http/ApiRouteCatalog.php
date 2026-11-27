@@ -109,6 +109,7 @@ final class ApiRouteCatalog
             ['POST', '/api/push/subscribe', 'member', 'json', 'Turn notifications on for this browser: JSON {"endpoint", "keys": {"p256dh", "auth"}} from PushSubscription.toJSON(), with X-Requested-With: ForumPush. Browsers only; agents do not receive push. Requires the Notifications flag.'],
             ['POST', '/api/push/unsubscribe', 'member', 'json', 'Turn notifications off for this browser: JSON {"endpoint"} with X-Requested-With: ForumPush. Requires the Notifications flag.'],
             ['POST', '/api/push/test', 'member', 'json', 'Send this browser a test notification: JSON {"endpoint"} with X-Requested-With: ForumPush; returns outcome (sent, gone or refused) and the push service\'s reason. Requires the Notifications flag.'],
+            ['POST', '/api/push/report', 'member', 'json', 'Report a failed Turn on: JSON {"report": "<Key: value text>"} (the Details the page shows), with X-Requested-With: ForumPush; at most 4096 bytes and 10 an hour. Operators read reports at /tools/push-reports/. Requires the Notifications flag.'],
             ['POST', '/api/private_messages', 'member', 'json', 'Send an encrypted message.'],
             ['POST', '/api/private_messages/read', 'member', 'json', 'Acknowledge read messages.'],
             ['POST', '/api/private_messages/history_sync/work', 'member', 'json', 'Combined bounded history-sync discovery and scan progress.'],

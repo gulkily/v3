@@ -412,7 +412,7 @@ final class Application
             return;
         }
 
-        if (in_array($path, ['/api/push/key', '/api/push/subscribe', '/api/push/unsubscribe', '/api/push/test'], true)) {
+        if (in_array($path, ['/api/push/key', '/api/push/subscribe', '/api/push/unsubscribe', '/api/push/test', '/api/push/report'], true)) {
             if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::PUSH_ENABLED)) {
                 $this->sendJson(['status' => 'error', 'code' => 'push_disabled', 'error' => 'Notifications are off on this server.'], 404, $this->routeServices()->noStoreHeaders());
                 return;
@@ -422,6 +422,7 @@ final class Application
                 '/api/push/key' => $controller->key($method),
                 '/api/push/subscribe' => $controller->subscribe($method, $query),
                 '/api/push/unsubscribe' => $controller->unsubscribe($method, $query),
+                '/api/push/report' => $controller->report($method, $query),
                 default => $controller->test($method, $query),
             };
             return;
@@ -1208,6 +1209,12 @@ final class Application
 
         if ($path === '/tools/visitor-statistics/' || $path === '/tools/visitor-statistics') {
             $this->visitorStatisticsController()->render($query);
+            return;
+        }
+
+        if (($path === '/tools/push-reports/' || $path === '/tools/push-reports')
+            && $this->featureFlags()->isEnabled(FeatureFlagRegistry::PUSH_ENABLED)) {
+            $this->pushApiController()->reportsPage($this->routeServices()->profileIsActiveOperator($this->authenticatedViewerProfile()));
             return;
         }
 
@@ -2821,7 +2828,7 @@ final class Application
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/', '/tools/deploy', '/tools/deploy/', '/tools/import', '/tools/import/',
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
-            '/tools/usage-log', '/tools/usage-log/', '/tools/usage-log/upload', '/tools/usage-reports', '/tools/usage-reports/',
+            '/tools/usage-log', '/tools/usage-log/', '/tools/usage-log/upload', '/tools/usage-reports', '/tools/usage-reports/', '/tools/push-reports', '/tools/push-reports/',
             '/tools/history', '/tools/history/',
             '/tools/tag-unlocks', '/tools/tag-unlocks/',
             '/compose/thread', '/compose/reply',

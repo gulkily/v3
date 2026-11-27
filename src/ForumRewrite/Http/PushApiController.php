@@ -145,6 +145,60 @@ final class PushApiController
         $this->ok(['outcome' => $result->outcome, 'http_status' => $result->status, 'reason' => $result->reason]);
     }
 
+    /**
+     * A browser's Turn on failure details (Key: value text the page shows under Details),
+     * kept for operators at /tools/push-reports/. Best effort for the browser.
+     *
+     * @param array<string, mixed> $query
+     */
+    public function report(string $method, array $query = []): void
+    {
+        $input = $this->guardedInput($method, $query);
+        if ($input === null) {
+            return;
+        }
+        [$viewer, $data] = $input;
+        $text = is_string($data['report'] ?? null) ? str_replace("\r\n", "\n", $data['report']) : '';
+        if (trim($text) === '' || !mb_check_encoding($text, 'UTF-8')) {
+            $this->error(400, 'Send JSON {"report": "<text>"}.');
+            return;
+        }
+        if (strlen($text) > PushSubscriptionStore::MAX_REPORT_BYTES) {
+            $this->error(413, 'The report is over ' . PushSubscriptionStore::MAX_REPORT_BYTES . ' bytes.');
+            return;
+        }
+        try {
+            $stored = ($this->openStore)()->addReport($viewer['username'], $text, $this->now());
+        } catch (\Throwable) {
+            $this->error(503, 'The report could not be saved.');
+            return;
+        }
+        if (!$stored) {
+            $this->error(429, 'Too many reports this hour.', ['Retry-After: 3600']);
+            return;
+        }
+        $this->ok([]);
+    }
+
+    /** Tools → push reports, operators only: the newest Turn on failure reports as plain text. */
+    public function reportsPage(bool $viewerIsOperator): void
+    {
+        if (!$viewerIsOperator) {
+            $this->routeServices->sendText("Only operators can read push reports.\n", 403, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        $reports = ($this->openStore)()->reports();
+        if ($reports === []) {
+            $this->routeServices->sendText("No push reports.\n", 200, $this->routeServices->noStoreHeaders());
+            return;
+        }
+        $blocks = array_map(static fn (array $report): string => 'Report: ' . $report['id'] . "\n"
+            . 'Received: ' . gmdate('Y-m-d\TH:i:s\Z', $report['received_at']) . "\n"
+            . 'Username: ' . $report['username'] . "\n"
+            . rtrim($report['body'], "\n") . "\n", $reports);
+        $this->routeServices->sendText(implode("\n", $blocks), 200, $this->routeServices->noStoreHeaders());
+    }
+
     /** @return array{username:string,identity_id:string}|null */
     private function viewer(): ?array
     {
