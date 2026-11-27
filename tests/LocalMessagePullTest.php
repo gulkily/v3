@@ -41,7 +41,7 @@ final class LocalMessagePullTest
         $source = new PDO('sqlite::memory:');
         $this->seed($source, 30);
         $sourceSync = new PrivateMessageHistorySyncStore(new PDO('sqlite::memory:'));
-        $transferId = $sourceSync->upload('alice', 'old-key', 'local-key', 'bundle', [['message_id' => 'm-000', 'digest' => 'd0'], ['message_id' => 'm-029', 'digest' => 'd29']]);
+        $transferId = $sourceSync->upload('alice', 'old-key', str_repeat('b', 40), 'bundle', [['message_id' => 'm-000', 'digest' => 'd0'], ['message_id' => 'm-029', 'digest' => 'd29']]);
         $local = new PDO('sqlite::memory:');
         $localSync = new PrivateMessageHistorySyncStore(new PDO('sqlite::memory:'));
         $progress = sys_get_temp_dir() . '/local-pull-' . bin2hex(random_bytes(5)) . '/progress.json';

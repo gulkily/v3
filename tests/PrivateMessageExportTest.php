@@ -83,8 +83,11 @@ final class PrivateMessageExportTest
         $store->storeEnvelope('a1', '2026-11-01T00:00:00Z', 'bob', 'alice', 'key', 'c1');
         $store->storeEnvelope('a2', '2026-11-02T00:00:00Z', 'alice', 'bob', 'key', 'c2');
         $sync = new PrivateMessageHistorySyncStore(new PDO('sqlite::memory:'));
-        $own = $sync->upload('alice', 'old-key', 'new-key', 'bundle-for-alice', [['message_id' => 'a1', 'digest' => 'd1'], ['message_id' => 'a2', 'digest' => 'd2']]);
-        $assist = $sync->upload('alice', 'bob-key', 'new-key', 'sender-bundle', [['message_id' => 'a1', 'digest' => 'd1']]);
+        $mine = str_repeat('a', 40); // the signed-in key, see viewer()
+        $own = $sync->upload('alice', 'old-key', $mine, 'bundle-for-alice', [['message_id' => 'a1', 'digest' => 'd1'], ['message_id' => 'a2', 'digest' => 'd2']]);
+        $assist = $sync->upload('alice', 'bob-key', $mine, 'sender-bundle', [['message_id' => 'a1', 'digest' => 'd1']]);
+        // Alice's other keys get transfers too; the export leaves them out.
+        $sync->upload('alice', 'old-key', str_repeat('c', 40), 'bundle-for-another-alice-key', [['message_id' => 'a1', 'digest' => 'd1']]);
         $sync->upload('bob', 'bob-key', 'bob-new', 'bundle-for-bob', [['message_id' => 'a2', 'digest' => 'd2']]);
         $page = $this->service($pdo)->export($this->viewer('alice'), '', '', $sync);
         $byId = array_column($page['transfers'], null, 'transfer_id');
@@ -93,6 +96,8 @@ final class PrivateMessageExportTest
         assertSame(['a1', 'a2'], array_column($byId[$own]['items'], 'message_id'));
         assertSame('sender-bundle', $byId[$assist]['ciphertext']);
         assertStringNotContains('bundle-for-bob', json_encode($page));
+        assertStringNotContains('bundle-for-another-alice-key', json_encode($page));
+        assertSame([$mine], array_values(array_unique(array_column($page['transfers'], 'target'))));
         $later = $this->service($pdo)->export($this->viewer('alice'), '2026-11-01T00:00:00Z', 'a1', $sync);
         assertSame([['message_id' => 'a2', 'digest' => 'd2']], array_column($later['transfers'], 'items', 'transfer_id')[$own]);
         assertSame([], $this->service($pdo)->export($this->viewer('alice'))['transfers']);
