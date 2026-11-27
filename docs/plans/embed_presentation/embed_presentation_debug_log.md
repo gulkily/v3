@@ -57,3 +57,23 @@
 ### Uncertain assessments
 
 - Which providers honor an autoplay parameter after a tap; Stage 2 records the result per provider.
+
+## 2026-11-27T19:10Z — Step 4
+
+### Necessary/useful instructions
+
+- Host preference (pre-existing failures get fixed): `media_embed_browser.mjs` was already failing on `main` in three places, hidden behind the first; each was fixed and recorded in Stage 1.
+- `step4_implementation_do.md`, stage boundary protocol: running `music_share.mjs` in Stage 5 caught a regression from Stage 1 (a doubled `data-provider`) before handoff.
+- `implementation_standards.md`, shared consumers: the browser test's Forte, reply context and QDB views confirmed the bar everywhere embeds render.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- Plan index organization: the feature folder did not exist; created as instructed.
+
+### Uncertain assessments
+
+- One-tap sound on iOS remains unverified; desktop Chrome confirms only that the start request is sent.
