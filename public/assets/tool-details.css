@@ -694,6 +694,18 @@ form.feature-flag-control,
   margin: 0;
 }
 
+.deploy-history-more summary {
+  padding: 0.38rem 0;
+  cursor: pointer;
+}
+
+/* Return to main, beside a branch name other than main. */
+.deploy-branch-return {
+  display: inline;
+  margin: 0 0 0 0.4rem;
+}
+
+.deploy-branch-return button,
 .deploy-history button {
   width: auto;
   min-height: 2rem;
@@ -703,12 +715,7 @@ form.feature-flag-control,
   white-space: nowrap;
 }
 
-.deploy-history-more summary {
-  padding: 0.38rem 0;
-  cursor: pointer;
-}
-
-/* The confirmation a Roll back button leads to, above the facts it is about. */
+/* The confirmation a Roll back or Return to main button leads to, above the facts it is about. */
 .deploy-rollback {
   margin-bottom: 1rem;
   padding: 0.8rem;

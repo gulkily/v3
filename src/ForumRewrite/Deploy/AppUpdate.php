@@ -360,6 +360,56 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
     }
 
     /**
+     * What Return to main would change, from the last fetch (never contacts GitHub): the
+     * commits on the current branch that would stop running, and the backup branch that would
+     * keep commits the server's `main` has and origin/main lacks.
+     *
+     * @return array{branch: ?string, reason: ?string, message: string, commits: list<array{commit: string, subject: string, author: string, date: string}>, more: int, backup: bool}
+     */
+    public function returnToMainPreview(): array
+    {
+        $none = static fn (string $reason, string $message): array => ['branch' => null, 'reason' => $reason, 'message' => $message, 'commits' => [], 'more' => 0, 'backup' => false];
+        $old = $this->isCheckout() ? $this->gitValue(['rev-parse', '--verify', 'HEAD']) : null;
+        if ($old === null) {
+            return $none('not_a_checkout', 'The application directory is not a Git checkout.');
+        }
+        $branch = $this->gitValue(['symbolic-ref', '--quiet', '--short', 'HEAD']);
+        if ($branch === self::BRANCH) {
+            return $none('on_main', 'The checkout is already on ' . self::BRANCH . '.');
+        }
+        $remote = $this->gitValue(['rev-parse', '--verify', 'refs/remotes/' . self::REMOTE . '/' . self::BRANCH]);
+        if ($remote === null) {
+            return $none('no_remote_branch', self::REMOTE . '/' . self::BRANCH . ' has not been fetched yet; check for updates first.');
+        }
+        [$commits, $more] = $this->commitList($remote . '..' . $old);
+
+        return ['branch' => $branch ?? 'a detached HEAD', 'reason' => null, 'message' => '', 'commits' => $commits, 'more' => $more, 'backup' => $this->mainNeedsBackup($remote)];
+    }
+
+    /**
+     * Leaves the current branch for origin/main, keeping local edits to tracked files. The
+     * branch stays on the server; a server `main` with commits origin/main lacks is saved as
+     * a backup branch first.
+     *
+     * @return array{attempt_id: string, outcome: string, reason: ?string, message: string, old_commit: ?string, new_commit: ?string, mode: string, actor: string}
+     */
+    public function returnToMain(string $actor, string $mode, int $timeoutSeconds = 60): array
+    {
+        $startedAt = gmdate('Y-m-d\TH:i:s\Z');
+
+        return $this->record($this->runReturnToMain($timeoutSeconds), 'returned', 'return', $actor, $mode, $startedAt);
+    }
+
+    public const MAIN_BACKUP_PREFIX = 'main-before-return-';
+
+    private function mainNeedsBackup(string $remote): bool
+    {
+        $main = $this->gitValue(['rev-parse', '--verify', '--quiet', 'refs/heads/' . self::BRANCH]);
+
+        return $main !== null && $this->git(['merge-base', '--is-ancestor', $main, $remote], 30)['code'] !== 0;
+    }
+
+    /**
      * Checks the read model with the code now in place, then logs the attempt and, when the
      * commit changed, the history entry.
      *
@@ -641,9 +691,6 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
         try {
             $old = $this->gitValue(['rev-parse', '--verify', 'HEAD']);
             $branch = $this->gitValue(['symbolic-ref', '--quiet', '--short', 'HEAD']);
-            if ($branch !== self::BRANCH) {
-                return $refuse('wrong_branch', 'The checkout is on ' . ($branch ?? 'a detached HEAD') . ', not ' . self::BRANCH . '.', $old);
-            }
             $changed = $this->trackedChangedFiles();
             if ($changed === null) {
                 return $refuse('git_failed', 'Could not read the working tree status.', $old, 'failed');
@@ -656,8 +703,16 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
             if ($remote === null) {
                 return $refuse('no_remote_branch', self::REMOTE . '/' . self::BRANCH . ' was not found after fetching.', $old, 'failed');
             }
+            $left = '';
+            if ($branch !== self::BRANCH) {
+                $refusal = $this->switchMergedBranchToMain($branch, $old, $remote);
+                if ($refusal !== null) {
+                    return $refuse($refusal[0], $refusal[1], $old, $refusal[2]);
+                }
+                $left = ' Switched to ' . self::BRANCH . ' from ' . ($branch ?? 'a detached HEAD') . '.';
+            }
             if ($remote === $old) {
-                return ['outcome' => 'up_to_date', 'reason' => null, 'message' => 'Already at ' . self::REMOTE . '/' . self::BRANCH . '.', 'old_commit' => $old, 'new_commit' => $old];
+                return ['outcome' => 'up_to_date', 'reason' => null, 'message' => 'Already at ' . self::REMOTE . '/' . self::BRANCH . '.' . $left, 'old_commit' => $old, 'new_commit' => $old];
             }
             if ($this->git(['merge-base', '--is-ancestor', 'HEAD', $remote], 30)['code'] !== 0) {
                 return $refuse('diverged', 'The server has commits that are not on ' . self::REMOTE . '/' . self::BRANCH . '; resolve over SSH.', $old);
@@ -676,10 +731,36 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
             $new = (string) $this->gitValue(['rev-parse', '--verify', 'HEAD']);
             $kept = $changed === [] ? '' : ' Kept local changes to ' . implode(', ', $changed) . '.';
 
-            return ['outcome' => 'deployed', 'reason' => null, 'message' => 'Updated to ' . substr($new, 0, 12) . '.' . $kept, 'old_commit' => $old, 'new_commit' => $new];
+            return ['outcome' => 'deployed', 'reason' => null, 'message' => 'Updated to ' . substr($new, 0, 12) . '.' . $left . $kept, 'old_commit' => $old, 'new_commit' => $new];
         } finally {
             $this->releaseLock($lock);
         }
+    }
+
+    /**
+     * A checkout left on another branch (say, a hotfix checked out on the server and since
+     * merged) goes back to `main` when nothing would be lost: HEAD and any local `main` are
+     * both contained in origin/main. `main` is pointed at HEAD, so no file changes and local
+     * edits stay; the usual fast-forward follows.
+     *
+     * @return array{0: string, 1: string, 2: string}|null reason, message, outcome; null once on main
+     */
+    private function switchMergedBranchToMain(?string $branch, ?string $old, string $remote): ?array
+    {
+        $name = $branch ?? 'a detached HEAD';
+        if ($old === null || $this->git(['merge-base', '--is-ancestor', $old, $remote], 30)['code'] !== 0) {
+            return ['wrong_branch', 'The checkout is on ' . $name . ', which has commits not on ' . self::REMOTE . '/' . self::BRANCH . '. If they can stop running, use Return to main on Tools → Deploy (./v3 deploy --return-to-main).', 'refused'];
+        }
+        $main = $this->gitValue(['rev-parse', '--verify', '--quiet', 'refs/heads/' . self::BRANCH]);
+        if ($main !== null && $this->git(['merge-base', '--is-ancestor', $main, $remote], 30)['code'] !== 0) {
+            return ['wrong_branch', 'The checkout is on ' . $name . ', and the server\'s ' . self::BRANCH . ' has commits not on ' . self::REMOTE . '/' . self::BRANCH . '. Return to main on Tools → Deploy (./v3 deploy --return-to-main) keeps them in a backup branch.', 'refused'];
+        }
+        $switch = $this->git(['checkout', '--quiet', '-B', self::BRANCH], 30);
+        if ($switch['code'] !== 0 || $this->gitValue(['symbolic-ref', '--quiet', '--short', 'HEAD']) !== self::BRANCH) {
+            return ['switch_failed', 'Could not switch from ' . $name . ' to ' . self::BRANCH . ': ' . $this->summarize($switch['err']), 'failed'];
+        }
+
+        return null;
     }
 
     /**
@@ -731,6 +812,72 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
     }
 
     /**
+     * @return array{outcome: string, reason: ?string, message: string, old_commit: ?string, new_commit: ?string}
+     */
+    private function runReturnToMain(int $timeoutSeconds): array
+    {
+        $refuse = static fn (string $reason, string $message, ?string $old = null, string $outcome = 'refused'): array
+            => ['outcome' => $outcome, 'reason' => $reason, 'message' => $message, 'old_commit' => $old, 'new_commit' => $old];
+
+        if (!$this->isCheckout()) {
+            return $refuse('not_a_checkout', 'The application directory is not a Git checkout.');
+        }
+        $lock = $this->acquireLock();
+        if ($lock === null) {
+            return $refuse('busy', 'Another deploy is running.', $this->gitValue(['rev-parse', '--verify', 'HEAD']));
+        }
+        try {
+            $old = $this->gitValue(['rev-parse', '--verify', 'HEAD']);
+            $branch = $this->gitValue(['symbolic-ref', '--quiet', '--short', 'HEAD']);
+            if ($old === null) {
+                return $refuse('git_failed', 'Could not read the current commit.', null, 'failed');
+            }
+            if ($branch === self::BRANCH) {
+                return $refuse('on_main', 'The checkout is already on ' . self::BRANCH . '; deploy to update it.', $old);
+            }
+            $changed = $this->trackedChangedFiles();
+            if ($changed === null) {
+                return $refuse('git_failed', 'Could not read the working tree status.', $old, 'failed');
+            }
+            $fetch = $this->fetch($timeoutSeconds);
+            if ($fetch !== null) {
+                return $refuse($fetch['reason'], $fetch['message'], $old, 'failed');
+            }
+            $remote = $this->gitValue(['rev-parse', '--verify', 'refs/remotes/' . self::REMOTE . '/' . self::BRANCH]);
+            if ($remote === null) {
+                return $refuse('no_remote_branch', self::REMOTE . '/' . self::BRANCH . ' was not found after fetching.', $old, 'failed');
+            }
+            $backup = '';
+            if ($this->mainNeedsBackup($remote)) {
+                $backup = self::MAIN_BACKUP_PREFIX . gmdate('YmdHis');
+                if ($this->git(['branch', $backup, 'refs/heads/' . self::BRANCH], 30)['code'] !== 0) {
+                    return $refuse('backup_failed', 'Could not save the server\'s ' . self::BRANCH . ' as ' . $backup . '.', $old, 'failed');
+                }
+            }
+            $from = $branch ?? 'a detached HEAD';
+            $back = $branch !== null ? ['checkout', '--quiet', '--force', $branch] : ['checkout', '--quiet', '--force', '--detach', $old];
+            $failure = $this->moveKeepingLocalChanges($old, $changed, function () use ($remote, $timeoutSeconds): ?array {
+                $switch = $this->git(['checkout', '--quiet', '-B', self::BRANCH, $remote], $timeoutSeconds);
+                if ($switch['code'] !== 0 || $this->gitValue(['symbolic-ref', '--quiet', '--short', 'HEAD']) !== self::BRANCH) {
+                    return ['reason' => 'switch_failed', 'message' => 'Could not check out ' . self::BRANCH . ': ' . $this->summarize($switch['err'])];
+                }
+
+                return null;
+            }, 'switch to ' . self::BRANCH, 'switch over SSH (git stash, git checkout ' . self::BRANCH . ', git pull, git stash pop)',
+                fn (): bool => $this->git($back, 30)['code'] === 0);
+            if ($failure !== null) {
+                return $failure;
+            }
+            $kept = $changed === [] ? '' : ' Kept local changes to ' . implode(', ', $changed) . '.';
+            $saved = $backup === '' ? '' : ' The server\'s old ' . self::BRANCH . ' is saved as ' . $backup . '.';
+
+            return ['outcome' => 'returned', 'reason' => null, 'message' => 'Switched from ' . $from . ' to ' . self::BRANCH . ' at ' . substr($remote, 0, 12) . '; ' . $from . ' is still on the server.' . $saved . $kept, 'old_commit' => $old, 'new_commit' => $remote];
+        } finally {
+            $this->releaseLock($lock);
+        }
+    }
+
+    /**
      * Moves HEAD with $move while keeping local edits to tracked files (typically
      * public/.htaccess): they are set aside, the move applied, and the edits put back, as an
      * operator would with `git stash`, the move, `git stash pop`. When the edits do not apply
@@ -738,9 +885,10 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
      *
      * @param list<string> $changed from {@see self::trackedChangedFiles()}
      * @param \Closure(): ?array{reason: string, message: string} $move null on success
+     * @param (\Closure(): bool)|null $returnToOld puts HEAD back where it was; default `git reset --hard $old`
      * @return array{outcome: string, reason: ?string, message: string, old_commit: ?string, new_commit: ?string}|null null on success
      */
-    private function moveKeepingLocalChanges(string $old, array $changed, \Closure $move, string $what, string $overSsh): ?array
+    private function moveKeepingLocalChanges(string $old, array $changed, \Closure $move, string $what, string $overSsh, ?\Closure $returnToOld = null): ?array
     {
         $stashed = false;
         if ($changed !== []) {
@@ -752,7 +900,7 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
         }
         $failure = $move();
         if ($failure !== null) {
-            $restored = !$stashed || $this->restoreAt($old);
+            $restored = !$stashed || $this->restoreAt($old, $returnToOld);
             $message = $failure['message'];
             if (!$restored) {
                 $message .= ' Local changes are saved in `git stash`; run `git stash pop` over SSH.';
@@ -765,7 +913,7 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
             if ($apply['code'] !== 0 || $this->hasUnmergedPaths()) {
                 // The move and the local edits touch the same lines: go back to the previous
                 // commit with the edits intact.
-                if (!$this->restoreAt($old)) {
+                if (!$this->restoreAt($old, $returnToOld)) {
                     return ['outcome' => 'failed', 'reason' => 'stash_restore_failed', 'message' => 'The ' . $what . ' conflicts with local changes to ' . implode(', ', $changed) . ', and they could not be put back automatically. They are saved in `git stash`; resolve over SSH.', 'old_commit' => $old, 'new_commit' => $this->gitValue(['rev-parse', '--verify', 'HEAD'])];
                 }
 
@@ -833,9 +981,10 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
      * Return to $commit and put the stashed local changes back on it, where
      * they came from, so they apply cleanly.
      */
-    private function restoreAt(string $commit): bool
+    private function restoreAt(string $commit, ?\Closure $returnToOld = null): bool
     {
-        if ($this->git(['reset', '--hard', '--quiet', $commit], 30)['code'] !== 0) {
+        $back = $returnToOld !== null ? $returnToOld() : $this->git(['reset', '--hard', '--quiet', $commit], 30)['code'] === 0;
+        if (!$back) {
             return false;
         }
 

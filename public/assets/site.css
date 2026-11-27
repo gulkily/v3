@@ -632,10 +632,20 @@ pre {
    browser. It sits outside .site-header-actions, so the phone tab bar keeps its tabs. */
 .deploy-prompt {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
+  max-width: 100%;
   margin-left: 0.75rem;
   vertical-align: middle;
+}
+
+/* Phones: a long status (a refusal names the branch) wraps instead of widening the page. */
+@media (max-width: 639px) {
+  [data-shell="app"] .site-header--app .eyebrow:has(.deploy-prompt:not([hidden])) {
+    flex-shrink: 1;
+    min-width: 0;
+  }
 }
 
 .deploy-prompt[hidden] {
@@ -647,6 +657,7 @@ pre {
   .deploy-prompt {
     display: flex;
     width: max-content;
+    max-width: 13rem;
     margin: 0.3rem 0 0;
   }
 }
@@ -666,6 +677,8 @@ pre {
 }
 
 .deploy-prompt__status {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font: 0.8rem/1.2 var(--ui-font);
   text-transform: none;
   letter-spacing: normal;

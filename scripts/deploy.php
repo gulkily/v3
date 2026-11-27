@@ -9,17 +9,22 @@ require dirname(__DIR__) . '/autoload.php';
 use ForumRewrite\Deploy\AppUpdate;
 
 const DEPLOY_HELP = <<<'HELP'
-Usage: ./v3 deploy [--check|--status|--history|--rollback=COMMIT] [--timeout=SECONDS]
+Usage: ./v3 deploy [--check|--status|--history|--rollback=COMMIT|--return-to-main] [--timeout=SECONDS]
   (default)   Fetch origin/main and fast-forward this application checkout.
   --check     Fetch and report how far behind origin/main the checkout is.
   --status    Report local state and the latest attempt without contacting GitHub.
   --history   List the versions this checkout has run, newest first.
   --rollback=COMMIT  Return to a version from --history. Deploy again to move forward.
-Keeps local edits to tracked files (stash, fast-forward, reapply). Refuses,
+  --return-to-main  Leave a branch other than main for origin/main. Its commits stop
+              running but stay on the server; a server main with its own commits
+              is kept as a main-before-return-* branch.
+Keeps local edits to tracked files (stash, fast-forward, reapply). A branch
+already merged into origin/main is switched back to main first. Refuses,
 leaving the checkout unchanged, when the update conflicts with a local edit,
-the branch is not main, history has diverged, or another deploy is running.
+the branch has commits not on origin/main (see --return-to-main), history has
+diverged, or another deploy is running.
 Pull only: run docs publish or build-static yourself if the release needs them.
-Exit: 0 deployed, rolled back, up to date or checked; 1 refused or failed; 2 usage error.
+Exit: 0 deployed, rolled back, returned, up to date or checked; 1 refused or failed; 2 usage error.
 HELP;
 
 $mode = 'deploy';
@@ -35,6 +40,8 @@ foreach (array_slice($argv, 1) as $arg) {
         $mode = 'status';
     } elseif ($arg === '--history') {
         $mode = 'history';
+    } elseif ($arg === '--return-to-main') {
+        $mode = 'return';
     } elseif (preg_match('/^--rollback=([0-9a-f]{7,64})$/', $arg, $m) === 1) {
         $mode = 'rollback';
         $rollbackTo = $m[1];
@@ -115,9 +122,20 @@ if ($mode === 'rollback') {
         echo 'Warning: ' . $warning . "\n";
     }
 }
-$result = $mode === 'rollback'
-    ? $update->rollback($rollbackTo, $actor, AppUpdate::MODE_CLI, $timeout)
-    : $update->deploy($actor, AppUpdate::MODE_CLI, $timeout);
+if ($mode === 'return') {
+    $preview = $update->returnToMainPreview();
+    foreach ($preview['commits'] as $commit) {
+        echo 'Stops-Running: ' . substr($commit['commit'], 0, 12) . ' ' . $commit['date'] . ' ' . $commit['subject'] . "\n";
+    }
+    if ($preview['more'] > 0) {
+        echo 'Stops-Running-More: ' . $preview['more'] . "\n";
+    }
+}
+$result = match ($mode) {
+    'rollback' => $update->rollback($rollbackTo, $actor, AppUpdate::MODE_CLI, $timeout),
+    'return' => $update->returnToMain($actor, AppUpdate::MODE_CLI, $timeout),
+    default => $update->deploy($actor, AppUpdate::MODE_CLI, $timeout),
+};
 echo 'Outcome: ' . $result['outcome'] . "\n";
 if ($result['reason'] !== null) {
     echo 'Reason: ' . $result['reason'] . "\n";
@@ -125,4 +143,4 @@ if ($result['reason'] !== null) {
 echo 'Old-Commit: ' . ($result['old_commit'] ?? '-') . "\n";
 echo 'New-Commit: ' . ($result['new_commit'] ?? '-') . "\n";
 echo 'Message: ' . $result['message'] . "\n";
-exit(in_array($result['outcome'], ['deployed', 'rolled_back', 'up_to_date'], true) ? 0 : 1);
+exit(in_array($result['outcome'], ['deployed', 'rolled_back', 'returned', 'up_to_date'], true) ? 0 : 1);

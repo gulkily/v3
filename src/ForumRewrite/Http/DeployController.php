@@ -29,8 +29,9 @@ final class DeployController
 
     /**
      * @param array<string, mixed>|null $rollbackPreview from {@see AppUpdate::rollbackPreview()}, to ask for confirmation
+     * @param array<string, mixed>|null $returnPreview from {@see AppUpdate::returnToMainPreview()}, to ask for confirmation
      */
-    public function render(?string $notice = null, ?array $rollbackPreview = null): string
+    public function render(?string $notice = null, ?array $rollbackPreview = null, ?array $returnPreview = null): string
     {
         $canDeploy = $this->routeServices->securityReviewAllowed();
 
@@ -43,6 +44,7 @@ final class DeployController
                 'deployNotice' => $notice,
                 'deployVersions' => $this->update->versions(),
                 'rollbackPreview' => $rollbackPreview,
+                'returnPreview' => $returnPreview,
                 'commitLinkBase' => $this->commitLinkBase(),
             ],
             'Deploy',
@@ -53,7 +55,8 @@ final class DeployController
 
     /**
      * POST /tools/deploy/ with `action` = status | check | queue | now | rollback_preview | rollback
-     * (the last two take `commit`, a version from the history). `check` takes an optional
+     * | return_preview | return_to_main (the rollback pair takes `commit`, a version from the
+     * history; the return pair leaves a branch other than main for origin/main). `check` takes an optional
      * `max_age` in seconds: a fetch newer than that is reused instead of contacting GitHub.
      * The page script sends JSON with `X-Requested-With: ForumDeploy` and gets
      * JSON back; a plain form post (no script) gets the page with a notice.
@@ -81,6 +84,8 @@ final class DeployController
             'now' => $this->deployNow($actor),
             'rollback_preview' => $this->update->rollbackPreview((string) ($input['commit'] ?? '')) + ['outcome' => 'preview'],
             'rollback' => $this->rollbackNow((string) ($input['commit'] ?? ''), $actor),
+            'return_preview' => $this->update->returnToMainPreview() + ['outcome' => 'preview'],
+            'return_to_main' => $this->returnToMainNow($actor),
             default => null,
         };
         if ($result === null) {
@@ -88,7 +93,7 @@ final class DeployController
             return;
         }
         unset($result['state']);
-        if ($action === 'rollback' && !$wantsJson && ($result['outcome'] ?? null) === 'rolled_back') {
+        if (in_array($action, ['rollback', 'return_to_main'], true) && !$wantsJson && in_array($result['outcome'] ?? null, ['rolled_back', 'returned'], true)) {
             // Send the browser back to the page, so a reload does not post the rollback again.
             $this->routeServices->sendRedirect('/tools/deploy/', (string) $result['message'], 303, $headers, 'tools');
             return;
@@ -96,6 +101,10 @@ final class DeployController
         if ($action === 'rollback_preview' && !$wantsJson) {
             // Without a script the page itself asks for confirmation, or says why it cannot.
             $this->routeServices->sendHtml($this->render($result['commit'] === null ? $result['message'] : null, $result['commit'] === null ? null : $result), 200, $headers);
+            return;
+        }
+        if ($action === 'return_preview' && !$wantsJson) {
+            $this->routeServices->sendHtml($this->render($result['branch'] === null ? $result['message'] : null, null, $result['branch'] === null ? null : $result), 200, $headers);
             return;
         }
         $this->respond($wantsJson, 200, ['status' => 'ok', 'action' => $action, 'result' => $result, 'state' => $this->publicState()], $headers);
@@ -179,6 +188,20 @@ final class DeployController
         }
 
         return $this->update->rollback($commit, $actor, AppUpdate::MODE_INSTANT, self::INSTANT_TIMEOUT_SECONDS);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function returnToMainNow(string $actor): array
+    {
+        // As with Deploy now: finish even if the phone drops the connection.
+        ignore_user_abort(true);
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(self::INSTANT_TIMEOUT_SECONDS * 2 + 30);
+        }
+
+        return $this->update->returnToMain($actor, AppUpdate::MODE_INSTANT, self::INSTANT_TIMEOUT_SECONDS);
     }
 
     /**
