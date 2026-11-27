@@ -220,7 +220,8 @@ final class PrivateMessageHistorySyncStore
     }
 
     /**
-     * Transfers to this target key that still hold items without matching coverage, by transfer ID.
+     * Transfers to this target key that still hold uncovered messages, by transfer ID. A message is
+     * done once any transfer covers it, so its other donors' transfers are not offered again.
      * @return array{transfers:list<array<string, mixed>>,next:?string}
      */
     public function unverifiedFor(string $account, string $target, string $after = '', int $limit = 10): array
@@ -229,7 +230,7 @@ final class PrivateMessageHistorySyncStore
             JOIN history_sync_items i ON i.transfer_id = t.transfer_id AND i.account = t.account
             WHERE t.account = ? AND t.target = ? AND t.transfer_id > ?
               AND NOT EXISTS (SELECT 1 FROM history_sync_coverage c WHERE c.account = i.account AND c.target = i.target
-                AND c.message_id = i.message_id AND c.digest = i.digest AND c.transfer_id = i.transfer_id)
+                AND c.message_id = i.message_id AND c.digest = i.digest)
             ORDER BY t.transfer_id LIMIT ' . (max(1, min(25, $limit)) + 1));
         $q->execute([$account, $target, $after]);
         $rows = $q->fetchAll();
