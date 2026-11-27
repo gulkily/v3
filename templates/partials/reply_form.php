@@ -22,7 +22,10 @@ $composerHiddenFields = '  <input type="hidden" name="thread_id" value="' . $e($
 // the note, and its own draft so it never mixes with the reply box at the bottom of the page.
 $composerLeadFields = '';
 if (($pledgePlacement ?? false) && is_array($pledgeCampaign ?? null)) {
-    $composerLeadFields = '  <label class="pledge-field">Pledge<input type="text" name="pledge_amount" inputmode="decimal" autocomplete="off" size="8" maxlength="20" data-role="pledge-amount">'
+    // Presets are buttons pledge_field.js draws beside the field; without script the field is enough.
+    $pledgePresetList = implode(',', array_map('intval', $pledgePresets ?? []));
+    $composerLeadFields = '  <label class="pledge-field">Pledge<input type="text" name="pledge_amount" inputmode="decimal" autocomplete="off" size="8" maxlength="20" data-role="pledge-amount"'
+        . ($pledgePresetList !== '' ? ' data-pledge-presets="' . $e($pledgePresetList) . '"' : '') . '>'
         . ($pledgeCampaign['unit'] !== '' ? '<span class="pledge-field__unit">' . $e($pledgeCampaign['unit']) . '</span>' : '') . '</label>' . "\n";
     $composerFormAttributes .= ' data-pledge-form data-compose-draft-scope="pledge"';
     $composerShowOptions = false;

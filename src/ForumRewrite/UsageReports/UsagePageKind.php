@@ -18,7 +18,7 @@ final class UsagePageKind
     public const WORDS = [
         'about', 'account', 'key', 'activity', 'agent', 'approvals', 'root', 'approve',
         'backup', 'backlog', 'start', 'calendar', 'compose', 'reply', 'thread', 'docs', 'forte', 'users', 'user',
-        'profiles', 'replies', 'gallery', 'guestbook', 'hints', 'inbox', 'instance', 'invites',
+        'profiles', 'replies', 'gallery', 'guestbook', 'support', 'hints', 'inbox', 'instance', 'invites',
         'latest', 'lobby', 'messages', 'conversation', 'sent', 'offline', 'reader', 'pages',
         'posts', 'random', 'recent', 'records', 'releases', 'search', 'source', 'current', 'blob',
         'commits', 'staged', 'tags', 'themes', 'threads', 'top', 'unread', 'pending', 'watch',

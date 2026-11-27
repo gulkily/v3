@@ -40,6 +40,8 @@ final class SiteProfileRegistry
                 ],
                 // The thread whose top-level replies /guestbook/ shows as a book; null until it exists.
                 'guestbookThread' => null,
+                // The pledge campaign /support/ draws as a wall of squares; null until it exists.
+                'supportThread' => null,
                 // The thread whose replies carry backlog claims (`claim:` lines); null until it exists, and then the backlog shows no holders.
                 'backlogClaimsThread' => null,
                 // Threads an approved member tagged with every one of these open the board as Zen memes.
@@ -179,6 +181,14 @@ final class SiteProfileRegistry
     public static function guestbookThread(): ?string
     {
         $threadId = self::active()['guestbookThread'] ?? null;
+
+        return is_string($threadId) && $threadId !== '' ? $threadId : null;
+    }
+
+    /** The active site's support campaign thread ID, or null when the site has none. */
+    public static function supportThread(): ?string
+    {
+        $threadId = self::active()['supportThread'] ?? null;
 
         return is_string($threadId) && $threadId !== '' ? $threadId : null;
     }

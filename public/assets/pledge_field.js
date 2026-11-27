@@ -2,6 +2,7 @@
 // first line "pledge: 300", so signed, unsigned, Outbox and offline sending all carry it
 // with no change. This script keeps that line and the amount field in step, both ways.
 // Without JavaScript the server writes the line from the field instead.
+// A field with data-pledge-presets="1,3,5" gets a button per amount; pressing one fills the field.
 (function () {
   "use strict";
 
@@ -55,10 +56,48 @@
     if (p.amount.value.trim() !== amount) p.amount.value = amount;
   }
 
+  // Preset buttons after the field's label: each fills the field as typing would.
+  function drawPresets(form, amount) {
+    var list = (amount.getAttribute("data-pledge-presets") || "").split(",").filter(function (value) {
+      return /^[1-9][0-9]*$/.test(value);
+    });
+    var label = amount.closest("label");
+    if (list.length === 0 || !label || form.querySelector('[data-role="pledge-presets"]')) return;
+    var unit = form.querySelector(".pledge-field__unit");
+    var group = document.createElement("div");
+    group.className = "pledge-presets";
+    group.setAttribute("data-role", "pledge-presets");
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", "Quick amounts");
+    list.forEach(function (value) {
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "pledge-preset";
+      button.textContent = value;
+      button.setAttribute("aria-label", "Pledge " + value + (unit ? " " + unit.textContent : ""));
+      button.addEventListener("click", function () {
+        amount.value = value;
+        amount.dispatchEvent(new Event("input", { bubbles: true }));
+        group.querySelectorAll(".pledge-preset").forEach(function (other) {
+          other.setAttribute("aria-pressed", other === button ? "true" : "false");
+        });
+      });
+      button.setAttribute("aria-pressed", "false");
+      group.appendChild(button);
+    });
+    amount.addEventListener("input", function () {
+      group.querySelectorAll(".pledge-preset").forEach(function (button) {
+        button.setAttribute("aria-pressed", button.textContent === amount.value.trim() ? "true" : "false");
+      });
+    });
+    label.insertAdjacentElement("afterend", group);
+  }
+
   function bind(form) {
     var p = parts(form);
     if (!p.amount || !p.body || form.dataset.pledgeFieldBound === "1") return;
     form.dataset.pledgeFieldBound = "1";
+    drawPresets(form, p.amount);
     var writing = false;
     p.amount.addEventListener("input", function () {
       writing = true;

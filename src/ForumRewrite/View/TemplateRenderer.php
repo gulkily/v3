@@ -30,6 +30,7 @@ final class TemplateRenderer
         'backlog.php' => ['/assets/backlog.css'],
         'backlog_start.php' => ['/assets/agent.css', '/assets/backlog.css'],
         'guestbook.php' => ['/assets/compose.css', '/assets/guestbook.css'],
+        'support.php' => ['/assets/compose.css', '/assets/support.css'],
         'themes.php' => ['/assets/themes.css'],
         'agent.php' => ['/assets/agent.css'],
         'agent_start.php' => ['/assets/agent.css'],
@@ -800,6 +801,8 @@ final class TemplateRenderer
             'siteDescription' => \ForumRewrite\ProfilePresentationContent::siteDescription(SiteProfileRegistry::active()),
             'agentPageEnabled' => $this->agentPageEnabled(),
             // The guestbook thread while /guestbook/ is on; the thread and About pages link to the book.
+            // The support campaign while pledges are on; its thread page links to /support/.
+            'siteSupportThreadId' => $this->featureFlags->isEnabled(FeatureFlagRegistry::PLEDGES_ENABLED) ? SiteProfileRegistry::supportThread() : null,
             'siteGuestbookThreadId' => $this->featureFlags->isEnabled(FeatureFlagRegistry::GUESTBOOK_ENABLED) ? SiteProfileRegistry::guestbookThread() : null,
             'agentPromptOrigin' => self::requestOrigin(),
             'tagLinksEnabled' => $this->featureFlags->isEnabled(FeatureFlagRegistry::TAG_LINKS_ENABLED),

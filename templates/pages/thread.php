@@ -89,6 +89,9 @@ $rootMetaVisible = $rootRunTailIndex === -1;
 <?php if ($siteGuestbookThreadId !== null && (string) $thread['root_post_id'] === $siteGuestbookThreadId): ?>
   <p class="meta guestbook-thread-link"><a href="/guestbook/">Open as a book</a></p>
 <?php endif; ?>
+<?php if (($siteSupportThreadId ?? null) !== null && (string) $thread['root_post_id'] === $siteSupportThreadId): ?>
+  <p class="meta support-thread-link"><a href="/support/">Open the wall</a></p>
+<?php endif; ?>
 <?= $indent($partial('partials/thread_root_card.php', ['post' => $rootPost, 'trueReplyCount' => $trueReplyCount, 'metaVisible' => $rootMetaVisible, 'voteCaptionPair' => $voteCaptionPair ?? null]), 1) ?>
 <?php else: ?>
   <article class="card" data-thread-reactions-root data-thread-id="<?= $e($thread['root_post_id']) ?>">

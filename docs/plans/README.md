@@ -764,4 +764,5 @@ and repair its navigation and affected references. See the
 - [Deploy returns a merged branch to main](deploy_merged_branch/deploy_merged_branch_one_shot.md) — one-shot: Deploy now leaves a server branch already on origin/main instead of refusing; the header deploy message wraps on a phone.
 - [Music share box like the Board's](music_share_compact/music_share_compact_one_shot.md) — one-shot: /music/ loads the Board's styles and uses its one-line composer.
 - [Underground header deploy button text](underground_deploy_prompt_text/underground_deploy_prompt_text_one_shot.md) — one-shot: the header Deploy now label no longer inherits the site name's transparent text fill.
+- [Support wall](sponsor_wall/sponsor_wall_step3_development_plan.md) — staged: a `/support/` page draws one campaign as a wall of $100 squares, one block per pledge, with a pledge form and presets.
 - [Embed presentation](embed_presentation/embed_presentation_step1_solution_assessment.md) — staged: one bar or one YouTube poster per media embed, one tap to play, one player at a time; posters copied to our server.
