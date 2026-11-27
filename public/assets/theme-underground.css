@@ -222,6 +222,12 @@
   color: var(--ug-blue);
 }
 
+/* The header Deploy now sits inside the eyebrow; without this it inherits the
+   name's transparent text fill and the button shows a blank pill. */
+:root:is([data-theme="underground"], [data-theme="undergrounddark"]) .deploy-prompt {
+  -webkit-text-fill-color: currentColor;
+}
+
 /* Headings and links in ultramarine. */
 :root:is([data-theme="underground"], [data-theme="undergrounddark"]) h1,
 :root:is([data-theme="underground"], [data-theme="undergrounddark"]) h2,
