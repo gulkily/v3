@@ -138,4 +138,4 @@ Step 3 approved 2026-11-27 ("approved step 3"). Branch `feat/embed_presentation`
 
 **Retrospective scope assessment: 0.55** (projected 0.50). Stage 1 ran over on pre-existing browser-test failures. Maintainer comfortable-fit judgment: pending. Measured time: unknown.
 
-Checks: the smoke set and every changed PHP test passed; `media_embed_browser.mjs` and `music_share.mjs` passed. The full suite was not run. Phone check and DreamHost poster fetch are pending deploy.
+PR: #447 (opened 2026-11-27). Checks: the smoke set and every changed PHP test passed; `media_embed_browser.mjs` and `music_share.mjs` passed. The full suite was not run. Phone check and DreamHost poster fetch are pending deploy.
