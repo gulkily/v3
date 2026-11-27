@@ -8,7 +8,7 @@ Effort study: `railspike-effort` / `v3/deploy_merged_branch`; host ledger [deplo
 
 **Cycle estimate: 0.12**
 
-Status: implemented, PR open; next permitted action: maintainer returns the server to `main` over SSH once, merges, and deploys.
+Status: scope extended 2026-11-27 (Return to main); implementing on the same open branch.
 
 ## Original request
 
@@ -74,5 +74,20 @@ Diff: `AppUpdate.php`, `deploy.php` help, `site.css` deploy prompt rules, `AppUp
 Recovery: production is still on `fix/merge-about-slot` and refuses deploys, including this one, until switched once over SSH (`git stash && git checkout main && git pull && git stash pop` in `~/v3`).
 
 Commit, merge and publication: pushed to `fix/deploy-merged-branch` with an open PR; not merged.
+
+## Scope change 2026-11-27: Return to main
+
+Asked: does the fix always let us get back to `main`? It does not: a branch with unmerged commits, or a server `main` with its own commits, is still refused, and then only SSH recovers. Ilya: "we should not just automatically switch to main, we should just have that option." Renewed one-shot authority, same cycle and branch (PR #443 still open, unmerged).
+
+Added outcome:
+
+- Tools → Deploy, when the checkout is not on `main`: a "Return to main" form that first shows a confirmation, as Roll back does: the commits on the current branch that stop running (they stay on the server under the branch name), and, when the server's `main` has commits not on `origin/main`, the backup branch that keeps them. Confirming fetches, saves that backup branch if needed, and checks out `main` at `origin/main`, keeping local edits to tracked files the same way deploys do. If those edits conflict, the checkout goes back to the branch it was on with the edits intact.
+- `./v3 deploy --return-to-main` does the same over SSH.
+- Logged as an attempt, and in the history as "returned to main".
+- The merged-branch automatic return stays: it changes no running code that `origin/main` lacks.
+
+Reuse: `moveKeepingLocalChanges` (gains an optional restore closure, since a branch switch restores by checkout, not `reset --hard`), `record()`, `commitList()`, the rollback confirmation markup and plain-form flow (no script change), and `.deploy-rollback` styles.
+
+Risk: undoing a live hotfix. Mitigated by the confirmation listing the commits that stop running and by keeping the branch. Not authorized: deleting branches, queued (task worker) mode for this action.
 
 — Claude · 2026-11-27 UTC · Model: claude-opus-5-5
