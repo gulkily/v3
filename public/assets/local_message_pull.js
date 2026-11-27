@@ -363,5 +363,95 @@
   });
   if (sourceField) sourceField.addEventListener('change', refresh);
 
+  // Connect: zenmemes.com hands this browser's key over in a popup, after one click there
+  // (key_handoff.js). Only a message from the source's origin, of the expected shape, is accepted.
+  var HANDOFF_TIMEOUT_MS = window.__forumHandoffTimeoutMs || 120000; // tests may shorten it
+  var connectButton = root.querySelector('[data-local-connect]');
+  var fallback = root.querySelector('[data-local-connect-fallback]');
+  var fallbackLink = root.querySelector('[data-local-connect-link]');
+  var replaceBox = root.querySelector('[data-local-connect-replace]');
+  function sourceOrigin() {
+    var value = source();
+    return new URL(value.indexOf('://') === -1 ? 'https://' + value : value).origin;
+  }
+  function stepError(message, step, detail) {
+    var error = new Error(message);
+    error.details = { step: step, error: detail };
+    return error;
+  }
+
+  function receiveKey(origin, popup) {
+    return new Promise(function (resolve, reject) {
+      var timer = window.setTimeout(function () {
+        window.removeEventListener('message', listen);
+        reject(stepError('No answer from ' + host + ' within 2 minutes. Press Connect to try again.', 'local pull: connect handoff', 'timed out after ' + (HANDOFF_TIMEOUT_MS / 1000) + ' s'));
+      }, HANDOFF_TIMEOUT_MS);
+      function listen(event) {
+        var data = event.data;
+        if (event.origin !== origin || (popup && event.source !== popup)) return;
+        if (!data || data.type !== 'forum-key-handoff' || data.version !== 1
+            || typeof data.privateKey !== 'string' || typeof data.fingerprint !== 'string') return;
+        window.clearTimeout(timer);
+        window.removeEventListener('message', listen);
+        resolve({ privateKey: data.privateKey, fingerprint: data.fingerprint.toLowerCase(), username: String(data.username || '') });
+      }
+      window.addEventListener('message', listen);
+    });
+  }
+
+  // A different key already here: name both and wait for an explicit choice.
+  function chooseReplace(received) {
+    var current = stored('forum_pki_fingerprint').toLowerCase();
+    if (!current || current === received.fingerprint) return Promise.resolve(false);
+    var short = function (fingerprint) { return '…' + fingerprint.toUpperCase().slice(-8); };
+    replaceBox.querySelector('[data-local-connect-replace-text]').textContent = 'This browser already has a key here: '
+      + (stored('forum_pki_username') || 'unnamed') + ' ' + short(current) + '. Replace it with ' + (received.username || 'your key')
+      + ' ' + short(received.fingerprint) + ' from ' + host + '?';
+    replaceBox.hidden = false;
+    return new Promise(function (resolve, reject) {
+      replaceBox.querySelector('[data-local-connect-replace-yes]').onclick = function () { replaceBox.hidden = true; resolve(true); };
+      replaceBox.querySelector('[data-local-connect-replace-no]').onclick = function () {
+        replaceBox.hidden = true;
+        reject(stepError('Kept this browser\'s key. Nothing changed.', 'local pull: connect replace', 'declined'));
+      };
+    });
+  }
+
+  function connect() {
+    var origin;
+    try { origin = sourceOrigin(); } catch (error) { return Promise.reject(stepError('The source address is not valid.', 'local pull: connect', error.message)); }
+    var url = origin + '/account/key/share?to=' + encodeURIComponent(location.origin);
+    var name = 'forum-key-handoff-' + Date.now();
+    var popup = window.open(url, name, 'popup,width=520,height=640');
+    fallback.hidden = Boolean(popup);
+    fallbackLink.href = url;
+    fallbackLink.target = name;
+    setStatus(popup ? 'Waiting for you to confirm on ' + host + '…' : 'Your browser blocked the window. Use the link to open ' + host + '.');
+    return receiveKey(origin, popup).then(function (received) {
+      fallback.hidden = true;
+      return chooseReplace(received).then(function (replace) {
+        setStatus('Installing your key…');
+        return window.__forumBrowserIdentity.importPrivateKey(received.privateKey, received.fingerprint, { replace: replace });
+      });
+    });
+  }
+
+  connectButton.addEventListener('click', function () {
+    if (connectButton.getAttribute('aria-disabled') === 'true') return;
+    connectButton.setAttribute('aria-disabled', 'true');
+    connectButton.setAttribute('aria-busy', 'true');
+    connect().then(function () {
+      root.dispatchEvent(new CustomEvent('local-pull:connected'));
+      setStatus('Connected.');
+      return refresh();
+    }).catch(function (error) {
+      fallback.hidden = true;
+      setStatus(error.message, 'error', error);
+    }).then(function () {
+      connectButton.removeAttribute('aria-disabled');
+      connectButton.removeAttribute('aria-busy');
+    });
+  });
+
   refresh();
 })();

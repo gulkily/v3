@@ -40,6 +40,21 @@ const server = spawn('php', ['-S', `127.0.0.1:${sourcePort}`, join(project, 'pub
     VISITOR_STATISTICS_DATABASE_PATH: join(root, 'visitors.sqlite3') } });
 let log = ''; server.stderr.on('data', data => { log += data; });
 
+// A real local copy in development mode, whose /local/ page receives the key.
+const localRoot = join(root, 'local');
+php(`ForumRewrite\\Support\\LocalRepositoryBootstrap::initializeLocalRepository(${JSON.stringify(project)}, ${JSON.stringify(join(localRoot, 'repository'))});`);
+const localPort = await freePort();
+const local = `http://127.0.0.1:${localPort}`;
+const localServer = spawn('php', ['-S', `127.0.0.1:${localPort}`, join(project, 'public/router.php')], {
+  cwd: join(project, 'public'), stdio: ['ignore', 'ignore', 'pipe'],
+  env: { ...process.env, V3_DEV_LOG: '1', FORUM_REPOSITORY_ROOT: join(localRoot, 'repository'), FORUM_DATABASE_PATH: join(localRoot, 'cache/index.sqlite3'),
+    FORUM_STATIC_HTML_ROOT: join(localRoot, 'static'), FORUM_TASK_QUEUE_DATABASE_PATH: join(localRoot, 'private/tasks.sqlite3'),
+    FORUM_SECRETS_PATH: join(root, 'secrets.php'), FORUM_APPROVED_MEMBERS_ONLY: 'false', FAST_SCORING_ENABLED: 'false',
+    PRIVATE_MESSAGE_DATABASE_PATH: join(localRoot, 'private/messages.sqlite3'),
+    PRIVATE_MESSAGE_HISTORY_SYNC_DATABASE_PATH: join(localRoot, 'private/message_history_sync.sqlite3'),
+    VISITOR_STATISTICS_DATABASE_PATH: join(localRoot, 'visitors.sqlite3') } });
+localServer.stderr.on('data', data => { log += data; });
+
 // Two "local copies": plain pages on other loopback ports that open the handoff and record what arrives.
 const openerHtml = `<!doctype html><title>local</title><button id="go">Connect</button><script>
   window.__got = [];
@@ -123,12 +138,52 @@ try {
   assert.equal(await none.popup.getByRole('button', { name: 'Use it there' }).isVisible(), false);
   await new Promise(done => setTimeout(done, 300));
   assert.deepEqual(await got(none.page), []);
-  console.log('PASS key handoff: click-only, exact origin, loopback-only, opener-only, no key. Artifacts: ' + root);
+  // 6. The real /local/ page: Connect, confirm in the popup, and the key is installed here.
+  const fresh = await context(true);
+  const localPage = await fresh.newPage();
+  await localPage.goto(local + '/local/?source=' + encodeURIComponent(source));
+  const [popup] = await Promise.all([fresh.waitForEvent('page'), localPage.getByRole('button', { name: /^Connect to/ }).click()]);
+  await popup.getByRole('button', { name: 'Use it there' }).click();
+  await localPage.waitForFunction(expected => (localStorage.getItem('forum_pki_fingerprint') || '').toLowerCase() === expected, fingerprint.toLowerCase(), { timeout: 60000 });
+
+  // 7. Another key already here: named, and nothing changes until Replace.
+  const other = await pgp.generateKey({ type: 'ecc', curve: 'ed25519', userIDs: [{ name: 'old-local' }], format: 'armored' });
+  const otherFingerprint = (await pgp.readKey({ armoredKey: other.publicKey })).getFingerprint().toUpperCase();
+  const busy = await context(true);
+  await busy.addInitScript(({ origin, publicKey, privateKey, fingerprint }) => {
+    if (location.origin !== origin) return;
+    for (const [k, v] of Object.entries({ username: 'old-local', public_key: publicKey, private_key: privateKey, fingerprint, published_fingerprint: fingerprint })) localStorage.setItem('forum_pki_' + k, v);
+  }, { origin: local, publicKey: other.publicKey, privateKey: other.privateKey, fingerprint: otherFingerprint });
+  const busyPage = await busy.newPage();
+  await busyPage.goto(local + '/local/?source=' + encodeURIComponent(source));
+  let [busyPopup] = await Promise.all([busy.waitForEvent('page'), busyPage.getByRole('button', { name: /^Connect to/ }).click()]);
+  await busyPopup.getByRole('button', { name: 'Use it there' }).click();
+  await busyPage.getByText('This browser already has a key here: old-local …' + otherFingerprint.slice(-8)).waitFor();
+  await busyPage.getByRole('button', { name: "Keep this browser's key" }).click();
+  await busyPage.locator('[data-local-pull-status]').filter({ hasText: 'Kept this browser' }).waitFor();
+  assert.equal(await busyPage.evaluate(() => localStorage.getItem('forum_pki_fingerprint')), otherFingerprint);
+  [busyPopup] = await Promise.all([busy.waitForEvent('page'), busyPage.getByRole('button', { name: /^Connect to/ }).click()]);
+  await busyPopup.getByRole('button', { name: 'Use it there' }).click();
+  await busyPage.getByRole('button', { name: 'Replace' }).click();
+  await busyPage.waitForFunction(expected => (localStorage.getItem('forum_pki_fingerprint') || '').toLowerCase() === expected, fingerprint.toLowerCase(), { timeout: 60000 });
+
+  // 8. A message from the wrong origin is ignored; no answer ends in a named timeout with Details.
+  const quiet = await context(false);
+  const quietPage = await quiet.newPage();
+  await quietPage.addInitScript(() => { window.__forumHandoffTimeoutMs = 1500; });
+  await quietPage.goto(local + '/local/?source=' + encodeURIComponent(source));
+  const [quietPopup] = await Promise.all([quiet.waitForEvent('page'), quietPage.getByRole('button', { name: /^Connect to/ }).click()]);
+  await quietPopup.close();
+  await quietPage.evaluate(key => window.postMessage({ type: 'forum-key-handoff', version: 1, privateKey: key, fingerprint: 'AA', username: 'x' }, '*'), other.privateKey);
+  await quietPage.locator('[data-local-pull-status]').filter({ hasText: 'No answer from' }).waitFor({ timeout: 10000 });
+  assert.equal(await quietPage.evaluate(() => localStorage.getItem('forum_pki_private_key')), null, 'A same-page message never installs a key');
+  assert.match(await quietPage.locator('[data-local-pull-details] pre').textContent(), /step: local pull: connect handoff/);
+  console.log('PASS key handoff: click-only, exact origin, loopback-only, opener-only, no key; /local/ connect, replace, timeout. Artifacts: ' + root);
 } catch (error) {
   console.error(log.split('\n').filter(line => !/Accepted|Closing|\[200\]/.test(line)).slice(-30).join('\n'));
   throw error;
 } finally {
   if (browser) await browser.close();
-  server.kill();
+  server.kill(); localServer.kill();
   for (const opener of openers) opener.http.close();
 }

@@ -34,3 +34,23 @@ Branch `feature/local_pull_simple` from `origin/main` `fd500820`. Planning commi
   - Screenshot at the popup size checked, and the heading copy trimmed.
 - Notes:
   - Retrospective stage-work assessment: **0.20**.
+
+## Stage 2 - Local page receives the key
+
+**Original estimate: 0.15** (unchanged)
+
+- Changes:
+  - `/local/` gets **Connect to <host>**. The click opens the source's `/account/key/share?to=<this origin>` in a popup with a new name each time. If the popup is blocked, it shows a fallback link (`rel="opener"`) instead.
+  - `local_message_pull.js` accepts a message only if `event.origin` is the source origin, `event.source` is the popup it opened (when known), the type is `forum-key-handoff` and the version is 1. It waits 120 s, then reports a timeout with Details (`step: local pull: connect handoff`).
+  - The key is installed through `window.__forumBrowserIdentity.importPrivateKey()`, which is the backup-restore function `importAccountPrivateKey`. If this browser already has a different key, a Replace / "Keep this browser's key" box asks first; Replace passes `{replace: true}`, which skips only the previous-fingerprint check.
+  - `/local/` now loads `openpgp_loader.js`, `browser_signing.js` and `private_message_history_crypto.js`.
+  - Merged the local branch of #454 (`fix/local-pull-account-diagnostics`) for `LocalPullFailure`, the Details renderer and the 180 s relay timeout. **This PR depends on #454.**
+  - **Fixed a pre-existing bug** found while checking the shared restore function: on Account, "Use a key from another device" and "Save a copy of this key" did nothing. Deferred scripts run while `readyState` is already `"interactive"`, so `browser_signing.js` bound the page before the later-deferred `key_backup_ui.js` defined `ForumKeyBackupUI`, and the dialog was never wired. It now binds when the backup UI is present, or on `DOMContentLoaded`/`load`.
+  - **Fixed a stale test:** `key_backup_ui.mjs` waited 15 s for the aborted-identity-hint restore to finish, but since 836ca592 publishing retries for about 15 s. Those two waits now allow 60 s.
+- Verification:
+  - `key_handoff.mjs` adds three cases, all passing: Connect installs the key; a different key prompts first, and Keep leaves it alone while Replace installs; a wrong-origin message is ignored and the timeout shows Details.
+  - `key_backup_ui.mjs` failed on the base commit, and now passes in both text and PNG formats (Chromium to Firefox).
+  - `LocalDevelopmentImportTest` in the smoke set: 502 run, 502 passed.
+- Notes:
+  - The Firefox browser for Playwright had to be installed in the workspace (`npx playwright install firefox`).
+  - Retrospective stage-work assessment: **0.20** (the pre-existing backup-dialog bug added time).

@@ -2961,6 +2961,10 @@
 
   if (typeof window !== "undefined") {
     window.__forumBrowserIdentity = {
+      // Installs a key handed over from another page (key_handoff.js) exactly as a backup restore does.
+      importPrivateKey: function (text, fingerprint, options) {
+        return importAccountPrivateKey(document.createElement("div"), String(text), String(fingerprint || "").toLowerCase(), options || {});
+      },
       currentAuthorIdentityId: currentAuthorIdentityId,
       ensureActionIdentity: ensureActionIdentity,
       ensureReadyIdentity: ensureReadyIdentity,
@@ -3045,7 +3049,8 @@
     }
   }
 
-  async function importAccountPrivateKey(root, text, expectedFingerprint = "") {
+  // options.replace: install over a different key, only after the person explicitly chose Replace.
+  async function importAccountPrivateKey(root, text, expectedFingerprint = "", options = {}) {
     const previousIdentity = browserIdentitySnapshot();
     const previousClearedKey = clearedKeypairBackup;
     const identity = await deriveIdentityFromPrivateKey(text);
@@ -3055,7 +3060,7 @@
         ? (await deriveIdentityFromPrivateKey(previousKey)).fingerprint.toLowerCase() : "";
       const accountFingerprint = String(root.dataset.authenticatedIdentityId || "").replace(/^openpgp:/, "").toLowerCase();
       if (identity.fingerprint.toLowerCase() !== expectedFingerprint ||
-          (previousFingerprint && previousFingerprint !== expectedFingerprint) ||
+          (previousFingerprint && previousFingerprint !== expectedFingerprint && options.replace !== true) ||
           (accountFingerprint && accountFingerprint !== expectedFingerprint)) {
         throw new Error("Backup fingerprint does not match this account. Use a separate browser profile to restore another identity.");
       }
@@ -3110,7 +3115,12 @@
     const copyPublicButton = root.querySelector('[data-action="copy-public-key"]');
     const copyPrivateButton = root.querySelector('[data-action="copy-private-key"]');
     const restorePrivateButton = root.querySelector('[data-action="restore-private-key"]');
-    if (window.ForumKeyBackupUI) {
+    // Deferred scripts run while readyState is already "interactive", so this
+    // page can be bound before key_backup_ui.js (deferred after this file) has
+    // run. Bind the backup dialog now if it is there, else once the rest load;
+    // ForumKeyBackupUI.bind ignores a second call.
+    const bindKeyBackup = function () {
+      if (!window.ForumKeyBackupUI) return;
       window.ForumKeyBackupUI.bind(root, {
         snapshot: browserIdentitySnapshot,
         restore: async (text, fingerprint) => {
@@ -3119,6 +3129,11 @@
           return identity;
         },
       });
+    };
+    bindKeyBackup();
+    if (!window.ForumKeyBackupUI) {
+      document.addEventListener("DOMContentLoaded", bindKeyBackup, { once: true });
+      window.addEventListener("load", bindKeyBackup, { once: true });
     }
 
 

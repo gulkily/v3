@@ -98,6 +98,6 @@ final class LocalDevelopmentPageController
             'changeOpen' => $notice !== null && $postedSource !== null,
             // The newest finished import, from the page or the terminal; null on a copy that never imported.
             'last' => $this->lastImport->read($result['run_id']),
-        ], 'Local development', 'board', ['/assets/import_control.js', '/assets/openpgp_loader.js', '/assets/private_message_history_crypto.js', '/assets/local_message_pull.js']);
+        ], 'Local development', 'board', ['/assets/import_control.js', '/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/private_message_history_crypto.js', '/assets/local_message_pull.js']);
     }
 }

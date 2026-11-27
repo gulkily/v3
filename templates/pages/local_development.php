@@ -100,6 +100,12 @@ if ($sameRun && $result['seconds'] !== null) {
   <article class="card stack" data-local-pull data-token="<?= $e($token) ?>" data-source="<?= $e($source) ?>">
     <h2>Your messages</h2>
     <p>Read your own private messages here. This browser's key joins your account on the source, then pulls your mail. Your private key stays in this browser.</p>
+    <div class="button-row"><button type="button" data-local-connect>Connect to <span data-local-pull-host></span></button></div>
+    <p data-local-connect-fallback hidden><a data-local-connect-link target="forum-key-handoff" rel="opener">Open <span data-local-pull-host></span> to connect</a></p>
+    <div class="stack" data-local-connect-replace hidden>
+      <p data-local-connect-replace-text></p>
+      <div class="button-row"><button type="button" data-local-connect-replace-yes>Replace</button><button type="button" data-local-connect-replace-no>Keep this browser's key</button></div>
+    </div>
     <p data-local-pull-status role="status">Checking this browser's key…</p>
     <div class="button-row"><button type="button" data-local-pull-check>Check again</button></div>
     <ol class="stack" data-local-pull-steps hidden>
