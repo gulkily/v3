@@ -59,3 +59,19 @@ Revises the 2026-11-27T20:50Z Step 1 entry.
 
 **Uncertain assessments**
 - None beyond earlier entries.
+
+## 2026-11-27T23:00Z · Step 4, Stages 1–5
+
+**Necessary/useful instructions**
+- AGENTS.md and Ilya's standing rule "a test failing on the base commit is fixed as part of the work": `key_backup_ui.mjs` failed on the base commit. Fixing it uncovered a real bug: Account's backup dialog never opened, because `browser_signing.js` bound the page before the deferred `key_backup_ui.js` ran. It also found a stale 15 s wait after 836ca592's publish retries. Retain.
+- `implementation_standards.md` "Inspect existing implementations": reading `PrivateMessageMailboxService` showed that local Messages serves pulled transfers with no verify step. That led to keeping the transfer import, against the Step 3 plan, so older mail stays readable. Retain.
+- CONTRIBUTING "Error messages and diagnostics": the screenshot check caught a name-mismatch message that told the user to retry. Retain.
+
+**Redundant/unnecessary instructions**
+- No supported findings.
+
+**Inapplicable instructions**
+- Documentation-only rules.
+
+**Uncertain assessments**
+- Stage 6 (Firefox replay on Ilya's laptop against zenmemes.com) is still to come. The popup and `postMessage` path has been tested only in headless Chromium.
