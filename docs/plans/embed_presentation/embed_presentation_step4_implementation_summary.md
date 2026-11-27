@@ -75,3 +75,22 @@ Step 3 approved 2026-11-27 ("approved step 3"). Branch `feat/embed_presentation`
 - Estimate details: original scope: new store, route and flag; uncertainty medium. Unchanged.
 
 *— Claude · 2026-11-27 UTC · Model: claude-opus-5-5*
+
+## Stage 4 - Poster on a post's page
+
+**Original estimate: 0.05**
+**Retrospective: 0.05**
+
+- Changes:
+  - `MediaEmbedRenderer.php` takes the poster store (null when posters are off). A YouTube video with a stored poster renders the poster as the closed player's summary; one without gets the bar plus a hidden poster request for next time. Shorts keep the bar.
+  - `Application.php` passes the poster store to the renderer.
+  - `site.css`: a closed poster player is a 16:9 poster with a large play control in the middle and the provider link on a small backing in the corner; open, it turns back into the bar with Close above the player.
+- Verification:
+  - `./v3 test MediaEmbedRendererTest MusicMediaEmbedTest MediaEmbedBeaconTemplatesTest TemplateRendererMediaEmbedsScriptTest`: passed (38 run). New test covers stored, missing, Shorts and posters-off.
+  - `node tests/browser/media_embed_browser.mjs`: passed (posters off there).
+  - Screenshots at 380px, Underground, posters on, real posters fetched from YouTube by the local server: the post page shows the poster, then the bar and player after a tap.
+- Notes:
+  - A page cached before its poster was stored shows the bar until the cache refreshes.
+- Estimate details: original scope: one renderer branch; uncertainty low. Unchanged.
+
+*— Claude · 2026-11-27 UTC · Model: claude-opus-5-5*

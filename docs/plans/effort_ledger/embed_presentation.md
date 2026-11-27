@@ -13,3 +13,4 @@
 2026-11-27 — Step 3 approved. Step 4 entry **0.50**, reaffirmed. Stage 1 retrospective 0.15 (original 0.10): three pre-existing failures in `media_embed_browser.mjs` fixed.
 - Stage 2 retrospective 0.10.
 - Stage 3 retrospective 0.15.
+- Stage 4 retrospective 0.05.

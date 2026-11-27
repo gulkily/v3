@@ -21,6 +21,7 @@ final class MediaEmbedRenderer
         private readonly MediaEmbedDetector $detector = new MediaEmbedDetector(),
         private readonly ?MediaEmbedPreviewCacheStore $previewCacheStore = null,
         private readonly ?\ForumRewrite\Images\ImageStore $imageStore = null,
+        private readonly ?MediaEmbedPosterStore $posterStore = null,
     ) {
     }
 
@@ -170,25 +171,40 @@ final class MediaEmbedRenderer
 
     private function renderYoutubeExpando(array $match): string
     {
+        $shorts = ($match['contentKind'] ?? '') === 'shorts';
+        $poster = '';
+        $beacon = '';
+        // With posters on, a stored poster replaces the bar; a missing one is fetched in the background for next time.
+        if ($this->posterStore !== null && !$shorts) {
+            if ($this->posterStore->path($match['embedId']) !== null) {
+                $poster = '<img class="media-embed-card__poster" src="/internal/media-embeds/posters/' . $this->escape($match['embedId']) . '.jpg" alt="" width="480" height="360" loading="lazy">';
+            } else {
+                $beacon = '<img class="media-embed-card__warm-beacon" data-media-embed-warm-beacon src="'
+                    . $this->escape(self::WARM_PREVIEW_ENDPOINT . '?provider=youtube&kind=poster&url=' . rawurlencode($match['displayUrl']))
+                    . '" alt="" width="0" height="0" style="display:none" loading="eager">';
+            }
+        }
+
         return $this->renderPlayerExpando(
             $match,
             'https://www.youtube-nocookie.com/embed/' . $match['embedId'],
             'YouTube video player',
-            ($match['contentKind'] ?? '') === 'shorts' ? ' media-embed-card--portrait' : '',
-        );
+            ($shorts ? ' media-embed-card--portrait' : '') . ($poster !== '' ? ' media-embed-card--poster' : ''),
+            poster: $poster,
+        ) . $beacon;
     }
 
     /**
      * One bar per embed: a play control (the disclosure's summary) and, beside it, the provider
      * link. The link sits outside the summary so tapping it never toggles the player.
      */
-    private function renderPlayerExpando(array $match, string $embedSrc, string $title, string $extraClass = '', string $resolveSrc = ''): string
+    private function renderPlayerExpando(array $match, string $embedSrc, string $title, string $extraClass = '', string $resolveSrc = '', string $poster = ''): string
     {
         $provider = self::PROVIDER_LABELS[$match['provider']]['label'];
         return '<span class="media-embed-player" data-provider="' . $this->escape($match['provider']) . '">'
             . '<span class="media-embed-card__source"><a class="media-embed-card__link" href="' . $this->escape($match['displayUrl']) . '" aria-label="Open on ' . $this->escape($provider) . '">' . $this->escape($provider) . ' ↗</a></span>'
             . '<details class="media-embed-card media-embed-card--inline-player' . $extraClass . '" data-media-embed-card data-provider="' . $this->escape($match['provider']) . '">'
-            . '<summary><span class="media-embed-card__play" aria-hidden="true"></span><span class="media-embed-card__action">Play</span><span class="media-embed-card__action media-embed-card__action--close">Close</span></summary>'
+            . '<summary>' . $poster . '<span class="media-embed-card__play" aria-hidden="true"></span><span class="media-embed-card__action">Play</span><span class="media-embed-card__action media-embed-card__action--close">Close</span></summary>'
             . '<iframe class="media-embed-card__iframe" data-media-embed-iframe data-embed-src="' . $this->escape($embedSrc) . '"'
             . ($resolveSrc !== '' ? ' hidden data-resolve-src="' . $this->escape($resolveSrc) . '"' : '')
             . ' title="' . $this->escape($title) . '" src=""'

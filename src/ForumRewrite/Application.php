@@ -2195,7 +2195,7 @@ final class Application
             $this->projectRoot . '/templates',
             $this->docsPage ? $this->docsVersion() : $this->appVersion(),
             $this->featureFlags(),
-            new MediaEmbedRenderer(previewCacheStore: MediaEmbedPreviewCacheStore::openAt($this->projectRoot), imageStore: new \ForumRewrite\Images\ImageStore($this->repositoryRoot)),
+            new MediaEmbedRenderer(previewCacheStore: MediaEmbedPreviewCacheStore::openAt($this->projectRoot), imageStore: new \ForumRewrite\Images\ImageStore($this->repositoryRoot), posterStore: $this->mediaEmbedPosterStore()),
             versionEndpoint: $this->docsPage ? '/api/docs-version' : '/api/version',
             versionStorageKey: $this->docsPage ? 'forum_pending_docs_version' : 'forum_pending_app_version',
             requestPath: fn (): string => $this->requestPath,
