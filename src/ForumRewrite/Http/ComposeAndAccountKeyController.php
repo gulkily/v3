@@ -81,6 +81,15 @@ final class ComposeAndAccountKeyController
         return $this->renderAccountKeyPage();
     }
 
+    /** /account/key/share?to=<loopback origin>: hands this browser's key to a local copy, after a click. */
+    public function accountKeyShare(array $query): string
+    {
+        $to = is_string($query['to'] ?? null) ? $query['to'] : '';
+        $target = preg_match('#^http://(127\.0\.0\.1|localhost|\[::1\]):[0-9]{1,5}$#D', $to) === 1 ? $to : '';
+        return $this->routeServices->renderPageTemplate('account_key_share.php', ['target' => $target],
+            'Use this key on your computer', 'account', $this->identityScripts(['/assets/key_handoff.js']), false);
+    }
+
     /**
      * @param array<string, mixed> $query
      */

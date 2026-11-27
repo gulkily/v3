@@ -1,6 +1,8 @@
-// Two real instances: a source with Alice's history and a local development clone.
-// The local browser registers its own key on the source, gets approved there, imports
-// the approval, pulls Alice's mail, verifies it, confirms it on the source and reads it.
+// Two real instances: a source with Alice's mail and a local development clone, in one browser.
+// Alice's key is in the browser on the source only. On the clone she presses Connect, confirms
+// in the source's window, and the page imports, pulls, trusts and turns on saved copies; a page
+// reload falls in the middle of the import. Then Messages reads her mail from saved copies, a
+// second pull adds nothing, and no log holds a private key.
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
@@ -39,7 +41,7 @@ async function freePort() {
 const sign = (who, text) => pgp.createMessage({ text }).then(message => pgp.sign({ message, signingKeys: who.private, detached: true }));
 async function json(response, status = 200) { assert.equal(response.status(), status, await response.text()); return response.json(); }
 
-const [aliceOld, bob, aliceLocal] = await Promise.all(['alice', 'bob', 'alice'].map(key));
+const [alice, bob] = await Promise.all(['alice', 'bob'].map(key));
 fixture({ action: 'init' });
 const sourcePort = await freePort(), localPort = await freePort();
 const base = `http://127.0.0.1:${sourcePort}`, local = `http://127.0.0.1:${localPort}`;
@@ -65,12 +67,6 @@ let log = ''; for (const server of servers) server.stderr.on('data', data => { l
 let browser, page;
 const errors = [];
 async function waitFor(url) { for (let n = 0; n < 100; n++) { try { await fetch(url); return; } catch { await new Promise(done => setTimeout(done, 100)); } } throw Error('No server at ' + url); }
-async function authenticate(ctx, at, who) {
-  const challenge = (await (await ctx.request.get(at + '/api/auth_challenge')).text()).match(/challenge=(\w+)/)[1];
-  const response = await ctx.request.post(at + '/api/authenticate_identity', { data: { challenge, identity_id: 'openpgp:' + who.fingerprint, detached_signature: await sign(who, challenge) } });
-  assert.equal(response.status(), 200, await response.text());
-  await ctx.request.get(at + '/api/set_identity_hint?identity_hint=' + encodeURIComponent('openpgp:' + who.fingerprint));
-}
 async function device(who, at) {
   const ctx = await browser.newContext({ viewport: { width: 1100, height: 800 }, serviceWorkers: 'block' });
   await ctx.addInitScript(({ name, publicKey, privateKey, fingerprint, origin }) => {
@@ -87,133 +83,112 @@ try {
   await waitFor(base + '/api/version'); await waitFor(local + '/api/version');
   browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/google/chrome/chrome', headless: true, args: ['--no-sandbox'] });
   const anonymous = await browser.newContext();
-  for (const who of [aliceOld, bob]) {
+  for (const who of [alice, bob]) {
     const prepared = await json(await anonymous.request.post(base + '/api/prepare_identity', { data: { public_key: who.publicKey } }));
     await json(await anonymous.request.post(base + '/api/create_identity', { data: { prepare_token: prepared.prepare_token, canonical_record: prepared.canonical_record, detached_signature: await sign(who, prepared.canonical_record) } }));
   }
-  fixture({ action: 'seed-approvals', fingerprints: [aliceOld.fingerprint, bob.fingerprint] });
+  fixture({ action: 'seed-approvals', fingerprints: [alice.fingerprint, bob.fingerprint] });
+  // The fixture writes approval seeds straight into the source repository; commit them as a real instance would have.
+  spawnSync('git', ['-C', join(sourceRoot, 'repository'), 'add', '-A'], { encoding: 'utf8' });
+  spawnSync('git', ['-C', join(sourceRoot, 'repository'), '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'Fixture approvals'], { encoding: 'utf8' });
   const messages = [];
   for (let n = 1; n <= 8; n++) {
-    const sender = n % 2 ? bob : aliceOld;
-    const envelope = await pgp.encrypt({ message: await pgp.createMessage({ text: 'Pulled secret ' + n }), encryptionKeys: [aliceOld.public, bob.public], signingKeys: sender.private, format: 'armored' });
+    const sender = n % 2 ? bob : alice;
+    const envelope = await pgp.encrypt({ message: await pgp.createMessage({ text: 'Pulled secret ' + n }), encryptionKeys: [alice.public, bob.public], signingKeys: sender.private, format: 'armored' });
     messages.push({ id: 'pull-' + n, time: `2026-11-10T12:0${n}:00Z`, sender: sender.name, recipient: sender === bob ? 'alice' : 'bob', fingerprint: sender.fingerprint, envelope });
   }
   messages.push({ id: 'carol-only', time: '2026-11-10T12:30:00Z', sender: 'bob', recipient: 'carol', fingerprint: bob.fingerprint, envelope: messages[0].envelope });
   fixture({ action: 'messages', messages });
 
-  // 1. The local page reports an unregistered key, then registers it through the relay.
-  const localCtx = await device(aliceLocal, local);
-  page = await localCtx.newPage();
+  // One browser: Alice's key on the source origin only; the clone starts with no key.
+  const ctx = await device(alice, base);
+  page = await ctx.newPage();
   await page.goto(local + '/local/?source=' + encodeURIComponent(base));
-  await page.getByRole('button', { name: /Register this key on/ }).waitFor();
-  await page.getByRole('button', { name: /Register this key on/ }).click();
-  await page.getByText('This key is registered on 127.0.0.1:' + sourcePort + ' as alice.', { exact: false }).waitFor();
-  await page.getByText('open this key on').waitFor();
-  await page.getByRole('button', { name: /Register this key on/ }).waitFor({ state: 'hidden' });
-  assert.equal(await page.getByRole('button', { name: /Pull my messages/ }).isVisible(), false, 'No pull before approval');
+  await status(page).filter({ hasText: 'Press Connect' }).waitFor();
+  assert.equal(await page.getByRole('button', { name: 'Pull new messages' }).isVisible(), false, 'No Pull before Connect');
+  await page.screenshot({ path: join(root, 'connect-desktop.png'), fullPage: true });
 
-  // 2. Alice approves the new key on the source; her old device visits and donates history.
-  const oldCtx = await device(aliceOld, base);
-  await authenticate(oldCtx, base, aliceOld);
-  const prepared = await json(await oldCtx.request.post(base + '/api/prepare_approval', { data: { profile_slug: 'openpgp-' + aliceLocal.fingerprint } }));
-  await json(await oldCtx.request.post(base + '/api/create_prepared_approval', { data: { prepare_token: prepared.prepare_token, post_id: prepared.post_id, record_path: prepared.record_path, author_identity_id: 'openpgp:' + aliceOld.fingerprint, canonical_record: prepared.canonical_record, detached_signature: await sign(aliceOld, prepared.canonical_record) } }));
-  const donor = await oldCtx.newPage(); await donor.goto(base + '/');
-  await donor.waitForFunction(() => window.ForumPrivateMessageUnread?.historyEligibility() === true);
-  await donor.waitForFunction(() => { const s = window.ForumPrivateMessageHistorySync?.state(); return s && !s.pending && s.contributed > 0; }, null, { timeout: 120000 });
-  assert.equal(Number(fixture({ action: 'contributions', source: aliceOld.fingerprint, target: aliceLocal.fingerprint })), 8);
-  await donor.close();
-  // Bob's device donates too (sender assistance), so Bob's four messages get a second history key.
-  const bobCtx = await device(bob, base);
-  await authenticate(bobCtx, base, bob);
-  const bobDonor = await bobCtx.newPage(); await bobDonor.goto(base + '/');
-  await bobDonor.waitForFunction(() => window.ForumPrivateMessageUnread?.historyEligibility() === true);
-  await bobDonor.waitForFunction(() => { const s = window.ForumPrivateMessageHistorySync?.state(); return s && !s.pending && s.contributed > 0; }, null, { timeout: 120000 });
-  assert(Number(fixture({ action: 'contributions', source: bob.fingerprint, target: aliceLocal.fingerprint })) > 0, 'Bob donated for the new key');
-  await bobDonor.close();
+  // 1. Connect, then Use it there in the source's window.
+  const [popup] = await Promise.all([page.waitForEvent('popup'), page.getByRole('button', { name: /^Connect to / }).click()]);
+  await popup.getByRole('button', { name: 'Use it there' }).click();
+  await page.waitForFunction(fingerprint => (localStorage.getItem('forum_pki_fingerprint') || '').toLowerCase() === fingerprint, alice.fingerprint);
 
-  // 3. Approved on the source but not yet here: the page asks for the import.
-  await page.getByRole('button', { name: 'Check again' }).click();
-  await page.getByText('Approved on 127.0.0.1:' + sourcePort).waitFor();
-  // Replay: pulling before the import gets the mail but cannot trust unknown keys.
-  await page.getByRole('button', { name: /Pull my messages/ }).click();
-  await status(page).filter({ hasText: 'Import public content above, then pull again.' }).waitFor({ timeout: 120000 });
-  assert.match(await summary(page).textContent(), /8 new/);
-  // The fixture writes approval seeds straight into the source repository; commit them as a real instance would have.
-  spawnSync('git', ['-C', join(sourceRoot, 'repository'), '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qam', 'Fixture approvals'], { encoding: 'utf8' });
-  spawnSync('git', ['-C', join(sourceRoot, 'repository'), 'add', '-A'], { encoding: 'utf8' });
-  spawnSync('git', ['-C', join(sourceRoot, 'repository'), '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'Fixture approvals'], { encoding: 'utf8' });
-  await page.locator('[data-local-import] button[type="submit"]').click();
-  // Like `./v3 start`, run the task worker for the queued import.
-  await page.getByText('Waiting for the task worker').waitFor({ timeout: 30000 }).catch(() => {});
-  const worker = spawnSync('php', [join(project, 'scripts/task_queue.php'), 'run', '--limit=1'], { cwd: project, env: localEnv, encoding: 'utf8', timeout: 240000 });
-  assert.equal(worker.status, 0, worker.stderr + worker.stdout);
-  // The import is a queued task; wait for the card's last-import line, then reload for a fresh key check.
-  await page.locator('[data-import-last]').waitFor({ timeout: 240000 });
-  await page.goto(local + '/local/?source=' + encodeURIComponent(base));
-  await status(page).filter({ hasText: 'This key is ready.' }).waitFor({ timeout: 120000 });
-
-  // 4. Pull, verify, confirm.
-  await page.getByRole('button', { name: /Pull my messages/ }).click();
-  // The clone imported keys but no approvals; one click trusts the keys the source approves.
-  await page.getByRole('button', { name: 'Trust these keys here' }).waitFor({ timeout: 120000 });
-  // One row per person, opening to fingerprints.
-  const groups = await page.locator('[data-local-pull-trust-list] > li > details > summary').allTextContents();
-  assert.deepEqual(groups.sort(), ['alice: 2 keys, including this browser', 'bob: 1 key'], groups.join('\n'));
-  await page.locator('[data-local-pull-trust-list] details').first().evaluate(node => { node.open = true; });
-  await page.locator('[data-local-pull-trust]').screenshot({ path: join(root, 'trust-list-desktop.png') });
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.locator('[data-local-pull-trust]').screenshot({ path: join(root, 'trust-list-mobile.png') });
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-  await page.setViewportSize({ width: 1100, height: 800 });
-  // Record the button's text while it works, to see the per-key progress.
-  await page.evaluate(() => {
-    const button = document.querySelector('[data-local-pull-trust-button]');
-    window.__trustTexts = [];
-    new MutationObserver(() => window.__trustTexts.push(button.textContent + (button.getAttribute('aria-busy') === 'true' ? ' [busy]' : ''))).observe(button, { childList: true, characterData: true, subtree: true, attributes: true });
-  });
-  await page.getByRole('button', { name: 'Trust these keys here' }).click();
-  await status(page).filter({ hasText: 'Pull finished.' }).waitFor({ timeout: 120000 });
-  const trustTexts = await page.evaluate(() => window.__trustTexts);
-  for (const expected of ['Trusting 1 of 3… [busy]', 'Trusting 2 of 3… [busy]', 'Trusting 3 of 3… [busy]']) assert(trustTexts.includes(expected), trustTexts.join('\n'));
-  const first = await summary(page).textContent();
-  assert.match(first, /0 new · 8 already here/); assert.match(first, /8 confirmed on/); assert.doesNotMatch(first, /not readable/);
+  // 2. The clone does not know the key, so Connect imports first. Run the task worker, like
+  // `./v3 start`, and reload the page while the import is queued: Connect must resume.
+  await status(page).filter({ hasText: 'Importing public content' }).waitFor({ timeout: 60000 });
+  await page.reload();
+  await status(page).filter({ hasText: /Continuing Connect|Importing public content/ }).waitFor({ timeout: 30000 });
+  const worker = spawn('php', [join(project, 'scripts/task_queue.php'), 'run', '--limit=1'], { cwd: project, env: localEnv, stdio: ['ignore', 'pipe', 'pipe'] });
+  let workerOutput = ''; worker.stdout.on('data', d => { workerOutput += d; }); worker.stderr.on('data', d => { workerOutput += d; });
+  const [workerCode] = await once(worker, 'exit');
+  assert.equal(workerCode, 0, workerOutput);
+  // import_control.js reloads the page when the import ends; Connect resumes after that too.
+  await status(page).filter({ hasText: 'Connected. Open Messages' }).waitFor({ timeout: 240000 });
+  // The summary is the last pass's: a reload after the pull resumes and pulls again, adding nothing.
+  const [, added, existing] = (await summary(page).textContent()).match(/^Pulled: (\d+) new · (\d+) already here/);
+  assert.equal(Number(added) + Number(existing), 8);
+  assert.equal(await page.evaluate(() => sessionStorage.getItem('forum-local-connect')), null, 'Connect clears its stage when done');
   const localCount = php(`echo (new PDO('sqlite:${join(localRoot, 'private/messages.sqlite3')}'))->query('SELECT COUNT(*) FROM private_messages')->fetchColumn();`);
   assert.equal(Number(localCount), 8, 'Only Alice\'s own mail is pulled');
-  const coverage = php(`$q=(new PDO('sqlite:${join(sourceRoot, 'state/private/message_history_sync.sqlite3')}'))->prepare('SELECT COUNT(*) FROM history_sync_coverage WHERE target=?');$q->execute([${JSON.stringify(aliceLocal.fingerprint)}]);echo $q->fetchColumn();`);
-  assert.equal(Number(coverage), 8, 'The source records each verified transfer as confirmed');
-
-  // 5. A second pull adds nothing.
-  await page.getByRole('button', { name: /Pull my messages/ }).click();
-  await summary(page).filter({ hasText: /^Pulled: 0 new · 8 already here/ }).waitFor({ timeout: 120000 });
-  await page.screenshot({ path: join(root, 'local-pull-desktop.png'), fullPage: true });
+  const flags = readFileSync(join(localRoot, 'repository/records/instance/feature-flags.txt'), 'utf8');
+  assert.match(flags, /FORUM_PRIVATE_MESSAGE_CACHE_ENABLED/);
+  await page.screenshot({ path: join(root, 'connected-desktop.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-  await page.screenshot({ path: join(root, 'local-pull-mobile.png'), fullPage: true });
+  await page.screenshot({ path: join(root, 'connected-mobile.png'), fullPage: true });
+  await page.setViewportSize({ width: 1100, height: 800 });
 
-  // 6. Local Messages reads every pulled message with a verified sender.
-  await authenticate(localCtx, local, aliceLocal);
-  const reader = await localCtx.newPage();
+  // 3. Local Messages reads every pulled message with a verified sender, then from saved copies on three reloads.
+  const reader = await ctx.newPage();
   await reader.goto(local + '/messages/conversation/bob');
-  await reader.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]')?.dataset.privateMessageReaderSettled === '1', null, { timeout: 120000 });
-  await reader.waitForFunction(count => document.querySelectorAll('[data-private-message-id][data-reader-state="verified"]').length === count, 8, { timeout: 120000 });
-  assert.deepEqual(errors, []);
-  // 7. Names differ: the clone holds this key under another name. The card says so before Pull, with Details.
-  const index = join(localRoot, 'cache/index.sqlite3');
-  php(`$p=new PDO('sqlite:${index}');$q=$p->prepare('UPDATE profiles SET username=? WHERE identity_id=?');$q->execute(['alice-here','openpgp:${aliceLocal.fingerprint}']);`);
+  const settled = async () => {
+    await reader.waitForFunction(() => document.querySelector('[data-mailbox="conversation"]')?.dataset.privateMessageReaderSettled === '1', null, { timeout: 120000 });
+    await reader.waitForFunction(count => document.querySelectorAll('[data-private-message-id][data-reader-state="verified"]').length === count, 8, { timeout: 120000 });
+  };
+  await settled();
+  const savedIds = async () => reader.evaluate(async () => {
+    const cache = window.ForumPrivateMessageCache;
+    if (!cache || !cache.enabled()) return -1;
+    let found = 0;
+    for (const card of document.querySelectorAll('[data-private-message-id]')) if (await cache.get(card.dataset.privateMessageId) !== null) found++;
+    return found;
+  });
+  for (let n = 0; n < 50 && await savedIds() !== 8; n++) await reader.waitForTimeout(200);
+  assert.equal(await savedIds(), 8, 'Saved copies are on and hold every message');
+  for (let n = 0; n < 3; n++) { await reader.reload(); await settled(); }
+  assert.equal(await savedIds(), 8);
+  await reader.close();
+
+  // 4. Pull again adds nothing, and needs no window.
   await page.goto(local + '/local/?source=' + encodeURIComponent(base));
+  await status(page).filter({ hasText: 'Connected as alice' }).waitFor({ timeout: 60000 });
+  assert.equal(await page.getByRole('button', { name: 'Pull new messages' }).isVisible(), true);
+  await page.getByRole('button', { name: 'Pull new messages' }).click();
+  await status(page).filter({ hasText: 'Connected. Open Messages' }).waitFor({ timeout: 120000 });
+  assert.match(await summary(page).textContent(), /^Pulled: 0 new · 8 already here/);
+  assert.deepEqual(errors, []);
+
+  // 5. Names differ: the clone holds this key under another name. Pull stops with both names, with Details.
+  const index = join(localRoot, 'cache/index.sqlite3');
+  php(`$p=new PDO('sqlite:${index}');$q=$p->prepare('UPDATE profiles SET username=? WHERE identity_id=?');$q->execute(['alice-here','openpgp:${alice.fingerprint}']);`);
+  await page.getByRole('button', { name: 'Pull new messages' }).click();
   await status(page).filter({ hasText: 'has this key as "alice", this clone as "alice-here"' }).waitFor({ timeout: 60000 });
-  assert.equal(await page.getByRole('button', { name: /Pull my messages/ }).isVisible(), false, 'No Pull while the names differ');
+  assert.doesNotMatch(await status(page).textContent(), /Press Connect/, 'A name mismatch is not fixed by retrying');
+  assert.equal(await summary(page).isVisible(), false, 'No stale summary under an error');
   const details = page.locator('[data-local-pull-details]');
   assert.equal(await details.evaluate(node => node.open), false, 'Details start closed');
   await details.locator('summary').click();
   const detailText = await details.locator('pre').textContent();
-  for (const line of ['step: local pull: key_status', 'source_username: alice', 'local_username: alice-here', 'key: openpgp:' + aliceLocal.fingerprint, 'browser: ']) {
+  for (const line of ['step: local pull: connect key_status', 'source_username: alice', 'local_username: alice-here', 'browser: ']) {
     assert(detailText.includes(line), 'Details include ' + line + '\n' + detailText);
   }
   assert.doesNotMatch(detailText, /PRIVATE KEY|v3_session|BEGIN PGP MESSAGE/);
-  await details.getByRole('button', { name: 'Copy' }).waitFor();
   await page.locator('[data-local-pull]').screenshot({ path: join(root, 'mismatch.png') });
-  console.log('PASS register, approve, import, pull, verify, confirm, repeat, read, name mismatch. Artifacts: ' + root);
+
+  // 6. No log holds a private key: the handoff goes page to page, never through a server.
+  // Both servers' stderr, which includes the local dev request log (V3_DEV_LOG).
+  assert.doesNotMatch(log, /PRIVATE KEY BLOCK/);
+  console.log('PASS connect, handoff, import with a reload, pull, trust, saved copies, three reloads, pull again, name mismatch, no key in logs. Artifacts: ' + root);
 } catch (error) {
   console.error(log.split('\n').filter(line => !/Accepted|Closing|\[200\]|V3DEV\t200/.test(line)).slice(-60).join('\n'));
   if (page) console.error('PAGE:\n' + await page.locator('main').innerText().catch(() => '(no page)'));

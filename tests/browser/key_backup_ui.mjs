@@ -118,7 +118,7 @@ try {
   assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_username')),null);
   await restored.route('**/api/set_identity_hint?*',route=>route.abort());
   await restored.locator('[data-restore-password]').fill(passphrase);await restored.locator('[data-backup-restore]').click();
-  await restored.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent!=='Working locally…');
+  await restored.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent!=='Working locally…',null,{timeout:60000}); // publish retries for about 15 s before giving up
   assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_private_key')),null);
   await restored.unroute('**/api/set_identity_hint?*');
   await restored.route('**/api/set_identity_hint?*',async route=>{
@@ -126,7 +126,7 @@ try {
     await route.abort();
   });
   await restored.locator('[data-restore-password]').fill(passphrase);await restored.locator('[data-backup-restore]').click();
-  await restored.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent!=='Working locally…');
+  await restored.waitForFunction(()=>document.querySelector('[data-backup-status]').textContent!=='Working locally…',null,{timeout:60000}); // publish retries for about 15 s before giving up
   assert.equal(await restored.evaluate(()=>localStorage.getItem('forum_pki_private_key')),'newer identity from another tab');
   await restored.unroute('**/api/set_identity_hint?*');
   await restored.evaluate(()=>localStorage.clear());

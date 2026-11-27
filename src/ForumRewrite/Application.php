@@ -1279,6 +1279,10 @@ final class Application
             $this->sendHtml($this->composeAndAccountKeyController()->accountKey(), 200);
             return;
         }
+        if ($path === '/account/key/share' && in_array($method, ['GET', 'HEAD'], true)) {
+            $this->sendHtml($this->composeAndAccountKeyController()->accountKeyShare($query), 200);
+            return;
+        }
 
         if ($path === '/api/' || $path === '/api') {
             $this->apiTextController()->index();
@@ -2775,7 +2779,7 @@ final class Application
         }
 
         if ($path === '/lobby/' || $path === '/lobby'
-            || $path === '/account/key/' || $path === '/account/key'
+            || $path === '/account/key/' || $path === '/account/key' || $path === '/account/key/share'
             || $path === '/api/auth_challenge' || $path === '/api/authenticate_identity' || $path === '/api/auth_status'
             || $path === '/api/set_identity_hint' || $path === '/api/clear_identity'
             || in_array($path,['/api/prepare_key_retirement','/api/finalize_key_retirement','/api/key_retirement_status'],true)
@@ -2849,7 +2853,7 @@ final class Application
             '/compose/thread', '/compose/reply',
             '/unread', '/unread/', '/inbox', '/inbox/', '/api/inbox/unread', '/api/inbox/catch_up', '/staged', '/staged/',
             '/messages', '/messages/', '/messages/inbox', '/messages/sent', '/api/private_messages/conversation', '/api/private_messages/conversations', '/api/private_messages/unread', '/api/private_messages/read',
-            '/account/key', '/account/key/', '/invites', '/invites/',
+            '/account/key', '/account/key/', '/account/key/share', '/invites', '/invites/',
             '/api', '/api/', '/api/version', '/api/list_index', '/api/checkin',
             '/api/get_thread', '/api/get_post', '/api/get_profile', '/api/get_username', '/api/get_username_claim_cta', '/api/pending_keys',
             '/api/read_model_status', '/api/set_identity_hint', '/api/clear_identity',

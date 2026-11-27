@@ -1,17 +1,12 @@
-// "Your messages": register this browser's key on the source, then pull (later stages).
+// "Your messages": Connect brings this browser's key from the source in a popup, then imports,
+// pulls and trusts in one pass. Pull fetches new mail later.
 (function () {
   var root = document.querySelector('[data-local-pull]');
   if (!root) return;
   var statusNode = root.querySelector('[data-local-pull-status]');
-  var steps = root.querySelector('[data-local-pull-steps]');
-  var registerButton = root.querySelector('[data-local-pull-register]');
   var pullButton = root.querySelector('[data-local-pull-start]');
   var summaryNode = root.querySelector('[data-local-pull-summary]');
   var currentState = null;
-  var trustBox = root.querySelector('[data-local-pull-trust]');
-  var trustList = root.querySelector('[data-local-pull-trust-list]');
-  var trustButton = root.querySelector('[data-local-pull-trust-button]');
-  var pendingTrust = null;
   var host = '';
   var sourceField = document.querySelector('[data-local-import] input[name="source"]');
   // Follow the import form's source, so both cards always talk to the same instance.
@@ -62,13 +57,6 @@
     statusNode.after(detailsNode);
   }
 
-  function stepText(name, text, done) {
-    var item = root.querySelector('[data-local-pull-step="' + name + '"]');
-    item.querySelector('[data-local-pull-step-text]').textContent = (done ? '✓ ' : '') + text;
-    item.dataset.done = done ? 'true' : 'false';
-    return item;
-  }
-
   // Every relayed step has a time limit and names itself when it fails.
   var RELAY_TIMEOUT_MS = 180000;
   function relay(fields) {
@@ -107,105 +95,12 @@
     });
   }
 
-  function render(state) {
-    steps.hidden = false;
-    if (state.source_approved_keys === 0) {
-      setStatus(host + ' has no approved key named "' + state.username + '". This browser\'s key must use the same username as your account there. Change the username on Account, then reload.', 'error');
-      steps.hidden = true;
-      return;
-    }
-    // Both sides must agree on this key's name: the clone shows mail only for its own name.
-    if (state.registered && state.source_username && state.local_username
-        && state.source_username.toLowerCase() !== state.local_username.toLowerCase()) {
-      steps.hidden = true;
-      var mismatch = new Error('Names differ');
-      mismatch.details = { step: 'local pull: key_status', error: 'username on the source differs from this clone', key: state.identity_id, source_username: state.source_username, local_username: state.local_username };
-      setStatus(host + ' has this key as "' + state.source_username + '", this clone as "' + state.local_username
-        + '". This clone shows mail only for its own name, so use a key named "' + state.source_username + '" here.', 'error', mismatch);
-      return;
-    }
-    var registered = state.registered;
-    stepText('register', registered ? 'This key is registered on ' + host + ' as ' + state.username + '.'
-      : 'Register this key on ' + host + ' as ' + state.username + '.', registered);
-    registerButton.hidden = registered;
-    var approve = stepText('approve', state.approved ? 'Approved on ' + host + '.'
-      : 'Approve it on ' + host + ' from a device that is already approved: ', state.approved);
-    if (registered && !state.approved && !approve.querySelector('a')) {
-      var link = document.createElement('a');
-      link.href = state.source_key_url;
-      link.textContent = 'open this key on ' + host;
-      link.target = '_blank';
-      link.rel = 'noopener';
-      approve.querySelector('[data-local-pull-step-text]').appendChild(link);
-    }
-    stepText('import', 'Import public content above, so this clone has your correspondents\' public keys. Run it again when you write to someone new.', false);
-    var ready = state.approved && state.locally_known;
-    stepText('pull', ready ? 'Pull your messages. Pull again any time to fetch new ones.'
-      : 'Pull your messages once the steps above are done.', false);
-    pullButton.hidden = !ready;
-    setStatus(ready ? 'This key is ready.' : 'Finish the steps below, then reload this page.');
-  }
-
   function summaryText(total) {
     var parts = [total.added + ' new', total.existing + ' already here'];
     if (total.mismatched.length) parts.push(total.mismatched.length + ' kept local because they differ (' + total.mismatched.slice(0, 3).join(', ') + ')');
     parts.push(total.transfers_added + ' history keys');
     if (total.transfers_mismatched) parts.push(total.transfers_mismatched + ' history keys kept local');
     return parts.join(' · ');
-  }
-
-  // The history crypto module needs only the OpenPGP API; this page skips the full identity script.
-  if (!window.__forumBrowserIdentity) {
-    window.__forumBrowserIdentity = { ensureOpenPgpApi: function () { return window.__forumOpenPgpLoader.load(); } };
-  }
-
-  // Verify each pulled transfer to this key with the same checks Messages uses:
-  // the donor's bundle, the envelope digest, and the original sender's signature.
-  function verifyPage(after, tally) {
-    var crypto = window.ForumPrivateMessageHistoryCrypto;
-    var fields = { action: 'verify_list', identity_id: currentState.identity_id };
-    if (after) fields.after = after;
-    return relay(fields).then(function (page) {
-      var privateKey = stored('forum_pki_private_key');
-      return page.transfers.reduce(function (chain, transfer) {
-        return chain.then(function () {
-          if (!transfer.source_key) { tally.failed += transfer.items.length; return; }
-          return crypto.unwrapHistoryKeys({ ciphertext: transfer.ciphertext, privateKey: privateKey, sourceKey: transfer.source_key,
-            target: transfer.target, source: transfer.source, account: page.account, source_account: transfer.source_account
-          }).then(function (entries) {
-            var byId = {};
-            entries.forEach(function (entry) { byId[entry.message_id] = entry; });
-            return transfer.items.reduce(function (inner, item) {
-              return inner.then(function () {
-                var entry = byId[item.message_id];
-                if (!entry || entry.digest !== item.digest || crypto.digest(item.envelope) !== item.digest) { tally.failed++; return; }
-                if (tally.seen[item.message_id]) return;
-                return crypto.readOriginal(item.envelope, entry.keys, page.sender_keys[item.sender] || []).then(function () {
-                  if (tally.seen[item.message_id]) return;
-                  tally.seen[item.message_id] = true;
-                  tally.verified.push({ message_id: item.message_id, digest: item.digest, transfer_id: transfer.transfer_id });
-                }, function () { tally.failed++; });
-              });
-            }, Promise.resolve());
-          }, function () { tally.failed += transfer.items.length; });
-        });
-      }, Promise.resolve()).then(function () {
-        return page.next ? verifyPage(page.next, tally) : tally;
-      });
-    });
-  }
-
-  function confirmVerified(items, confirmed) {
-    if (!items.length) return Promise.resolve(confirmed);
-    var batch = items.slice(0, 100);
-    return relay({ action: 'challenge' }).then(function (challenge) {
-      return signText(String(challenge.challenge)).then(function (signature) {
-        return relay({ action: 'confirm', identity_id: currentState.identity_id, challenge: String(challenge.challenge),
-          signature: signature, items: JSON.stringify(batch) });
-      });
-    }).then(function (result) {
-      return confirmVerified(items.slice(100), confirmed + (result.confirmed || 0));
-    });
   }
 
   function pullOnce(total) {
@@ -222,146 +117,277 @@
     });
   }
 
+  // On load: a key that is connected already gets Pull; anything else gets Connect.
   function refresh() {
     updateHost();
+    pullButton.hidden = true;
     var publicKey = stored('forum_pki_public_key');
     if (!publicKey || !stored('forum_pki_private_key')) {
-      setStatus('This browser has no key yet. Create one on Account (/account/key/), then reload this page.');
+      setStatus('Press Connect, then confirm on ' + host + ' in the window that opens.');
       return Promise.resolve(null);
     }
     return relay({ action: 'key_status', public_key: publicKey }).then(function (state) {
       currentState = state;
-      render(state);
+      var ready = state.approved && state.locally_approved;
+      pullButton.hidden = !ready;
+      setStatus(ready ? 'Connected as ' + state.username + '. Pull fetches new messages.'
+        : 'Press Connect to read your messages from ' + host + ' here.');
       return state;
     }).catch(function (error) { setStatus(error.message, 'error', error); });
   }
 
-  registerButton.addEventListener('click', function () {
-    if (registerButton.getAttribute('aria-disabled') === 'true') return;
-    registerButton.setAttribute('aria-disabled', 'true');
-    setStatus('Registering this key on ' + host + '…');
-    relay({ action: 'prepare_identity', public_key: stored('forum_pki_public_key') }).then(function (prepared) {
-      if (prepared.exists || !prepared.canonical_record) return prepared;
-      return signText(String(prepared.canonical_record)).then(function (signature) {
-        return relay({ action: 'create_identity', prepare_token: String(prepared.prepare_token || ''),
-          canonical_record: String(prepared.canonical_record), detached_signature: signature });
-      });
-    }).then(refresh).catch(function (error) {
-      setStatus(error.message + ' Press Register to retry.', 'error', error);
-    }).then(function () { registerButton.removeAttribute('aria-disabled'); });
-  });
 
-  pullButton.addEventListener('click', function () {
-    if (pullButton.getAttribute('aria-disabled') === 'true' || !currentState) return;
-    pullButton.setAttribute('aria-disabled', 'true');
-    setStatus('Pulling your messages from ' + host + '… Keep this page open.');
-    trustBox.hidden = true;
-    pullOnce({ added: 0, existing: 0, mismatched: [], transfers_added: 0, transfers_mismatched: 0, read_marked: 0 }).then(function (total) {
-      return relay({ action: 'trust_candidates', identity_id: currentState.identity_id }).then(function (candidates) {
-        if (candidates.missing && candidates.missing.length) {
-          summaryNode.hidden = false;
-          summaryNode.textContent = 'Pulled: ' + summaryText(total);
-          throw new Error('This clone is missing ' + candidates.missing.length + ' key(s) that signed your mail. Import public content above, then pull again.');
-        }
-        if (!candidates.keys.length) return finish(total);
-        // Pause for one explicit click before this clone approves anyone.
-        pendingTrust = { total: total, keys: candidates.keys };
-        renderTrustList(candidates.keys);
-        trustBox.hidden = false;
-        setStatus('Pulled. Trust the listed keys to read your mail here.');
-      });
-    }).catch(function (error) {
-      setStatus(/Import public content above|use a key named/.test(error.message) ? error.message : error.message + ' Press Pull to resume.', 'error', error);
-    }).then(function () { pullButton.removeAttribute('aria-disabled'); });
-  });
+  // Connect: zenmemes.com hands this browser's key over in a popup, after one click there
+  // (key_handoff.js). Only a message from the source's origin, of the expected shape, is accepted.
+  var HANDOFF_TIMEOUT_MS = window.__forumHandoffTimeoutMs || 120000; // tests may shorten it
+  var connectButton = root.querySelector('[data-local-connect]');
+  var fallback = root.querySelector('[data-local-connect-fallback]');
+  var fallbackLink = root.querySelector('[data-local-connect-link]');
+  var replaceBox = root.querySelector('[data-local-connect-replace]');
+  function sourceOrigin() {
+    var value = source();
+    return new URL(value.indexOf('://') === -1 ? 'https://' + value : value).origin;
+  }
+  function stepError(message, step, detail) {
+    var error = new Error(message);
+    error.details = { step: step, error: detail };
+    return error;
+  }
 
-  // One row per person: "ilyag: 31 keys, including this browser", opening to short fingerprints.
-  function renderTrustList(keys) {
-    var groups = {}, order = [];
-    keys.forEach(function (key) {
-      if (!groups[key.username]) { groups[key.username] = []; order.push(key.username); }
-      groups[key.username].push(key);
-    });
-    trustList.textContent = '';
-    order.forEach(function (username) {
-      var list = groups[username], own = list.some(function (key) { return key.own; });
-      var item = document.createElement('li');
-      var details = document.createElement('details');
-      var summary = document.createElement('summary');
-      var name = document.createElement('strong');
-      name.textContent = username;
-      summary.appendChild(name);
-      summary.appendChild(document.createTextNode(': ' + list.length + (list.length === 1 ? ' key' : ' keys') + (own ? ', including this browser' : '')));
-      details.appendChild(summary);
-      var fingerprints = document.createElement('ul');
-      list.forEach(function (key) {
-        var row = document.createElement('li');
-        var code = document.createElement('code');
-        var fingerprint = key.identity_id.slice(8).toUpperCase();
-        code.textContent = '…' + fingerprint.slice(-16).replace(/(.{4})(?=.)/g, '$1 ');
-        code.title = fingerprint.replace(/(.{4})(?=.)/g, '$1 ');
-        row.appendChild(code);
-        if (key.own) {
-          var chip = document.createElement('span');
-          chip.className = 'chip';
-          chip.textContent = 'this browser';
-          row.appendChild(document.createTextNode(' '));
-          row.appendChild(chip);
-        }
-        fingerprints.appendChild(row);
-      });
-      details.appendChild(fingerprints);
-      item.appendChild(details);
-      trustList.appendChild(item);
+  function receiveKey(origin, popup) {
+    return new Promise(function (resolve, reject) {
+      var timer = window.setTimeout(function () {
+        window.removeEventListener('message', listen);
+        reject(stepError('No answer from ' + host + ' within 2 minutes. Press Connect to try again.', 'local pull: connect handoff', 'timed out after ' + (HANDOFF_TIMEOUT_MS / 1000) + ' s'));
+      }, HANDOFF_TIMEOUT_MS);
+      function listen(event) {
+        var data = event.data;
+        if (event.origin !== origin || (popup && event.source !== popup)) return;
+        if (!data || data.type !== 'forum-key-handoff' || data.version !== 1
+            || typeof data.privateKey !== 'string' || typeof data.fingerprint !== 'string') return;
+        window.clearTimeout(timer);
+        window.removeEventListener('message', listen);
+        resolve({ privateKey: data.privateKey, fingerprint: data.fingerprint.toLowerCase(), username: String(data.username || '') });
+      }
+      window.addEventListener('message', listen);
     });
   }
 
-  function finish(total) {
-    setStatus('Checking pulled history keys…');
-    return verifyPage('', { verified: [], failed: 0, seen: {} }).then(function (tally) {
-      return confirmVerified(tally.verified, 0).then(function (confirmed) {
-        summaryNode.hidden = false;
-        summaryNode.textContent = 'Pulled: ' + summaryText(total) + ' · ' + confirmed + ' confirmed on ' + host
-          + (tally.failed ? ' · ' + tally.failed + ' not readable yet' : '');
-        setStatus('Pull finished. Open Messages to read them.');
+  // A different key already here: name both and wait for an explicit choice.
+  function chooseReplace(received) {
+    var current = stored('forum_pki_fingerprint').toLowerCase();
+    if (!current || current === received.fingerprint) return Promise.resolve(false);
+    var short = function (fingerprint) { return '…' + fingerprint.toUpperCase().slice(-8); };
+    replaceBox.querySelector('[data-local-connect-replace-text]').textContent = 'This browser already has a key here: '
+      + (stored('forum_pki_username') || 'unnamed') + ' ' + short(current) + '. Replace it with ' + (received.username || 'your key')
+      + ' ' + short(received.fingerprint) + ' from ' + host + '?';
+    replaceBox.hidden = false;
+    return new Promise(function (resolve, reject) {
+      replaceBox.querySelector('[data-local-connect-replace-yes]').onclick = function () { replaceBox.hidden = true; resolve(true); };
+      replaceBox.querySelector('[data-local-connect-replace-no]').onclick = function () {
+        replaceBox.hidden = true;
+        reject(stepError('Kept this browser\'s key. Nothing changed.', 'local pull: connect replace', 'declined'));
+      };
+    });
+  }
+
+  function connect() {
+    var origin;
+    try { origin = sourceOrigin(); } catch (error) { return Promise.reject(stepError('The source address is not valid.', 'local pull: connect', error.message)); }
+    var url = origin + '/account/key/share?to=' + encodeURIComponent(location.origin);
+    var name = 'forum-key-handoff-' + Date.now();
+    var popup = window.open(url, name, 'popup,width=520,height=640');
+    fallback.hidden = Boolean(popup);
+    fallbackLink.href = url;
+    fallbackLink.target = name;
+    setStatus(popup ? 'Waiting for you to confirm on ' + host + '…' : 'Your browser blocked the window. Use the link to open ' + host + '.');
+    return receiveKey(origin, popup).then(function (received) {
+      fallback.hidden = true;
+      return chooseReplace(received).then(function (replace) {
+        setStatus('Installing your key…');
+        return window.__forumBrowserIdentity.importPrivateKey(received.privateKey, received.fingerprint, { replace: replace });
       });
     });
   }
 
-  // One request per key, this browser's key first, so progress shows and a retry resumes.
-  function trustNext(pending, done) {
-    var count = pending.keys.length;
-    trustButton.textContent = 'Trusting ' + Math.min(done + 1, count) + ' of ' + count + '…';
-    setStatus('Trusting ' + Math.min(done + 1, count) + ' of ' + count + ' keys in this clone…');
-    if (done >= count) return Promise.resolve();
-    return relay({ action: 'trust', identity_id: currentState.identity_id, keys: JSON.stringify([pending.keys[done].identity_id]) })
-      .then(function () { pending.done = done + 1; return trustNext(pending, done + 1); });
+  // After the key is here, Connect runs the rest in one pass: import public content when this
+  // clone does not know the key yet, pull, trust the keys the source approves, turn on saved
+  // copies. The stage is kept in sessionStorage, so a reload (import_control.js reloads when an
+  // import ends) resumes it; every stage is safe to repeat.
+  var CONNECT_KEY = 'forum-local-connect';
+  var CONNECT_MAX_AGE_MS = 30 * 60 * 1000;
+  var IMPORT_LIMIT_MS = window.__forumConnectImportLimitMs || 20 * 60 * 1000; // tests may shorten it
+  function saveStage(stage, extra) {
+    try { sessionStorage.setItem(CONNECT_KEY, JSON.stringify(Object.assign({ stage: stage, source: source(), at: Date.now() }, extra || {}))); } catch (_) {}
+  }
+  function savedStage() {
+    try {
+      var saved = JSON.parse(sessionStorage.getItem(CONNECT_KEY) || 'null');
+      if (saved && saved.source === source() && Date.now() - saved.at < CONNECT_MAX_AGE_MS) return saved;
+    } catch (_) {}
+    clearStage();
+    return null;
+  }
+  function clearStage() { try { sessionStorage.removeItem(CONNECT_KEY); } catch (_) {} }
+
+  // The import card's own JSON endpoint, the same requests import_control.js sends.
+  function importRequest(action) {
+    return fetch('/local/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'ForumImport' },
+      body: JSON.stringify({ action: action, source: source(), token: root.dataset.token })
+    }).then(function (response) {
+      return response.json().catch(function () { return { status: 'error', error: 'HTTP ' + response.status + ' without JSON' }; });
+    });
+  }
+  function importStepText(state) {
+    var current = (state.steps || []).filter(function (step) { return step.status === 'current'; })[0];
+    return current ? ' ' + current.label + '…' : '';
+  }
+  function waitForImport(started) {
+    return new Promise(function (resolve) { window.setTimeout(resolve, 2000); }).then(function () {
+      return importRequest('status');
+    }).then(function (data) {
+      if (data.status !== 'ok') {
+        if (Date.now() - started > IMPORT_LIMIT_MS) throw stepError('The import did not finish. See the import card above.', 'local pull: connect import', data.error || 'status refused');
+        return waitForImport(started);
+      }
+      var state = data.state;
+      if (state.busy) {
+        if (Date.now() - started > IMPORT_LIMIT_MS) throw stepError('The import is taking longer than 20 minutes. Keep this page open; Connect continues when it ends.', 'local pull: connect import', 'still running after ' + Math.round((Date.now() - started) / 1000) + ' s');
+        setStatus('Importing public content from ' + host + '.' + importStepText(state) + ' Keep this page open.');
+        return waitForImport(started);
+      }
+      if (state.task && state.task.status === 'failed') throw stepError('The import did not finish. See the import card above, then press Connect again.', 'local pull: connect import', 'task ' + state.task.status);
+      return state;
+    });
+  }
+  function runImport() {
+    setStatus('Importing public content from ' + host + '… Keep this page open.');
+    return importRequest('status').then(function (data) {
+      if (data.status !== 'ok') throw stepError(data.error || 'The import could not start.', 'local pull: connect import', 'status refused');
+      if (data.state.busy) return null;
+      saveStage('import', { imported: true });
+      return importRequest(data.state.pending ? 'resume' : 'import').then(function (queued) {
+        if (queued.status !== 'ok') throw stepError(queued.error || 'The import could not start.', 'local pull: connect import', 'queue refused');
+      });
+    }).then(function () { return waitForImport(Date.now()); });
   }
 
-  trustButton.addEventListener('click', function () {
-    if (!pendingTrust || trustButton.getAttribute('aria-disabled') === 'true') return;
-    var pending = pendingTrust;
-    pending.keys.sort(function (a, b) { return (b.own ? 1 : 0) - (a.own ? 1 : 0); });
-    trustButton.setAttribute('aria-disabled', 'true');
-    trustButton.setAttribute('aria-busy', 'true');
-    trustNext(pending, pending.done || 0).then(function () {
-      pendingTrust = null;
-      trustBox.hidden = true;
-      return finish(pending.total);
-    }).catch(function (error) {
-      setStatus(error.message + ' Press Trust to continue.', 'error', error);
+  function trustAll(keys) {
+    keys.sort(function (a, b) { return (b.own ? 1 : 0) - (a.own ? 1 : 0); });
+    return keys.reduce(function (chain, key, index) {
+      return chain.then(function () {
+        setStatus('Trusting ' + (index + 1) + ' of ' + keys.length + ' keys that ' + host + ' approves…');
+        return relay({ action: 'trust', identity_id: currentState.identity_id, keys: JSON.stringify([key.identity_id]) });
+      });
+    }, Promise.resolve());
+  }
+
+  function connectedState() {
+    return relay({ action: 'key_status', public_key: stored('forum_pki_public_key') }).then(function (state) {
+      currentState = state;
+      if (!state.registered || !state.approved) {
+        throw stepError(host + ' has not approved this key. Connect from a browser where you read your messages on ' + host + '.',
+          'local pull: connect key_status', state.registered ? 'not approved on the source' : 'not registered on the source');
+      }
+      if (state.source_username && state.local_username && state.source_username.toLowerCase() !== state.local_username.toLowerCase()) {
+        var mismatch = stepError(host + ' has this key as "' + state.source_username + '", this clone as "' + state.local_username
+          + '". This clone shows mail only for its own name, so use a key named "' + state.source_username + '" here.',
+          'local pull: connect key_status', 'username on the source differs from this clone');
+        mismatch.details.source_username = state.source_username;
+        mismatch.details.local_username = state.local_username;
+        mismatch.final = true; // retrying cannot fix it
+        throw mismatch;
+      }
+      return state;
+    });
+  }
+
+  // stage: import → pull → trust → saved → done. "imported" stops a second import in one run.
+  function runConnect(saved) {
+    var imported = Boolean(saved && saved.imported);
+    var total = { added: 0, existing: 0, mismatched: [], transfers_added: 0, transfers_mismatched: 0, read_marked: 0 };
+    var resumeImport = saved && saved.stage === 'import' ? waitForImport(Date.now()) : Promise.resolve();
+    return resumeImport.then(connectedState).then(function (state) {
+      if (state.locally_known || imported) return state;
+      imported = true;
+      return runImport().then(connectedState);
+    }).then(function (state) {
+      if (!state.locally_known) throw stepError('The import finished, but this clone still does not know this key.', 'local pull: connect import', 'key not in the imported profiles');
+      saveStage('pull', { imported: imported });
+      setStatus('Pulling your messages from ' + host + '… Keep this page open.');
+      return pullOnce(total);
     }).then(function () {
-      trustButton.removeAttribute('aria-disabled');
-      trustButton.removeAttribute('aria-busy');
-      trustButton.textContent = 'Trust these keys here';
+      saveStage('trust', { imported: imported });
+      setStatus('Checking which keys signed your mail…');
+      return relay({ action: 'trust_candidates', identity_id: currentState.identity_id }).then(function (candidates) {
+        if (!candidates.missing.length || imported) return candidates;
+        // Someone new wrote to you since the last import: import once more, then ask again.
+        imported = true;
+        return runImport().then(function () {
+          return relay({ action: 'trust_candidates', identity_id: currentState.identity_id });
+        });
+      });
+    }).then(function (candidates) {
+      return trustAll(candidates.keys).then(function () { return candidates; });
+    }).then(function (candidates) {
+      saveStage('saved', { imported: imported });
+      return relay({ action: 'saved_copies' }).then(function (saved) { return { candidates: candidates, saved: saved }; });
+    }).then(function (result) {
+      clearStage();
+      var notes = [];
+      if (result.candidates.missing.length) notes.push(result.candidates.missing.length + ' sender key(s) are not in this clone yet, so their messages stay unreadable');
+      if (!result.saved.saved_copies) notes.push('saved copies are off by ' + (result.saved.overridden_by === 'private-config' ? 'private config' : 'the environment') + ', so Messages decrypts on every visit');
+      summaryNode.hidden = false;
+      summaryNode.textContent = 'Pulled: ' + summaryText(total);
+      pullButton.hidden = false;
+      setStatus('Connected. Open Messages to read your mail.' + (notes.length ? ' Note: ' + notes.join('; ') + '.' : ''));
+      root.dispatchEvent(new CustomEvent('local-pull:done'));
+      return result;
     });
+  }
+
+  function connectFailed(error) {
+    fallback.hidden = true;
+    summaryNode.hidden = true;
+    setStatus(error.message + (error.final || /Press Connect|Nothing changed/.test(error.message) ? '' : ' Press Connect to continue.'), 'error', error);
+  }
+
+  connectButton.addEventListener('click', function () {
+    if (connectButton.getAttribute('aria-disabled') === 'true') return;
+    busy(connectButton, true);
+    // A key already handed over and stage saved: continue without asking for the key again.
+    var saved = savedStage();
+    var keyReady = saved && stored('forum_pki_private_key') ? Promise.resolve() : connect().then(function () {
+      root.dispatchEvent(new CustomEvent('local-pull:connected'));
+      saveStage('start');
+    });
+    keyReady.then(function () { return runConnect(savedStage()); }).catch(connectFailed).then(function () { busy(connectButton, false); });
   });
 
-  root.querySelector('[data-local-pull-check]').addEventListener('click', function () {
-    setStatus('Checking this browser\'s key…');
+  // Pull runs the same pass with the key already here: an import only if senders are missing.
+  function busy(button, on) {
+    [connectButton, pullButton].forEach(function (node) {
+      if (on) node.setAttribute('aria-disabled', 'true'); else node.removeAttribute('aria-disabled');
+    });
+    if (on) button.setAttribute('aria-busy', 'true'); else button.removeAttribute('aria-busy');
+  }
+  pullButton.addEventListener('click', function () {
+    if (pullButton.getAttribute('aria-disabled') === 'true') return;
+    busy(pullButton, true);
+    saveStage('start');
+    runConnect(savedStage()).catch(connectFailed).then(function () { busy(pullButton, false); });
+  });
+  if (sourceField) sourceField.addEventListener('change', function () { clearStage(); refresh(); });
+
+  var resumed = savedStage();
+  if (resumed && stored('forum_pki_private_key')) {
+    busy(connectButton, true);
+    updateHost();
+    setStatus('Continuing Connect…');
+    runConnect(resumed).catch(connectFailed).then(function () { busy(connectButton, false); });
+  } else {
     refresh();
-  });
-  if (sourceField) sourceField.addEventListener('change', refresh);
-
-  refresh();
+  }
 })();

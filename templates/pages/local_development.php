@@ -99,27 +99,15 @@ if ($sameRun && $result['seconds'] !== null) {
   </article>
   <article class="card stack" data-local-pull data-token="<?= $e($token) ?>" data-source="<?= $e($source) ?>">
     <h2>Your messages</h2>
-    <p>Read your own private messages here. This browser's key joins your account on the source, then pulls your mail. Your private key stays in this browser.</p>
+    <p>Read your own private messages here. Connect asks <span data-local-pull-host></span> for this browser's key in a small window; it comes straight to this page, and no server sees it. Then your mail is pulled.</p>
+    <div class="button-row"><button type="button" data-local-connect>Connect to <span data-local-pull-host></span></button><button type="button" data-local-pull-start hidden>Pull new messages</button></div>
+    <p data-local-connect-fallback hidden><a data-local-connect-link target="forum-key-handoff" rel="opener">Open <span data-local-pull-host></span> to connect</a></p>
+    <div class="stack" data-local-connect-replace hidden>
+      <p data-local-connect-replace-text></p>
+      <div class="button-row"><button type="button" data-local-connect-replace-yes>Replace</button><button type="button" data-local-connect-replace-no>Keep this browser's key</button></div>
+    </div>
     <p data-local-pull-status role="status">Checking this browser's key…</p>
-    <div class="button-row"><button type="button" data-local-pull-check>Check again</button></div>
-    <ol class="stack" data-local-pull-steps hidden>
-      <li data-local-pull-step="register">
-        <span data-local-pull-step-text></span>
-        <div class="button-row"><button type="button" data-local-pull-register hidden>Register this key on <span data-local-pull-host></span></button></div>
-      </li>
-      <li data-local-pull-step="approve"><span data-local-pull-step-text></span></li>
-      <li data-local-pull-step="import"><span data-local-pull-step-text></span></li>
-      <li data-local-pull-step="pull">
-        <span data-local-pull-step-text></span>
-        <div class="button-row"><button type="button" data-local-pull-start hidden>Pull my messages from <span data-local-pull-host></span></button></div>
-        <p class="meta" data-local-pull-summary role="status" hidden></p>
-        <div class="stack" data-local-pull-trust hidden>
-          <p>To read this mail here, trust these keys. <span data-local-pull-host></span> approves each of them; trust stays in this clone.</p>
-          <ul class="local-pull-keys" data-local-pull-trust-list></ul>
-          <div class="button-row"><button type="button" data-local-pull-trust-button>Trust these keys here</button></div>
-        </div>
-      </li>
-    </ol>
+    <p class="meta" data-local-pull-summary role="status" hidden></p>
   </article>
   <article class="card stack">
     <h2>Try the forum</h2>

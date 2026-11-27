@@ -19,11 +19,8 @@ final class LocalDevelopmentRemote
         'GET /api/get_username',
         'GET /api/get_profile',
         'GET /api/auth_challenge',
-        'POST /api/prepare_identity',
-        'POST /api/create_identity',
         'POST /api/authenticate_identity',
         'GET /api/private_messages/export',
-        'POST /api/private_messages/history_sync/acknowledge',
     ];
 
     /** Responses are read up to this many bytes; a body this long was cut off. */
@@ -71,28 +68,6 @@ final class LocalDevelopmentRemote
             'source_username' => preg_match('/^Username: (.+)$/m', $response['body'], $match) === 1 ? trim($match[1]) : null];
     }
 
-    /** @return array<string, mixed> canonical_record and prepare_token, or exists => true */
-    public function prepareIdentity(string $publicKey): array
-    {
-        $result = $this->json($this->call('POST', '/api/prepare_identity', [], ['public_key' => $publicKey]));
-        if (($result['status'] ?? '') !== 'ok' && ($result['error'] ?? '') === 'Identity already exists for this fingerprint.') {
-            return ['exists' => true];
-        }
-        return $this->okOrThrow($result, 'Could not prepare the key on ' . $this->source() . '.');
-    }
-
-    /** @return array<string, mixed> */
-    public function createIdentity(string $prepareToken, string $canonicalRecord, string $signature): array
-    {
-        $result = $this->json($this->call('POST', '/api/create_identity', [], [
-            'prepare_token' => $prepareToken, 'canonical_record' => $canonicalRecord, 'detached_signature' => $signature,
-        ]));
-        if (($result['status'] ?? '') !== 'ok' && ($result['error'] ?? '') === 'Identity already exists for this fingerprint.') {
-            return ['exists' => true];
-        }
-        return $this->okOrThrow($result, 'Could not register the key on ' . $this->source() . '.');
-    }
-
     public function challenge(): string
     {
         $response = $this->call('GET', '/api/auth_challenge');
@@ -125,14 +100,6 @@ final class LocalDevelopmentRemote
             throw new RuntimeException($this->source() . ' does not support pulling messages yet. Deploy a newer version there, then retry.');
         }
         return $this->okOrThrow($this->json($response), 'Could not read messages from ' . $this->source() . '.');
-    }
-
-    /** @param list<array{message_id:string,digest:string,transfer_id:string}> $items @return array<string, mixed> */
-    public function acknowledge(array $items): array
-    {
-        $response = $this->call('POST', '/api/private_messages/history_sync/acknowledge', [], null,
-            json_encode(['items' => $items, 'mode' => 'account'], JSON_THROW_ON_ERROR));
-        return $this->okOrThrow($this->json($response), 'Could not confirm history on ' . $this->source() . '.');
     }
 
     /**

@@ -8,6 +8,8 @@ The PNG is an image containing the encrypted backup. Keep the **original downloa
 
 To use the key elsewhere, open **Account** in the other browser, choose **Use a key from another device**, choose the original file, enter its passphrase, and select **Use this key**. Your public key is linked through the existing identity flow. The account status updates immediately, and a new session is authenticated automatically; no manual reload is needed. Your private key and passphrase stay in the browser. Restoring the key lets you decrypt retained messages encrypted to that key; it does not back up messages or recover deleted server history.
 
+A local clone on the same computer (`./v3 start`) does not need a saved copy: its **Connect** button asks zenmemes.com for this browser's key in a small window, and one click there sends it to the local page only. See [key handoff](../concepts/key_handoff.md).
+
 Wrong passphrases, damaged files, or fingerprint mismatches leave the existing browser identity in place. A backup for another identity must be restored in a separate browser profile. If linking fails, retry after connectivity returns. The existing advanced raw Copy/Restore Private Key controls remain available, but raw copied keys are not passphrase-protected backups.
 
 The Messages reminder and Account's saved date are local to this browser and key. A verified download starting clears the reminder and sets the date, which cannot confirm that the file was saved permanently. The reminder can return after clearing browser data, changing keys, or when browser storage is unavailable. Restoring a key does not mark a new backup as downloaded.
