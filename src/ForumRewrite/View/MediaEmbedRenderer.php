@@ -201,7 +201,7 @@ final class MediaEmbedRenderer
     private function renderPlayerExpando(array $match, string $embedSrc, string $title, string $extraClass = '', string $resolveSrc = '', string $poster = ''): string
     {
         $provider = self::PROVIDER_LABELS[$match['provider']]['label'];
-        return '<span class="media-embed-player" data-provider="' . $this->escape($match['provider']) . '">'
+        return '<span class="media-embed-player">'
             . '<span class="media-embed-card__source"><a class="media-embed-card__link" href="' . $this->escape($match['displayUrl']) . '" aria-label="Open on ' . $this->escape($provider) . '">' . $this->escape($provider) . ' ↗</a></span>'
             . '<details class="media-embed-card media-embed-card--inline-player' . $extraClass . '" data-media-embed-card data-provider="' . $this->escape($match['provider']) . '">'
             . '<summary>' . $poster . '<span class="media-embed-card__play" aria-hidden="true"></span><span class="media-embed-card__action">Play</span><span class="media-embed-card__action media-embed-card__action--close">Close</span></summary>'

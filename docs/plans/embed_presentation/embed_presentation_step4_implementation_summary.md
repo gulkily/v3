@@ -94,3 +94,23 @@ Step 3 approved 2026-11-27 ("approved step 3"). Branch `feat/embed_presentation`
 - Estimate details: original scope: one renderer branch; uncertainty low. Unchanged.
 
 *— Claude · 2026-11-27 UTC · Model: claude-opus-5-5*
+
+## Stage 5 - Music rows
+
+**Original estimate: 0.10**
+**Retrospective: 0.10**
+
+- Changes:
+  - `site.css`: on /music/, a row whose player is closed gets a 5.5rem first column. The player sits there as a 16:9 tile: the poster when stored, otherwise the plain play button, with the provider link under it. Opening the player moves it under the row at full width, as a bar with Close, and the row returns to its usual columns. Done with `:has()`, so it needs no script; no template change was needed.
+  - `MediaEmbedRenderer.php`: the bar's wrapper no longer repeats `data-provider`. Stage 1 had doubled it, which broke a count in `music_share.mjs`.
+- Verification:
+  - `./v3 test --smoke MusicMediaEmbedTest MusicPageTest MediaEmbedRendererTest`: passed (525 run). Full suite not run.
+  - `node tests/browser/music_share.mjs`: passed (it had failed after Stage 1 on the doubled attribute).
+  - `node tests/browser/media_embed_browser.mjs`: passed.
+  - Screenshots of /music/ at 380px with posters on, in Underground and Underground Dark, closed and with a Spotify player open: posters and the play tile line up beside the titles; the longest title wraps beside its tile; no sideways scroll.
+- Notes:
+  - The Spotify track player keeps its 352px height. A shorter one fits a single track better; left for a follow-up.
+  - `:has()` needs iOS 15.4 or later; older browsers show the Stage 1 bar under the row instead.
+- Estimate details: original scope: row layout at phone width; uncertainty low. Unchanged.
+
+*— Claude · 2026-11-27 UTC · Model: claude-opus-5-5*

@@ -1331,6 +1331,70 @@ pre {
   margin: 0;
 }
 
+/* A Music row: while its player is closed, the player is a small tile (poster
+   or play button) in a first column beside the title, with the provider link
+   under it. Opening it moves the player under the row at full width. */
+.music-tracks .thread-row:has(> .thread-row__player details[data-media-embed-card]:not([open])) {
+  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+}
+
+.music-tracks .thread-row:has(> .thread-row__player details[data-media-embed-card]:not([open])) > :is(.thread-row__title, .thread-row__excerpt, .thread-row__meta, .event-block) {
+  grid-column: 2;
+}
+
+.music-tracks .thread-row:has(> .thread-row__player details[data-media-embed-card]:not([open])) > .thread-row__count {
+  grid-column: 3;
+}
+
+.music-tracks .thread-row__player:has(details[data-media-embed-card]:not([open])) {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  align-self: start;
+  margin: 0;
+}
+
+.music-tracks .media-embed-player:has(> details:not([open])) {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.2rem;
+  margin: 0;
+}
+
+.music-tracks .media-embed-player:has(> details:not([open])) > .media-embed-card__source {
+  position: static;
+  height: auto;
+  padding: 0;
+  justify-content: center;
+  background: none;
+  font-size: 0.75rem;
+}
+
+.music-tracks .media-embed-card--inline-player:not([open]) > summary {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0.5rem;
+}
+
+.music-tracks .media-embed-card--inline-player:not([open]) .media-embed-card__action {
+  display: none;
+}
+
+.music-tracks .media-embed-card--inline-player:not([open]) .media-embed-card__play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2rem;
+  height: 2rem;
+  transform: translate(-50%, -50%);
+}
+
+.music-tracks .media-embed-card--poster:not([open]) .media-embed-card__play::before {
+  border-width: 0.4rem 0 0.4rem 0.65rem;
+}
+
 /* A row with an attached image: the thumbnail fills a narrow first column as
    tall as the row; the image never adds height of its own. */
 .thread-row--thumb {

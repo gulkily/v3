@@ -14,3 +14,4 @@
 - Stage 2 retrospective 0.10.
 - Stage 3 retrospective 0.15.
 - Stage 4 retrospective 0.05.
+- Stage 5 retrospective 0.10.
