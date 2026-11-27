@@ -16,7 +16,7 @@ const root = await mkdtemp(join(tmpdir(), 'media-embed-browser-'));
 const env = { ...process.env, MEDIA_EMBED_BROWSER_ROOT: root, FORUM_INSTANCE_CONFIG_FILE: join(root, 'unused.php') };
 const fixture = spawnSync('php', [join(project, 'tests/Support/media_embed_browser_fixture.php'), root], { cwd: project, env, encoding: 'utf8' });
 assert.equal(fixture.status, 0, fixture.stderr);
-const { themes } = JSON.parse(fixture.stdout);
+const { themes, mitrapclubThemes } = JSON.parse(fixture.stdout);
 let flags = { cards: true, players: true, site: 'mitrapclub' };
 const setFlags = async changes => { flags = { ...flags, ...changes }; await writeFile(join(root, 'flags.json'), JSON.stringify(flags)); };
 await setFlags({});
@@ -101,7 +101,8 @@ try {
   for (const id of [spotify.thread_id, tiktok.thread_id]) {
     await page.goto(base + '/threads/' + id);
     assert.equal(await page.locator('details[data-media-embed-card]').count(), 1, 'bare URL body must remain visible');
-    assert.equal(await page.locator('[data-media-embed-warm-beacon]').count(), 0);
+    // Titles are fetched for every supported provider (mitrapclub_music), so an untitled bare link gets one beacon.
+    assert.equal(await page.locator('[data-media-embed-warm-beacon]').count(), 1);
     assert.notEqual(await page.getByRole('heading', { level: 1 }).innerText(), 'Untitled');
   }
   // A late lookup must not load a closed player or duplicate pending work.
@@ -172,10 +173,10 @@ try {
   await page.goto(base + '/');
   assert.equal(await page.locator('.qdb-news-item [data-media-embed-card]').count(), 12);
   for (const theme of themes) {
-    await setFlags({ site: ['chouse', 'qdb', 'mitrapclub'].includes(theme) ? theme : 'mitrapclub' });
+    await setFlags({ site: ['chouse', 'qdb', 'mitrapclub'].includes(theme) ? theme : mitrapclubThemes.includes(theme) ? 'mitrapclub' : 'zenmemes' });
     await context.addCookies([{ name: 'theme-hint', value: theme, url: base }]);
     await page.evaluate(theme => {
-      for (const site of ['mitrapclub', 'chouse', 'qdb']) localStorage.setItem('forum-' + site + '-theme', theme);
+      for (const site of ['mitrapclub', 'chouse', 'qdb', 'zenmemes']) localStorage.setItem('forum-' + site + '-theme', theme);
     }, theme);
     for (const width of [360, 1280]) {
       await page.setViewportSize({ width, height: 900 });
@@ -198,6 +199,9 @@ try {
           assert(src.includes(`/bgcol=${expectedPalette[0]}/linkcol=${expectedPalette[1]}/`), `${theme}: incorrect Bandcamp palette: ${src}`);
         }
       }
+      // Zalgo skews every card on purpose; on this test's very tall card the skew alone moves
+      // players sideways by many pixels, so measure layout overflow with the skew removed.
+      if (theme === 'zalgo') await page.addStyleTag({ content: ':root[data-theme="zalgo"] .card { transform: none !important; }' });
       for (const iframe of await page.locator('iframe[data-media-embed-iframe]').all()) {
         const box = await iframe.boundingBox();
         assert(box.x >= -1 && box.x + box.width <= width + 1, `${theme} ${width}: ${JSON.stringify(box)}`);

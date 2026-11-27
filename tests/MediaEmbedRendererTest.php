@@ -236,6 +236,29 @@ final class MediaEmbedRendererTest
         assertSame(true, str_contains($html, 'loading="lazy"'));
     }
 
+    public function testEachInlinePlayerIsOneBarNamingItsProviderOnceWithTheLinkOutsideTheSummary(): void
+    {
+        $renderer = new MediaEmbedRenderer();
+        $links = [
+            'YouTube' => 'https://youtu.be/dQw4w9WgXcQ',
+            'Spotify' => 'https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC',
+            'SoundCloud' => 'https://soundcloud.com/artist/track-name',
+            'TikTok' => 'https://www.tiktok.com/@user/video/7234567890123456789',
+        ];
+        foreach ($links as $provider => $url) {
+            $html = $renderer->render($url, true, true);
+            assertSame(1, substr_count($html, 'class="media-embed-player"'), $provider);
+            // The provider is named once in the visible text: the link.
+            assertSame(1, substr_count(strip_tags($html), $provider), $provider);
+            assertStringContains('aria-label="Open on ' . $provider . '"', $html);
+            assertStringNotContains('▶', $html);
+            assertStringNotContains('♫', $html);
+            $summary = substr($html, strpos($html, '<summary>'), strpos($html, '</summary>') - strpos($html, '<summary>'));
+            assertStringNotContains('<a ', $summary);
+            assertSame(true, strpos($html, 'media-embed-card__source') < strpos($html, '<details'), $provider);
+        }
+    }
+
     public function testInlinePlayerInstagramWithoutCacheStoreFallsBackToPlainCardAndNoBeacon(): void
     {
         $renderer = new MediaEmbedRenderer();
