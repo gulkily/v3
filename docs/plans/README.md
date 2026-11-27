@@ -9,6 +9,7 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
+- [Notifications Turn on diagnostics](push_turn_on_diagnostics/push_turn_on_diagnostics_one_shot.md) — Turn on steps time out and show copyable details; failures are reported to operators.
 - [Errors with expandable details](error_details_guideline/error_details_guideline_one_shot.md) — project guideline: short plain error messages with copyable details, timeouts that name their step.
 - [Zalgo post menu layering](zalgo_post_actions_layer/zalgo_post_actions_layer_one_shot.md) — keep the open post menu above Activity and reply cards.
 - [Merge About slot outage](merge_about_slot/merge_about_slot_one_shot.md) — restore startup after the About variant rename.
