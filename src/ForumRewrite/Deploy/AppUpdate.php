@@ -641,9 +641,6 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
         try {
             $old = $this->gitValue(['rev-parse', '--verify', 'HEAD']);
             $branch = $this->gitValue(['symbolic-ref', '--quiet', '--short', 'HEAD']);
-            if ($branch !== self::BRANCH) {
-                return $refuse('wrong_branch', 'The checkout is on ' . ($branch ?? 'a detached HEAD') . ', not ' . self::BRANCH . '.', $old);
-            }
             $changed = $this->trackedChangedFiles();
             if ($changed === null) {
                 return $refuse('git_failed', 'Could not read the working tree status.', $old, 'failed');
@@ -656,8 +653,16 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
             if ($remote === null) {
                 return $refuse('no_remote_branch', self::REMOTE . '/' . self::BRANCH . ' was not found after fetching.', $old, 'failed');
             }
+            $left = '';
+            if ($branch !== self::BRANCH) {
+                $refusal = $this->returnToMain($branch, $old, $remote);
+                if ($refusal !== null) {
+                    return $refuse($refusal[0], $refusal[1], $old, $refusal[2]);
+                }
+                $left = ' Switched to ' . self::BRANCH . ' from ' . ($branch ?? 'a detached HEAD') . '.';
+            }
             if ($remote === $old) {
-                return ['outcome' => 'up_to_date', 'reason' => null, 'message' => 'Already at ' . self::REMOTE . '/' . self::BRANCH . '.', 'old_commit' => $old, 'new_commit' => $old];
+                return ['outcome' => 'up_to_date', 'reason' => null, 'message' => 'Already at ' . self::REMOTE . '/' . self::BRANCH . '.' . $left, 'old_commit' => $old, 'new_commit' => $old];
             }
             if ($this->git(['merge-base', '--is-ancestor', 'HEAD', $remote], 30)['code'] !== 0) {
                 return $refuse('diverged', 'The server has commits that are not on ' . self::REMOTE . '/' . self::BRANCH . '; resolve over SSH.', $old);
@@ -676,10 +681,36 @@ Requested-At: " . gmdate('Y-m-d\TH:i:s\Z') . "
             $new = (string) $this->gitValue(['rev-parse', '--verify', 'HEAD']);
             $kept = $changed === [] ? '' : ' Kept local changes to ' . implode(', ', $changed) . '.';
 
-            return ['outcome' => 'deployed', 'reason' => null, 'message' => 'Updated to ' . substr($new, 0, 12) . '.' . $kept, 'old_commit' => $old, 'new_commit' => $new];
+            return ['outcome' => 'deployed', 'reason' => null, 'message' => 'Updated to ' . substr($new, 0, 12) . '.' . $left . $kept, 'old_commit' => $old, 'new_commit' => $new];
         } finally {
             $this->releaseLock($lock);
         }
+    }
+
+    /**
+     * A checkout left on another branch (say, a hotfix checked out on the server and since
+     * merged) goes back to `main` when nothing would be lost: HEAD and any local `main` are
+     * both contained in origin/main. `main` is pointed at HEAD, so no file changes and local
+     * edits stay; the usual fast-forward follows.
+     *
+     * @return array{0: string, 1: string, 2: string}|null reason, message, outcome; null once on main
+     */
+    private function returnToMain(?string $branch, ?string $old, string $remote): ?array
+    {
+        $name = $branch ?? 'a detached HEAD';
+        if ($old === null || $this->git(['merge-base', '--is-ancestor', $old, $remote], 30)['code'] !== 0) {
+            return ['wrong_branch', 'The checkout is on ' . $name . ', which has commits not on ' . self::REMOTE . '/' . self::BRANCH . '; resolve over SSH.', 'refused'];
+        }
+        $main = $this->gitValue(['rev-parse', '--verify', '--quiet', 'refs/heads/' . self::BRANCH]);
+        if ($main !== null && $this->git(['merge-base', '--is-ancestor', $main, $remote], 30)['code'] !== 0) {
+            return ['wrong_branch', 'The checkout is on ' . $name . ', and the server\'s ' . self::BRANCH . ' has commits not on ' . self::REMOTE . '/' . self::BRANCH . '; resolve over SSH.', 'refused'];
+        }
+        $switch = $this->git(['checkout', '--quiet', '-B', self::BRANCH], 30);
+        if ($switch['code'] !== 0 || $this->gitValue(['symbolic-ref', '--quiet', '--short', 'HEAD']) !== self::BRANCH) {
+            return ['switch_failed', 'Could not switch from ' . $name . ' to ' . self::BRANCH . ': ' . $this->summarize($switch['err']), 'failed'];
+        }
+
+        return null;
     }
 
     /**

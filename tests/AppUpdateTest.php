@@ -611,18 +611,78 @@ final class AppUpdateTest
         assertSame("scratch\n", file_get_contents($app . '/notes.local'));
     }
 
-    public function testRefusesOffTheMainBranch(): void
+    public function testRefusesABranchWithCommitsNotOnOriginMain(): void
     {
         [$app, $seed] = $this->fixture();
         $this->pushCommit($seed, 'remote');
         $this->git($app, ['checkout', '-q', '-b', 'hotfix']);
+        file_put_contents($app . '/hotfix.txt', "unmerged\n");
+        $this->git($app, ['add', 'hotfix.txt']);
+        $this->git($app, ['commit', '-q', '-m', 'unmerged hotfix']);
         $head = $this->head($app);
 
         $result = (new AppUpdate($app))->deploy('cli', AppUpdate::MODE_CLI);
 
+        assertSame('refused', $result['outcome']);
         assertSame('wrong_branch', $result['reason']);
+        assertTrue(str_contains($result['message'], 'hotfix, which has commits not on origin/main'));
         assertSame($head, $this->head($app));
         assertSame('hotfix', trim($this->git($app, ['symbolic-ref', '--short', 'HEAD'])));
+    }
+
+    public function testRefusesWhenTheServersMainHasCommitsNotOnOriginMain(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $this->pushCommit($seed, 'remote');
+        file_put_contents($app . '/local.txt', "server-only commit\n");
+        $this->git($app, ['add', 'local.txt']);
+        $this->git($app, ['commit', '-q', '-m', 'local']);
+        $localMain = $this->head($app);
+        $this->git($app, ['checkout', '-q', '-b', 'hotfix', 'HEAD~1']);
+
+        $result = (new AppUpdate($app))->deploy('cli', AppUpdate::MODE_CLI);
+
+        assertSame('wrong_branch', $result['reason']);
+        assertSame('hotfix', trim($this->git($app, ['symbolic-ref', '--short', 'HEAD'])));
+        assertSame($localMain, trim($this->git($app, ['rev-parse', 'refs/heads/main'])));
+    }
+
+    public function testAMergedHotfixBranchReturnsToMainAndDeploys(): void
+    {
+        // The #440 outage fix: checked out on the server, then merged on GitHub.
+        [$app, $seed] = $this->fixture();
+        $this->git($app, ['checkout', '-q', '-b', 'hotfix']);
+        file_put_contents($app . '/fix.txt', "fix\n");
+        $this->git($app, ['add', 'fix.txt']);
+        $this->git($app, ['commit', '-q', '-m', 'hotfix']);
+        $this->git($app, ['push', '-q', 'origin', 'hotfix']);
+        $this->git($seed, ['pull', '-q', '--no-rebase', 'origin', 'hotfix']);
+        $this->git($seed, ['push', '-q', 'origin', 'main']);
+        $new = $this->pushCommit($seed, 'after');
+        file_put_contents($app . '/README.md', "app\nserver edit\n");
+
+        $result = (new AppUpdate($app))->deploy('cli', AppUpdate::MODE_CLI);
+
+        assertSame('deployed', $result['outcome']);
+        assertTrue(str_contains($result['message'], 'Switched to main from hotfix.'));
+        assertSame($new, $this->head($app));
+        assertSame('main', trim($this->git($app, ['symbolic-ref', '--short', 'HEAD'])));
+        assertSame("app\nserver edit\n", file_get_contents($app . '/README.md'));
+    }
+
+    public function testAMergedBranchAlreadyAtOriginMainSwitchesToMain(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $new = $this->pushCommit($seed, 'remote');
+        $this->git($app, ['fetch', '-q', 'origin']);
+        $this->git($app, ['checkout', '-q', '--detach', 'origin/main']);
+
+        $result = (new AppUpdate($app))->deploy('cli', AppUpdate::MODE_CLI);
+
+        assertSame('up_to_date', $result['outcome']);
+        assertTrue(str_contains($result['message'], 'Switched to main from a detached HEAD.'));
+        assertSame($new, $this->head($app));
+        assertSame('main', trim($this->git($app, ['symbolic-ref', '--short', 'HEAD'])));
     }
 
     public function testRefusesDivergedHistory(): void

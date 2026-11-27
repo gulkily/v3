@@ -15,9 +15,11 @@ Usage: ./v3 deploy [--check|--status|--history|--rollback=COMMIT] [--timeout=SEC
   --status    Report local state and the latest attempt without contacting GitHub.
   --history   List the versions this checkout has run, newest first.
   --rollback=COMMIT  Return to a version from --history. Deploy again to move forward.
-Keeps local edits to tracked files (stash, fast-forward, reapply). Refuses,
+Keeps local edits to tracked files (stash, fast-forward, reapply). A branch
+already merged into origin/main is switched back to main first. Refuses,
 leaving the checkout unchanged, when the update conflicts with a local edit,
-the branch is not main, history has diverged, or another deploy is running.
+the branch has commits not on origin/main, history has diverged, or another
+deploy is running.
 Pull only: run docs publish or build-static yourself if the release needs them.
 Exit: 0 deployed, rolled back, up to date or checked; 1 refused or failed; 2 usage error.
 HELP;

@@ -8,7 +8,7 @@ Effort study: `railspike-effort` / `v3/deploy_merged_branch`; host ledger [deplo
 
 **Cycle estimate: 0.12**
 
-Status: planned; next permitted action: implement on `fix/deploy-merged-branch`.
+Status: implemented, PR open; next permitted action: maintainer returns the server to `main` over SSH once, merges, and deploys.
 
 ## Original request
 
@@ -47,10 +47,32 @@ Application change.
 
 `./v3 test --smoke AppUpdateTest` passes with new tests: merged branch deploys and ends on `main`; branch with an unmerged commit is still refused and unchanged; merged branch already at `origin/main` switches and reports up to date; local tracked edit survives the switch. Headless Chrome at 375px shows no horizontal overflow with the long status. Feedback: no matching item in `docs/feedback/items/`. Concepts touched: application update.
 
-Starting revision and branch: `83d6798f`, `fix/deploy-merged-branch`. Planning commit: pending.
+Starting revision and branch: `83d6798f`, `fix/deploy-merged-branch`. Planning commit: `928c1db`.
 
 ## Study history
 
 - 2026-11-27 UTC, intake and entry: **0.12**. Claude, single exposed rater. R1 not reverified this session.
+- 2026-11-27 UTC, closeout: retrospective **0.12**. Same rater.
+
+## Outcome
+
+- `AppUpdate::runDeploy` no longer refuses a non-`main` checkout up front. After fetching, `returnToMain()` checks that `HEAD` and any local `main` are contained in `origin/main`, then runs `git checkout -B main` (same commit, so no file or local edit changes) and the normal fast-forward follows. The message ends "Switched to main from <branch>." Otherwise `wrong_branch` is refused with "…which has commits not on origin/main; resolve over SSH." Rollback is unchanged.
+- `./v3 deploy --help` and the application update concept describe the return.
+- Header: `.deploy-prompt` wraps and is capped at the eyebrow's width; on phones (below 640px) the eyebrow may shrink while the prompt shows; the status breaks long words. On wider screens the prompt is capped at 13rem so the nav keeps most of its room.
+
+## Verification
+
+- Passed: `./v3 test --smoke AppUpdateTest` (540 run, 540 passed). New tests: unmerged branch refused and untouched; server `main` with its own commit refused; merged hotfix branch deploys, ends on `main` and keeps a local tracked edit; detached HEAD already at `origin/main` switches and reports up to date. The old off-main test became the unmerged-branch test.
+- Passed, headless Chrome with the real stylesheets and the prompt plus the production refusal text injected: at 375px the page width stays 375px in Gloss, Word97, Bubblegum, Arena and Underground (before: 604, 375, 672, 603, 781). At 700px and 1280px nothing overflows and the prompt no longer overlaps the nav. At 700px the nav already wraps to two columns without the status; with it, the nav is a little narrower.
+- Not verified: on the maintainer's phone; Zalgo (flag off locally); the switch on production. Not run: the full suite.
+- Seen, out of scope: in Underground the header Deploy now button's text is invisible (same colour as its fill), before and after this change.
+
+## Final review
+
+Diff: `AppUpdate.php`, `deploy.php` help, `site.css` deploy prompt rules, `AppUpdateTest.php`, the concept, this record, the index, the ledger and the debug log. No script, controller or template change.
+
+Recovery: production is still on `fix/merge-about-slot` and refuses deploys, including this one, until switched once over SSH (`git stash && git checkout main && git pull && git stash pop` in `~/v3`).
+
+Commit, merge and publication: pushed to `fix/deploy-merged-branch` with an open PR; not merged.
 
 — Claude · 2026-11-27 UTC · Model: claude-opus-5-5
