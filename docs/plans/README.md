@@ -755,3 +755,4 @@ and repair its navigation and affected references. See the
 - [System status Admin line matches its query](system_status_admins/system_status_admins_one_shot.md)
 - [MIT Rap Club music](mitrapclub_music/mitrapclub_music_step1_solution_assessment.md) — staged: a Music page on mitrapclub with a share box and playable #music tracks; fetched titles for every supported embed, first-line titles behind a flag.
 - [Music share box like the Board's](music_share_compact/music_share_compact_one_shot.md) — one-shot: /music/ loads the Board's styles and uses its one-line composer.
+- [Underground header deploy button text](underground_deploy_prompt_text/underground_deploy_prompt_text_one_shot.md) — one-shot: the header Deploy now label no longer inherits the site name's transparent text fill.
