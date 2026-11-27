@@ -8,7 +8,7 @@ Effort study: `railspike-effort` / `v3/local_pull_account_diagnostics`; host led
 
 **Cycle estimate: 0.20**
 
-Status: planned; next permitted action: implement.
+Status: implemented, PR open; next permitted action: maintainer merge, then Ilya reloads `/local/` and sends the Details.
 
 ## Original request
 
@@ -68,5 +68,50 @@ There is no shared error-details component yet: other pages build their own (`ou
 ## Study checkpoint
 
 Intake 2026-11-27T21:10Z, scope v1, R1, P2 standing enrollment; parent `v3/local_pull_trust_ux`. Claude, single exposed rater. **0.20 projected total.**
+
+*— Claude · 2026-11-27 UTC · Model: claude-opus-5-5*
+
+## Changes
+
+Planning commit `bbd9a83b`.
+
+- **New `ForumRewrite\Support\LocalPullFailure`:** a `RuntimeException` that carries public detail fields. `LocalMessagePull` throws it on an account mismatch, naming both accounts and the next step.
+- **`LocalDevelopmentRemote::keyState()`** also returns `source_username`, read from the `Username:` line of `get_profile`. `key_status` adds `local_username`.
+- **`LocalDevelopmentRemoteController`:** every error answer now has `step` and `details`:
+  - `step` names the action;
+  - `details` holds the step, the exception class and message, the HTTP status, how long it waited, the source, the key (when it is a well-formed public identity ID) and any `LocalPullFailure` fields.
+- **`local_message_pull.js`:**
+  - Every relayed step times out after 180 s, and the timeout names the step.
+  - Unreachable-server and non-JSON responses each have their own message.
+  - Every card error renders the short message, then a closed **Details** with a **Copy** button. Details add page, source, key, online state, browser and time, built from a fixed list.
+  - `render()` stops before Pull when the source's and the clone's names for the key differ.
+- **`site.css`:** `.local-pull-details pre` wraps.
+
+## Verification
+
+- `./v3 test --smoke LocalDevelopmentImportTest LocalMessagePullTest PrivateMessageExportTest`: 509 run, 509 passed. The full suite was not run.
+  - The tests cover `source_username`, `local_username` and an error payload with step, key, error class and wait time.
+  - They also cover the mismatch message and its details fields.
+- `node tests/browser/local_message_pull.mjs`: passed. The new step 7 renames the key's profile in the local read model, then checks:
+  - the warning, with no Pull button;
+  - Details closed at first, then holding step, key, both usernames and browser;
+  - no private key, session or message text in the Details;
+  - Copy present.
+
+  The screenshot was checked at 390 px.
+- **Unverified:** Ilya's real mismatch. Reloading `/local/` should now show it before Pull, and its Details will name the cause.
+
+## Enhancement requests (Ilya, 2026-11-27, during this cycle)
+
+- **Local Messages decrypt again on every load, flashing placeholders over content already shown.** Not in this cycle. Cause: saved copies (`FORUM_PRIVATE_MESSAGE_CACHE_ENABLED`) are off by default, so nothing is kept between loads. Proposed for [local_pull_simple](../local_pull_simple/) Step 1.
+- **The flow doesn't lead the user to open zenmemes.com in an already-primed browser so it can re-encrypt for the new key.** Ilya did that by hand. Not in this cycle. It is part of what [local_pull_simple](../local_pull_simple/) Step 1 removes, and is recorded there.
+
+## Outcome
+
+Delivered as planned. Completion commit pending; PR to follow.
+
+## Study closeout
+
+2026-11-27T21:25Z: retrospective **0.25** (the browser step and Details renderer took a little longer); acceptance pending.
 
 *— Claude · 2026-11-27 UTC · Model: claude-opus-5-5*

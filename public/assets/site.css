@@ -2831,3 +2831,11 @@ pre {
 .local-pull-keys summary { cursor: pointer; }
 .local-pull-keys ul { margin: 0.25rem 0 0 1.1rem; }
 .local-pull-keys code { font-size: 0.85em; white-space: nowrap; }
+
+/* Local start page: Details under a messages-pull failure. */
+.local-pull-details pre {
+  margin: 0.25rem 0;
+  font-size: 0.8em;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

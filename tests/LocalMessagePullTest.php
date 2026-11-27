@@ -98,7 +98,11 @@ final class LocalMessagePullTest
         assertSame(1, $result['read_marked']);
         assertSame(1, $localStore->unreadStateFor('alice')['unread_count']);
         try { $pull->run($this->remote($source, $sync, 'bob'), 'alice'); throw new LogicException('Pulled another account'); }
-        catch (RuntimeException $expected) { assertStringContains('different account', $expected->getMessage()); }
+        catch (\ForumRewrite\Support\LocalPullFailure $expected) {
+            assertStringContains('source.example has this key as "bob", this clone as "alice". Nothing was pulled.', $expected->getMessage());
+            assertStringContains('use a key named "bob" here', $expected->getMessage());
+            assertSame(['source_account' => 'bob', 'local_account' => 'alice'], $expected->details);
+        }
     }
 
     public function testAMessageCoveredByOneDonorIsNotOfferedAgainFromAnother(): void
