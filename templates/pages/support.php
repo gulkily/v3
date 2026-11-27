@@ -25,5 +25,8 @@ if (is_array($pledgeCampaign) && isset($pledgeCampaign['used_lines'][$supportThr
   <div class="support__pitch body<?= $isMarkdownPost($supportRoot) ? ' post-markdown' : '' ?>"><?= $renderPostBody($supportRoot, $supportPitch) ?></div>
 <?php endif; ?>
 <?= $partial('partials/pledge_totals.php', ['pledgeCampaign' => $pledgeCampaign]) ?>
+<?php if (is_array($pledgeCampaign)): ?>
+<?= $indent($partial('partials/support_wall.php', ['supportWall' => \ForumRewrite\View\SupportWall::build($pledgeCampaign, $posts), 'supportThreadId' => $supportThreadId]), 1) ?>
+<?php endif; ?>
   <p class="meta support__thread-link"><a href="<?= $e($supportThreadHref) ?>">Open as a thread</a></p>
 </section>
