@@ -368,6 +368,38 @@ final class LocalDevelopmentImportTest
         assertSame(['registered' => false, 'approved' => false, 'source_username' => null], $missing->keyState('openpgp:' . str_repeat('a', 40)));
     }
 
+    public function testSavedCopiesTurnsOnTheCacheFlagOnceAndReportsAnOverride(): void
+    {
+        $w = new ImportTestWorkspace();
+        $target = $w->repository('target', true);
+        $w->git($target);
+        $environment = $this->environment($w, $target);
+        $server = new ImportHttpServer(realpath(__DIR__ . '/../public/router.php'), $w->root . '/dev.log', $environment);
+        $base = ['token' => $this->token($this->request($server->url, '/')[1]), 'source' => 'https://source.example'];
+
+        [$code, $body] = $this->request($server->url, '/local/remote', $base + ['action' => 'saved_copies']);
+        assertSame(200, $code, $body);
+        assertSame(['saved_copies' => true, 'changed' => true, 'overridden_by' => null],
+            array_intersect_key(json_decode($body, true), array_flip(['saved_copies', 'changed', 'overridden_by'])));
+        assertStringContains('FORUM_PRIVATE_MESSAGE_CACHE_ENABLED', (string) file_get_contents($target . '/' . \ForumRewrite\Canonical\CanonicalPathResolver::featureFlags()));
+        // Connect may run again; the second time writes nothing.
+        [$code, $body] = $this->request($server->url, '/local/remote', $base + ['action' => 'saved_copies']);
+        assertSame(200, $code, $body);
+        assertSame(false, json_decode($body, true)['changed']);
+
+        // An environment value wins and is reported, not changed.
+        $w2 = new ImportTestWorkspace();
+        $target2 = $w2->repository('target', true);
+        $w2->git($target2);
+        $pinned = new ImportHttpServer(realpath(__DIR__ . '/../public/router.php'), $w2->root . '/dev.log',
+            $this->environment($w2, $target2) + ['FORUM_PRIVATE_MESSAGE_CACHE_ENABLED' => 'false']);
+        $pinnedBase = ['token' => $this->token($this->request($pinned->url, '/')[1]), 'source' => 'https://source.example'];
+        [$code, $body] = $this->request($pinned->url, '/local/remote', $pinnedBase + ['action' => 'saved_copies']);
+        assertSame(200, $code, $body);
+        assertSame(['saved_copies' => false, 'changed' => false, 'overridden_by' => 'environment'],
+            array_intersect_key(json_decode($body, true), array_flip(['saved_copies', 'changed', 'overridden_by'])));
+    }
+
     private function environment(ImportTestWorkspace $w, string $target): array
     {
         $w->put($w->root . '/secrets.php', '<?php return [];');

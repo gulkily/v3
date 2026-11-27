@@ -436,22 +436,174 @@
     });
   }
 
+  // After the key is here, Connect runs the rest in one pass: import public content when this
+  // clone does not know the key yet, pull, trust the keys the source approves, turn on saved
+  // copies. The stage is kept in sessionStorage, so a reload (import_control.js reloads when an
+  // import ends) resumes it; every stage is safe to repeat.
+  var CONNECT_KEY = 'forum-local-connect';
+  var CONNECT_MAX_AGE_MS = 30 * 60 * 1000;
+  var IMPORT_LIMIT_MS = window.__forumConnectImportLimitMs || 20 * 60 * 1000; // tests may shorten it
+  function saveStage(stage, extra) {
+    try { sessionStorage.setItem(CONNECT_KEY, JSON.stringify(Object.assign({ stage: stage, source: source(), at: Date.now() }, extra || {}))); } catch (_) {}
+  }
+  function savedStage() {
+    try {
+      var saved = JSON.parse(sessionStorage.getItem(CONNECT_KEY) || 'null');
+      if (saved && saved.source === source() && Date.now() - saved.at < CONNECT_MAX_AGE_MS) return saved;
+    } catch (_) {}
+    clearStage();
+    return null;
+  }
+  function clearStage() { try { sessionStorage.removeItem(CONNECT_KEY); } catch (_) {} }
+
+  // The import card's own JSON endpoint, the same requests import_control.js sends.
+  function importRequest(action) {
+    return fetch('/local/', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'ForumImport' },
+      body: JSON.stringify({ action: action, source: source(), token: root.dataset.token })
+    }).then(function (response) {
+      return response.json().catch(function () { return { status: 'error', error: 'HTTP ' + response.status + ' without JSON' }; });
+    });
+  }
+  function importStepText(state) {
+    var current = (state.steps || []).filter(function (step) { return step.status === 'current'; })[0];
+    return current ? ' ' + current.label + '…' : '';
+  }
+  function waitForImport(started) {
+    return new Promise(function (resolve) { window.setTimeout(resolve, 2000); }).then(function () {
+      return importRequest('status');
+    }).then(function (data) {
+      if (data.status !== 'ok') {
+        if (Date.now() - started > IMPORT_LIMIT_MS) throw stepError('The import did not finish. See the import card above.', 'local pull: connect import', data.error || 'status refused');
+        return waitForImport(started);
+      }
+      var state = data.state;
+      if (state.busy) {
+        if (Date.now() - started > IMPORT_LIMIT_MS) throw stepError('The import is taking longer than 20 minutes. Keep this page open; Connect continues when it ends.', 'local pull: connect import', 'still running after ' + Math.round((Date.now() - started) / 1000) + ' s');
+        setStatus('Importing public content from ' + host + '.' + importStepText(state) + ' Keep this page open.');
+        return waitForImport(started);
+      }
+      if (state.task && state.task.status === 'failed') throw stepError('The import did not finish. See the import card above, then press Connect again.', 'local pull: connect import', 'task ' + state.task.status);
+      return state;
+    });
+  }
+  function runImport() {
+    setStatus('Importing public content from ' + host + '… Keep this page open.');
+    return importRequest('status').then(function (data) {
+      if (data.status !== 'ok') throw stepError(data.error || 'The import could not start.', 'local pull: connect import', 'status refused');
+      if (data.state.busy) return null;
+      saveStage('import', { imported: true });
+      return importRequest(data.state.pending ? 'resume' : 'import').then(function (queued) {
+        if (queued.status !== 'ok') throw stepError(queued.error || 'The import could not start.', 'local pull: connect import', 'queue refused');
+      });
+    }).then(function () { return waitForImport(Date.now()); });
+  }
+
+  function trustAll(keys) {
+    keys.sort(function (a, b) { return (b.own ? 1 : 0) - (a.own ? 1 : 0); });
+    return keys.reduce(function (chain, key, index) {
+      return chain.then(function () {
+        setStatus('Trusting ' + (index + 1) + ' of ' + keys.length + ' keys that ' + host + ' approves…');
+        return relay({ action: 'trust', identity_id: currentState.identity_id, keys: JSON.stringify([key.identity_id]) });
+      });
+    }, Promise.resolve());
+  }
+
+  function connectedState() {
+    return relay({ action: 'key_status', public_key: stored('forum_pki_public_key') }).then(function (state) {
+      currentState = state;
+      if (!state.registered || !state.approved) {
+        throw stepError(host + ' has not approved this key. Connect from a browser where you read your messages on ' + host + '.',
+          'local pull: connect key_status', state.registered ? 'not approved on the source' : 'not registered on the source');
+      }
+      if (state.source_username && state.local_username && state.source_username.toLowerCase() !== state.local_username.toLowerCase()) {
+        var mismatch = stepError(host + ' has this key as "' + state.source_username + '", this clone as "' + state.local_username + '".',
+          'local pull: connect key_status', 'username on the source differs from this clone');
+        mismatch.details.source_username = state.source_username;
+        mismatch.details.local_username = state.local_username;
+        throw mismatch;
+      }
+      return state;
+    });
+  }
+
+  // stage: import → pull → trust → saved → done. "imported" stops a second import in one run.
+  function runConnect(saved) {
+    var imported = Boolean(saved && saved.imported);
+    var total = { added: 0, existing: 0, mismatched: [], transfers_added: 0, transfers_mismatched: 0, read_marked: 0 };
+    steps.hidden = true;
+    var resumeImport = saved && saved.stage === 'import' ? waitForImport(Date.now()) : Promise.resolve();
+    return resumeImport.then(connectedState).then(function (state) {
+      if (state.locally_known || imported) return state;
+      imported = true;
+      return runImport().then(connectedState);
+    }).then(function (state) {
+      if (!state.locally_known) throw stepError('The import finished, but this clone still does not know this key.', 'local pull: connect import', 'key not in the imported profiles');
+      saveStage('pull', { imported: imported });
+      setStatus('Pulling your messages from ' + host + '… Keep this page open.');
+      return pullOnce(total);
+    }).then(function () {
+      saveStage('trust', { imported: imported });
+      setStatus('Checking which keys signed your mail…');
+      return relay({ action: 'trust_candidates', identity_id: currentState.identity_id }).then(function (candidates) {
+        if (!candidates.missing.length || imported) return candidates;
+        // Someone new wrote to you since the last import: import once more, then ask again.
+        imported = true;
+        return runImport().then(function () {
+          return relay({ action: 'trust_candidates', identity_id: currentState.identity_id });
+        });
+      });
+    }).then(function (candidates) {
+      return trustAll(candidates.keys).then(function () { return candidates; });
+    }).then(function (candidates) {
+      saveStage('saved', { imported: imported });
+      return relay({ action: 'saved_copies' }).then(function (saved) { return { candidates: candidates, saved: saved }; });
+    }).then(function (result) {
+      clearStage();
+      var notes = [];
+      if (result.candidates.missing.length) notes.push(result.candidates.missing.length + ' sender key(s) are not in this clone yet, so their messages stay unreadable');
+      if (!result.saved.saved_copies) notes.push('saved copies are off by ' + (result.saved.overridden_by === 'private-config' ? 'private config' : 'the environment') + ', so Messages decrypts on every visit');
+      summaryNode.hidden = false;
+      summaryNode.textContent = 'Pulled: ' + summaryText(total);
+      setStatus('Connected. Open Messages to read your mail.' + (notes.length ? ' Note: ' + notes.join('; ') + '.' : ''));
+      root.dispatchEvent(new CustomEvent('local-pull:done'));
+      return result;
+    });
+  }
+
+  function connectFailed(error) {
+    fallback.hidden = true;
+    setStatus(error.message + (/Press Connect|Nothing changed/.test(error.message) ? '' : ' Press Connect to continue.'), 'error', error);
+  }
+
   connectButton.addEventListener('click', function () {
     if (connectButton.getAttribute('aria-disabled') === 'true') return;
     connectButton.setAttribute('aria-disabled', 'true');
     connectButton.setAttribute('aria-busy', 'true');
-    connect().then(function () {
+    // A key already handed over and stage saved: continue without asking for the key again.
+    var saved = savedStage();
+    var keyReady = saved && stored('forum_pki_private_key') ? Promise.resolve() : connect().then(function () {
       root.dispatchEvent(new CustomEvent('local-pull:connected'));
-      setStatus('Connected.');
-      return refresh();
-    }).catch(function (error) {
-      fallback.hidden = true;
-      setStatus(error.message, 'error', error);
-    }).then(function () {
+      saveStage('start');
+    });
+    keyReady.then(function () { return runConnect(savedStage()); }).catch(connectFailed).then(function () {
       connectButton.removeAttribute('aria-disabled');
       connectButton.removeAttribute('aria-busy');
     });
   });
 
-  refresh();
+  var resumed = savedStage();
+  if (resumed && stored('forum_pki_private_key')) {
+    connectButton.setAttribute('aria-disabled', 'true');
+    connectButton.setAttribute('aria-busy', 'true');
+    updateHost();
+    setStatus('Continuing Connect…');
+    runConnect(resumed).catch(connectFailed).then(function () {
+      connectButton.removeAttribute('aria-disabled');
+      connectButton.removeAttribute('aria-busy');
+    });
+  } else {
+    refresh();
+  }
 })();

@@ -54,3 +54,28 @@ Branch `feature/local_pull_simple` from `origin/main` `fd500820`. Planning commi
 - Notes:
   - The Firefox browser for Playwright had to be installed in the workspace (`npx playwright install firefox`).
   - Retrospective stage-work assessment: **0.20** (the pre-existing backup-dialog bug added time).
+
+## Stage 3 - Connect runs the rest
+
+**Original estimate: 0.25** (unchanged)
+
+- Changes:
+  - After the key is installed, Connect runs each remaining step in turn with its own status line:
+    1. `key_status`, which requires the key to be registered and approved on the source and the usernames to agree;
+    2. an import through `/local/`'s JSON endpoint (`status`, then `import` or `resume`, then polled), **only if this clone does not know the key yet**;
+    3. `pull`;
+    4. `trust_candidates`, then one `trust` per key, this browser's key first, with no list shown;
+    5. `saved_copies`.
+  - If senders' keys are missing and no import ran in this pass, it imports once more and asks again.
+  - The stage (`start`, `import`, `pull`, `trust`, `saved`) is kept in `sessionStorage` (`forum-local-connect`, same source, 30-minute limit). On load, a saved stage resumes without the popup, waiting for a running import first, so `import_control.js`'s reload falls in the middle harmlessly. A failure keeps the stage, so pressing Connect again continues.
+  - New relay action `saved_copies`: it turns on `FORUM_PRIVATE_MESSAGE_CACHE_ENABLED` with `LocalWriteService::setFeatureFlag()`. If the value comes from the environment or private config, it reports `overridden_by` and changes nothing. Connect then says Messages will decrypt on every visit.
+- Verification:
+  - New `LocalDevelopmentImportTest::testSavedCopiesTurnsOnTheCacheFlagOnceAndReportsAnOverride`: passed. It checks the first call writes the record, the second writes nothing, and `FORUM_PRIVATE_MESSAGE_CACHE_ENABLED=false` in the environment is reported as `overridden_by: environment`.
+  - `key_handoff.mjs` still passes.
+  - Smoke set plus `LocalDevelopmentImportTest`: 503 run, 503 passed.
+  - The two-instance browser run comes in Stage 5, as planned.
+- Notes:
+  - **Deviation:** the pull runs before trust, not after. `trust_candidates` lists the keys that signed pulled mail, so it is only complete after the pull. The pull itself needs only that this clone knows the key.
+  - **Deviation:** the import runs only when needed, instead of on every Connect. A full import of zenmemes.com takes minutes, and a known key with no missing senders needs none.
+  - The old Pull button still runs verify/confirm; Stage 4 removes them.
+  - Retrospective stage-work assessment: **0.25**.

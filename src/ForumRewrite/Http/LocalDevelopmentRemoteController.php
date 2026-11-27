@@ -7,6 +7,7 @@ namespace ForumRewrite\Http;
 use ForumRewrite\Import\InstanceSourceResolver;
 use ForumRewrite\ReadModel\ProfileRepository;
 use ForumRewrite\Security\OpenPgpKeyInspector;
+use ForumRewrite\Support\FeatureFlags\FeatureFlagRegistry;
 use ForumRewrite\Support\LocalDevelopmentImport;
 use ForumRewrite\Support\LocalDevelopmentRemote;
 use InvalidArgumentException;
@@ -54,6 +55,7 @@ final class LocalDevelopmentRemoteController
                 'trust' => $this->trust($remote),
                 'verify_list' => $this->verifyList(),
                 'confirm' => $this->confirm($remote),
+                'saved_copies' => $this->savedCopies(),
                 default => throw new InvalidArgumentException('Unknown action.'),
             };
             $this->send(['status' => 'ok'] + $result + ['source' => $remote->source()], 200);
@@ -236,6 +238,26 @@ final class LocalDevelopmentRemoteController
             $sync->acknowledge($account, $target, $chunk);
         }
         return ['confirmed' => $confirmed];
+    }
+
+    /**
+     * Turns on saved message copies in this clone, so Messages opens pulled mail without
+     * decrypting it again. A value set by the environment or private config is reported, never changed.
+     *
+     * @return array{saved_copies:bool,changed:bool,overridden_by:?string}
+     */
+    private function savedCopies(): array
+    {
+        $key = FeatureFlagRegistry::PRIVATE_MESSAGE_CACHE_ENABLED;
+        $state = $this->routes->featureFlags()->evaluate($key);
+        if (in_array($state->source, ['environment', 'private-config'], true)) {
+            return ['saved_copies' => $state->effectiveValue, 'changed' => false, 'overridden_by' => $state->source];
+        }
+        if ($state->effectiveValue) {
+            return ['saved_copies' => true, 'changed' => false, 'overridden_by' => null];
+        }
+        $result = $this->routes->writer()->setFeatureFlag(['key' => $key, 'value' => true]);
+        return ['saved_copies' => true, 'changed' => ($result['wrote_record'] ?? 'yes') !== 'no', 'overridden_by' => null];
     }
 
     /** @return array{0:string,1:string,2:string} account, target fingerprint and identity ID of an approved local key */
