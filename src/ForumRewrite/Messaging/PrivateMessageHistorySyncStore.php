@@ -245,21 +245,21 @@ final class PrivateMessageHistorySyncStore
     }
 
     /**
-     * Transfers whose destination is this account, for the given messages. Each carries
+     * Transfers whose destination is this account (and, when given, this target key), for the given messages. Each carries
      * only the items for those messages; a transfer spanning pages repeats on each page.
      *
      * @param list<string> $messageIds
      * @return list<array{transfer_id:string,source:string,target:string,ciphertext:string,items:list<array{message_id:string,digest:string}>}>
      */
-    public function transfersFor(string $account, array $messageIds): array
+    public function transfersFor(string $account, array $messageIds, ?string $target = null): array
     {
         if ($messageIds === []) return [];
         $marks = implode(',', array_fill(0, count($messageIds), '?'));
         $q = $this->pdo->prepare("SELECT t.transfer_id, t.source, t.target, t.ciphertext, i.message_id, i.digest
             FROM history_sync_items i JOIN history_sync_transfers t ON t.transfer_id = i.transfer_id
-            WHERE i.account = ? AND t.account = i.account AND i.message_id IN ($marks)
+            WHERE i.account = ? AND t.account = i.account AND i.message_id IN ($marks)" . ($target === null ? '' : ' AND t.target = ?') . "
             ORDER BY t.transfer_id, i.message_id");
-        $q->execute(array_merge([$account], array_values($messageIds)));
+        $q->execute(array_merge([$account], array_values($messageIds), $target === null ? [] : [$target]));
         $transfers = [];
         foreach ($q->fetchAll() as $row) {
             $id = $row['transfer_id'];

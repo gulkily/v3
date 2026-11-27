@@ -8,7 +8,7 @@ Effort study: `railspike-effort` / `v3/export_own_key_transfers`; host ledger [e
 
 **Cycle estimate: 0.10**
 
-Status: planned; next permitted action: implement.
+Status: implemented, PR open; next permitted action: maintainer merge, deploy, then press Pull again.
 
 ## Original request
 
@@ -47,5 +47,30 @@ Extend `transfersFor()` with a target filter. The target comes from the session'
 ## Study checkpoint
 
 Intake 2026-11-27T19:20Z, scope v1, R1, P2 standing enrollment; parent `v3/export_readable_json`. Claude, single exposed rater; diagnosed before rating. **0.10 projected total.**
+
+*— Claude · 2026-11-27 UTC · Model: claude-opus-5-5*
+
+## Changes
+
+Planning commit `3958296d`.
+
+- `PrivateMessageHistorySyncStore::transfersFor()` takes an optional target. `PrivateMessageMailboxService::export()` passes the signed-in key's fingerprint, taken from the session's `identity_id`.
+- [Participant mailbox export](../../concepts/participant_mailbox_export.md) says only the signed-in key's transfers are included.
+
+## Verification
+
+- `./v3 test --smoke PrivateMessageExportTest LocalMessagePullTest LocalDevelopmentImportTest PrivateMessageHistorySyncTest`: 535 run, 535 passed. The full suite was not run.
+  - The export test adds a transfer to another of Alice's keys, which must not appear, and checks that every exported transfer targets the signed-in key.
+  - The pull test's transfer now targets the signed-in key.
+- `node tests/browser/local_message_pull.mjs`: passed. With real keys the pull still verifies, confirms and reads all 8 messages.
+- **Unverified:** the reported failure on Ilya's account. It needs a pull after deploy.
+
+## Outcome
+
+Delivered as planned. Completion commit pending; PR to follow.
+
+## Study closeout
+
+2026-11-27T19:35Z: completion, acceptance pending. Retrospective **0.10**.
 
 *— Claude · 2026-11-27 UTC · Model: claude-opus-5-5*
