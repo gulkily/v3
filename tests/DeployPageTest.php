@@ -281,6 +281,81 @@ PHP;
         $this->runScript($script, [$base, $commits[0], $commits[1], $commits[7]]);
     }
 
+    public function testBranchOffersReturnToMainThroughAConfirmation(): void
+    {
+        $base = sys_get_temp_dir() . '/deploy-return-' . bin2hex(random_bytes(6));
+        mkdir($base, 0777, true);
+        $git = static fn (string $dir, string ...$args): array => ['git', '-c', 'user.name=Ada', '-c', 'user.email=a@example.invalid', '-C', $dir, ...$args];
+        $this->run(['git', 'init', '-q', '--bare', '-b', 'main', $base . '/remote.git']);
+        $this->run(['git', 'init', '-q', '-b', 'main', $base . '/seed']);
+        file_put_contents($base . '/seed/.gitignore', "state/\n");
+        file_put_contents($base . '/seed/a.txt', "a\n");
+        $this->run($git($base . '/seed', 'add', '.'));
+        $this->run($git($base . '/seed', 'commit', '-q', '-m', 'initial'));
+        $this->run($git($base . '/seed', 'remote', 'add', 'origin', $base . '/remote.git'));
+        $this->run($git($base . '/seed', 'push', '-q', 'origin', 'main'));
+        $this->run(['git', 'clone', '-q', $base . '/remote.git', $base . '/app']);
+        $this->run($git($base . '/app', 'checkout', '-q', '-b', 'hotfix/live'));
+        file_put_contents($base . '/app/fix.txt', "fix\n");
+        $this->run($git($base . '/app', 'add', 'fix.txt'));
+        $this->run($git($base . '/app', 'commit', '-q', '-m', 'Unmerged <live> fix'));
+        file_put_contents($base . '/seed/b.txt', "b\n");
+        $this->run($git($base . '/seed', 'add', '.'));
+        $this->run($git($base . '/seed', 'commit', '-q', '-m', 'upstream'));
+        $this->run($git($base . '/seed', 'push', '-q', 'origin', 'main'));
+        $this->run($git($base . '/app', 'fetch', '-q', 'origin'));
+        $remote = trim($this->capture(['git', '-C', $base . '/seed', 'rev-parse', 'HEAD']));
+
+        $script = <<<'PHP'
+require $argv[1] . '/autoload.php';
+require $argv[1] . '/tests/Support/TestViewerSession.php';
+
+use ForumRewrite\Application;
+use ForumRewrite\Deploy\AppUpdate;
+use ForumRewrite\Http\DeployController;
+
+[$base, $remote] = array_slice($argv, 4);
+putenv('FORUM_TASK_QUEUE_DATABASE_PATH=' . $base . '/missing/tasks.sqlite3');
+$_COOKIE = [];
+TestViewerSession::signIn($argv[3]);
+$_SERVER = array_merge($_SERVER, ['HTTP_HOST' => 'forum.test', 'HTTP_SEC_FETCH_SITE' => 'same-origin']);
+$application = new Application($argv[1], $argv[2], $base . '/index.sqlite3');
+ob_start();
+$application->handle('GET', '/threads/');
+ob_end_clean();
+$routeServices = (fn () => $this->routeServices())->call($application);
+$update = new AppUpdate($base . '/app', null, static fn (): array => ['status' => 'current', 'message' => '']);
+$controller = new DeployController($routeServices, $update, $base . '/missing/tasks.sqlite3');
+$branch = static fn (): string => trim((string) shell_exec('git -C ' . escapeshellarg($base . '/app') . ' symbolic-ref --short HEAD'));
+$post = static function (array $fields) use ($controller): string {
+    $_POST = $fields;
+    ob_start();
+    $controller->submit([]);
+    return (string) ob_get_clean();
+};
+
+$page = $controller->render();
+if (!str_contains($page, 'value="return_preview"')) throw new RuntimeException('A branch other than main offers Return to main.');
+if (str_contains($page, 'value="return_to_main"')) throw new RuntimeException('No confirmation before it is asked for.');
+
+$confirm = $post(['action' => 'return_preview']);
+foreach (['Return to main from <code>hotfix/live</code>?', 'These commits stop running.', '1 commit not on origin/main', 'Unmerged &lt;live&gt; fix', 'value="return_to_main"', '>Cancel</a>'] as $needle) {
+    if (!str_contains($confirm, $needle)) throw new RuntimeException('Confirmation missing: ' . $needle);
+}
+if ($branch() !== 'hotfix/live') throw new RuntimeException('A preview must not move the checkout.');
+
+$done = $post(['action' => 'return_to_main']);
+if ($branch() !== 'main') throw new RuntimeException('Return to main did not switch: ' . substr($done, 0, 300));
+if (trim((string) shell_exec('git -C ' . escapeshellarg($base . '/app') . ' rev-parse HEAD')) !== $remote) throw new RuntimeException('Not at origin/main.');
+$after = $controller->render();
+foreach (['returned to main ', '<strong>returned</strong>'] as $needle) {
+    if (!str_contains($after, $needle)) throw new RuntimeException('Page after return missing: ' . $needle);
+}
+if (str_contains($after, 'value="return_preview"')) throw new RuntimeException('On main there is nothing to return from.');
+PHP;
+        $this->runScript($script, [$base, $remote]);
+    }
+
     public function testActionsRequireSameOriginOperatorSession(): void
     {
         $same = ['HTTP_SEC_FETCH_SITE' => 'same-origin', 'HTTP_ORIGIN' => 'http://forum.test'];
@@ -293,7 +368,7 @@ PHP;
             'no origin evidence' => [self::OPERATOR, [], null],
         ];
         foreach ($refused as $name => [$identity, $server, $hint]) {
-            foreach (['queue', 'rollback', 'rollback_preview'] as $action) {
+            foreach (['queue', 'rollback', 'rollback_preview', 'return_preview', 'return_to_main'] as $action) {
                 $result = $this->postAction($identity, $server, $action, $hint);
                 assertSame('error', $result['status'] ?? null, "Deploy action {$action} allowed for {$name}");
             }

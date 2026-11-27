@@ -22,6 +22,7 @@ $stat = $s['incoming_stat'] ?? null;
 $queuedAt = ($task['status'] ?? null) === 'queued' ? (string) ($task['requested_at'] ?? '') : '';
 $versions = $deployVersions ?? [];
 $preview = $rollbackPreview ?? null;
+$returning = $returnPreview ?? null;
 $commitCode = static function (string $sha) use ($e, $commitLink, $commitLinkBase): string {
     $code = '<code>' . $e(substr($sha, 0, 8)) . '</code>';
 
@@ -35,6 +36,33 @@ $workerLabels = ['fresh' => 'running normally', 'running' => 'running now', 'sta
 <?php if (!$s['is_checkout']): ?>
     <p>This application directory is not a Git checkout.</p>
 <?php else: ?>
+<?php if ($returning !== null && $canDeploy): ?>
+<?php $stopping = count($returning['commits']) + (int) $returning['more']; ?>
+    <form method="post" action="/tools/deploy/" class="deploy-rollback">
+      <h2>Return to main from <code><?= $e($returning['branch']) ?></code>?</h2>
+<?php if ($stopping > 0): ?>
+      <p><strong>These commits stop running.</strong> They stay on the server in <code><?= $e($returning['branch']) ?></code>.</p>
+      <details class="deploy-incoming"<?= $stopping <= 5 ? ' open' : '' ?>>
+        <summary><?= $e($stopping . ' commit' . ($stopping === 1 ? '' : 's') . ' not on origin/main') ?></summary>
+        <ol>
+<?php foreach ($returning['commits'] as $c): ?>
+          <li><?= $commitCode($c['commit']) ?> <?= $e($c['subject']) ?> <span class="meta"><?= $e($c['author']) ?>, <?= $e($c['date']) ?></span></li>
+<?php endforeach; ?>
+        </ol>
+<?php if ($returning['more'] > 0): ?>
+        <p class="meta">and <?= $e((string) $returning['more']) ?> more</p>
+<?php endif; ?>
+      </details>
+<?php endif; ?>
+<?php if ($returning['backup']): ?>
+      <p>The server's <code>main</code> has commits not on origin/main; they are kept in a <code><?= $e(\ForumRewrite\Deploy\AppUpdate::MAIN_BACKUP_PREFIX) ?>…</code> branch.</p>
+<?php endif; ?>
+      <div class="deploy-actions">
+        <button type="submit" name="action" value="return_to_main" class="deploy-actions__primary">Return to main</button>
+        <a href="/tools/deploy/">Cancel</a>
+      </div>
+    </form>
+<?php endif; ?>
 <?php if ($preview !== null && $canDeploy): ?>
 <?php $undone = count($preview['commits']) + (int) $preview['more']; ?>
     <form method="post" action="/tools/deploy/" class="deploy-rollback">
@@ -68,7 +96,7 @@ $workerLabels = ['fresh' => 'running normally', 'running' => 'running now', 'sta
         </tr>
         <tr>
           <th scope="row">Branch</th>
-          <td><code><?= $e($s['branch'] ?? 'detached') ?></code></td>
+          <td><code><?= $e($s['branch'] ?? 'detached') ?></code><?php if ($canDeploy && ($s['branch'] ?? null) !== 'main' && $returning === null): ?> <form method="post" action="/tools/deploy/" class="deploy-branch-return"><button type="submit" name="action" value="return_preview" class="deploy-actions__secondary">Return to main</button></form><?php endif; ?></td>
         </tr>
 <?php if (($s['local_changes'] ?? 0) > 0): ?>
         <tr>
@@ -168,7 +196,7 @@ $summary = implode(' · ', $parts);
 $versionRow = static function (array $v) use ($e, $commitCode, $canDeploy): string {
     $subject = preg_replace('/^Merge pull request (#\d+) from [^\/\s]+\/(\S+)/', '$1 $2', $v['subject']) ?? $v['subject'];
     $at = preg_match('/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/', $v['deployed_at'], $m) === 1 ? $m[1] . ' ' . $m[2] : $v['deployed_at'];
-    $when = $v['action'] === 'earlier' ? 'before the first recorded deploy' : ($v['action'] === 'rollback' ? 'rolled back ' : '') . $at;
+    $when = $v['action'] === 'earlier' ? 'before the first recorded deploy' : ($v['action'] === 'rollback' ? 'rolled back ' : ($v['action'] === 'return' ? 'returned to main ' : '')) . $at;
     $row = '      <li><div class="deploy-history__text"><span class="deploy-history__subject" title="' . $e($v['subject']) . '">' . $commitCode($v['commit']) . ' ' . $e($subject) . '</span>'
         . '<span class="meta">' . $e($when) . ($v['running'] ? ' · <strong>running</strong>' : '') . '</span></div>';
     if ($v['can_roll_back'] && $canDeploy) {

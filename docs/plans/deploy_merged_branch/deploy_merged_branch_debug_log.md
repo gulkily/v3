@@ -18,3 +18,22 @@
 ### Uncertain assessments
 
 - A bug report with screenshots was read as one-shot authority, as with earlier deploy reports. Switching a merged branch back to `main` changes a safety refusal; it is limited to branches fully contained in `origin/main`, which the maintainer may want to confirm.
+
+## 2026-11-27 UTC — one-shot scope change closeout (Return to main)
+
+### Necessary/useful instructions
+
+- One-shot "Resumption and scope changes": appending the changed scope and the maintainer's words before executing kept the record honest about two authorizations on one branch. Retain.
+- Host `AGENTS.md`, follow-up changes after a PR: checked PR #443 was still open before pushing to its branch. Retain.
+
+### Redundant/unnecessary instructions
+
+- No supported findings.
+
+### Inapplicable instructions
+
+- Navigation icons, migrations: none touched.
+
+### Uncertain assessments
+
+- Extending the open PR rather than a new cycle: chosen because the button builds on the unmerged AppUpdate change; a stacked PR would also have worked.

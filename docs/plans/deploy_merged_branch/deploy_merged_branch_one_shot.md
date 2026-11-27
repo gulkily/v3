@@ -6,9 +6,9 @@ Debug mode: enabled
 
 Effort study: `railspike-effort` / `v3/deploy_merged_branch`; host ledger [deploy_merged_branch.md](../effort_ledger/deploy_merged_branch.md). Standing P2 enrollment. Extended estimates: disabled.
 
-**Cycle estimate: 0.12**
+**Cycle estimate: 0.12; revised 0.25 after the Return to main scope change**
 
-Status: scope extended 2026-11-27 (Return to main); implementing on the same open branch.
+Status: implemented, PR #443 open; next permitted action: maintainer returns the server to `main` over SSH once, merges, and deploys.
 
 ## Original request
 
@@ -53,6 +53,7 @@ Starting revision and branch: `83d6798f`, `fix/deploy-merged-branch`. Planning c
 
 - 2026-11-27 UTC, intake and entry: **0.12**. Claude, single exposed rater. R1 not reverified this session.
 - 2026-11-27 UTC, closeout: retrospective **0.12**. Same rater.
+- 2026-11-27 UTC, scope change (Return to main) and closeout: revised **0.25**. Same rater.
 
 ## Outcome
 
@@ -89,5 +90,20 @@ Added outcome:
 Reuse: `moveKeepingLocalChanges` (gains an optional restore closure, since a branch switch restores by checkout, not `reset --hard`), `record()`, `commitList()`, the rollback confirmation markup and plain-form flow (no script change), and `.deploy-rollback` styles.
 
 Risk: undoing a live hotfix. Mitigated by the confirmation listing the commits that stop running and by keeping the branch. Not authorized: deleting branches, queued (task worker) mode for this action.
+
+— Claude · 2026-11-27 UTC · Model: claude-opus-5-5
+
+### Return to main: outcome
+
+- `AppUpdate::returnToMainPreview()` (last fetch only) and `returnToMain()`: lock, fetch, save `main-before-return-<UTC time>` when the server's `main` has commits `origin/main` lacks, then `git checkout -B main origin/main` through `moveKeepingLocalChanges`, whose failure path now takes an optional closure that goes back by `git checkout --force <branch>` (or `--detach <commit>`). Outcome `returned`, history action `return`, shown as "returned to main".
+- Tools → Deploy: a Return to main button beside the branch name when it is not `main`; it leads to a confirmation listing the commits that stop running (plain form, as Roll back). `./v3 deploy --return-to-main` prints `Stops-Running:` lines, then returns.
+- The `wrong_branch` refusals now name Return to main instead of "resolve over SSH". The automatic merged-branch switch's private method is now `switchMergedBranchToMain`.
+
+### Return to main: verification
+
+- Passed: `./v3 test --smoke AppUpdateTest DeployPageTest` (551 run, 551 passed). New: return from an unmerged branch (branch kept, local edit kept, history `return`, then `on_main` refusal); server `main` with its own commit saved to one backup branch; a conflicting local edit leaves the checkout on the branch with the edit; the page offers the button off `main`, confirms with the commit list, switches, then shows "returned to main" and no button; both new actions refused without a same-origin operator session.
+- Passed by hand: `php scripts/deploy.php` then `--return-to-main` on a scratch checkout (refused with the new message, then returned, exit 0).
+- Passed, headless Chrome at 375px with the real stylesheets in Gloss, Word97, Bubblegum and Underground: the branch row and the confirmation fit without overflow.
+- Not verified: on production. Not run: the full suite.
 
 — Claude · 2026-11-27 UTC · Model: claude-opus-5-5

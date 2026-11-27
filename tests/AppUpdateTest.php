@@ -685,6 +685,77 @@ final class AppUpdateTest
         assertSame('main', trim($this->git($app, ['symbolic-ref', '--short', 'HEAD'])));
     }
 
+    public function testReturnToMainLeavesAnUnmergedBranchAndKeepsIt(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $remote = $this->pushCommit($seed, 'remote');
+        $this->git($app, ['checkout', '-q', '-b', 'hotfix']);
+        file_put_contents($app . '/hotfix.txt', "unmerged\n");
+        $this->git($app, ['add', 'hotfix.txt']);
+        $this->git($app, ['commit', '-q', '-m', 'unmerged hotfix']);
+        $hotfix = $this->head($app);
+        file_put_contents($app . '/README.md', "app\nserver edit\n");
+        $this->git($app, ['fetch', '-q', 'origin']);
+        $update = new AppUpdate($app, null, static fn (): array => ['status' => 'current', 'message' => '']);
+
+        $preview = $update->returnToMainPreview();
+        assertSame('hotfix', $preview['branch']);
+        assertSame(['unmerged hotfix'], array_column($preview['commits'], 'subject'));
+        assertSame(false, $preview['backup']);
+        assertSame($hotfix, $this->head($app));
+
+        $result = $update->returnToMain('cli', AppUpdate::MODE_CLI);
+
+        assertSame('returned', $result['outcome'], $result['message']);
+        assertSame($remote, $this->head($app));
+        assertSame('main', trim($this->git($app, ['symbolic-ref', '--short', 'HEAD'])));
+        assertSame($hotfix, trim($this->git($app, ['rev-parse', 'refs/heads/hotfix'])));
+        assertSame("app\nserver edit\n", file_get_contents($app . '/README.md'));
+        assertTrue(!is_file($app . '/hotfix.txt'));
+        assertSame('return', $update->history()[0]['action']);
+        assertSame('on_main', $update->returnToMain('cli', AppUpdate::MODE_CLI)['reason']);
+    }
+
+    public function testReturnToMainSavesAServerMainWithItsOwnCommits(): void
+    {
+        [$app, $seed] = $this->fixture();
+        $remote = $this->pushCommit($seed, 'remote');
+        file_put_contents($app . '/local.txt', "server-only commit\n");
+        $this->git($app, ['add', 'local.txt']);
+        $this->git($app, ['commit', '-q', '-m', 'local']);
+        $localMain = $this->head($app);
+        $this->git($app, ['checkout', '-q', '-b', 'hotfix', 'HEAD~1']);
+        $update = new AppUpdate($app, null, static fn (): array => ['status' => 'current', 'message' => '']);
+
+        $result = $update->returnToMain('cli', AppUpdate::MODE_CLI);
+
+        assertSame('returned', $result['outcome'], $result['message']);
+        assertSame($remote, $this->head($app));
+        $backups = array_values(array_filter(explode("\n", trim($this->git($app, ['branch', '--format=%(refname:short)', '--list', AppUpdate::MAIN_BACKUP_PREFIX . '*'])))));
+        assertSame(1, count($backups));
+        assertSame($localMain, trim($this->git($app, ['rev-parse', $backups[0]])));
+        assertTrue(str_contains($result['message'], 'saved as ' . $backups[0]));
+    }
+
+    public function testReturnToMainThatConflictsWithALocalEditStaysOnTheBranch(): void
+    {
+        [$app, $seed] = $this->fixture();
+        file_put_contents($seed . '/README.md', "app\nupstream line\n");
+        $this->git($seed, ['commit', '-q', '-am', 'upstream readme']);
+        $this->git($seed, ['push', '-q', 'origin', 'main']);
+        $this->git($app, ['checkout', '-q', '-b', 'hotfix']);
+        $hotfix = $this->head($app);
+        file_put_contents($app . '/README.md', "app\nserver line\n");
+
+        $result = (new AppUpdate($app))->returnToMain('cli', AppUpdate::MODE_CLI);
+
+        assertSame('refused', $result['outcome'], $result['message']);
+        assertSame('local_changes_conflict', $result['reason']);
+        assertSame('hotfix', trim($this->git($app, ['symbolic-ref', '--short', 'HEAD'])));
+        assertSame($hotfix, $this->head($app));
+        assertSame("app\nserver line\n", file_get_contents($app . '/README.md'));
+    }
+
     public function testRefusesDivergedHistory(): void
     {
         [$app, $seed] = $this->fixture();
