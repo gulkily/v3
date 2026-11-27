@@ -212,6 +212,11 @@ final class Application
         }
         $this->ensureReadModel();
 
+        if ($path === '/local' && in_array($method, ['GET', 'HEAD'], true) && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {
+            $query = (string) parse_url($requestUri, PHP_URL_QUERY);
+            header('Location: /local/' . ($query === '' ? '' : '?' . $query), true, 301);
+            return;
+        }
         if ($path === '/local/remote' && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {
             (new \ForumRewrite\Http\LocalDevelopmentRemoteController($this->routeServices(), $this->localDevelopmentImport(),
                 pullFactory: fn (): \ForumRewrite\Support\LocalMessagePull => new \ForumRewrite\Support\LocalMessagePull(
