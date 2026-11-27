@@ -44,3 +44,18 @@
 
 **Uncertain assessments**
 - The "≤1 page" limit again: four stages with every required field run past a page.
+
+## 2026-11-27 UTC — Step 4
+
+**Necessary/useful instructions**
+- `step4_implementation_do.md`, Stage Boundary Protocol: committing per stage with the summary kept the screenshot findings (link color, block edges, full-width presets) attached to the stage that fixed them. Retain.
+- `step3_development_plan_do.md`, a stage that replays the known user's condition: led to running the browser check at the reported 375 by 667 size, rather than only the theme sweep. Retain.
+
+**Redundant/unnecessary instructions**
+- `step4_implementation_before.md`, "Do not add the ledger or summary to the planning commit" next to the effort section's "record the entry projection there": the order (commit, then summary, then entry projection) is right but takes two readings. Suggest one sentence listing the order. Clarify.
+
+**Inapplicable instructions**
+- Documentation-only verification at stage boundaries: this is an application change.
+
+**Uncertain assessments**
+- Whether adding `SupportWallTest` to the smoke set was expected. CONTRIBUTING asks for one fast test per new main path; it runs in about 0.01s.

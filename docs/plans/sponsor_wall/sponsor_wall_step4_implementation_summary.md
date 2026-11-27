@@ -6,7 +6,7 @@ Effort study: `railspike-effort` / `v3/sponsor_wall`; ledger `../effort_ledger/s
 
 Extended estimates: enabled
 
-Status: in progress on `feat/sponsor-wall`. Planning commit `6bbd94c`.
+Status: four stages complete on `feat/sponsor-wall` from `a542d1e`. Planning commit `6bbd94c`. Release check pending.
 
 **Cycle estimate: 0.60**
 
@@ -81,5 +81,30 @@ Step 4 entry: the Step 3 projection of 0.60 is reaffirmed, unchanged, before imp
   - The first screenshots stacked the presets one per row, because site.css makes every button full width. Fixed in `support.css`.
   - A visitor without a name still sees "Posting as guest · Choose a name". The prompt that requires a name is the next cycle.
 - Estimate details: original scope; slightly over for the failed-post replay, which needed a route intercept to make a real failure.
+
+*— Claude · 2026-11-27 UTC · Model: Claude Opus 5.5*
+
+## Stage 4 - Replay, documents and closeout
+
+**Original estimate: 0.10**
+
+**Retrospective: 0.10**
+
+- Changes:
+  - New concept entry [support wall](../../concepts/support_wall.md). The [pledge campaign](../../concepts/pledge_campaign.md) entry links to it.
+  - [Pledges checklist](../pledges_checklist.md): cycle 13 `sponsor_wall` with status and links, and cycle 14 `pledge_requires_name` (the guest username prompt) as next.
+  - `tests/smoke.txt`: `SupportWallTest` (about 0.01s) for the new main path.
+  - [Effort ledger](../effort_ledger/sponsor_wall.md), debug log, and this closeout.
+- Verification:
+  - The replay of the Step 2 fixture at 375 by 667, with and without script, is the first half of `tests/browser/support_wall.mjs` (Stage 3); it passed.
+  - `./v3 test --smoke SupportPageTest SupportWallTest PledgeCampaignTest GuestbookPageTest UsageNamesTest`: see the closeout. The full suite was not run.
+  - Concept paths checked against the files; `git diff --check`; whole-diff review against `origin/main`.
+- Notes: none.
+
+*— Claude · 2026-11-27 UTC · Model: Claude Opus 5.5*
+
+## Cycle retrospective
+
+**Retrospective: 0.60** (entry 0.60, no revisions). Stage retrospectives 0.12, 0.20, 0.18, 0.10, not summed. Delivered scope matches Step 3, with one refinement: a withdrawn pledge keeps its delivered squares, so the wall agrees with the total. Omissions: the guest username prompt (cycle 14, by Step 2's decision). Pending: the maintainer's review; posting the support thread and setting `supportThread` for zenmemes; the iPhone SE release check. Maintainer comfortable-fit judgment pending. Single exposed rater Claude (claude-opus-5-5), R1/P2; R1 hashes not re-verified.
 
 *— Claude · 2026-11-27 UTC · Model: Claude Opus 5.5*
