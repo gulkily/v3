@@ -7,14 +7,16 @@
  */
 ?>
 <section class="stack board-list music-page">
-  <article class="card music-share">
+  <article class="card inline-reply-composer compact-thread-compose music-share" data-compose-root data-pending-thread-position="after" data-unicode-authored-text="<?= $unicodeAuthoredTextEnabled ? '1' : '0' ?>" data-emoji-authored-text="<?= $emojiAuthoredTextEnabled ? '1' : '0' ?>">
+    <div class="inline-reply-expanded" data-inline-thread-compose data-inline-thread-expanded="0">
+        <p class="meta inline-reply-identity-status" data-role="compose-identity-status" hidden></p>
 <?= $indent($partial('partials/thread_compose_form.php', [
-    'compact' => false,
+    'compact' => true,
     'returnTo' => '/music/',
     'composeDraftScope' => 'music',
     'bodyPlaceholder' => 'Paste a link to a track',
-]), 2) ?>
-    <p class="meta" data-role="compose-identity-status" hidden></p>
+]), 4) ?>
+    </div>
   </article>
 <?php if ($paginationError !== null): ?>
   <p class="board-list__error" role="alert"><?= $e($paginationError) ?></p>

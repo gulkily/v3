@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/** Fast navigation and navbar copies: the layout's attributes and page scripts, rendered through Application in a child process. */
+/** Fast navigation, navbar copies and installed-app instant launch: the layout's attributes and page scripts, rendered through Application in a child process. */
 final class FastNavigationLayoutTest
 {
     public function testLayoutLoadsTheScriptAndAsksForPreloadOnlyWhenTheFlagIsOn(): void
@@ -44,9 +44,20 @@ try {
     expect(str_contains($copyOn, 'data-nav-cached-copy="1"'), 'copy flag on: attribute missing');
     expect(preg_match('~<script src="/assets/nav_cached_copy\.[0-9a-f]{12}\.js" defer></script>~', $copyOn) === 1, 'copy flag on: script missing');
     putenv('FORUM_NAV_CACHED_COPY_ENABLED=0');
+    putenv('FORUM_OWA_INSTANT_LAUNCH_ENABLED=0');
     $copyOff = page($argv[1], $argv[2], $databasePath, '/');
     expect(str_contains($copyOff, 'data-nav-cached-copy="0"'), 'copy flag off: copies not dropped');
+    expect(!str_contains($copyOff, 'data-owa-instant-launch'), 'both flags off: instant launch marked');
     expect(!str_contains($copyOff, '/assets/nav_cached_copy.'), 'copy flag off: script loaded');
+    expect(!str_contains($copyOff, 'name="page-version"'), 'both flags off: page version rendered');
+
+    // Installed app opens instantly reuses the copy script; the installed app turns copies on before paint.
+    putenv('FORUM_OWA_INSTANT_LAUNCH_ENABLED=1');
+    $instant = page($argv[1], $argv[2], $databasePath, '/');
+    expect(str_contains($instant, 'data-nav-cached-copy="0" data-owa-instant-launch="1"'), 'instant flag on: attributes wrong');
+    expect(preg_match('~<script src="/assets/nav_cached_copy\.[0-9a-f]{12}\.js" defer></script>~', $instant) === 1, 'instant flag on: script missing');
+    expect(str_contains($instant, "setAttribute('data-nav-cached-copy', '1')"), 'instant flag on: before-paint switch missing');
+    expect(str_contains($instant, 'rel="apple-touch-startup-image"') && str_contains($instant, '/assets/launch/launch-750x1334.png'), 'launch images missing');
 } finally {
     @unlink($databasePath);
 }

@@ -286,6 +286,11 @@
   transform: rotate(0.3deg) skewX(0.5deg);
 }
 
+/* Card transforms trap the menu panel in the post's stacking context. */
+:root[data-theme="zalgo"] .post-card:has(.post-more-actions[open]) {
+  z-index: 2;
+}
+
 :root[data-theme="zalgo"] .card::after {
   content: var(--zalgo-edge);
   content: var(--zalgo-edge) / "";

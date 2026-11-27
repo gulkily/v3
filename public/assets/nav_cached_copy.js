@@ -9,6 +9,15 @@
   if (!runtime || !runtime.offlineCachePrefix || !window.caches || !navigator.serviceWorker) return;
   var CACHE = runtime.offlineCachePrefix + "nav-copy";
   var PATHS_KEY = "/__nav_copy_paths__";
+  // Installed app opens instantly (FORUM_OWA_INSTANT_LAUNCH_ENABLED): the installed app
+  // writes this marker, which makes the helper treat every reader route like a navbar page.
+  var INSTANT_KEY = "/__instant_launch__";
+  var root = document.documentElement;
+  var instantFlag = root.getAttribute("data-owa-instant-launch") === "1";
+  var standalone = navigator.standalone === true
+    || (typeof window.matchMedia === "function" && window.matchMedia("(display-mode: standalone)").matches);
+  // In the installed app the layout turns this on before paint when the instant flag is on.
+  var navCopies = root.getAttribute("data-nav-cached-copy") === "1";
   var LINKS = ".site-header .nav > a.nav-link[href], .site-header .account-menu__more a[href]";
 
   function paths() {
@@ -24,10 +33,21 @@
   }
 
   function writePaths() {
-    var list = paths();
-    if (!list.length) return Promise.resolve();
-    return window.caches.open(CACHE).then(function (cache) {
-      return cache.put(new URL(PATHS_KEY, location.origin).href, new Response(list.join("\n"), { headers: { "Content-Type": "text/plain" } }));
+    var list = navCopies ? paths() : [];
+    var marker = instantFlag && standalone;
+    var url = function (key) { return new URL(key, location.origin).href; };
+    // Only clean-up left: never create the cache for it.
+    var opened = list.length || marker ? window.caches.open(CACHE)
+      : window.caches.has(CACHE).then(function (has) { return has ? window.caches.open(CACHE) : null; });
+    return opened.then(function (cache) {
+      if (!cache) return null;
+      var writes = [];
+      if (list.length) writes.push(cache.put(url(PATHS_KEY), new Response(list.join("\n"), { headers: { "Content-Type": "text/plain" } })));
+      if (!navCopies) writes.push(cache.delete(url(PATHS_KEY)));
+      if (marker) writes.push(cache.put(url(INSTANT_KEY), new Response("1", { headers: { "Content-Type": "text/plain" } })));
+      // A browser tab sharing storage with the app leaves the app's marker alone.
+      if (!instantFlag) writes.push(cache.delete(url(INSTANT_KEY)));
+      return Promise.all(writes);
     }).catch(function () {});
   }
 
@@ -48,6 +68,7 @@
   }
 
   writePaths();
+  if (!navCopies) return;
   askForFreshVersion();
   window.addEventListener("pageshow", function (event) { if (event.persisted) askForFreshVersion(); });
 })();

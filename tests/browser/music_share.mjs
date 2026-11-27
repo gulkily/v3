@@ -49,13 +49,16 @@ try {
   const writer = await open(true);
   await writer.page.goto(base + '/music/');
   await settled(writer.page);
-  const form = writer.page.locator('.music-share [data-compose-kind="thread"]');
+  const composer = writer.page.locator('.music-share');
+  const form = composer.locator('[data-compose-kind="thread"]');
+  assert.equal(await composer.locator('[data-inline-thread-compose]').getAttribute('data-inline-thread-expanded'), '0', 'starts as one line, like the Board');
   await form.getByRole('textbox', { name: 'Body' }).fill(link);
-  await form.getByRole('textbox', { name: 'Title' }).fill('DC3 - SEEK');
+  assert.equal(await composer.locator('[data-inline-thread-compose]').getAttribute('data-inline-thread-expanded'), '1', 'grows while in use');
   await form.getByRole('button', { name: 'Post', exact: true }).click();
   await writer.page.waitForURL(/\/music\/\?created_post_id=/, { timeout: 60000 });
+  const created = new URL(writer.page.url()).searchParams.get('created_post_id');
   const first = writer.page.locator('.music-tracks .thread-row').first();
-  assert.equal((await first.locator('.thread-row__title').textContent()).trim(), 'DC3 - SEEK');
+  assert.equal(await first.getAttribute('id'), 'post-' + created, 'the new track is first');
   assert.equal(await first.locator('.thread-row__player').count(), 1);
   const threadId = (await first.getAttribute('id')).replace('post-', '');
   const record = await (await fetch(base + '/api/get_post?post_id=' + threadId)).text();
@@ -78,11 +81,11 @@ try {
   const plain = await open(false);
   await plain.page.goto(base + '/music/');
   await plain.page.locator('.music-share textarea[name="body"]').fill('https://open.spotify.com/album/3LVR5at2HIWpbqFfV7Zzdj');
-  await plain.page.locator('.music-share .compose-form-actions > button[type="submit"]').click();
+  await plain.page.locator('.music-share button[type="submit"]').first().click();
   await plain.page.waitForURL(/\/music\/\?created_post_id=/, { timeout: 20000 });
   assert.equal(await plain.page.locator('.music-tracks .thread-row').first().locator('[data-provider="spotify"]').count(), 1);
   await plain.context.close();
 
-  console.log('PASS music share: paste and Post from /music/ at 390px with and without JavaScript, track first with its player and #music, no Music draft on the Board');
+  console.log('PASS music share: the Board-style one-line composer grows, paste and Post from /music/ at 390px with and without JavaScript, track first with its player and #music, no Music draft on the Board');
 } catch (error) { console.error(serverLog.slice(-3000)); throw error; }
 finally { await browser.close(); server.kill(); }

@@ -9,6 +9,7 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
+- [Zalgo post menu layering](zalgo_post_actions_layer/zalgo_post_actions_layer_one_shot.md) — keep the open post menu above Activity and reply cards.
 - [Merge About slot outage](merge_about_slot/merge_about_slot_one_shot.md) — restore startup after the About variant rename.
 - [Browser invitation expiry](invitation_expiry_runbook/invitation_expiry_runbook_one_shot.md) — correct the duration stated in the deployment runbook.
 - [Scrollbar gutter](scrollbar_gutter/scrollbar_gutter_one_shot.md) — Board and Recent no longer shift sideways when the scrollbar appears during load.
@@ -121,6 +122,7 @@ checklists, and proposals remain at the top level or in the collections below.
 [Push tap routing handoff](push_tap_routing_handoff.md) — notifications cycle 5: a tap opens the DM or reply, in an open window or offline.
 
 [Installed app reopens where you were](owa_resume/owa_resume_one_shot.md) — a fresh launch of the installed app at `/` returns to the page and scroll position from the last few hours; a notification tap still opens its own page.
+[Installed app opens instantly](owa_instant_launch/owa_instant_launch_one_shot.md) — in the installed app, the board, threads and tags open from the last kept copy while a fresh one loads; a page never opened gets the offline reader after 3 seconds of slow network; iPhone launch image.
 [Installed app name and fresh manifest](owa_app_title/owa_app_title_one_shot.md) — pages name the app in their own HTML for browsers that skip the manifest, and the manifest link carries its hash so a deploy replaces a cached copy; follow-up to `owa_start_url`.
 
 [Guestbook](guestbook/guestbook_step3_development_plan.md) — a `/guestbook/` page shows the guestbook thread's top-level replies as a paper book with numbered pages and a "Sign the book" form; the thread stays available as an ordinary thread.
@@ -754,3 +756,4 @@ and repair its navigation and affected references. See the
 - [System status Admin line matches its query](system_status_admins/system_status_admins_one_shot.md)
 - [MIT Rap Club music](mitrapclub_music/mitrapclub_music_step1_solution_assessment.md) — staged: a Music page on mitrapclub with a share box and playable #music tracks; fetched titles for every supported embed, first-line titles behind a flag.
 - [Deploy returns a merged branch to main](deploy_merged_branch/deploy_merged_branch_one_shot.md) — one-shot: Deploy now leaves a server branch already on origin/main instead of refusing; the header deploy message wraps on a phone.
+- [Music share box like the Board's](music_share_compact/music_share_compact_one_shot.md) — one-shot: /music/ loads the Board's styles and uses its one-line composer.
