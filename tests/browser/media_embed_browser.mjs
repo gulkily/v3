@@ -16,7 +16,7 @@ const root = await mkdtemp(join(tmpdir(), 'media-embed-browser-'));
 const env = { ...process.env, MEDIA_EMBED_BROWSER_ROOT: root, FORUM_INSTANCE_CONFIG_FILE: join(root, 'unused.php') };
 const fixture = spawnSync('php', [join(project, 'tests/Support/media_embed_browser_fixture.php'), root], { cwd: project, env, encoding: 'utf8' });
 assert.equal(fixture.status, 0, fixture.stderr);
-const { themes } = JSON.parse(fixture.stdout);
+const { themes, mitrapclubThemes } = JSON.parse(fixture.stdout);
 let flags = { cards: true, players: true, site: 'mitrapclub' };
 const setFlags = async changes => { flags = { ...flags, ...changes }; await writeFile(join(root, 'flags.json'), JSON.stringify(flags)); };
 await setFlags({});
@@ -78,20 +78,25 @@ try {
   assert.equal(playerRequests.length, 0, 'collapsed players must not navigate');
   assert(await page.locator('[data-provider="instagram"]:not(.media-embed-card--preview)').first().isVisible());
   for (const source of await page.locator('.media-embed-card__source a').all()) assert(await source.isVisible());
+  // One tap opens a player and asks it to start; it closes and silences any other.
   for (const details of await page.locator('details[data-media-embed-card]').all()) {
     await details.locator('summary').focus();
     await page.keyboard.press('Enter');
     await details.locator('iframe').waitFor({ state: 'visible' });
+    await page.waitForFunction(el => el.querySelector('iframe').getAttribute('src'), await details.elementHandle());
+    assert.equal(await page.locator('details[data-media-embed-card][open]').count(), 1, 'only one player open at a time');
+    assert.equal(await page.locator('details[data-media-embed-card]:not([open]) iframe[src]:not([src=""])').count(), 0, 'a closed player must not keep playing');
   }
-  await page.waitForFunction(() => [...document.querySelectorAll('iframe[data-media-embed-iframe]')].every(i => i.getAttribute('src')));
   await page.waitForTimeout(200);
   assert.equal(playerRequests.length, 20);
-  const requestsBeforeReopen = playerRequests.length;
+  assert(playerRequests.some(url => url.includes('youtube-nocookie.com/embed/') && url.includes('autoplay=1')), 'a tapped YouTube player starts');
   const firstSummary = page.locator('details[data-media-embed-card] summary').first();
   await firstSummary.click();
+  await page.waitForFunction(() => document.querySelector('details[data-media-embed-card] iframe').getAttribute('src'));
   await firstSummary.click();
-  await page.waitForTimeout(100);
-  assert.equal(playerRequests.length, requestsBeforeReopen, 'reopening must not reload a player');
+  await page.waitForFunction(() => document.querySelector('details[data-media-embed-card] iframe').getAttribute('src') === '');
+  await page.locator('details[data-media-embed-card]').evaluateAll(ds => ds.forEach(d => { d.open = true; }));
+  await page.waitForFunction(() => [...document.querySelectorAll('iframe[data-media-embed-iframe]')].every(i => i.getAttribute('src')));
   for (const iframe of await page.locator('iframe[data-media-embed-iframe]').all()) {
     const box = await iframe.boundingBox();
     assert(box.width <= 360 && box.width > 100, JSON.stringify(box));
@@ -101,7 +106,8 @@ try {
   for (const id of [spotify.thread_id, tiktok.thread_id]) {
     await page.goto(base + '/threads/' + id);
     assert.equal(await page.locator('details[data-media-embed-card]').count(), 1, 'bare URL body must remain visible');
-    assert.equal(await page.locator('[data-media-embed-warm-beacon]').count(), 0);
+    // Titles are fetched for every supported provider (mitrapclub_music), so an untitled bare link gets one beacon.
+    assert.equal(await page.locator('[data-media-embed-warm-beacon]').count(), 1);
     assert.notEqual(await page.getByRole('heading', { level: 1 }).innerText(), 'Untitled');
   }
   // A late lookup must not load a closed player or duplicate pending work.
@@ -172,10 +178,10 @@ try {
   await page.goto(base + '/');
   assert.equal(await page.locator('.qdb-news-item [data-media-embed-card]').count(), 12);
   for (const theme of themes) {
-    await setFlags({ site: ['chouse', 'qdb', 'mitrapclub'].includes(theme) ? theme : 'mitrapclub' });
+    await setFlags({ site: ['chouse', 'qdb', 'mitrapclub'].includes(theme) ? theme : mitrapclubThemes.includes(theme) ? 'mitrapclub' : 'zenmemes' });
     await context.addCookies([{ name: 'theme-hint', value: theme, url: base }]);
     await page.evaluate(theme => {
-      for (const site of ['mitrapclub', 'chouse', 'qdb']) localStorage.setItem('forum-' + site + '-theme', theme);
+      for (const site of ['mitrapclub', 'chouse', 'qdb', 'zenmemes']) localStorage.setItem('forum-' + site + '-theme', theme);
     }, theme);
     for (const width of [360, 1280]) {
       await page.setViewportSize({ width, height: 900 });
@@ -198,6 +204,9 @@ try {
           assert(src.includes(`/bgcol=${expectedPalette[0]}/linkcol=${expectedPalette[1]}/`), `${theme}: incorrect Bandcamp palette: ${src}`);
         }
       }
+      // Zalgo skews every card on purpose; on this test's very tall card the skew alone moves
+      // players sideways by many pixels, so measure layout overflow with the skew removed.
+      if (theme === 'zalgo') await page.addStyleTag({ content: ':root[data-theme="zalgo"] .card { transform: none !important; transition: none !important; }' });
       for (const iframe of await page.locator('iframe[data-media-embed-iframe]').all()) {
         const box = await iframe.boundingBox();
         assert(box.x >= -1 && box.x + box.width <= width + 1, `${theme} ${width}: ${JSON.stringify(box)}`);
@@ -226,11 +235,13 @@ try {
   await themedAlbum.locator('summary').click();
   await page.waitForFunction(() => document.querySelector('details[data-provider="bandcamp"] iframe').getAttribute('src')?.includes('/bgcol=333333/linkcol=d9e7ff/'));
   await darkNavigation;
-  const requestsAfterTheme = playerRequests.length;
+  // Closing stops a player, so reopening loads it again, in the same palette.
+  const darkSource = await themedAlbum.locator('iframe').getAttribute('src');
   await themedAlbum.locator('summary').click();
+  await page.waitForFunction(() => document.querySelector('details[data-provider="bandcamp"] iframe').getAttribute('src') === '');
   await themedAlbum.locator('summary').click();
-  await page.waitForTimeout(100);
-  assert.equal(playerRequests.length, requestsAfterTheme, 'unchanged palette reloaded a player');
+  await page.waitForFunction(() => document.querySelector('details[data-provider="bandcamp"] iframe').getAttribute('src'));
+  assert.equal(await themedAlbum.locator('iframe').getAttribute('src'), darkSource, 'reopening changed an unchanged palette');
   await selectTheme('auto');
   const autoLightSource = await themedAlbum.locator('iframe').getAttribute('src');
   await page.emulateMedia({ colorScheme: 'dark' });

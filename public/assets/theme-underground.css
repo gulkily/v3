@@ -24,6 +24,8 @@
   --ug-paper-light: #e7e5f4;
   --ug-blue: #2b2fd6;
   --ug-blue-deep: #1e21a8;
+  --embed-accent: var(--ug-blue);
+  --embed-accent-ink: #ffffff;
   --ug-graphite: #4a4959;
   --ug-card-edge: rgba(43, 47, 214, 0.16);
   --ug-card-shadow: rgba(31, 31, 85, 0.45);
@@ -89,6 +91,8 @@
   --ug-paper-light: #1b1c45;
   --ug-blue: #9a9dff;
   --ug-blue-deep: #c3c5ff;
+  --embed-accent: var(--ug-blue);
+  --embed-accent-ink: #121334;
   --ug-graphite: #aeacc8;
   --ug-card-edge: rgba(154, 157, 255, 0.22);
   --ug-card-shadow: rgba(0, 0, 0, 0.7);

@@ -30,4 +30,9 @@ foreach ([
 }
 (new \ForumRewrite\View\BandcampPlayerResolver($root, new \ForumRewrite\View\BandcampPagePlayerFetcher(static fn () => null)))
     ->resolve('https://artist.bandcamp.com/album/unavailable');
-echo json_encode(['themes' => array_column(\ForumRewrite\View\ThemeRegistry::all(), 'name')], JSON_THROW_ON_ERROR);
+// Each theme with a site that permits it: mitrapclub when it does, otherwise zenmemes.
+$sites = \ForumRewrite\SiteProfileRegistry::all();
+echo json_encode([
+    'themes' => array_column(\ForumRewrite\View\ThemeRegistry::all(), 'name'),
+    'mitrapclubThemes' => $sites['mitrapclub']['permittedThemes'],
+], JSON_THROW_ON_ERROR);

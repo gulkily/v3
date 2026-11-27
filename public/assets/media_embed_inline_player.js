@@ -45,18 +45,46 @@
     return source.replace(/\/bgcol=[0-9a-f]{6}\/linkcol=[0-9a-f]{6}\//i,
       "/bgcol=" + hex(background) + "/linkcol=" + hex(foreground) + "/");
   }
+  // A tap asks the player to start at once, where the provider honours that.
+  function withAutoplay(details, source) {
+    if (details.dataset.tapped !== "1") return source;
+    switch (details.dataset.provider) {
+      case "youtube": return source + (source.includes("?") ? "&" : "?") + "autoplay=1";
+      case "soundcloud": return source.replace("auto_play=false", "auto_play=true");
+      case "tiktok": return source.replace("autoplay=0", "autoplay=1");
+      default: return source;
+    }
+  }
+  // Opening a player by tap closes every other one, so two never play at once.
+  document.addEventListener(
+    "click",
+    (event) => {
+      const summary = event.target instanceof Element ? event.target.closest("summary") : null;
+      const details = summary?.parentElement;
+      if (!(details instanceof HTMLDetailsElement) || !details.hasAttribute("data-media-embed-card") || details.open) return;
+      details.dataset.tapped = "1";
+      for (const other of document.querySelectorAll("details[data-media-embed-card][open]")) {
+        if (other !== details) other.open = false;
+      }
+    },
+    true,
+  );
   document.addEventListener(
     "toggle",
     async (event) => {
       const details = event.target;
-      if (!(details instanceof HTMLDetailsElement) || !details.open) {
+      if (!(details instanceof HTMLDetailsElement) || !details.hasAttribute("data-media-embed-card")) return;
+      const iframe = details.querySelector("iframe[data-embed-src]");
+      if (!details.open) {
+        // Closing stops the sound: a hidden frame would keep playing.
+        if (iframe && iframe.getAttribute("src")) iframe.setAttribute("src", "");
+        delete details.dataset.tapped;
         return;
       }
-      const iframe = details.querySelector("iframe[data-embed-src]");
       if (!iframe || (iframe.getAttribute("src") && details.dataset.provider !== "bandcamp")) return;
       const load = () => {
         if (details.open) {
-          const source = themedBandcampSource(details, iframe.getAttribute("data-embed-src"));
+          const source = withAutoplay(details, themedBandcampSource(details, iframe.getAttribute("data-embed-src")));
           // Recolor only when expanded; never reload an open player on theme changes.
           if (iframe.getAttribute("src") !== source) iframe.setAttribute("src", source);
           iframe.hidden = false;

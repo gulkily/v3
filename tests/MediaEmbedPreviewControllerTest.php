@@ -39,6 +39,40 @@ final class MediaEmbedPreviewControllerTest
         }
     }
 
+    public function testPosterModeCopiesAYoutubePosterAndServesItFromHere(): void
+    {
+        $root = $this->tempProjectRoot();
+        $posters = $root . '/posters';
+        try {
+            $requested = [];
+            $store = new \ForumRewrite\View\MediaEmbedPosterStore($posters, function (string $url) use (&$requested): string {
+                $requested[] = $url;
+                return "\xFF\xD8\xFFposter";
+            });
+            $controller = $this->controller($root, new InstagramPagePreviewFetcher(), posterStore: $store);
+            ob_start();
+            // Only a link the detector accepts as YouTube is fetched.
+            $controller->warmPreview('GET', ['provider' => 'youtube', 'kind' => 'poster', 'url' => 'https://evil.test/watch?v=M7lc1UVf-VE']);
+            $controller->warmPreview('GET', ['provider' => 'youtube', 'kind' => 'poster', 'url' => 'https://youtu.be/M7lc1UVf-VE']);
+            ob_end_clean();
+            assertSame(['https://i.ytimg.com/vi/M7lc1UVf-VE/hqdefault.jpg'], $requested);
+            ob_start();
+            $controller->poster('GET', 'M7lc1UVf-VE');
+            assertSame("\xFF\xD8\xFFposter", ob_get_clean());
+            // Posters off: no fetch, and nothing served.
+            $off = $this->controller($root . '-off', new InstagramPagePreviewFetcher());
+            ob_start();
+            $off->warmPreview('GET', ['provider' => 'youtube', 'kind' => 'poster', 'url' => 'https://youtu.be/dQw4w9WgXcQ']);
+            $off->poster('GET', 'M7lc1UVf-VE');
+            assertSame("Not found.\n", ob_get_clean());
+            assertSame(1, count($requested));
+        } finally {
+            @unlink($posters . '/M7lc1UVf-VE.jpg');
+            @rmdir($posters);
+            $this->cleanup($root);
+        }
+    }
+
     public function testMusicProvidersFetchTitlesThroughTheirOwnEndpoints(): void
     {
         $cases = [
@@ -446,7 +480,8 @@ final class MediaEmbedPreviewControllerTest
         ?string $databasePath = null,
         ?string $repositoryRoot = null,
         ?OembedTitleFetcher $oembedFetcher = null,
-        ?BandcampPagePlayerFetcher $bandcampFetcher = null
+        ?BandcampPagePlayerFetcher $bandcampFetcher = null,
+        ?\ForumRewrite\View\MediaEmbedPosterStore $posterStore = null
     ): MediaEmbedPreviewController {
         $routeServices = new RouteServices(
             $databasePath ?? $projectRoot . '/read_model.sqlite3',
@@ -469,7 +504,8 @@ final class MediaEmbedPreviewControllerTest
             $fetcher,
             $youtubeFetcher ?? new YoutubeOembedTitleFetcher(),
             $oembedFetcher ?? new OembedTitleFetcher(fn (string $url) => false),
-            $bandcampFetcher ?? new BandcampPagePlayerFetcher(fn (string $url) => null)
+            $bandcampFetcher ?? new BandcampPagePlayerFetcher(fn (string $url) => null),
+            $posterStore,
         );
     }
 

@@ -11,6 +11,6 @@ Direct serving is a choice for public boards (`FORUM_IMAGE_DIRECT_SERVING_ENABLE
 
 Sources: [serving and headers](../../src/ForumRewrite/Http/ImageController.php), [copies and sizes](../../src/ForumRewrite/Images/ThumbnailStore.php), [storage and removal](../../src/ForumRewrite/Images/ImageStore.php), [published folder](../../src/ForumRewrite/Images/PublishedImages.php), [Apache rules](../../public/.htaccess), [thread images](../../src/ForumRewrite/View/MediaEmbedRenderer.php), [list and featured images](../../src/ForumRewrite/Images/ListThumbnails.php), [retry](../../public/assets/image_retry.js), [upload preparation](../../public/assets/image_prepare.js), [tests](../../tests/ImageServingTest.php), [Apache test](../../tests/image_direct_serving_apache_test.py), [plan](../plans/image_loading/image_loading_step1_solution_assessment.md).
 
-Related: [Zen strip](zen_strip.md) shows the featured meme over a tiny blurred stand-in built into the page.
+Related: [media embed](media_embed.md) posters are a separate, disposable cache served with the same one-year header, not stored images. [Zen strip](zen_strip.md) shows the featured meme over a tiny blurred stand-in built into the page.
 
 *— Claude · 2026-11-22 UTC · Model: claude-fable-5-2*
