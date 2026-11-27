@@ -37,7 +37,7 @@ final class MusicPageController
                 'threads' => $threads,
                 'pagination' => $pagination,
                 'paginationError' => null,
-                // The share box: the shared New post form with the tag preset; Post returns here.
+                // The share box: the Board's compact composer with the tag preset; Post returns here.
                 'boardTags' => self::TAG,
                 'subject' => '',
                 'body' => '',
@@ -46,7 +46,8 @@ final class MusicPageController
             ],
             'Music',
             'music',
-            ['/assets/openpgp_loader.js', '/assets/browser_signing.js', '/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js'],
+            // The Board's composer and its scripts: one line that grows on focus.
+            ['/assets/inline_reply_form.js', '/assets/lazy_compose_signing.js', '/assets/outbox_store.js', '/assets/outbox_storage.js', '/assets/outbox_compose.js', '/assets/outbox_sender.js'],
         );
     }
 }
