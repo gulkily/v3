@@ -331,6 +331,20 @@ final class LocalDevelopmentImportTest
                 assertStringContains($expected, $error->getMessage(), $name);
             }
         }
+        try {
+            $remote(fn () => ['status' => 200, 'headers' => [], 'body' => '{"status":"ok","messages":[' . str_repeat('x', 300) . "<br>\n<b>Warning</b>: tail"])->export();
+            throw new LogicException('Unexpected body accepted');
+        } catch (RuntimeException $error) {
+            assertStringContains('unexpected response to GET /api/private_messages/export (HTTP 200, ', $error->getMessage());
+            assertStringContains('{"status":"ok","messages":[xxx', $error->getMessage());
+            assertStringContains('<b>Warning</b>: tail', $error->getMessage());
+        }
+        try {
+            $remote(fn () => ['status' => 200, 'headers' => [], 'body' => str_repeat('x', \ForumRewrite\Support\LocalDevelopmentRemote::MAX_RESPONSE_BYTES)])->export();
+            throw new LogicException('Cut-off body accepted');
+        } catch (RuntimeException $error) {
+            assertStringContains('too large for the relay (GET /api/private_messages/export, 8 MiB or more)', $error->getMessage());
+        }
         $unapproved = $remote(fn () => ['status' => 200, 'headers' => [], 'body' => "status=ok\napproved=0\n"]);
         assertSame(['approved' => false], $unapproved->signIn('openpgp:' . str_repeat('a', 40), 'c', 's'));
         $missing = $remote(fn () => ['status' => 404, 'headers' => [], 'body' => "profile not found\n"]);

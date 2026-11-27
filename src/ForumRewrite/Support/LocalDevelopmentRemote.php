@@ -26,8 +26,12 @@ final class LocalDevelopmentRemote
         'POST /api/private_messages/history_sync/acknowledge',
     ];
 
+    /** Responses are read up to this many bytes; a body this long was cut off. */
+    public const MAX_RESPONSE_BYTES = 8 * 1048576;
+
     /** @var array<string, string> */
     private array $cookies = [];
+    private string $lastCall = '';
     /** @var \Closure(string, string, list<string>, string): array{status:int,headers:list<string>,body:string} */
     private \Closure $transport;
 
@@ -155,6 +159,7 @@ final class LocalDevelopmentRemote
             $headers[] = 'Cookie: ' . implode('; ', array_map(static fn (string $name, string $value): string => $name . '=' . $value,
                 array_keys($this->cookies), $this->cookies));
         }
+        $this->lastCall = $method . ' ' . $path;
         $response = ($this->transport)($method, $url, $headers, $body);
         foreach ($response['headers'] as $header) {
             if (preg_match('/^Set-Cookie:\s*([^=;\s]+)=([^;]*)/i', $header, $match) === 1) {
@@ -167,9 +172,17 @@ final class LocalDevelopmentRemote
     /** @return array<string, mixed> */
     private function json(array $response): array
     {
-        $decoded = json_decode($response['body'], true);
+        $body = (string) $response['body'];
+        if (strlen($body) >= self::MAX_RESPONSE_BYTES) {
+            throw new RuntimeException($this->source() . ' sent a response too large for the relay (' . $this->lastCall . ', 8 MiB or more).');
+        }
+        $decoded = json_decode($body, true);
         if (!is_array($decoded)) {
-            throw new RuntimeException($this->source() . ' sent an unexpected response (HTTP ' . $response['status'] . ').');
+            // Name the call and quote both ends, so the actual cause is visible in the page.
+            $clean = static fn (string $text): string => trim((string) preg_replace('/[\x00-\x1f\x7f]+/', ' ', $text));
+            $tail = strlen($body) > 160 ? ' … ' . $clean(substr($body, -80)) : '';
+            throw new RuntimeException($this->source() . ' sent an unexpected response to ' . $this->lastCall . ' (HTTP ' . $response['status']
+                . ', ' . strlen($body) . ' bytes): ' . $clean(substr($body, 0, 80)) . $tail);
         }
         return $decoded;
     }
@@ -194,7 +207,7 @@ final class LocalDevelopmentRemote
                 'follow_location' => 0, 'ignore_errors' => true, 'timeout' => 20],
             'ssl' => ['verify_peer' => true, 'verify_peer_name' => true, 'allow_self_signed' => false],
         ]);
-        $content = @file_get_contents($url, false, $context, 0, 8 * 1048576);
+        $content = @file_get_contents($url, false, $context, 0, self::MAX_RESPONSE_BYTES);
         $responseHeaders = $http_response_header ?? [];
         if ($content === false || $responseHeaders === []) {
             throw new RuntimeException('Could not reach ' . (parse_url($url, PHP_URL_SCHEME) . '://' . parse_url($url, PHP_URL_HOST)) . '. Check the connection and retry.');

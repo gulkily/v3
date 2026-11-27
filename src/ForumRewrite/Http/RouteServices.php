@@ -887,7 +887,8 @@ final class RouteServices
 
     /** @param array<string, mixed> $payload
      * @param string[] $headers */
-    public function sendJson(array $payload, int $statusCode, array $headers = []): void
+    /** $pretty puts one field per line, for responses people read in a browser. */
+    public function sendJson(array $payload, int $statusCode, array $headers = [], bool $pretty = false): void
     {
         if ($statusCode >= 400 && ApiErrors::isBusy((string) ($payload['error'] ?? ''))) {
             $payload = ApiErrors::busy(); $statusCode = 503; $headers[] = 'Retry-After: 10';
@@ -897,7 +898,7 @@ final class RouteServices
         foreach ($headers as $headerValue) {
             header($headerValue);
         }
-        echo json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) . "\n";
+        echo json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | ($pretty ? JSON_PRETTY_PRINT : 0)) . "\n";
     }
 
     public function sendXml(string $xml, int $statusCode): void
