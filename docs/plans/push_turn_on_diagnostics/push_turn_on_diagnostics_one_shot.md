@@ -7,7 +7,7 @@ Extended estimates: enabled (no alternatives or work units, so only the cycle es
 
 **Cycle estimate: 0.25**
 
-Status: plan written; next permitted action: implement.
+Status: implemented on `fix/push-turn-on-diagnostics`; PR open, not merged or deployed. Next action: the maintainer merges and deploys; the next stalled Turn on on any phone shows Details and lands at `/tools/push-reports/`.
 
 ## Request and authorization
 
@@ -59,14 +59,33 @@ Application change, following [Error messages and diagnostics](../../../CONTRIBU
 `./v3 test --smoke PushApiTest`; `node tests/browser/push_preferences.mjs` with local Chrome. Replay of the reported condition (stall after Allow) is by stub only; the real iPhone is unverified until a report arrives. Full suite not run (AGENTS.md). Recovery for a member: tap Turn on again.
 
 Starting revision `1fc53a90c` on `main`; branch `fix/push-turn-on-diagnostics`.
-Planning commit: pending.
+Planning commit: `fd05b8a54` (confirmed with Git before any implementation edit).
 
 ## Execution history
 
 - 2026-11-27: plan written.
+- 2026-11-27: maintainer confirmed the friend's phone had ZenMemes open from its home-screen icon (not a Safari tab), so the unsupported-tab explanation is ruled out.
+- 2026-11-27: implemented. `push_preferences.js`: `within(step, work, ms)` names every step (service worker 10 s; push key, existing subscription, drop old subscription, push subscribe, save subscription, unsubscribe, send test 15 s); `fail()` shows the note, fills Details and posts the report (not after a 401). Request errors without server text now say `HTTP <status>` instead of "Request failed". Turn off and Send a test use the same steps and Details. `preferences.php`: closed `details` under the row with a Copy button; `preferences.css` styles it. `PushSubscriptionStore`: `push_reports` table, `addReport()` (10 an hour per member, 500 kept), `reports()`. `PushApiController`: `report()` and `reportsPage()`. `Application`: routes; `ApiRouteCatalog`: entry. `docs/concepts/push_subscription.md` updated.
+- 2026-11-27: decision: `.account-key-advanced` styling lives in `identity.css`, which the Preferences page doesn't load, so a small `.preferences-page__details` rule in `preferences.css` was added instead of loading another stylesheet.
+- 2026-11-27: decision: no Tools launcher button for `/tools/push-reports/` (it would need icons in every icon set); the address is in the API catalog and this record. Possible follow-up.
+
+## Outcome
+
+Delivered as planned. Not delivered: a fix for the stall itself, which waits on a report from a real phone. Limitations: a report needs a session (a 401 failure is diagnosed by its own message); the reports page is plain text and has no Tools button.
+
+## Verification
+
+- `./v3 test --smoke PushApiTest ApiRouteCatalogTest LocalAppSmokeTest UsageReportsPageTest LlmsTxtRendererTest`: all passed (503, 510 and 498 run across three invocations). New: `PushApiTest::testAMemberReportsAFailedTurnOnAndOperatorsReadIt` (guest 401, missing header 403, GET 405, empty 400, oversize 413, stored with CRLF normalized, 11th in an hour 429, next hour accepted, non-operator 403, operator text newest first) and `testOnlyTheNewestReportsAreKept`; `testRoutesAnswer404WithTheFlagOff` covers `/api/push/report`. The full suite was not run.
+- `node tests/browser/push_preferences.mjs` (local Chrome, `playwright-core` linked from outside the repository): ok. New cases: `pushManager.subscribe()` never answering (the reported condition, stubbed, 300 ms limit) ends Off, "Didn’t respond", Details closed and naming `push subscribe`, no endpoint or key in the text, report posted with the same text and the ForumPush header, Copy copies it; a 503 on save shows "Try again" with `HTTP status: 503` and the server's text.
+- Looked at the stalled state at 380 px wide (screenshot): note in the value, Details below, wraps without overflow.
+- Not verified: a real iPhone. The reported stall is replayed only by stub; which step stalls on the friend's phone is still unknown.
+
+## Final review
+
+Diff checked: helpers reused (`guardedInput`, `error`, store pattern, `profileIsActiveOperator`), no duplicate disclosure component, file scope matches the plan plus the test files. Commit/merge status: completion commit pending at time of writing; PR to be opened; not merged or deployed.
 
 ## Study history
 
-- 2026-11-27 intake **0.25**, single Claude rater, no prior exposure. Execution entry: reaffirmed 0.25.
+- 2026-11-27 intake **0.25**, single Claude rater, no prior exposure. Execution entry: reaffirmed 0.25. Closeout retrospective **0.25**; maintainer acceptance pending.
 
 *— Claude · 2026-11-27 UTC*

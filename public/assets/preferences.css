@@ -33,3 +33,25 @@
   gap: 0.75rem;
   margin-left: auto;
 }
+
+/* A failed Turn on keeps its diagnosis under the row (CONTRIBUTING: error messages). */
+.preferences-page__details {
+  flex: 1 0 100%;
+  margin-top: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.preferences-page__details summary {
+  cursor: pointer;
+  color: var(--ink-soft);
+  font-family: var(--ui-font);
+}
+
+.preferences-page__details pre {
+  margin: 0.4rem 0;
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}

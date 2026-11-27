@@ -128,6 +128,50 @@ final class PushApiTest
         $this->cleanup();
     }
 
+    /** push_turn_on_diagnostics: a browser reports a failed Turn on; operators read it as text. */
+    public function testAMemberReportsAFailedTurnOnAndOperatorsReadIt(): void
+    {
+        $this->fresh();
+        $token = $this->sessions->signIn('openpgp:aaa')->token;
+        $report = "Action: Turn on notifications\r\nStep: push subscribe\r\nError: Timeout: No answer after 15 s\r\n";
+
+        assertSame(401, $this->call('report', '', ['report' => $report], profile: null)[0]);
+        assertSame(403, $this->call('report', $token, ['report' => $report], header: '')[0]);
+        assertSame(405, $this->call('report', $token, [], 'GET')[0]);
+        assertSame(400, $this->call('report', $token, ['report' => '  '])[0]);
+        assertSame(413, $this->call('report', $token, ['report' => str_repeat('x', PushSubscriptionStore::MAX_REPORT_BYTES + 1)])[0]);
+        assertSame([], $this->store->reports());
+
+        assertSame(200, $this->call('report', $token, ['report' => $report])[0]);
+        $stored = $this->store->reports();
+        assertSame(['ilyag', $this->now, str_replace("\r\n", "\n", $report)], [$stored[0]['username'], $stored[0]['received_at'], $stored[0]['body']]);
+
+        for ($index = 1; $index < PushSubscriptionStore::REPORTS_PER_HOUR; $index++) {
+            assertSame(200, $this->call('report', $token, ['report' => 'Step: ' . $index])[0]);
+        }
+        assertSame(429, $this->call('report', $token, ['report' => 'Step: one too many'])[0]);
+        $this->now += 3601;
+        assertSame(200, $this->call('report', $token, ['report' => 'Step: next hour'])[0]);
+
+        [$status, , $text] = $this->call('reports-page', $token, ['operator' => false], 'GET');
+        assertSame([403, false], [$status, str_contains($text, 'push subscribe')]);
+        [$status, , $text] = $this->call('reports-page', $token, ['operator' => true], 'GET');
+        assertSame(200, $status);
+        assertSame(true, str_starts_with($text, "Report: 11\nReceived: " . gmdate('Y-m-d\TH:i:s\Z', $this->now) . "\nUsername: ilyag\nStep: next hour\n"));
+        assertSame(true, str_contains($text, "Username: ilyag\nAction: Turn on notifications\nStep: push subscribe\n"));
+        $this->cleanup();
+    }
+
+    public function testOnlyTheNewestReportsAreKept(): void
+    {
+        $store = new PushSubscriptionStore(new PDO('sqlite::memory:'));
+        for ($index = 0; $index < PushSubscriptionStore::REPORTS_KEPT + 3; $index++) {
+            assertSame(true, $store->addReport('member' . $index, 'Step: ' . $index, 100));
+        }
+        $reports = $store->reports(PushSubscriptionStore::REPORTS_KEPT + 10);
+        assertSame([PushSubscriptionStore::REPORTS_KEPT, 'Step: ' . (PushSubscriptionStore::REPORTS_KEPT + 2), 'Step: 3'], [count($reports), $reports[0]['body'], $reports[count($reports) - 1]['body']]);
+    }
+
     public function testSignOutOrAnotherSignInStopsSendingAndDropsTheDevice(): void
     {
         $this->fresh();
@@ -177,7 +221,7 @@ final class PushApiTest
         putenv('FORUM_PUSH_ENABLED=0');
         $databasePath = sys_get_temp_dir() . '/push-flag-off-' . bin2hex(random_bytes(6)) . '.sqlite3';
         try {
-            foreach (['/api/push/key' => 'GET', '/api/push/subscribe' => 'POST', '/api/push/unsubscribe' => 'POST', '/api/push/test' => 'POST'] as $path => $method) {
+            foreach (['/api/push/key' => 'GET', '/api/push/subscribe' => 'POST', '/api/push/unsubscribe' => 'POST', '/api/push/test' => 'POST', '/api/push/report' => 'POST'] as $path => $method) {
                 http_response_code(200);
                 ob_start();
                 (new ForumRewrite\Application(dirname(__DIR__), __DIR__ . '/fixtures/parity_minimal_v1', $databasePath))->handle($method, $path);
@@ -242,7 +286,7 @@ final class PushApiTest
     /**
      * @param array<string, mixed> $data
      * @param array<string, mixed>|null|false $profile false: the profile for the session's identity
-     * @return array{0:int,1:array<string,mixed>}
+     * @return array{0:int,1:array<string,mixed>,2:string}
      */
     private function call(string $action, string $token, array $data, string $method = 'POST', array|null|false $profile = false, string $header = 'ForumPush', string $fetchSite = 'same-origin'): array
     {
@@ -291,6 +335,8 @@ final class PushApiTest
                 'key' => $controller->key($method),
                 'subscribe' => $controller->subscribe($method, $data),
                 'unsubscribe' => $controller->unsubscribe($method, $data),
+                'report' => $controller->report($method, $data),
+                'reports-page' => $controller->reportsPage((bool) ($data['operator'] ?? false)),
                 default => $controller->test($method, $data),
             };
         } finally {
@@ -298,7 +344,7 @@ final class PushApiTest
             $_SERVER = $server;
         }
 
-        return [(int) http_response_code(), (array) json_decode($output, true)];
+        return [(int) http_response_code(), (array) json_decode($output, true), $output];
     }
 
     private function cleanup(): void
