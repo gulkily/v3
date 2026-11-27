@@ -7,7 +7,7 @@ Extended estimates: enabled (no alternatives or work units, so only the cycle es
 
 **Cycle estimate: 0.05**
 
-Status: plan written; next permitted action: edit the guideline documents listed below.
+Status: guideline written on `docs/error-details-guideline`; PR open, not merged. Next action: the maintainer reviews and merges.
 
 ## Request and authorization
 
@@ -49,14 +49,29 @@ The five reader outcomes above are stated in the documents, linked from `AGENTS.
 Read the edited sections together for conflicts with UI copy rules; check links resolve; `git diff --stat` stays inside the authorized paths. No tests (no code).
 
 Starting revision `f5b6f1099` on `main`; branch `docs/error-details-guideline`.
-Planning commit: pending.
+Planning commit: `1e061d6e2` (confirmed with Git before any guideline edit).
 
 ## Execution history
 
 - 2026-11-27: plan written.
+- 2026-11-27: `PRINCIPLES.md`: summary bullet and the principle "Say what failed simply; keep the diagnosis one tap away" (Interface, before URLs). `CONTRIBUTING.md`: new section "Error messages and diagnostics" (two layers, what details hold, no secrets, timeouts, keep the error, report what the person can't, verify the failure path). `AGENTS.md`: "Error messages" pointer. `docs/reference/progressive_disclosure.md`: one sentence linking to the new section.
+
+## Outcome
+
+Delivered as planned. Existing messages are not swept; the push Turn on fix (`v3/push_turn_on_diagnostics`) is the first change built to the rule. A sweep of existing opaque messages ("Try again", "Request failed") is a possible follow-up, not started.
+
+## Verification
+
+- Read the new principle and section beside "Remove text before rewriting it", "UI copy and verification" and the progressive disclosure guide: the visible message stays short, evidence goes in a closed disclosure, recovery stays visible; no conflict found.
+- Links: `CONTRIBUTING.md#error-messages-and-diagnostics`, `#ui-copy-and-verification` and `docs/reference/progressive_disclosure.md` resolve from each edited file (checked heading slugs and relative paths).
+- `git diff --stat` covers only the authorized paths. Runtime checks inapplicable (documentation only); no tests run.
+
+## Final review
+
+Diff checked for duplication with the progressive disclosure guide (it says how details are shown; the new section says what they contain) and for file scope. Commit/merge status: completion commit pending at time of writing; PR to be opened; not merged.
 
 ## Study history
 
-- 2026-11-27 intake **0.05**, single Claude rater, no prior exposure to an estimate for this work. Execution entry: reaffirmed 0.05.
+- 2026-11-27 intake **0.05**, single Claude rater, no prior exposure to an estimate for this work. Execution entry: reaffirmed 0.05. Closeout retrospective **0.05**; maintainer acceptance pending.
 
 *— Claude · 2026-11-27 UTC*

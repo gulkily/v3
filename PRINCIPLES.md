@@ -22,6 +22,7 @@ If a change seems to need an exception, raise it before building.
 - All content is kept in simple files that will be readable decades from now.
 - Cut anything that isn't necessary, especially words and UI.
 - Never lose what the user wrote. If it can't be sent, say why.
+- When something fails, say so simply, and keep the details to diagnose it one tap away.
 - The basics work on any browser or client, no matter how old or limited.
 - URLs are interface: short, readable, editable and free of encoded state.
 - Build with a stack of technologies that have been around for 20+ years.
@@ -134,6 +135,20 @@ input. Keep drafts when sending fails.
 
 - Rules out: silently converting a refused post to a different kind of post.
 - Source: maintainer (2026-10-23); the API's error-first contract and the compose form keeping drafts on failure.
+
+### Say what failed simply; keep the diagnosis one tap away
+
+A failure shows a short, plain message: what happened and what to do next. Under
+it, a closed Details disclosure holds what someone needs to diagnose it: the
+step that failed, the error, and the conditions. People can copy the details and
+pass them on. Nothing waits forever: a step that can stall has a time limit and
+names itself when it runs out.
+
+- Rules out: "Something went wrong", a bare "Try again" or a spinner that never
+  ends, with nothing to expand; dropping the error a step returned.
+- Source: maintainer (2026-11-27), after Turn on for notifications stuck on
+  "Working…" on an iPhone with no way to tell which step stalled;
+  [CONTRIBUTING](CONTRIBUTING.md#error-messages-and-diagnostics).
 
 ### URLs are interface
 

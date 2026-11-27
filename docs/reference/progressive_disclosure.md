@@ -28,7 +28,9 @@ Keep names, activity, useful counts, primary actions, and concise status summari
 outside technical disclosures. Keep errors, essential warnings, material access,
 privacy or data-loss consequences, and actionable recovery visible where needed
 for the current decision. Detailed failure evidence may be expandable, but its
-summary and recovery action must remain accessible without opening it.
+summary and recovery action must remain accessible without opening it. What
+failure details contain is set out in
+[Error messages and diagnostics](../../CONTRIBUTING.md#error-messages-and-diagnostics).
 
 Private keys retain their deliberate reveal behavior and existing warnings.
 Keep the warning with the revealed material and expose any consequence needed
