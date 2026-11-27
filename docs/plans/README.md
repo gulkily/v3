@@ -9,6 +9,8 @@ workflow meaning. Missing steps are not reconstructed. Standalone assessments,
 checklists, and proposals remain at the top level or in the collections below.
 
 ## Awaiting review before merge
+- [Notifications Turn on diagnostics](push_turn_on_diagnostics/push_turn_on_diagnostics_one_shot.md) — Turn on steps time out and show copyable details; failures are reported to operators.
+- [Errors with expandable details](error_details_guideline/error_details_guideline_one_shot.md) — project guideline: short plain error messages with copyable details, timeouts that name their step.
 - [Zalgo post menu layering](zalgo_post_actions_layer/zalgo_post_actions_layer_one_shot.md) — keep the open post menu above Activity and reply cards.
 - [Merge About slot outage](merge_about_slot/merge_about_slot_one_shot.md) — restore startup after the About variant rename.
 - [Browser invitation expiry](invitation_expiry_runbook/invitation_expiry_runbook_one_shot.md) — correct the duration stated in the deployment runbook.
@@ -233,6 +235,10 @@ checklists, and proposals remain at the top level or in the collections below.
 - [Session key bootstrap](session_key_bootstrap/session_key_bootstrap_step3_development_plan.md) — a browser with a live session but no key (iPhone Safari's storage wipe) gets a new approved key from the session, with a coarse fingerprint as tie-breaker; the lost key shows a Replaced pill and waits in a queue; behind two flags; Stages 1–6 committed, iPhone Safari replay (Stage 7) pending deploy.
 - [Thread activity drawer](thread_activity_drawer/thread_activity_drawer_step3_development_plan.md) — tag-only reply leaves move out of the conversation into a collapsed "Activity (N)" drawer on the thread page, which also lists likes and flags by post; follows Pollyanna's `#notext`; behind a new flag; Step 4 complete, release pending.
 - [Private message local pull](private_message_local_pull/private_message_local_pull_step3_development_plan.md) — a local clone registers its browser key on zenmemes.com, then pulls the member's own DMs and history-sync transfers with original IDs and confirms verified transfers; relayed sign-in, no key leaves the browser; Step 4 in progress.
+- [Readable message export](export_readable_json/export_readable_json_one_shot.md) — pretty-printed member export and relay errors that show what came back; one-shot follow-up to the messages pull.
+- [Export only the signed-in key's history keys](export_own_key_transfers/export_own_key_transfers_one_shot.md) — fixes the 8 MiB export page by leaving out transfers to the member's other keys.
+- [Messages pull trust UX](local_pull_trust_ux/local_pull_trust_ux_one_shot.md) — confirm one history key per message, trust progress per key, keys grouped by person.
+- [Local start page without slash](local_without_slash/local_without_slash_one_shot.md) — `/local` redirects to `/local/` on a development server.
 - [Usage reports UI](usage_reports_ui/usage_reports_ui_step3_development_plan.md) — readable page and control names, phone-first Usage Reports with shortcut-idea cards, and a readable Usage Log with the exact upload text behind a disclosure; follow-up to the local usage log; Step 4 in progress.
 - [Local usage log](local_telemetry/local_telemetry_step3_development_plan.md) — opt-in, browser-only log of page views and clicks that a visitor reviews and uploads to a private report store kept out of exports; a root-only summary shows click counts and multi-click journeys that could be one click; behind a flag; Step 4 in progress.
 - [Post records](post_records/post_records_step3_development_plan.md) — a post's Records section lists every record that targets it, each with its own `/records/<Record-ID>` page, and members (or operators) can retract likes through the existing signed retraction with `Target-ID`; behind a flag; Step 4 complete, release pending.
@@ -759,3 +765,4 @@ and repair its navigation and affected references. See the
 - [Music share box like the Board's](music_share_compact/music_share_compact_one_shot.md) — one-shot: /music/ loads the Board's styles and uses its one-line composer.
 - [Underground header deploy button text](underground_deploy_prompt_text/underground_deploy_prompt_text_one_shot.md) — one-shot: the header Deploy now label no longer inherits the site name's transparent text fill.
 - [Support wall](sponsor_wall/sponsor_wall_step3_development_plan.md) — staged: a `/support/` page draws one campaign as a wall of $100 squares, one block per pledge, with a pledge form and presets.
+- [Embed presentation](embed_presentation/embed_presentation_step1_solution_assessment.md) — staged: one bar or one YouTube poster per media embed, one tap to play, one player at a time; posters copied to our server.

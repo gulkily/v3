@@ -220,7 +220,8 @@ final class PrivateMessageHistorySyncStore
     }
 
     /**
-     * Transfers to this target key that still hold items without matching coverage, by transfer ID.
+     * Transfers to this target key that still hold uncovered messages, by transfer ID. A message is
+     * done once any transfer covers it, so its other donors' transfers are not offered again.
      * @return array{transfers:list<array<string, mixed>>,next:?string}
      */
     public function unverifiedFor(string $account, string $target, string $after = '', int $limit = 10): array
@@ -229,7 +230,7 @@ final class PrivateMessageHistorySyncStore
             JOIN history_sync_items i ON i.transfer_id = t.transfer_id AND i.account = t.account
             WHERE t.account = ? AND t.target = ? AND t.transfer_id > ?
               AND NOT EXISTS (SELECT 1 FROM history_sync_coverage c WHERE c.account = i.account AND c.target = i.target
-                AND c.message_id = i.message_id AND c.digest = i.digest AND c.transfer_id = i.transfer_id)
+                AND c.message_id = i.message_id AND c.digest = i.digest)
             ORDER BY t.transfer_id LIMIT ' . (max(1, min(25, $limit)) + 1));
         $q->execute([$account, $target, $after]);
         $rows = $q->fetchAll();
@@ -245,21 +246,21 @@ final class PrivateMessageHistorySyncStore
     }
 
     /**
-     * Transfers whose destination is this account, for the given messages. Each carries
+     * Transfers whose destination is this account (and, when given, this target key), for the given messages. Each carries
      * only the items for those messages; a transfer spanning pages repeats on each page.
      *
      * @param list<string> $messageIds
      * @return list<array{transfer_id:string,source:string,target:string,ciphertext:string,items:list<array{message_id:string,digest:string}>}>
      */
-    public function transfersFor(string $account, array $messageIds): array
+    public function transfersFor(string $account, array $messageIds, ?string $target = null): array
     {
         if ($messageIds === []) return [];
         $marks = implode(',', array_fill(0, count($messageIds), '?'));
         $q = $this->pdo->prepare("SELECT t.transfer_id, t.source, t.target, t.ciphertext, i.message_id, i.digest
             FROM history_sync_items i JOIN history_sync_transfers t ON t.transfer_id = i.transfer_id
-            WHERE i.account = ? AND t.account = i.account AND i.message_id IN ($marks)
+            WHERE i.account = ? AND t.account = i.account AND i.message_id IN ($marks)" . ($target === null ? '' : ' AND t.target = ?') . "
             ORDER BY t.transfer_id, i.message_id");
-        $q->execute(array_merge([$account], array_values($messageIds)));
+        $q->execute(array_merge([$account], array_values($messageIds), $target === null ? [] : [$target]));
         $transfers = [];
         foreach ($q->fetchAll() as $row) {
             $id = $row['transfer_id'];

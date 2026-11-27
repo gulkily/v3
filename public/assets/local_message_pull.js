@@ -124,7 +124,10 @@
               return inner.then(function () {
                 var entry = byId[item.message_id];
                 if (!entry || entry.digest !== item.digest || crypto.digest(item.envelope) !== item.digest) { tally.failed++; return; }
+                if (tally.seen[item.message_id]) return;
                 return crypto.readOriginal(item.envelope, entry.keys, page.sender_keys[item.sender] || []).then(function () {
+                  if (tally.seen[item.message_id]) return;
+                  tally.seen[item.message_id] = true;
                   tally.verified.push({ message_id: item.message_id, digest: item.digest, transfer_id: transfer.transfer_id });
                 }, function () { tally.failed++; });
               });
@@ -208,12 +211,7 @@
         if (!candidates.keys.length) return finish(total);
         // Pause for one explicit click before this clone approves anyone.
         pendingTrust = { total: total, keys: candidates.keys };
-        trustList.textContent = '';
-        candidates.keys.forEach(function (key) {
-          var item = document.createElement('li');
-          item.textContent = key.username + (key.own ? ' (this browser)' : '') + ' · ' + key.identity_id.slice(8, 24) + '…';
-          trustList.appendChild(item);
-        });
+        renderTrustList(candidates.keys);
         trustBox.hidden = false;
         setStatus('Pulled. Trust the listed keys to read your mail here.');
       });
@@ -222,9 +220,50 @@
     }).then(function () { pullButton.removeAttribute('aria-disabled'); });
   });
 
+  // One row per person: "ilyag: 31 keys, including this browser", opening to short fingerprints.
+  function renderTrustList(keys) {
+    var groups = {}, order = [];
+    keys.forEach(function (key) {
+      if (!groups[key.username]) { groups[key.username] = []; order.push(key.username); }
+      groups[key.username].push(key);
+    });
+    trustList.textContent = '';
+    order.forEach(function (username) {
+      var list = groups[username], own = list.some(function (key) { return key.own; });
+      var item = document.createElement('li');
+      var details = document.createElement('details');
+      var summary = document.createElement('summary');
+      var name = document.createElement('strong');
+      name.textContent = username;
+      summary.appendChild(name);
+      summary.appendChild(document.createTextNode(': ' + list.length + (list.length === 1 ? ' key' : ' keys') + (own ? ', including this browser' : '')));
+      details.appendChild(summary);
+      var fingerprints = document.createElement('ul');
+      list.forEach(function (key) {
+        var row = document.createElement('li');
+        var code = document.createElement('code');
+        var fingerprint = key.identity_id.slice(8).toUpperCase();
+        code.textContent = '…' + fingerprint.slice(-16).replace(/(.{4})(?=.)/g, '$1 ');
+        code.title = fingerprint.replace(/(.{4})(?=.)/g, '$1 ');
+        row.appendChild(code);
+        if (key.own) {
+          var chip = document.createElement('span');
+          chip.className = 'chip';
+          chip.textContent = 'this browser';
+          row.appendChild(document.createTextNode(' '));
+          row.appendChild(chip);
+        }
+        fingerprints.appendChild(row);
+      });
+      details.appendChild(fingerprints);
+      item.appendChild(details);
+      trustList.appendChild(item);
+    });
+  }
+
   function finish(total) {
     setStatus('Checking pulled history keys…');
-    return verifyPage('', { verified: [], failed: 0 }).then(function (tally) {
+    return verifyPage('', { verified: [], failed: 0, seen: {} }).then(function (tally) {
       return confirmVerified(tally.verified, 0).then(function (confirmed) {
         summaryNode.hidden = false;
         summaryNode.textContent = 'Pulled: ' + summaryText(total) + ' · ' + confirmed + ' confirmed on ' + host
@@ -234,19 +273,33 @@
     });
   }
 
+  // One request per key, this browser's key first, so progress shows and a retry resumes.
+  function trustNext(pending, done) {
+    var count = pending.keys.length;
+    trustButton.textContent = 'Trusting ' + Math.min(done + 1, count) + ' of ' + count + '…';
+    setStatus('Trusting ' + Math.min(done + 1, count) + ' of ' + count + ' keys in this clone…');
+    if (done >= count) return Promise.resolve();
+    return relay({ action: 'trust', identity_id: currentState.identity_id, keys: JSON.stringify([pending.keys[done].identity_id]) })
+      .then(function () { pending.done = done + 1; return trustNext(pending, done + 1); });
+  }
+
   trustButton.addEventListener('click', function () {
     if (!pendingTrust || trustButton.getAttribute('aria-disabled') === 'true') return;
-    trustButton.setAttribute('aria-disabled', 'true');
-    setStatus('Trusting these keys in this clone…');
     var pending = pendingTrust;
-    relay({ action: 'trust', identity_id: currentState.identity_id, keys: JSON.stringify(pending.keys.map(function (key) { return key.identity_id; })) })
-      .then(function () {
-        pendingTrust = null;
-        trustBox.hidden = true;
-        return finish(pending.total);
-      }).catch(function (error) {
-        setStatus(error.message + ' Press Trust to retry.', 'error');
-      }).then(function () { trustButton.removeAttribute('aria-disabled'); });
+    pending.keys.sort(function (a, b) { return (b.own ? 1 : 0) - (a.own ? 1 : 0); });
+    trustButton.setAttribute('aria-disabled', 'true');
+    trustButton.setAttribute('aria-busy', 'true');
+    trustNext(pending, pending.done || 0).then(function () {
+      pendingTrust = null;
+      trustBox.hidden = true;
+      return finish(pending.total);
+    }).catch(function (error) {
+      setStatus(error.message + ' Press Trust to continue.', 'error');
+    }).then(function () {
+      trustButton.removeAttribute('aria-disabled');
+      trustButton.removeAttribute('aria-busy');
+      trustButton.textContent = 'Trust these keys here';
+    });
   });
 
   root.querySelector('[data-local-pull-check]').addEventListener('click', function () {

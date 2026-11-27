@@ -236,6 +236,59 @@ final class MediaEmbedRendererTest
         assertSame(true, str_contains($html, 'loading="lazy"'));
     }
 
+    public function testEachInlinePlayerIsOneBarNamingItsProviderOnceWithTheLinkOutsideTheSummary(): void
+    {
+        $renderer = new MediaEmbedRenderer();
+        $links = [
+            'YouTube' => 'https://youtu.be/dQw4w9WgXcQ',
+            'Spotify' => 'https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC',
+            'SoundCloud' => 'https://soundcloud.com/artist/track-name',
+            'TikTok' => 'https://www.tiktok.com/@user/video/7234567890123456789',
+        ];
+        foreach ($links as $provider => $url) {
+            $html = $renderer->render($url, true, true);
+            assertSame(1, substr_count($html, 'class="media-embed-player"'), $provider);
+            // The provider is named once in the visible text: the link.
+            assertSame(1, substr_count(strip_tags($html), $provider), $provider);
+            assertStringContains('aria-label="Open on ' . $provider . '"', $html);
+            assertStringNotContains('▶', $html);
+            assertStringNotContains('♫', $html);
+            $summary = substr($html, strpos($html, '<summary>'), strpos($html, '</summary>') - strpos($html, '<summary>'));
+            assertStringNotContains('<a ', $summary);
+            assertSame(true, strpos($html, 'media-embed-card__source') < strpos($html, '<details'), $provider);
+        }
+    }
+
+    public function testAStoredYoutubePosterReplacesTheBarAndAMissingOneIsFetchedForNextTime(): void
+    {
+        $directory = sys_get_temp_dir() . '/media-embed-renderer-posters-' . bin2hex(random_bytes(6));
+        try {
+            $posters = new \ForumRewrite\View\MediaEmbedPosterStore($directory, static fn (): string => "\xFF\xD8\xFFposter");
+            $renderer = new MediaEmbedRenderer(posterStore: $posters);
+
+            $missing = $renderer->render('https://youtu.be/M7lc1UVf-VE', true, true);
+            assertStringNotContains('media-embed-card__poster', $missing);
+            assertStringContains('/internal/media-embeds/warm-preview?provider=youtube&amp;kind=poster&amp;url=', $missing);
+
+            $posters->warm('M7lc1UVf-VE');
+            $stored = $renderer->render('https://youtu.be/M7lc1UVf-VE', true, true);
+            assertStringContains('media-embed-card--poster', $stored);
+            assertStringContains('<summary><img class="media-embed-card__poster" src="/internal/media-embeds/posters/M7lc1UVf-VE.jpg"', $stored);
+            assertStringNotContains('kind=poster', $stored);
+            // The player itself still waits for a tap.
+            assertStringContains('src=""', $stored);
+
+            // Shorts are portrait and keep the bar; posters off (no store) keeps the bar.
+            assertStringNotContains('poster', $renderer->render('https://youtube.com/shorts/M7lc1UVf-VE', true, true));
+            assertStringNotContains('poster', (new MediaEmbedRenderer())->render('https://youtu.be/M7lc1UVf-VE', true, true));
+        } finally {
+            foreach (glob($directory . '/*') ?: [] as $file) {
+                @unlink($file);
+            }
+            @rmdir($directory);
+        }
+    }
+
     public function testInlinePlayerInstagramWithoutCacheStoreFallsBackToPlainCardAndNoBeacon(): void
     {
         $renderer = new MediaEmbedRenderer();

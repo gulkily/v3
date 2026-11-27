@@ -31,7 +31,7 @@ const stubs = answer => `
   if (saved) window.__push.subscription = new FakeSubscription(Uint8Array.from(JSON.parse(saved)));
   const pushManager = {
     getSubscription: () => Promise.resolve(window.__push.subscription),
-    subscribe: options => { window.__push.calls.push('subscribe:' + options.userVisibleOnly); window.__push.subscription = new FakeSubscription(options.applicationServerKey); sessionStorage.setItem('stub-subscription', JSON.stringify(Array.from(options.applicationServerKey))); return Promise.resolve(window.__push.subscription); },
+    subscribe: options => { if (window.__pushHang) return new Promise(() => {}); window.__push.calls.push('subscribe:' + options.userVisibleOnly); window.__push.subscription = new FakeSubscription(options.applicationServerKey); sessionStorage.setItem('stub-subscription', JSON.stringify(Array.from(options.applicationServerKey))); return Promise.resolve(window.__push.subscription); },
   };
   window.PushManager = function () {};
   Object.defineProperty(navigator, 'serviceWorker', { value: { ready: Promise.resolve({ pushManager }), register: () => Promise.resolve({}), getRegistrations: () => Promise.resolve([]), addEventListener() {} } });
@@ -42,10 +42,12 @@ const stubs = answer => `
 let blockPushScript = false;
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/google/chrome/chrome', headless: true, args: ['--no-sandbox'] });
 
-async function open({ flag = 'on', key = true, answer = 'granted', testOutcome = 'sent', width = 380 } = {}) {
+async function open({ flag = 'on', key = true, answer = 'granted', testOutcome = 'sent', width = 380, hangSubscribe = false, saveStatus = 200 } = {}) {
   const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width, height: 900 }, reducedMotion: 'reduce' });
   const api = [];
   await context.addInitScript(stubs(answer));
+  if (hangSubscribe) await context.addInitScript(() => { window.__pushHang = true; window.__forumPushStepMs = 300; });
+  await context.addInitScript(() => { window.__copied = []; Object.defineProperty(navigator, 'clipboard', { value: { writeText: text => { window.__copied.push(text); return Promise.resolve(); } } }); });
   if (key) await context.addInitScript(() => { localStorage.setItem('forum_pki_fingerprint', 'a'.repeat(40)); localStorage.setItem('forum_pki_private_key', 'x'); localStorage.setItem('forum_pki_public_key', 'x'); });
   await context.route(base + '/**', async route => {
     const url = new URL(route.request().url());
@@ -58,6 +60,9 @@ async function open({ flag = 'on', key = true, answer = 'granted', testOutcome =
     if (url.pathname.startsWith('/api/push/')) {
       const request = route.request();
       api.push([url.pathname, request.headers()['x-requested-with'] || '', request.postData() || '']);
+      if (url.pathname === '/api/push/subscribe' && saveStatus !== 200) {
+        return route.fulfill({ status: saveStatus, contentType: 'application/json', body: JSON.stringify({ status: 'error', error: 'Notifications could not be turned on; try again.' }) });
+      }
       const body = url.pathname === '/api/push/key' ? { status: 'ok', public_key: Buffer.from(Uint8Array.from([4, ...new Array(64).fill(0)])).toString('base64url') }
         : url.pathname === '/api/push/test' ? { status: 'ok', outcome: testOutcome, reason: testOutcome === 'refused' ? 'BadJwtToken' : '' }
         : { status: 'ok' };
@@ -152,6 +157,43 @@ try {
     await page.locator('[data-push-test]').click();
     await page.waitForFunction(() => document.querySelector('[data-preference-row="notifications"]').getAttribute('data-push-state') === 'off');
     assert.equal((await calls(page)).at(-1), 'unsubscribe', 'a gone device unsubscribes the browser too');
+    await context.close();
+  }
+
+  // A step that never answers ends Off with Details naming it, copyable, and reported.
+  {
+    const { context, page, errors, api } = await open({ hangSubscribe: true });
+    assert.equal(await page.locator('[data-push-details]').isHidden(), true, 'no details before a failure');
+    await page.locator('[data-push-toggle]').click();
+    await page.waitForFunction(() => document.querySelector('[data-preference-value="notifications"]').textContent === 'Didn\u2019t respond');
+    assert.equal(await row(page).getAttribute('data-push-state'), 'off');
+    assert.equal(await page.locator('[data-push-toggle]').textContent(), 'Turn on');
+    const details = page.locator('[data-push-details]');
+    assert.equal(await details.isVisible(), true);
+    assert.equal(await details.evaluate(element => element.open), false, 'details start closed');
+    const text = await page.locator('[data-push-details-text]').textContent();
+    assert.match(text, /^Action: Turn on notifications\nStep: push subscribe\nError: Timeout: No answer after 0 s\nWaited: 0\.\d s\nPermission: granted\nInstalled app: no\n/);
+    assert.doesNotMatch(text, /web\.push\.apple\.com|forum_pki/, 'no endpoint or key in the details');
+    for (let tries = 0; tries < 50 && !api.some(([path]) => path === '/api/push/report'); tries++) await page.waitForTimeout(20);
+    const report = api.find(([path]) => path === '/api/push/report');
+    assert.ok(report, 'the failure is reported');
+    assert.equal(report[1], 'ForumPush');
+    assert.equal(JSON.parse(report[2]).report, text);
+    await details.locator('summary').click();
+    await page.locator('[data-push-details-copy]').click();
+    await page.waitForFunction(() => document.querySelector('[data-push-details-copy]').textContent === 'Copied');
+    assert.deepEqual(await page.evaluate(() => window.__copied), [text]);
+    if (shots) await page.screenshot({ path: `${shots}/push-stalled.png`, fullPage: true });
+    assert.deepEqual(errors, []);
+    await context.close();
+  }
+  // A server refusal shows Try again, with its status and text in Details.
+  {
+    const { context, page } = await open({ saveStatus: 503 });
+    await page.locator('[data-push-toggle]').click();
+    await page.waitForFunction(() => document.querySelector('[data-preference-value="notifications"]').textContent === 'Try again');
+    const text = await page.locator('[data-push-details-text]').textContent();
+    assert.match(text, /Step: save subscription\nError: Error: Notifications could not be turned on; try again\.\nHTTP status: 503\n/);
     await context.close();
   }
 

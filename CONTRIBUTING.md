@@ -62,6 +62,49 @@ Before marking a UI change complete:
   implementation document for other UI work. Distinguish completed cleanup
   from unresolved layout or behavior issues.
 
+## Error messages and diagnostics
+
+Every failure a person or agent can see has two layers.
+
+1. **The message**: one short, plain sentence saying what happened, plus the
+   next step or recovery action. It stays visible. Keep it free of internals.
+2. **Details**: a closed disclosure under the message, following the
+   [progressive disclosure guidance](docs/reference/progressive_disclosure.md).
+   It holds what someone needs to diagnose the failure without the device in
+   hand:
+   - the step that failed, named as in the code (for example `push subscribe`);
+   - the error's name and message, or the HTTP status and the server's error
+     text;
+   - how long the step waited;
+   - the relevant conditions: browser and OS version, installed app or browser
+     tab, online state, permission state, signed in or not, the client or app
+     version.
+
+   Offer a Copy control for the details so they can be pasted to the operator
+   or to an agent. Plain-text clients and APIs return the same two layers: the
+   message plus a stable error code and the detail fields.
+
+Never put secrets in the details: no private keys, session cookies, tokens,
+full push endpoints or the content of private messages.
+
+**Nothing waits forever.** Every network request, service-worker call and
+browser API that can stall gets a time limit. When it runs out, the flow ends in
+the failure state with the step named in the details. "Working…" or a spinner
+always ends in success or a message.
+
+**Keep the error.** Carry the original error object or response through to the
+details. Don't replace it with a generic string partway up the chain, and
+don't catch and ignore it.
+
+**Report what the person can't.** When a flow mostly fails on other people's
+devices, which the operator can't inspect, send the same details to the server
+as a best-effort report the operator can read. Choose the mechanism in the
+cycle that builds the flow.
+
+**Verify the failure path.** Failure states are part of
+[UI verification](#ui-copy-and-verification). Make each step fail or time out,
+check the message, expand the details, and confirm they name the step.
+
 ## Tests
 
 | Command | Runs | When |

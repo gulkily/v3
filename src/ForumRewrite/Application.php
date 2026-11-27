@@ -195,6 +195,11 @@ final class Application
             return;
         }
 
+        if (preg_match('#^/internal/media-embeds/posters/([A-Za-z0-9_-]{11})\.jpg$#', $path, $posterMatch) === 1) {
+            $this->mediaEmbedPreviewController()->poster($method, $posterMatch[1]);
+            return;
+        }
+
         if ($path === '/internal/media-embeds/warm-preview') {
             $this->mediaEmbedPreviewController()->warmPreview($method, $query);
             return;
@@ -207,6 +212,11 @@ final class Application
         }
         $this->ensureReadModel();
 
+        if ($path === '/local' && in_array($method, ['GET', 'HEAD'], true) && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {
+            $query = (string) parse_url($requestUri, PHP_URL_QUERY);
+            header('Location: /local/' . ($query === '' ? '' : '?' . $query), true, 301);
+            return;
+        }
         if ($path === '/local/remote' && \ForumRewrite\Support\LocalDevelopmentImport::enabled($_SERVER)) {
             (new \ForumRewrite\Http\LocalDevelopmentRemoteController($this->routeServices(), $this->localDevelopmentImport(),
                 pullFactory: fn (): \ForumRewrite\Support\LocalMessagePull => new \ForumRewrite\Support\LocalMessagePull(
@@ -407,7 +417,7 @@ final class Application
             return;
         }
 
-        if (in_array($path, ['/api/push/key', '/api/push/subscribe', '/api/push/unsubscribe', '/api/push/test'], true)) {
+        if (in_array($path, ['/api/push/key', '/api/push/subscribe', '/api/push/unsubscribe', '/api/push/test', '/api/push/report'], true)) {
             if (!$this->featureFlags()->isEnabled(FeatureFlagRegistry::PUSH_ENABLED)) {
                 $this->sendJson(['status' => 'error', 'code' => 'push_disabled', 'error' => 'Notifications are off on this server.'], 404, $this->routeServices()->noStoreHeaders());
                 return;
@@ -417,6 +427,7 @@ final class Application
                 '/api/push/key' => $controller->key($method),
                 '/api/push/subscribe' => $controller->subscribe($method, $query),
                 '/api/push/unsubscribe' => $controller->unsubscribe($method, $query),
+                '/api/push/report' => $controller->report($method, $query),
                 default => $controller->test($method, $query),
             };
             return;
@@ -1213,6 +1224,12 @@ final class Application
 
         if ($path === '/tools/visitor-statistics/' || $path === '/tools/visitor-statistics') {
             $this->visitorStatisticsController()->render($query);
+            return;
+        }
+
+        if (($path === '/tools/push-reports/' || $path === '/tools/push-reports')
+            && $this->featureFlags()->isEnabled(FeatureFlagRegistry::PUSH_ENABLED)) {
+            $this->pushApiController()->reportsPage($this->routeServices()->profileIsActiveOperator($this->authenticatedViewerProfile()));
             return;
         }
 
@@ -2200,7 +2217,7 @@ final class Application
             $this->projectRoot . '/templates',
             $this->docsPage ? $this->docsVersion() : $this->appVersion(),
             $this->featureFlags(),
-            new MediaEmbedRenderer(previewCacheStore: MediaEmbedPreviewCacheStore::openAt($this->projectRoot), imageStore: new \ForumRewrite\Images\ImageStore($this->repositoryRoot)),
+            new MediaEmbedRenderer(previewCacheStore: MediaEmbedPreviewCacheStore::openAt($this->projectRoot), imageStore: new \ForumRewrite\Images\ImageStore($this->repositoryRoot), posterStore: $this->mediaEmbedPosterStore()),
             versionEndpoint: $this->docsPage ? '/api/docs-version' : '/api/version',
             versionStorageKey: $this->docsPage ? 'forum_pending_docs_version' : 'forum_pending_app_version',
             requestPath: fn (): string => $this->requestPath,
@@ -2826,7 +2843,7 @@ final class Application
             '/tools/codebase', '/tools/codebase/', '/tools/feature-flags', '/tools/feature-flags/', '/tools/operations', '/tools/operations/', '/tools/deploy', '/tools/deploy/', '/tools/import', '/tools/import/',
             '/tools/fastmod', '/tools/fastmod/',
             '/tools/visitor-statistics', '/tools/visitor-statistics/',
-            '/tools/usage-log', '/tools/usage-log/', '/tools/usage-log/upload', '/tools/usage-reports', '/tools/usage-reports/',
+            '/tools/usage-log', '/tools/usage-log/', '/tools/usage-log/upload', '/tools/usage-reports', '/tools/usage-reports/', '/tools/push-reports', '/tools/push-reports/',
             '/tools/history', '/tools/history/',
             '/tools/tag-unlocks', '/tools/tag-unlocks/',
             '/compose/thread', '/compose/reply',
@@ -3034,7 +3051,15 @@ final class Application
 
     private function mediaEmbedPreviewController(): MediaEmbedPreviewController
     {
-        return new MediaEmbedPreviewController($this->routeServices(), $this->projectRoot);
+        return new MediaEmbedPreviewController($this->routeServices(), $this->projectRoot, posterStore: $this->mediaEmbedPosterStore());
+    }
+
+    /** The poster copies, when Media embed posters (and the flags it needs) are on. */
+    private function mediaEmbedPosterStore(): ?\ForumRewrite\View\MediaEmbedPosterStore
+    {
+        return $this->featureFlags()->isEnabled(FeatureFlagRegistry::MEDIA_EMBEDS_POSTERS_ENABLED)
+            ? \ForumRewrite\View\MediaEmbedPosterStore::openAt($this->projectRoot)
+            : null;
     }
 
     private function recordHistoryActivity(array $viewer): void

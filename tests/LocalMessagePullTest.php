@@ -41,7 +41,7 @@ final class LocalMessagePullTest
         $source = new PDO('sqlite::memory:');
         $this->seed($source, 30);
         $sourceSync = new PrivateMessageHistorySyncStore(new PDO('sqlite::memory:'));
-        $transferId = $sourceSync->upload('alice', 'old-key', 'local-key', 'bundle', [['message_id' => 'm-000', 'digest' => 'd0'], ['message_id' => 'm-029', 'digest' => 'd29']]);
+        $transferId = $sourceSync->upload('alice', 'old-key', str_repeat('b', 40), 'bundle', [['message_id' => 'm-000', 'digest' => 'd0'], ['message_id' => 'm-029', 'digest' => 'd29']]);
         $local = new PDO('sqlite::memory:');
         $localSync = new PrivateMessageHistorySyncStore(new PDO('sqlite::memory:'));
         $progress = sys_get_temp_dir() . '/local-pull-' . bin2hex(random_bytes(5)) . '/progress.json';
@@ -99,5 +99,20 @@ final class LocalMessagePullTest
         assertSame(1, $localStore->unreadStateFor('alice')['unread_count']);
         try { $pull->run($this->remote($source, $sync, 'bob'), 'alice'); throw new LogicException('Pulled another account'); }
         catch (RuntimeException $expected) { assertStringContains('different account', $expected->getMessage()); }
+    }
+
+    public function testAMessageCoveredByOneDonorIsNotOfferedAgainFromAnother(): void
+    {
+        $sync = new PrivateMessageHistorySyncStore(new PDO('sqlite::memory:'));
+        $target = str_repeat('b', 40);
+        $fromOldDevice = $sync->upload('alice', 'old-key', $target, 'bundle-1', [['message_id' => 'm1', 'digest' => 'd1'], ['message_id' => 'm2', 'digest' => 'd2']]);
+        $fromBob = $sync->upload('alice', 'bob-key', $target, 'bundle-2', [['message_id' => 'm1', 'digest' => 'd1']]);
+        assertSame(2, count($sync->unverifiedFor('alice', $target)['transfers']));
+        $sync->acknowledge('alice', $target, [['message_id' => 'm1', 'digest' => 'd1', 'transfer_id' => $fromOldDevice]]);
+        // m2 is still open in the old device's transfer; Bob's only covers m1, which is now done.
+        assertSame([$fromOldDevice], array_column($sync->unverifiedFor('alice', $target)['transfers'], 'transfer_id'));
+        $sync->acknowledge('alice', $target, [['message_id' => 'm2', 'digest' => 'd2', 'transfer_id' => $fromOldDevice]]);
+        assertSame([], $sync->unverifiedFor('alice', $target)['transfers']);
+        assertTrue($fromBob !== $fromOldDevice);
     }
 }

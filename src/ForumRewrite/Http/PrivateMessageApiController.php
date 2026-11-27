@@ -78,7 +78,7 @@ final class PrivateMessageApiController
             }
             $page = $this->service()->export($viewer, (string) ($query['after_time'] ?? ''), (string) ($query['after_id'] ?? ''),
                 $this->historySyncStore === null ? null : ($this->historySyncStore)());
-            $this->routeServices->sendJson(['status' => 'ok'] + $page, 200, $this->routeServices->noStoreHeaders());
+            $this->routeServices->sendJson(['status' => 'ok'] + $page, 200, $this->routeServices->noStoreHeaders(), true);
         } catch (InvalidArgumentException $exception) {
             $this->routeServices->sendJson($this->routeServices->errorPayload($exception), 400, $this->routeServices->noStoreHeaders());
         } catch (RuntimeException $exception) {

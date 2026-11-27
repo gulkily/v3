@@ -10,6 +10,9 @@ putenv('FORUM_MEDIA_EMBEDS_ENABLED=' . ($flags['cards'] ? 'true' : 'false'));
 putenv('FORUM_MEDIA_EMBEDS_INLINE_PLAYER_ENABLED=' . ($flags['players'] ? 'true' : 'false'));
 putenv('FORUM_APPROVED_MEMBERS_ONLY=false');
 putenv('FORUM_SITE_ID=' . $flags['site']);
+// Every theme the test walks must be selectable, flag-gated ones included.
+putenv('FORUM_ZALGO_THEME_ENABLED=true');
+putenv('FORUM_VAPORGEIST_THEME_ENABLED=true');
 if (parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) === '/test-thumbnail.svg') {
     header('Content-Type: image/svg+xml');
     echo '<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720"><rect width="1280" height="720" fill="#617d89"/></svg>';

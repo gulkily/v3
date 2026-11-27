@@ -16,6 +16,9 @@ use PDO;
 final class PushSubscriptionStore
 {
     public const MAX_DEVICES_PER_USERNAME = 10;
+    public const MAX_REPORT_BYTES = 4096;
+    public const REPORTS_PER_HOUR = 10;
+    public const REPORTS_KEPT = 500;
 
     public function __construct(private readonly PDO $pdo)
     {
@@ -61,6 +64,14 @@ final class PushSubscriptionStore
             sent_at INTEGER NOT NULL
         )');
         $pdo->exec('CREATE INDEX IF NOT EXISTS push_sends_recent ON push_sends (recipient, sent_at)');
+        // Turn on failures a browser reported (push_turn_on_diagnostics), for operators.
+        $pdo->exec('CREATE TABLE IF NOT EXISTS push_reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            received_at INTEGER NOT NULL,
+            body TEXT NOT NULL
+        )');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS push_reports_username ON push_reports (username, received_at)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS push_meta (name TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)');
         $pdo->exec('CREATE TABLE IF NOT EXISTS push_lease (
             id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -313,5 +324,50 @@ final class PushSubscriptionStore
         $value = $this->pdo->query("SELECT value FROM push_meta WHERE name = 'site'")->fetchColumn();
 
         return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    /**
+     * Keeps a browser's Turn on failure report. Returns false when the member has sent
+     * REPORTS_PER_HOUR in the last hour. The oldest reports past REPORTS_KEPT are dropped.
+     */
+    public function addReport(string $username, string $body, int $now): bool
+    {
+        $username = strtolower($username);
+        $this->pdo->exec('BEGIN IMMEDIATE');
+        try {
+            $recent = $this->pdo->prepare('SELECT COUNT(*) FROM push_reports WHERE username = ? AND received_at > ?');
+            $recent->execute([$username, $now - 3600]);
+            if ((int) $recent->fetchColumn() >= self::REPORTS_PER_HOUR) {
+                $this->pdo->exec('COMMIT');
+
+                return false;
+            }
+            $this->pdo->prepare('INSERT INTO push_reports (username, received_at, body) VALUES (:username, :received_at, :body)')
+                ->execute(['username' => $username, 'received_at' => $now, 'body' => $body]);
+            $this->pdo->prepare('DELETE FROM push_reports WHERE id NOT IN (SELECT id FROM push_reports ORDER BY id DESC LIMIT ?)')
+                ->execute([self::REPORTS_KEPT]);
+            $this->pdo->exec('COMMIT');
+
+            return true;
+        } catch (\Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->exec('ROLLBACK');
+            }
+            throw $exception;
+        }
+    }
+
+    /** @return list<array{id:int, username:string, received_at:int, body:string}> newest first */
+    public function reports(int $limit = 100): array
+    {
+        $statement = $this->pdo->prepare('SELECT id, username, received_at, body FROM push_reports ORDER BY id DESC LIMIT ?');
+        $statement->execute([$limit]);
+
+        return array_map(static fn (array $row): array => [
+            'id' => (int) $row['id'],
+            'username' => (string) $row['username'],
+            'received_at' => (int) $row['received_at'],
+            'body' => (string) $row['body'],
+        ], $statement->fetchAll());
     }
 }

@@ -115,8 +115,19 @@ final class PrivateMessageMailboxService
         $account = (string) $viewer['username_token'];
         $page = $this->store->exportPage($account, $afterTime, $afterId);
         $page['transfers'] = $historySync === null ? []
-            : $historySync->transfersFor($account, array_column($page['messages'], 'message_id'));
+            // Only the signed-in key's transfers: other keys' would multiply the page for no reader.
+            : $historySync->transfersFor($account, array_column($page['messages'], 'message_id'), $this->viewerFingerprint($viewer));
         return ['account' => $account] + $page;
+    }
+
+    /** @param array<string, mixed> $viewer */
+    private function viewerFingerprint(array $viewer): string
+    {
+        $identityId = strtolower((string) ($viewer['identity_id'] ?? ''));
+        if (preg_match('/^openpgp:([a-f0-9]{40})$/D', $identityId, $match) !== 1) {
+            throw new RuntimeException('Signed-in key is not an OpenPGP identity.');
+        }
+        return $match[1];
     }
 
     /** @param array<string, mixed> $viewer @return array<string, mixed> */

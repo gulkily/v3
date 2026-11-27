@@ -252,6 +252,14 @@ final class LocalDevelopmentImportTest
         $normal = new ImportHttpServer(realpath(__DIR__ . '/../public/router.php'), $w->root . '/normal.log', array_merge($environment, ['V3_DEV_LOG' => '0']));
         assertTrue($this->request($normal->url, '/local/remote', $base + ['action' => 'prepare_identity', 'public_key' => 'k'])[0] !== 200);
 
+        // /local without the slash reaches the same page, keeping its query.
+        [$code, , $headers] = $this->request($server->url, '/local?source=example.com', null, [], false);
+        assertSame(301, $code);
+        assertTrue(in_array('Location: /local/?source=example.com', $headers, true), implode("\n", $headers));
+        assertSame(200, $this->request($server->url, '/local')[0]);
+        assertSame(404, $this->request($normal->url, '/local')[0]);
+        assertSame(404, $this->request($normal->url, '/local/')[0]);
+
         [$code, $body] = $this->request($server->url, '/local/remote', $base + ['action' => 'prepare_identity', 'public_key' => 'k']);
         assertSame(200, $code, $body);
         assertSame('record', json_decode($body, true)['canonical_record']);
@@ -330,6 +338,20 @@ final class LocalDevelopmentImportTest
             } catch (RuntimeException $error) {
                 assertStringContains($expected, $error->getMessage(), $name);
             }
+        }
+        try {
+            $remote(fn () => ['status' => 200, 'headers' => [], 'body' => '{"status":"ok","messages":[' . str_repeat('x', 300) . "<br>\n<b>Warning</b>: tail"])->export();
+            throw new LogicException('Unexpected body accepted');
+        } catch (RuntimeException $error) {
+            assertStringContains('unexpected response to GET /api/private_messages/export (HTTP 200, ', $error->getMessage());
+            assertStringContains('{"status":"ok","messages":[xxx', $error->getMessage());
+            assertStringContains('<b>Warning</b>: tail', $error->getMessage());
+        }
+        try {
+            $remote(fn () => ['status' => 200, 'headers' => [], 'body' => str_repeat('x', \ForumRewrite\Support\LocalDevelopmentRemote::MAX_RESPONSE_BYTES)])->export();
+            throw new LogicException('Cut-off body accepted');
+        } catch (RuntimeException $error) {
+            assertStringContains('too large for the relay (GET /api/private_messages/export, 8 MiB or more)', $error->getMessage());
         }
         $unapproved = $remote(fn () => ['status' => 200, 'headers' => [], 'body' => "status=ok\napproved=0\n"]);
         assertSame(['approved' => false], $unapproved->signIn('openpgp:' . str_repeat('a', 40), 'c', 's'));
