@@ -114,3 +114,28 @@ Step 3 approved 2026-11-27 ("approved step 3"). Branch `feat/embed_presentation`
 - Estimate details: original scope: row layout at phone width; uncertainty low. Unchanged.
 
 *— Claude · 2026-11-27 UTC · Model: claude-opus-5-5*
+
+## Stage 6 - Concepts, PR and phone check
+
+**Original estimate: 0.05**
+**Retrospective: 0.05**
+
+- Changes:
+  - New concept `docs/concepts/media_embed.md`: the bar, one tap, one player at a time, posters and their boundary.
+  - `music_section.md`: rows show a tile and play in one tap. `post_presentation.md`: a pointer to the new concept. `image_serving.md`: posters are a separate cache, not stored images.
+- Verification:
+  - Local links in the touched concepts and this cycle's plans resolve; `git diff --check` clean.
+  - Final diff review of the cycle (16 files outside docs): no duplicate component; posters reuse the preview cache's folder, the warm-preview request and the image cache header; the row tile reuses the row grid.
+  - Shared consumers: Forte, reply context and QDB quotes/news render the same bar; covered by `media_embed_browser.mjs`.
+  - Pending: iPhone SE check after deploy (one tap starts sound for YouTube; Spotify needs a tap in its player). Pending: a poster fetch from DreamHost.
+- Notes:
+  - To try it on mitrapclub.com after Deploy now: turn on "Media embed posters" in Tools (off by default). The bar and one-tap play need no new flag.
+- Estimate details: original scope: documentation and handoff; uncertainty low. Unchanged.
+
+*— Claude · 2026-11-27 UTC · Model: claude-opus-5-5*
+
+## Cycle closeout
+
+**Retrospective scope assessment: 0.55** (projected 0.50). Stage 1 ran over on pre-existing browser-test failures. Maintainer comfortable-fit judgment: pending. Measured time: unknown.
+
+Checks: the smoke set and every changed PHP test passed; `media_embed_browser.mjs` and `music_share.mjs` passed. The full suite was not run. Phone check and DreamHost poster fetch are pending deploy.
