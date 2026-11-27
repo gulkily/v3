@@ -46,15 +46,10 @@ final class LocalDevelopmentRemoteController
             $remote = $this->remote($this->field('source', 2048));
             $result = match ($this->field('action', 32)) {
                 'key_status' => $this->keyStatus($remote),
-                'prepare_identity' => $remote->prepareIdentity($this->field('public_key', 65536)),
-                'create_identity' => $remote->createIdentity($this->field('prepare_token', 4096),
-                    $this->field('canonical_record', 65536), $this->field('detached_signature', 65536)),
                 'challenge' => ['challenge' => $remote->challenge()],
                 'pull' => $this->pull($remote),
                 'trust_candidates' => $this->trustCandidates($remote),
                 'trust' => $this->trust($remote),
-                'verify_list' => $this->verifyList(),
-                'confirm' => $this->confirm($remote),
                 'saved_copies' => $this->savedCopies(),
                 default => throw new InvalidArgumentException('Unknown action.'),
             };
@@ -79,7 +74,7 @@ final class LocalDevelopmentRemoteController
         $this->send(['status' => 'error', 'error' => $error->getMessage(), 'step' => $details['step'], 'details' => $details], $status);
     }
 
-    /** What the page needs before registering: who the key says it is, here and on the source. */
+    /** What Connect checks first: who the key says it is, here and on the source. */
     private function keyStatus(LocalDevelopmentRemote $remote): array
     {
         $inspected = $this->keyInspector !== null
@@ -180,67 +175,6 @@ final class LocalDevelopmentRemoteController
     }
 
     /**
-     * Pulled transfers to this key that the browser has not verified yet, with what it needs
-     * to verify them: original envelopes, the donor key and the original senders' keys.
-     */
-    private function verifyList(): array
-    {
-        [$account, $target] = $this->localKey();
-        [$messages, $sync] = $this->stores();
-        $after = is_string($_POST['after'] ?? null) && preg_match('/^[a-f0-9]{64}$/D', $_POST['after']) === 1 ? $_POST['after'] : '';
-        $page = $sync->unverifiedFor($account, $target, $after);
-        $pdo = $this->routes->pdo();
-        $senderKeys = [];
-        $transfers = [];
-        foreach ($page['transfers'] as $transfer) {
-            $donor = ProfileRepository::byIdentityId($pdo, 'openpgp:' . $transfer['source']);
-            $items = [];
-            foreach ($transfer['items'] as $item) {
-                $row = $messages->historySyncMessage($account, (string) $item['message_id']);
-                if ($row === null) continue;
-                $sender = (string) $row['sender_username_token'];
-                $senderKeys[$sender] ??= array_values(array_filter(array_map(static fn (array $profile): string => (string) ($profile['public_key'] ?? ''),
-                    ProfileRepository::byUsernameToken($pdo, $sender))));
-                $items[] = $item + ['envelope' => (string) $row['encrypted_envelope'], 'sender' => $sender];
-            }
-            $transfers[] = ['transfer_id' => $transfer['transfer_id'], 'source' => $transfer['source'], 'target' => $transfer['target'],
-                'ciphertext' => $transfer['ciphertext'], 'source_key' => (string) ($donor['public_key'] ?? ''),
-                'source_account' => (string) ($donor['username_token'] ?? ''), 'items' => $items];
-        }
-        return ['account' => $account, 'transfers' => $transfers, 'sender_keys' => $senderKeys, 'next' => $page['next']];
-    }
-
-    /** Records browser-verified transfers here, then confirms them on the source after a fresh sign-in. */
-    private function confirm(LocalDevelopmentRemote $remote): array
-    {
-        [$account, $target, $identityId] = $this->localKey();
-        $items = json_decode($this->field('items', 262144), true);
-        if (!is_array($items) || !array_is_list($items) || count($items) > 100) throw new InvalidArgumentException('Send at most 100 verified items.');
-        foreach ($items as $item) {
-            if (!is_array($item) || !is_string($item['message_id'] ?? null) || !is_string($item['digest'] ?? null)
-                || !is_string($item['transfer_id'] ?? null) || preg_match('/^[a-f0-9]{64}$/D', $item['transfer_id']) !== 1) {
-                throw new InvalidArgumentException('A verified item is malformed.');
-            }
-        }
-        [, $sync] = $this->stores();
-        // The source accepts one transfer per message in a batch; keep the first verified one.
-        $unique = [];
-        foreach ($items as $item) {
-            $unique[$item['message_id']] ??= ['message_id' => $item['message_id'], 'digest' => $item['digest'], 'transfer_id' => $item['transfer_id']];
-        }
-        $items = array_values($unique);
-        $signedIn = $remote->signIn($identityId, $this->field('challenge', 256), $this->field('signature', 65536));
-        if (!$signedIn['approved']) throw new InvalidArgumentException('This key is not approved on ' . $remote->source() . ' yet.');
-        $confirmed = 0;
-        // Record coverage here only after the source accepted it, so a failed batch is retried next time.
-        foreach (array_chunk($items, 10) as $chunk) {
-            $confirmed += (int) ($remote->acknowledge($chunk)['confirmed'] ?? count($chunk));
-            $sync->acknowledge($account, $target, $chunk);
-        }
-        return ['confirmed' => $confirmed];
-    }
-
-    /**
      * Turns on saved message copies in this clone, so Messages opens pulled mail without
      * decrypting it again. A value set by the environment or private config is reported, never changed.
      *
@@ -258,17 +192,6 @@ final class LocalDevelopmentRemoteController
         }
         $result = $this->routes->writer()->setFeatureFlag(['key' => $key, 'value' => true]);
         return ['saved_copies' => true, 'changed' => ($result['wrote_record'] ?? 'yes') !== 'no', 'overridden_by' => null];
-    }
-
-    /** @return array{0:string,1:string,2:string} account, target fingerprint and identity ID of an approved local key */
-    private function localKey(): array
-    {
-        $identityId = strtolower($this->field('identity_id', 128));
-        $local = ProfileRepository::byIdentityId($this->routes->pdo(), $identityId);
-        if ($local === null || (int) ($local['is_approved'] ?? 0) !== 1 || !str_starts_with($identityId, 'openpgp:')) {
-            throw new InvalidArgumentException('This clone does not know this key is approved yet. Import public content above, then try again.');
-        }
-        return [(string) $local['username_token'], substr($identityId, 8), $identityId];
     }
 
     /** @return array{0:\ForumRewrite\Messaging\PrivateMessageStore,1:\ForumRewrite\Messaging\PrivateMessageHistorySyncStore} */

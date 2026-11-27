@@ -79,3 +79,25 @@ Branch `feature/local_pull_simple` from `origin/main` `fd500820`. Planning commi
   - **Deviation:** the import runs only when needed, instead of on every Connect. A full import of zenmemes.com takes minutes, and a known key with no missing senders needs none.
   - The old Pull button still runs verify/confirm; Stage 4 removes them.
   - Retrospective stage-work assessment: **0.25**.
+
+## Stage 4 - Retire the old steps
+
+**Original estimate: 0.15** (unchanged)
+
+- Changes:
+  - The card is now Connect, **Pull new messages** (shown once this key is connected), the replace prompt, one status line and the pull summary. Removed: register, approve, the import step text, the trust list and its button, Check again, and the `.local-pull-keys` styles.
+  - Removed relay actions `prepare_identity`, `create_identity`, `verify_list` and `confirm`. Also removed `LocalDevelopmentRemote::prepareIdentity()`, `createIdentity()` and `acknowledge()`, and their `PATHS` (`POST /api/prepare_identity`, `POST /api/create_identity`, `POST /api/private_messages/history_sync/acknowledge`). Nothing is written to the source any more.
+  - `/local/` no longer loads `private_message_history_crypto.js`, which only verify used.
+  - Pull runs the same pass as Connect without the window.
+  - Concepts:
+    - Rewrote *Messages pull* in `local_development_import.md`.
+    - New `docs/concepts/key_handoff.md`.
+    - The handoff note went in `docs/reference/key_backups.md`; the plan's `key_backups.md` is that reference page, and there is no concept of that name.
+- Verification:
+  - `LocalDevelopmentImportTest`: the relay test now checks the guards with `key_status`, and that the four retired actions answer 400 "Unknown action." without calling the source. The rate-limit failure case moved from `acknowledge` to `export`.
+  - Smoke set plus `LocalDevelopmentImportTest` and `LocalMessagePullTest`: 507 run, 507 passed.
+  - `key_handoff.mjs` passes.
+  - `git grep` finds no leftovers outside the unrelated lobby flow, and the relative links in the changed docs resolve.
+- Notes:
+  - **Deviation:** `LocalMessagePull` **still imports transfers**. The plan assumed every message decrypts directly with the handed-over key. But mail from before that key existed reaches it on zenmemes.com only through history-sync transfers, and local Messages already serves pulled transfers for the viewer's key (`PrivateMessageMailboxService` → `transfersFor`), with no verify or confirm needed. Dropping them would make older mail unreadable here. What retired is the verify/confirm round trip, which only reported coverage back to the source.
+  - Retrospective stage-work assessment: **0.15**.
