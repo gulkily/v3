@@ -50,6 +50,7 @@ final class TemplateRenderer
         'private_message_conversation.php' => ['/assets/private_message_conversation.css'],
         'board.php' => ['/assets/thread-list.css', '/assets/compose.css'],
         'board_list.php' => ['/assets/thread-list.css', '/assets/compose.css'],
+        'music.php' => ['/assets/thread-list.css', '/assets/compose.css'],
         'compose_reply.php' => ['/assets/compose.css'],
         'compose_thread.php' => ['/assets/compose.css'],
         'qdb_add.php' => ['/assets/compose.css'],

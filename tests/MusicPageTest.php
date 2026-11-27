@@ -63,9 +63,11 @@ final class MusicPageTest
                 $application = new Application(dirname(__DIR__), $repositoryRoot, $databasePath);
                 $page = $this->markup($this->render($application, '/music/'));
                 assertStringContains('data-compose-draft-scope="music"', $page, 'Its own drafts, apart from the Board composer.');
-                assertStringContains('name="board_tags" autocapitalize="none" value="music"', $page);
+                assertStringContains('<input type="hidden" name="board_tags" value="music">', $page, 'The tag rides along unseen, as on the Board.');
+                assertStringContains('class="card inline-reply-composer compact-thread-compose music-share"', $page, 'The Board composer: one line that grows on focus.');
                 assertStringContains('name="return_to" value="/music/"', $page);
                 assertStringContains('placeholder="Paste a link to a track"', $page);
+                assertTrue(preg_match('#href="/assets/compose\.[0-9a-f]{12}\.css"#', $page) === 1 && preg_match('#href="/assets/thread-list\.[0-9a-f]{12}\.css"#', $page) === 1, 'The Board\'s composer and list styles load, so the box starts as one line.');
 
                 // As a browser without JavaScript sends it, signed out.
                 $_POST = ['body' => 'https://www.youtube.com/watch?v=B7Gj3YodcWU', 'subject' => '', 'board_tags' => 'music', 'return_to' => '/music/', 'body_format' => 'plain'];
