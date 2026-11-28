@@ -39,7 +39,7 @@ Where items came from and what is not yet folded in: [history](HISTORY.md).
 | [PF-20261118-F02](items/PF-20261118-F02.txt) | Reading margins on the gallery | blocked | deployed | — | — | 1 |
 | [PF-20261118-F03](items/PF-20261118-F03.txt) | Home-screen app icons (apple-touch-icon and manifest PNGs) | blocked | deployed | — | — | 1 |
 | [PF-20261118-F04](items/PF-20261118-F04.txt) | Beside button does not show clearly when it is on | blocked | deployed | — | — | 0 |
-| [PF-20261118-F05](items/PF-20261118-F05.txt) | Post file links open in small themed windows | blocked | deployed | — | — | 1 |
+| [PF-20261118-F05](items/PF-20261118-F05.txt) | Post file links open in small themed windows | blocked | deployed | — | — | 2 |
 | [PF-20261118-F07](items/PF-20261118-F07.txt) | Open beside does not work offline | blocked | deployed | — | — | 0 |
 | [PF-20261122-F01](items/PF-20261122-F01.txt) | Local start page import shows what it is doing | blocked | deployed | — | — | 0 |
 | [PF-20261122-F02](items/PF-20261122-F02.txt) | Local start page reports the last import and offers one re-import | blocked | deployed | — | — | 0 |
