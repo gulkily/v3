@@ -259,8 +259,9 @@
   border-radius: 0;
 }
 
-/* The Pending summary overlays page content and needs an opaque surface. */
-:root[data-theme="ochre"] .card.pending-user-dialog {
+/* Floating windows need an opaque surface over the page content. */
+:root[data-theme="ochre"] .card.pending-user-dialog,
+:root[data-theme="ochre"] dialog.card.file-window {
   background: var(--panel);
 }
 
